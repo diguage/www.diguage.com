@@ -1,0 +1,50 @@
+baseurl = "http://0.0.0.0/"
+title = "\"地瓜哥\"博客网"
+languageCode = "zh-cn"
+paginate = "10" # Number of posts per page
+theme = "mainroad"
+disqusShortname = "" # Enable comments by entering your Disqus shortname
+googleAnalytics = "UA-32893826-1" # Enable Google Analytics by entering your tracking id
+
+[Author]
+  name = "D瓜哥"
+  bio = "厨艺界最好的码农，挨踢界最棒的厨师。"
+  avatar = "images/avatar.jpg"
+
+[Params]
+  subtitle = "分享技术带来的喜悦 — https://www.diguage.com/" # Subtitle of your site
+  description = "\"地瓜哥\"博客网是由 D瓜哥 维护的以分享技术文章的博客网站。" # Description of your site
+  opengraph = true
+  twitter_cards = true
+  readmore = true # Show "Read more" button in list if true
+  authorbox = true
+  post_navigation = true
+  post_meta = ["date", "categories"] # Order of post meta information
+  dateformat = "2006-01-02"
+
+[Params.sidebar]
+  home = "right"   # Configure layout for home page
+  list = "right"   # Configure layout for list pages
+  single = "right" # Configure layout for single pages
+  # Enable widgets in given order
+  widgets = ["search", "recent", "categories", "taglist"]
+
+[Params.widgets]
+  recent_num = 20 # Set the number of articles in the "Recent articles" widget
+  tags_counter = true # Enable counter for each tag in "Tags" widget (disabled by default)
+
+[[menu.main]]             # config your menu              # 配置目录
+  name = "首页"
+  weight = 10
+  identifier = "home"
+  url = "/"
+# [[menu.main]]
+#   name = "归档"
+#   weight = 20
+#   identifier = "archives"
+#   url = "/post/"
+[[menu.main]]
+  name = "分类"
+  weight = 40
+  identifier = "categories"
+  url = "/categories/"
