@@ -27,11 +27,16 @@ googleAnalytics = "UA-32893826-1" # Enable Google Analytics by entering your tra
   list = "right"   # Configure layout for list pages
   single = "right" # Configure layout for single pages
   # Enable widgets in given order
-  widgets = ["search", "recent", "categories", "taglist"]
+  widgets = ["search", "recent", "categories", "taglist", "social"]
 
 [Params.widgets]
   recent_num = 20 # Set the number of articles in the "Recent articles" widget
   tags_counter = true # Enable counter for each tag in "Tags" widget (disabled by default)
+
+[Params.widgets.social]
+  twitter = "diguage"
+  github = "diguage"
+  email = "leejun119@gmail.com"
 
 [[menu.main]]             # config your menu              # 配置目录
   name = "首页"

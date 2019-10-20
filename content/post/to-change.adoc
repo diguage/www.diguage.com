@@ -1,8 +1,8 @@
 ---
-title: "改进"
+title: "蜕变"
 date: 2019-10-18T11:18:42+08:00
 // lastmod: 2019-10-17T20:37:00+08:00
-draft: false
+draft: true
 tags: ["工作方法", "团体协作", "产品"]
 categories: ["工作", "学习", "index"]
 
