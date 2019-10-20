@@ -1,0 +1,15 @@
+---
+title: "关于"
+date: 2019-10-19T23:30:52+08:00
+lastmod: 2019-10-19T23:30:52+08:00
+menu: "main"
+weight: 50
+
+# you can close something for this content if you open it in config.toml.
+comment: false
+mathjax: false
+---
+
+D瓜哥，码农一枚，热爱技术，相信计算机可以改变世界。
+
+好读书不求甚解，偏爱历史，经济学，金融，认知心理学，数学，古典文学等。希望以书为马，畅游古今中外，做一个有趣的人。

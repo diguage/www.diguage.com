@@ -5,6 +5,7 @@ paginate = "10" # Number of posts per page
 theme = "mainroad"
 disqusShortname = "" # Enable comments by entering your Disqus shortname
 googleAnalytics = "UA-32893826-1" # Enable Google Analytics by entering your tracking id
+pygmentsUseClasses = true
 
 [Author]
   name = "D瓜哥"
@@ -21,17 +22,27 @@ googleAnalytics = "UA-32893826-1" # Enable Google Analytics by entering your tra
   post_navigation = true
   post_meta = ["date", "categories"] # Order of post meta information
   dateformat = "2006-01-02"
+  customCSS = ["css/highlighter-pygments-monokai.css"] # Include custom CSS files
+  customJS = [] # Include custom JS files
 
 [Params.sidebar]
   home = "right"   # Configure layout for home page
   list = "right"   # Configure layout for list pages
   single = "right" # Configure layout for single pages
   # Enable widgets in given order
-  widgets = ["search", "recent", "categories", "taglist"]
+  widgets = ["search", "recent", "categories", "taglist", "social", "toc"]
 
 [Params.widgets]
   recent_num = 20 # Set the number of articles in the "Recent articles" widget
   tags_counter = true # Enable counter for each tag in "Tags" widget (disabled by default)
+
+[Params.widgets.social]
+  twitter = "diguage"
+  github = "diguage"
+  gitlab = "diguage"
+  bitbucket = "diguage"
+  facebook = "cnlijun"
+  email = "leejun119@gmail.com"
 
 [[menu.main]]             # config your menu              # 配置目录
   name = "首页"
