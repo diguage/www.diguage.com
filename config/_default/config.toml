@@ -39,10 +39,10 @@ pygmentsUseClasses = true
 [Params.widgets.social]
   twitter = "diguage"
   github = "diguage"
-  gitlab = "diguage"
-  bitbucket = "diguage"
-  facebook = "cnlijun"
   email = "leejun119@gmail.com"
+  # gitlab = "diguage"
+  # bitbucket = "diguage"
+  # facebook = "cnlijun"
 
 [[menu.main]]             # config your menu              # 配置目录
   name = "首页"
