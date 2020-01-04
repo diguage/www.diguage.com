@@ -3,7 +3,7 @@ title = "\"地瓜哥\"博客网"
 languageCode = "zh-cn"
 paginate = "10" # Number of posts per page
 theme = "mainroad"
-disqusShortname = "" # Enable comments by entering your Disqus shortname
+# disqusShortname = "diguage-blog" # Enable comments by entering your Disqus shortname
 googleAnalytics = "UA-32893826-1" # Enable Google Analytics by entering your tracking id
 
 [Author]
@@ -21,6 +21,8 @@ googleAnalytics = "UA-32893826-1" # Enable Google Analytics by entering your tra
   post_navigation = true
   post_meta = ["date", "categories"] # Order of post meta information
   dateformat = "2006-01-02"
+  changyanAppid = "cyuuTeBp3"        # Changyan app id             # 畅言
+  changyanAppkey = "prod_2906c47c31e735e0ed518282fec489a6"       # Changyan app key
 
 [Params.sidebar]
   home = "right"   # Configure layout for home page
