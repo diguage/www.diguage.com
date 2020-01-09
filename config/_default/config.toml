@@ -22,7 +22,7 @@ pygmentsUseClasses = true
   post_navigation = true
   post_meta = ["date", "categories"] # Order of post meta information
   dateformat = "2006-01-02"
-  customCSS = ["css/highlighter-pygments-monokai.css"] # Include custom CSS files
+  customCSS = ["css/highlighter-pygments-monokai.css","css/asciidoctor.css"] # Include custom CSS files
   customJS = [] # Include custom JS files
 
 [Params.sidebar]
