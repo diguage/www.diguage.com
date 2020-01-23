@@ -65,9 +65,9 @@ OKR 看板才是初步落地 OKR 的必备神器。
 
 如果团队参与使用 OKR 的人数大于 100 人时，OKR 软件才能发挥出它应有的价值。
 
-image::/images/okr-base-functions.png[]
+image::/images/okr/okr-base-functions.png[]
 
-image::/images/okr-plus-functions.png[]
+image::/images/okr/okr-plus-functions.png[]
 
 软件绝不是落地 OKR 的核心，不要认为使用了 OKR 软件，就是成功落地了 OKR。
 
@@ -106,7 +106,7 @@ image::/images/okr-plus-functions.png[]
 
 “引领性指标”通过“杠杆作用”去撬动“滞后性指标”。
 
-image::/images/okr-target-lever.png[]
+image::/images/okr/okr-target-lever.png[]
 
 
 === 总结
@@ -124,7 +124,7 @@ image::/images/okr-target-lever.png[]
 
 积分贯穿了项目的所有重要环节，而且在一些关键性事件上也设置了积分项，让“做项目”变成“打游戏”，每位“玩家”在此过程中充分享受“打怪升级”的乐趣。
 
-image::/images/okr-project-score-game.png[]
+image::/images/okr/okr-project-score-game.png[]
 
 === 如何通过积分强化激励效果？
 
@@ -132,19 +132,19 @@ image::/images/okr-project-score-game.png[]
 
 当前积分可以兑换商品或福利，累计积分可以提升玩家级别。因此，每位员工都有自己的“激励账户”。
 
-image::/images/okr-game-account.png[]
+image::/images/okr/okr-game-account.png[]
 
 每位玩家激励账户中的赞币可转化为他人的积分，也就是说，当你对他人的行为进行赞赏时，可使用你的赞币，并将其转化为对方的积分。
 
-image::/images/okr-admire-score.png[]
+image::/images/okr/okr-admire-score.png[]
 
-image::/images/okr-cooperation-game.png[]
+image::/images/okr/okr-cooperation-game.png[]
 
-image::/images/okr-game-train-course.png[]
+image::/images/okr/okr-game-train-course.png[]
 
-image::/images/okr-share-knowledge.png[]
+image::/images/okr/okr-share-knowledge.png[]
 
-image::/images/okr-score-model.png[]
+image::/images/okr/okr-score-model.png[]
 
 === 什么是“游戏化”？
 
@@ -155,7 +155,7 @@ image::/images/okr-score-model.png[]
 . **及时反馈**：需要在各种关卡和事件中，给玩家带来及时反馈并持续激励。
 . **自愿参与**：需要为玩家设置参与方式和退出途径，充分尊重玩家的选择。
 
-image::/images/okr-game-characteristic.png[]
+image::/images/okr/okr-game-characteristic.png[]
 
 我们要做的是将工作游戏化，而不是将工作变成游戏，工作的核心不能改变，需要改变的只是一种用户体验。
 
@@ -216,7 +216,7 @@ OKR 不仅是一种方法，它更像是一种思维，当你掌握了这种思�
 
 By 苗辉老师 -- 白山科技技术中心云分发产品负责人
 
-image::/images/okr-summary.png[]
+image::/images/okr/okr-summary.png[]
 
 === 价值导向是 OKR 落地文化土壤的关键
 
@@ -230,7 +230,7 @@ OKR 实际上就是一种敏捷的团队管理方法，它强调了三点：
 . 目标导向
 . 持续交付
 
-image::/images/okr-cd.png[]
+image::/images/okr/okr-cd.png[]
 
 一个团队要想创造出有价值导向的文化氛围，那你只有将 OKR 公示出来，大家充分地进行针对性讨论，以及诸多想法上的磨合，这才更利于寻找到合理的价值目标，也有利于更顺利地落地 OKR 并实现目标 O。
 
@@ -254,4 +254,4 @@ image::/images/okr-cd.png[]
 
 == 加餐 | 新型的团队管理和协作方式是怎样的？
 
-image::/images/okr-vision-mindmap.png[]
+image::/images/okr/okr-vision-mindmap.png[]

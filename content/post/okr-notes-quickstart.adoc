@@ -24,13 +24,13 @@ menu:
 
 OKR 是一款目标管理工具，它由 Objectives（目标）和 Key Results（关键结果）两部分构成。同时，OKR 也被称为“目标与关键结果工作法”，简称为“OKR 工作法”。OKR 是融合了一系列框架、方法和哲学后的产物，它起源于 Intel，发展于 Google。
 
-image::/images/okr-intro.png[]
+image::/images/okr/okr-intro.png[]
 
 可以把 OKR 中的 O 想象成一个你想要去的最终目的地，它时刻为你指明前进的方向，此外，可以把 KR 想象成一个带有距离标记的路标，它时刻告诉你距离目的地还有多远。
 
 OKR 是一种融入了人性的科学管理框架。OKR 绝不是一款简单的目标管理工具，它充满了人性和智慧。
 
-image::/images/okr-history.png[]
+image::/images/okr/okr-history.png[]
 
 === 你为什么需要 OKR？
 
@@ -74,7 +74,7 @@ OKR 恰恰能够解决短期目标的实现问题，让目标更加聚焦，让�
 * Relevant：有相关性的
 * Time-bound：有时间限制的
 
-image::/images/okr-smart.png[]
+image::/images/okr/okr-smart.png[]
 
 一个 OKR 可以包含多个 O，每个 O 又可以包含多个 KR。O 就不应该设置太多，最多不要超过 3 个。每个 O 所包含的 KR 也无需太多，最多也不要超过 3 个。
 
@@ -84,7 +84,7 @@ image::/images/okr-smart.png[]
 . **执行 OKR**：唯有做到持续追踪、持续更新，才能做到拥抱变化。
 . **评估 OKR**：周期性地评估和复盘，持续改进、持续迭代。
 
-image::/images/okr-three-axes.png[]
+image::/images/okr/okr-three-axes.png[]
 
 **OKR 不是静态不变的，而是动态可变的**，这一点和“敏捷”有异曲同工之妙，它们都是为了拥抱变化，其精髓都在于，在 Volatile（不稳定）、Uncertain（不确定）、Complex（复杂）、Ambiguous（模糊）的“VUCA 时代”下，OKR 能帮助企业获得商业上的成功。
 
@@ -121,7 +121,7 @@ OKR 让我们更愿意主动地挑战，而 KPI 却让我们不得不被动地�
 +
 OKR 与利益不直接相关，而 KPI 却与利益挂钩。
 
-image::/images/okr-vs-kpi.png[]
+image::/images/okr/okr-vs-kpi.png[]
 
 === OKR 可以取代 KPI 吗？
 
@@ -135,7 +135,7 @@ image::/images/okr-vs-kpi.png[]
 
 推算型工作更适合用 KPI，探索型工作更适合用 OKR。
 
-image::/images/okr-kpi-usage.png[]
+image::/images/okr/okr-kpi-usage.png[]
 
 OKR 的出现不是为了取代 KPI，而且预测未来很长一段时间内 KPI 都会一直存在。
 
@@ -145,7 +145,7 @@ OKR 关注的是结果和过程，更关注过程，而 KPI 关注的只是结�
 
 只有以“一对一”这样的形式才能建立更好的沟通。
 
-image::/images/okr-puls-kpi.png[]
+image::/images/okr/okr-puls-kpi.png[]
 
 KPI 中包括的绩效指标一定是只看结果，而不看过程的，只要结果达到了就行，而 OKR 需要更多地关心过程，从结果中判断目标的具体达成情况。
 
@@ -163,7 +163,7 @@ KPI 用得好，能产生超出想象的价值；OKR 用不好，将带来难以
 
 === OKR 最大的价值是什么？
 
-image::/images/okr-target-pyramid.png[]
+image::/images/okr/okr-target-pyramid.png[]
 
 **制定 OKR 时，需要“自顶向下”沟通，还需要“自底向上”对齐**，让下级更加充分地理解上级的目标及其意图。
 
@@ -181,14 +181,14 @@ image::/images/okr-target-pyramid.png[]
 
 内驱力较强的研发团队，非常适合实施 OKR 工作法。
 
-image::/images/okr-internal-drive.png[]
+image::/images/okr/okr-internal-drive.png[]
 
 
 === 如何在企业中有效推广 OKR？
 
 在企业中推广 OKR，最好不要请 HR 去“主导”这件事情。
 
-image::/images/okr-proposal.png[]
+image::/images/okr/okr-proposal.png[]
 
 在企业中推广 OKR 时，请务必记住以下三点：
 
@@ -208,7 +208,7 @@ image::/images/okr-proposal.png[]
 
 你最需要的是一片适宜 OKR 的土壤，这片土壤在公司层面上来理解，就是“团队文化”。
 
-image::/images/okr-prerequisites.png[]
+image::/images/okr/okr-prerequisites.png[]
 
 . 面对沟通时，是否公开透明？
 . 面对交付时，是否信守承诺？
@@ -232,7 +232,7 @@ OKR 是领导与员工建立信任的纽带。
 
 === 在落地 OKR 之前，如何打造团队文化？
 
-image::/images/okr-practice.png[]
+image::/images/okr/okr-practice.png[]
 
 . 先要管理好你自己
 +
@@ -266,7 +266,7 @@ image::/images/okr-practice.png[]
 
 OKR 只对内驱力强的人有价值，我们应该先让那 20% 的人用上 OKR，再去努力提升他们的领导力，最后让他们影响剩余 80% 的人，最终大家顺理成章地就都用上了 OKR。
 
-image::/images/okr-value-for-person.png[]
+image::/images/okr/okr-value-for-person.png[]
 
 === 你是否要催促团队成员去执行 OKR？
 
@@ -292,7 +292,7 @@ CTO 应该和 CEO 及其他管理伙伴一起磋商企业的 OKR，而不是只�
 
 === 为什么产品技术团队不能从企业目标中进行分解？
 
-image::/images/okr-produce-develop.png[产品型企业发展模型]
+image::/images/okr/okr-produce-develop.png[产品型企业发展模型]
 
 产品型公司的发展规律告诉我们，**企业往往不是依赖销售目标去牵引，而是通过产品技术竞争力去推动的。**
 
@@ -355,7 +355,7 @@ OKR 能提高工作效率，更能让方向保持聚焦，从 OKR 实操角度�
 
 **OKR 所提倡的“对齐”指的是在 O 上做“支撑”**，下级需要支撑上级的 O，平级之间的 O 也要考虑相互支撑，然而 KR 只是为了支撑所对应的 O。
 
-image::/images/okr-target-align.png[]
+image::/images/okr/okr-target-align.png[]
 
 我们在制定自己的子目标时，需要充分理解上级制定的主目标，将子目标中的 O 与主目标中的 O 进行对齐，这是“向上对齐”；此外，还要考虑横向将自己制定的 O 与同级部门制定的 O 对齐，这是“水平对齐”。
 
@@ -371,7 +371,7 @@ image::/images/okr-target-align.png[]
 
 此时也可以跳过部门，将个人 OKR 直接与公司 OKR 进行对齐。
 
-image::/images/okr-target-align-2.png[]
+image::/images/okr/okr-target-align-2.png[]
 
 为了能让 OKR 更容易顺利落地，不应该忽略部门主管的个人 OKR，至少在早期不应该忽略。
 
@@ -392,4 +392,4 @@ image::/images/okr-target-align-2.png[]
 
 == 加餐 | 一幅图，让你快速入门OKR
 
-image::/images/okr-quickstart-mindmap.png[]
+image::/images/okr/okr-quickstart-mindmap.png[]

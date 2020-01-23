@@ -63,7 +63,7 @@ KR 是针对 OKR 中“How”的层面，它解决了具体“怎么做”的问
 . **KR 不是日常工作或行动计划。**实际上，KR 是完成一系列任务后才能得到的结果。
 . **KR 必须要具备良好的实操性。**当写完一条 KR 后，试着经常问自己“这条 KR 应该如何去实操呢？”。
 
-image::/images/okr-tips.png[]
+image::/images/okr/okr-tips.png[]
 
 === 如何才能更高效地制定 OKR？
 
@@ -113,7 +113,7 @@ OKR 这套工作法要与现有的工作流打通。
 
 核心秘诀在于：将任务与 OKR 之间看成是一个“二级驱动”关系，即任务驱动 KR 的完成，进而促使 KR 驱动 O 的达成。
 
-image::/images/okr-two-levels-drive.png[]
+image::/images/okr/okr-two-levels-drive.png[]
 
 当任务与 KR 发生强关联时，可有效驱动 OKR 的执行。
 
@@ -130,7 +130,7 @@ OKR 制定容易，执行难，踩坑在所难免，需要及时复盘。
 
 === 给 OKR 评估结果做奖赏，是否可行？
 
-image::/images/okr-score-table.png[]
+image::/images/okr/okr-score-table.png[]
 
 
 === 有人对评估结果不满，怎么办？
@@ -359,7 +359,7 @@ OKR 是需要自下而上的驱动力才能最终达成的，这也是它与 KPI
 
 ===== 创建 OKR 的工具：CRAFT 流程
 
-image::/images/okr-craft.png[]
+image::/images/okr/okr-craft.png[]
 
 . 创建（Create），根据对公司使命、愿景、战略的认知和理解，承接和分解上级 leader 的 OKR（至少有一个 KR），同时基于自己角色分工，制订 1~3 个有挑战的自下而上的 OKR；
 . 精炼（Refine），通过研讨会的方式，在团队内进行讨论和调整；
@@ -440,7 +440,7 @@ OKR 评分是给自己看的，而不是给他人看的；OKR 是与自己比赛
 
 所谓“信心指数“指的就是，自己完成某项 KR 的“有把握程度”。
 
-image::/images/okr-coordinates.png[]
+image::/images/okr/okr-coordinates.png[]
 
 信心指数越高，说明自己越有把握完成，换句话说，此时的目标越没有挑战，因此，OKR 评分也就越低了。
 
@@ -455,4 +455,4 @@ image::/images/okr-coordinates.png[]
 
 == 加餐 | 如何操作 OKR 落地？
 
-image::/images/okr-operating-mindmap.png[]
+image::/images/okr/okr-operating-mindmap.png[]

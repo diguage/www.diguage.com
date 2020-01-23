@@ -111,7 +111,7 @@ OKR 应该是一种思维，当你需要进行向上管理时，OKR 是你和领
 
 在汇报方向上，并不存在双向汇报问题的情况，所有的员工只需向业务单元负责人汇报即可。
 
-image::/images/okr-organization-matrix.png[]
+image::/images/okr/okr-organization-matrix.png[]
 
 业务单元是一个实际组织，它存在的价值在于消除跨部门之间的协同，让大家的目标更加聚焦，一切围绕追求绩效而做出努力。
 
@@ -189,7 +189,7 @@ OKR 就是这样的工具，它能帮助你将领导的意图和期望转化为�
 
 === 为何敏捷可以拥抱变化？
 
-image::/images/okr-agile-manifesto-value.png[]
+image::/images/okr/okr-agile-manifesto-value.png[]
 
 ==== 什么是敏捷？
 
@@ -199,7 +199,7 @@ image::/images/okr-agile-manifesto-value.png[]
 
 由 Product Owner（产品负责人）负责维护 Product Backlog（需求池），由 Scurm Master（项目负责人）召开 Sprint Plan Meeting（计划会议）和 Daily Scrum Meeting（站立会议），最后全员一起参与 Sprint Retrospective Meeting（回顾会议）。
 
-image::/images/okr-scrum-process.png[]
+image::/images/okr/okr-scrum-process.png[]
 
 Scrum 敏捷方法的核心思想，就是将不断变化的业务需求放入 Product Backlog， Product Owner 从 Product Backlog 中取出优先级较高的需求并将其放入 Sprint 迭代中，随后定期发布一次迭代，每次发布都需向客户交付可以工作的软件。
 
@@ -342,15 +342,15 @@ OKR 不只是一款目标管理工具，也是一种目标管理思维。
 
 第一步：**针对所有的研发岗位，制定出对应的岗位级别与人力系数。**
 
-image::/images/okr-person-power.png[]
+image::/images/okr/okr-person-power.png[]
 
 第二步：针对项目的难度级别，分别对应其设置难度系数。
 
-image::/images/okr-difficulty-level.png[]
+image::/images/okr/okr-difficulty-level.png[]
 
 第三步：根据实际投入情况，计算研发团队人效。
 
-image::/images/okr-person-efficiency.png[]
+image::/images/okr/okr-person-efficiency.png[]
 
 ----
 时间成本 ＝ 项目上线 － 项目启动 － 非工作日
@@ -393,4 +393,4 @@ image::/images/okr-person-efficiency.png[]
 
 == 加餐 | OKR思维能助你学会向上管理？
 
-image::/images/okr-management-mindmap.png[]
+image::/images/okr/okr-management-mindmap.png[]
