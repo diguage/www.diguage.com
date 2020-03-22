@@ -10,6 +10,19 @@ comment: false
 mathjax: false
 ---
 
-D瓜哥，码农一枚，热爱技术，相信计算机可以改变世界。
+D瓜哥，码农一枚。
+
+喜欢开源，热爱技术，相信计算机可以改变世界。
 
 好读书不求甚解，偏爱历史，经济学，金融，认知心理学，数学，古典文学等。希望以书为马，畅游古今中外，做一个有趣的人。
+
+喜欢户外运动、跑步、自驾游、露营🏕等。感兴趣，欢迎约起…
+
+旧版博客及学习笔记：
+
+* https://wordpress.diguage.com/[旧版"地瓜哥"博客网, window="_blank"]
+* https://notes.diguage.com/mysql/[MySQL 学习笔记^Alpha^, window="_blank"]
+* https://diguage.github.io/jdk-source-analysis/[JDK 源码分析^Alpha^, window="_blank"]
+* https://notes.diguage.com/design-patterns/[深入学习设计模式^Alpha^, window="_blank"]
+* https://diguage.github.io/leetcode/[LeetCode 刷题笔记^Alpha^, window="_blank"]
+* https://notes.diguage.com/java-concurrency/[Java 并发学习笔记^Alpha^, window="_blank"]

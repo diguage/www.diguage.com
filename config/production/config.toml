@@ -8,7 +8,7 @@ googleAnalytics = "UA-32893826-1" # Enable Google Analytics by entering your tra
 
 [Author]
   name = "D瓜哥"
-  bio = "厨艺界最好的码农，挨踢界最棒的厨师。"
+  bio = '厨艺界最好的码农，挨踢界最棒的厨师。<ul><li><a target="_blank" href="https://wordpress.diguage.com/">旧版“地瓜哥”博客网</a></li><li><a target="_blank" href="https://notes.diguage.com/mysql/">MySQL 学习笔记<sup>Alpha</sup></a></li><li><a target="_blank" href="https://diguage.github.io/jdk-source-analysis/">JDK 源码分析<sup>Alpha</sup></a></li></ul>'
   avatar = "images/avatar.jpg"
 
 [Params]

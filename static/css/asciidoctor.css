@@ -11,3 +11,6 @@ a span.icon>.fa{cursor:inherit}
 .sidebarblock>:first-child{margin-top:0}
 .sidebarblock>:last-child{margin-bottom:0}
 .sidebarblock>.content>.title{color:#7a2518;margin-top:0;text-align:center}
+
+div.authorbox__description>ul {padding-left: 160px !important;}
+div.authorbox__description>ul>li {padding-left:0 !important;}
