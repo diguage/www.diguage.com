@@ -13,10 +13,6 @@ weight: 1
 # comment: false
 # toc: true
 
-menu:
-  main:
-    parent: "docs"
-    weight: 1
 ---
 
 不知不觉，2019 年元旦马上就要到来。2018 年的元旦仿佛还在昨日。人生天地之间，若白驹之过隙，忽然而已。

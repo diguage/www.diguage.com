@@ -13,10 +13,6 @@ weight: 1
 # comment: false
 # toc: false
 
-menu:
-  main:
-    parent: "docs"
-    weight: 1
 ---
 
 == 端正学习态度

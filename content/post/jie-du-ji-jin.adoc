@@ -13,10 +13,6 @@ weight: 1
 # comment: false
 # toc: true
 
-menu:
-  main:
-    parent: "docs"
-    weight: 1
 ---
 
 这个月断断续续把季凯帆的 https://book.douban.com/subject/30784282/[《解读基金——我的投资观与实践（修订版）》]读完了，秉持读完一本，消化一本的读书理念，做一下读书笔记，整理消化一下书中的内容。
