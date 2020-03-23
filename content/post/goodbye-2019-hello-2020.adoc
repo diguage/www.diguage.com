@@ -3,7 +3,7 @@ title: "告别 2019，迎接 2020"
 date: 2019-12-31T19:20:00+08:00
 draft: false
 tags: ["个人提升", "读书", "OKR", "投资理财", "经济", "金融", "旅行"]
-categories: ["个人成长", "反思总结"]
+categories: ["个人成长"]
 
 weight: 1
 
