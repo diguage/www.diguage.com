@@ -31,11 +31,19 @@ image::/images/overview-of-distributed-transaction/two-phase-commit-process.png[
 
 两阶段提交协议也依赖与日志，只要存储介质不出问题，两阶段协议就能最终达到一致的状态（成功或者回滚）
 
+image::/images/overview-of-distributed-transaction/2pc-example.png[]
+
 image::/images/overview-of-distributed-transaction/two-phase-commit-diagram.jpg[]
 
-优点：强一致性，只要节点或者网络最终恢复正常，协议就能保证顺利结束；部分关系型数据库（Oracle）、框架直接支持
+=== 优点
 
-缺点：两阶段提交协议的容错能力较差，比如在节点宕机或者超时的情况下，无法确定流程的状态，只能不断重试；两阶段提交协议的性能较差， 消息交互多，且受最慢节点影响
+强一致性，只要节点或者网络最终恢复正常，协议就能保证顺利结束；部分关系型数据库（Oracle）、框架直接支持
+
+=== 缺点
+
+* **网络抖动导致的数据不一致**： 第二阶段中协调者向参与者发送commit命令之后，一旦此时发生网络抖动，导致一部分参与者接收到了commit请求并执行，可其他未接到commit请求的参与者无法执行事务提交。进而导致整个分布式系统出现了数据不一致。
+* **超时导致的同步阻塞问题**： 2PC中的所有的参与者节点都为事务阻塞型，当某一个参与者节点出现通信超时，其余参与者都会被动阻塞占用资源不能释放。
+* **单点故障的风险**： 由于严重的依赖协调者，一旦协调者发生故障，而此时参与者还都处于锁定资源的状态，无法完成事务commit操作。虽然协调者出现故障后，会重新选举一个协调者，可无法解决因前一个协调者宕机导致的参与者处于阻塞状态的问题。
 
 基于两阶段提交的分布式事务在提交事务时需要在多个节点之间进行协调,最大限度地推后了提交事务的时间点，客观上延长了事务的执行时间，这会导致事务在访问共享资源时发生冲突和死锁的概率增高，随着数据库节点的增多，这种趋势会越来越严重，从而成为系统在数据库层面上水平伸缩的"枷锁"， 这是很多Sharding系统不采用分布式事务的主要原因。
 
@@ -45,17 +53,36 @@ image::/images/overview-of-distributed-transaction/two-phase-commit-diagram.jpg[
 
 image::/images/overview-of-distributed-transaction/three-phase-commit-protocol.png[]
 
+3PC 的三个阶段分别是 `CanCommit`、`PreCommit`、`DoCommit`
+
+CanCommit::
+协调者向所有参与者发送CanCommit命令，询问是否可以执行事务提交操作。如果全部响应YES则进入下一个阶段。
+
+PreCommit::
+协调者向所有参与者发送PreCommit命令，询问是否可以进行事务的预提交操作，参与者接收到PreCommit请求后，如参与者成功的执行了事务操作，则返回Yes响应，进入最终commit阶段。一旦参与者中有向协调者发送了No响应，或因网络造成超时，协调者没有接到参与者的响应，协调者向所有参与者发送abort请求，参与者接受abort命令执行事务的中断。
+
+DoCommit::
+在前两个阶段中所有参与者的响应反馈均是YES后，协调者向参与者发送DoCommit命令正式提交事务，如协调者没有接收到参与者发送的ACK响应，会向所有参与者发送abort请求命令，执行事务的中断。
+
 3PC只是解决了在异常情况下2PC的阻塞问题，但导致一次提交要传递6条消息，延时很大。
 
 == TCC
 
 TCC是Try、Commit、Cancel的缩写，TCC在保证强一致性的同时，最大限度提高系统的可伸缩性与可用性。
 
+TCC（Try-Confirm-Cancel）又被称**补偿事务**，TCC 与 2PC 的思想很相似，事务处理流程也很相似，但 2PC 是应用于在 DB 层面，TCC 则可以理解为在应用层面的 2PC，是需要我们编写业务逻辑来实现。
+
+TCC 的核心思想是："针对每个操作都要注册一个与其对应的确认（Try）和补偿（Cancel）"。
+
 image::/images/overview-of-distributed-transaction/tcc.jpg[]
 
 一个完整的业务包含一组子业务，Try操作完成所有的子业务检查，预留必要的业务资源，实现与其他事务的隔离；Confirm使用Try阶段预留的业务资源真正执行业务，而且Confirm操作满足幂等性，以遍支持重试；Cancel操作释放Try阶段预留的业务资源，同样也满足幂等性。“一次完整的交易由一系列微交易的Try 操作组成，如果所有的Try 操作都成功，最终由微交易框架来统一Confirm，否则统一Cancel，从而实现了类似经典两阶段提交协议（2PC）的强一致性。”
 
 image::/images/overview-of-distributed-transaction/tcc-process.jpeg[]
+
+再来一个例子：
+
+image::/images/overview-of-distributed-transaction/tcc-example.png[]
 
 与2PC协议比较 ，TCC拥有以下特点：
 
@@ -64,7 +91,28 @@ image::/images/overview-of-distributed-transaction/tcc-process.jpeg[]
 * Try操作 兼备资源操作与准备能力 
 * Try操作可以灵活选择业务资源的锁定粒度，而不是锁住整个资源，提高了并发度
 
-当然，TCC需要较高的开发成本，每个子业务都需要有响应的comfirm、Cancel操作，即实现相应的补偿逻辑。
+=== 缺点
+
+* **应用侵入性强**：TCC由于基于在业务层面，至使每个操作都需要有 try、confirm、cancel三个接口。
+* **开发难度大**：代码开发量很大，要保证数据一致性 confirm 和 cancel 接口还必须实现幂等性。
+
+在 https://seata.io/zh-cn/[Seata] 中，根据两阶段行为模式的不同，我们将分支事务划分为 **Automatic (Branch) Transaction Mode** 和 **Manual (Branch) Transaction Mode**.
+
+AT 模式基于 *支持本地 ACID 事务* 的 **关系型数据库**：
+
+* 一阶段 prepare 行为：在本地事务中，一并提交业务数据更新和相应回滚日志记录。
+* 二阶段 commit 行为：马上成功结束，*自动* 异步批量清理回滚日志。
+* 二阶段 rollback 行为：通过回滚日志，*自动* 生成补偿操作，完成数据回滚。
+
+相应的，TCC 模式，不依赖于底层数据资源的事务支持：
+
+* 一阶段 prepare 行为：调用 *自定义* 的 prepare 逻辑。
+* 二阶段 commit 行为：调用 *自定义* 的 commit 逻辑。
+* 二阶段 rollback 行为：调用 *自定义* 的 rollback 逻辑。
+
+所谓 TCC 模式，是指支持把 自定义 的分支事务纳入到全局事务的管理中。
+
+AT 模式在一定程度上减少了代码量。
 
 == Best Effort
 
@@ -119,4 +167,5 @@ image::/images/overview-of-distributed-transaction/example.jpg[]
 . https://en.wikipedia.org/wiki/Two-phase_commit_protocol[Two-phase commit protocol - Wikipedia]
 . https://en.wikipedia.org/wiki/Three-phase_commit_protocol[Three-phase commit protocol - Wikipedia]
 . https://www.roncoo.com/view/20[微服务架构的分布式事务解决方案（Dubbo分布式事务处理）-龙果学院]
+. https://mp.weixin.qq.com/s/08ixco06hMw99365vDiM0w[面试被问分布式事务（2PC、3PC、TCC），这样解释没毛病！]
 
