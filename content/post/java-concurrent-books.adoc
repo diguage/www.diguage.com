@@ -1,0 +1,90 @@
+---
+title: "推荐几本 Java 并发编程的书"
+date: 2020-03-25T16:32:12+08:00
+draft: false
+keywords: ["Java","并发"]
+tags: ["Java","并发","设计","读书"]
+categories: ["Java"]
+
+weight: 1
+
+# You can also close(false) or open(true) something for this content.
+# P.S. comment can only be closed
+# comment: false
+# toc: true
+
+---
+
+最近，D瓜哥的一个小伙伴向我抱怨，Java 并发是个大坑，问我怎么看？我回答，当然是用眼睛看啊…
+
+D瓜哥觉得，想学好 Java 并发，最重要的还是啃书。幸运的是，Java 中还是有不少关于并发的优秀书籍可以看。正好利用这个机会，把看过的、个人认为还不错的书推荐一波。没有看过的就不多言了。
+
+== Java并发编程实战
+
+如果只选一本书来深入研究并发，那肯定是这本书。
+
+image::/images/java-concurrent-books/java-concurrency-in-practice.jpg[align=center,width=60%]
+
+https://book.douban.com/subject/10484692/[Java并发编程实战 (豆瓣)^] -- 这本书是必看的。JDK 中 JUC 就是这本书的作者们写的。虽然书名含有 `Java` 一次，但是，里面更多是原理性的东西，各种语言都适用。只是例子少了一些。这本书需要多读几遍。（据说翻译不行，推荐看英文版）
+
+放个英文版图片镇楼：
+
+image::/images/java-concurrent-books/java-concurrency-in-practice-en.jpg[align=center,width=60%]
+
+== Java并发编程的艺术
+
+image::/images/java-concurrent-books/art-of-java-concurrency-programming.jpg[align=center,width=60%]
+
+https://book.douban.com/subject/26591326/[Java并发编程的艺术 (豆瓣)^] -- 这本书也不错，讲了很多源码方面的内容，非常棒。另外，在讲解 Double Lock 方面的知识时，涉及了很多 Java Memory Model 方面的知识，可以先看看 https://book.douban.com/subject/34907497/[深入理解Java虚拟机（第3版）(豆瓣)^] 最后两章的内容，来提前补充一下这么方面的知识。
+
+== 实战Java高并发程序设计
+
+image::/images/java-concurrent-books/java-concurrency-in-action.jpg[align=center,width=60%]
+
+https://book.douban.com/subject/30358019/[实战Java高并发程序设计（第2版） (豆瓣)^] -- 这本书也不错，针对 Java 8 写的，Java 8 中的很多新知识都有涉猎，例子也很全面。广度和深度，得到了兼顾，非常棒。
+
+== Java编程思想
+
+image::/images/java-concurrent-books/thinking-in-java.jpg[align=center,width=60%]
+
+https://book.douban.com/subject/2130190/[Java编程思想（第4版）(豆瓣)^] -- 虽然这本书已经出来十余年了，但是依然经典。第 21 章 并发，用大量的例子和陈述来介绍并发。非常棒。美中不足，是针对 Java 5 编写的，现在已经 Java 8 了。不过，作者又出了一本书，可以理解成升级版。
+
+== On Java 8
+
+image::/images/java-concurrent-books/on-java-8.jpg[align=center,width=60%]
+
+https://book.douban.com/subject/30217317/[On Java 8 (豆瓣)^] -- 这是《Java编程思想》的姊妹版和升级版。Bruce Eckel 的写书功底和对语言的理解毋庸置疑。目前中文版还没有正式版，网上已经有热心网友做起来搬运工，感兴趣自行 Google。
+
+== Java 9 并发编程实战
+
+image::/images/java-concurrent-books/java-concurrency-cookbook.jpg[align=center,width=60%]
+
+https://book.douban.com/subject/34790228/[Java 9 并发编程实战 (豆瓣)^] -- 入门的话，这本书是不错的选择。每个特性一个例子，整本书大概 80% 的篇幅都是代码。所以，一定也不用担心有读书压力。
+
+== Effective Java
+
+image::/images/java-concurrent-books/effective-java.jpg[align=center,width=60%]
+
+https://book.douban.com/subject/30412517/[Effective Java中文版（第3版）(豆瓣)^] -- 中关于并发的内容也非常精彩，让我学会了什么是数据不变性？为什么不可变的数据是安全的？为什么方法中的变量也是线程安全的？这也是每一个 Java 程序员的必读书。
+
+另外， Google Guava 也是出自这本书的作者之手，可以说是把这本书的思想在实践中应用起来的典范。也一并推荐！
+
+== 深入理解Java虚拟机
+
+
+image::/images/java-concurrent-books/understanding-jvm.jpg[align=center,width=60%]
+
+https://book.douban.com/subject/34907497/[深入理解Java虚拟机（第3版）(豆瓣)^] -- 这本书最后两章内容，集中介绍了在 Java 虚拟机层面是如何支持并发，以及对并发做了哪些 优化的。重点关注的地方还有对于 Java Memory Model 的介绍。
+
+
+== 阅读顺序
+
+最后，说明一下看书的前后顺序吧：
+
+. 《Java 9 并发编程实战》 -- 如果已经入门，可以跳过。
+. 《Java 编程思想（第4版）》或 《On Java 8》 -- 关注并发，只需要看第21章。
+. 《实战 Java 高并发程序设计（第2版）》
+. 《Effective Java》
+. 《Java 并发编程实战》
+. 《Java 并发编程的艺术》
+. 《深入理解 Java 虚拟机》 -- 如何关注并发，可以只看最后两章内容。
