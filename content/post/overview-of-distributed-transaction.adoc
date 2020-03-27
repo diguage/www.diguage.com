@@ -96,7 +96,7 @@ image::/images/overview-of-distributed-transaction/tcc-example.png[]
 * **应用侵入性强**：TCC由于基于在业务层面，至使每个操作都需要有 try、confirm、cancel三个接口。
 * **开发难度大**：代码开发量很大，要保证数据一致性 confirm 和 cancel 接口还必须实现幂等性。
 
-在 https://seata.io/zh-cn/[Seata] 中，根据两阶段行为模式的不同，我们将分支事务划分为 **Automatic (Branch) Transaction Mode** 和 **Manual (Branch) Transaction Mode**.
+在 https://seata.io/zh-cn/[Seata^] 中，根据两阶段行为模式的不同，我们将分支事务划分为 **Automatic (Branch) Transaction Mode** 和 **Manual (Branch) Transaction Mode**.
 
 AT 模式基于 *支持本地 ACID 事务* 的 **关系型数据库**：
 
@@ -161,11 +161,11 @@ image::/images/overview-of-distributed-transaction/example.jpg[]
 
 == 参考资料
 
-. https://www.cnblogs.com/xybaby/p/7465816.html[从银行转账失败到分布式事务：总结与思考 - xybaby - 博客园]
-. https://www.cnblogs.com/xybaby/p/7756163.html[再论分布式事务：从理论到实践 - xybaby - 博客园]
-. https://segmentfault.com/a/1190000005969526[说说分布式事务(三) - iMouseWu - SegmentFault 思否]
-. https://en.wikipedia.org/wiki/Two-phase_commit_protocol[Two-phase commit protocol - Wikipedia]
-. https://en.wikipedia.org/wiki/Three-phase_commit_protocol[Three-phase commit protocol - Wikipedia]
-. https://www.roncoo.com/view/20[微服务架构的分布式事务解决方案（Dubbo分布式事务处理）-龙果学院]
-. https://mp.weixin.qq.com/s/08ixco06hMw99365vDiM0w[面试被问分布式事务（2PC、3PC、TCC），这样解释没毛病！]
+. https://www.cnblogs.com/xybaby/p/7465816.html[从银行转账失败到分布式事务：总结与思考 - xybaby - 博客园^]
+. https://www.cnblogs.com/xybaby/p/7756163.html[再论分布式事务：从理论到实践 - xybaby - 博客园^]
+. https://segmentfault.com/a/1190000005969526[说说分布式事务(三) - iMouseWu - SegmentFault 思否^]
+. https://en.wikipedia.org/wiki/Two-phase_commit_protocol[Two-phase commit protocol - Wikipedia^]
+. https://en.wikipedia.org/wiki/Three-phase_commit_protocol[Three-phase commit protocol - Wikipedia^]
+. https://www.roncoo.com/view/20[微服务架构的分布式事务解决方案（Dubbo分布式事务处理）-龙果学院^]
+. https://mp.weixin.qq.com/s/08ixco06hMw99365vDiM0w[面试被问分布式事务（2PC、3PC、TCC），这样解释没毛病！^]
 

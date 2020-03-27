@@ -27,32 +27,32 @@ weight: 1
 . 学好英语。
 .. 回译两遍《新概念英语·二》和《新概念英语·三》。每天一篇。
 .. 背诵《新概念英语·二》和《新概念英语·三》。
-.. 阅读 https://book.douban.com/subject/25977798/[《Word Power Made Easy》]。
-.. 阅读 https://book.douban.com/subject/4759840/[《Merriam-Webster's Vocabulary Builder》]。
-.. 阅读 https://book.douban.com/subject/6512188/[《Steve Jobs》]。
-.. 阅读 https://book.douban.com/subject/1700474/[《The Little Prince》]。
-.. 阅读 https://book.douban.com/subject/2588506/[《Flipped》]。
-.. 阅读 https://book.douban.com/subject/1424313/[《Animal Farm》]。
+.. 阅读 https://book.douban.com/subject/25977798/[《Word Power Made Easy》^]。
+.. 阅读 https://book.douban.com/subject/4759840/[《Merriam-Webster's Vocabulary Builder》^]。
+.. 阅读 https://book.douban.com/subject/6512188/[《Steve Jobs》^]。
+.. 阅读 https://book.douban.com/subject/1700474/[《The Little Prince》^]。
+.. 阅读 https://book.douban.com/subject/2588506/[《Flipped》^]。
+.. 阅读 https://book.douban.com/subject/1424313/[《Animal Farm》^]。
 .. 阅读《Harry Potter》。
-... https://book.douban.com/subject/26260838/[《Harry Potter and the Philosopher's Stone》]。
-... https://book.douban.com/subject/26435068/[《Harry Potter and the Chamber of Secrets》]。
-... https://book.douban.com/subject/26587557/[《Harry Potter and the Prisoner of Azkaban》]。
-... https://book.douban.com/subject/26613320/[《Harry Potter and the Goblet of Fire》]。
-... https://book.douban.com/subject/26821023/[《Harry Potter and the Order of the Phoenix》]。
-... https://book.douban.com/subject/26887355/[《Harry Potter and the Half-Blood Prince》]。
-... https://book.douban.com/subject/26913883/[《Harry Potter and the Deathly Hallows》]。
-. 花四个月到半年时间，完成 https://nju-ics.gitbooks.io/ics2018-programming-assignment/content/[ICS2018 Programming Assignment]。
-.. 通读一遍 https://book.douban.com/subject/4822685/[《编码》]。
-.. 简读一遍 https://book.douban.com/subject/4279678/[《C语言现代程序设计·现代方法（第二版）》]，不会再回头查。
-.. 根据实验进展，熟读 https://book.douban.com/subject/26912767/[《深入理解计算机系统（第三版）》] 相应章节，并完成课后习题。
-.. 通读一遍 https://book.douban.com/subject/27000879/[《深入理解计算机系统（英文版·第三版）》]。
-.. 选读 https://book.douban.com/subject/27096665/[《现代操作系统（第四版）》]。
-.. 选读 https://book.douban.com/subject/30297919/[《操作系统概念（第九版）》]。
+... https://book.douban.com/subject/26260838/[《Harry Potter and the Philosopher's Stone》^]。
+... https://book.douban.com/subject/26435068/[《Harry Potter and the Chamber of Secrets》^]。
+... https://book.douban.com/subject/26587557/[《Harry Potter and the Prisoner of Azkaban》^]。
+... https://book.douban.com/subject/26613320/[《Harry Potter and the Goblet of Fire》^]。
+... https://book.douban.com/subject/26821023/[《Harry Potter and the Order of the Phoenix》^]。
+... https://book.douban.com/subject/26887355/[《Harry Potter and the Half-Blood Prince》^]。
+... https://book.douban.com/subject/26913883/[《Harry Potter and the Deathly Hallows》^]。
+. 花四个月到半年时间，完成 https://nju-ics.gitbooks.io/ics2018-programming-assignment/content/[ICS2018 Programming Assignment^]。
+.. 通读一遍 https://book.douban.com/subject/4822685/[《编码》^]。
+.. 简读一遍 https://book.douban.com/subject/4279678/[《C语言现代程序设计·现代方法（第二版）》^]，不会再回头查。
+.. 根据实验进展，熟读 https://book.douban.com/subject/26912767/[《深入理解计算机系统（第三版）》^] 相应章节，并完成课后习题。
+.. 通读一遍 https://book.douban.com/subject/27000879/[《深入理解计算机系统（英文版·第三版）》^]。
+.. 选读 https://book.douban.com/subject/27096665/[《现代操作系统（第四版）》^]。
+.. 选读 https://book.douban.com/subject/30297919/[《操作系统概念（第九版）》^]。
 .. 每个周末拿出一天时间来查资料、做实验。
 .. 争取每天拿出两个小时时间来做。
 . 通读两遍 Docker 和 Kubernetes 文档，熟练掌握 Docker 和 Kubernetes。
-.. 通读 https://book.douban.com/subject/26859123/[《Go程序设计语言（英文版）》]。
-.. 通读 https://book.douban.com/subject/27016236/[《Go并发编程实战（第2版）》]。
+.. 通读 https://book.douban.com/subject/26859123/[《Go程序设计语言（英文版）》^]。
+.. 通读 https://book.douban.com/subject/27016236/[《Go并发编程实战（第2版）》^]。
 .. 阅读 Go 语言官方文档。
 .. 第一遍通读官方文档，实验同时跟进，并做学习笔记：脑图 + 文字。
 .. 造轮子： Docker 和 Kubernetes。

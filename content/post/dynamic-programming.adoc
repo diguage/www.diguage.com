@@ -114,8 +114,8 @@ TIP: 一个更通用的备忘方法是使用散列技术，以子问题参数为
 
 == 参考资料
 
-. https://book.douban.com/subject/20432061/[算法导论（原书第3版）]
-. https://itnext.io/dynamic-programming-vs-divide-and-conquer-2fea680becbe[Dynamic Programming vs Divide-and-Conquer - ITNEXT]
-. https://blog.pramp.com/how-to-solve-any-dynamic-programming-problem-603b6fbbd771[How to Solve Any Dynamic Programming Problem - Pramp Blog | Coding Interview & Job Search Resources for Developers]
-. https://labuladong.gitbook.io/algo/dong-tai-gui-hua-xi-lie/dong-tai-gui-hua-xiang-jie-jin-jie[动态规划详解 - labuladong]
-. https://www.kancloud.cn/kancloud/pack/70124[背包问题九讲 · 看云]
+. https://book.douban.com/subject/20432061/[算法导论（原书第3版）^]
+. https://itnext.io/dynamic-programming-vs-divide-and-conquer-2fea680becbe[Dynamic Programming vs Divide-and-Conquer - ITNEXT^]
+. https://blog.pramp.com/how-to-solve-any-dynamic-programming-problem-603b6fbbd771[How to Solve Any Dynamic Programming Problem - Pramp Blog | Coding Interview & Job Search Resources for Developers^]
+. https://labuladong.gitbook.io/algo/dong-tai-gui-hua-xi-lie/dong-tai-gui-hua-xiang-jie-jin-jie[动态规划详解 - labuladong^]
+. https://www.kancloud.cn/kancloud/pack/70124[背包问题九讲 · 看云^]

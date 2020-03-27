@@ -149,7 +149,7 @@ sstable是bigtable数据物理存储的基本单位。在sstable内部，一个s
 
 写操作较为简单，写到memtable就可以了。而对于读操作，则需要merge memtable与SSTable中的数据。
 
-SSTable 的内容可以在 https://www.diguage.com/post/designing-data-intensive-applications-storage-and-retrieval/[Designing Data-Intensive Applications 之 Storage and Retrieval] 中有更详细介绍。
+SSTable 的内容可以在 https://www.diguage.com/post/designing-data-intensive-applications-storage-and-retrieval/[Designing Data-Intensive Applications 之 Storage and Retrieval^] 中有更详细介绍。
 
 ****
 底层数据存储在 GFS 上，那么 Bigtable 来自己冗余数据吗？
@@ -185,7 +185,7 @@ Simple is Better Than Complex.
 
 == 参考资料
 
-. https://www.cnblogs.com/xybaby/p/8878054.html[典型分布式系统分析：MapReduce - xybaby - 博客园]
-. https://www.cnblogs.com/xybaby/p/8967424.html[典型分布式系统分析: GFS - xybaby - 博客园]
-. https://kb.cnblogs.com/page/174130/[经典论文翻译导读之《Google File System》_知识库_博客园]
-. https://www.cnblogs.com/xybaby/p/9096748.html[典型分布式系统分析：Bigtable - xybaby - 博客园]
+. https://www.cnblogs.com/xybaby/p/8878054.html[典型分布式系统分析：MapReduce - xybaby - 博客园^]
+. https://www.cnblogs.com/xybaby/p/8967424.html[典型分布式系统分析: GFS - xybaby - 博客园^]
+. https://kb.cnblogs.com/page/174130/[经典论文翻译导读之《Google File System》_知识库_博客园^]
+. https://www.cnblogs.com/xybaby/p/9096748.html[典型分布式系统分析：Bigtable - xybaby - 博客园^]

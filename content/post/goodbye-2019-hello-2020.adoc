@@ -16,7 +16,7 @@ weight: 1
 
 == 我的 2019
 
-在 2018 年底，我写了 https://www.diguage.com/post/2019-plan/[“2019 年度计划”] 对 2019 年做了一个简单的规划。2019 年如白驹过隙，稍纵即逝。又到一年年底，现在对这一年做一个总结。
+在 2018 年底，我写了 https://www.diguage.com/post/2019-plan/[“2019 年度计划”^] 对 2019 年做了一个简单的规划。2019 年如白驹过隙，稍纵即逝。又到一年年底，现在对这一年做一个总结。
 
 虽然这一年，我一直在意有这么一个计划，但是从来没有认真总结反思过。为了回顾一下，刚刚又打开计划去看，生活才发现过得如此苍白无力。抛开计划，按时间顺序，从头到尾，随意来说吧。
 
@@ -305,7 +305,7 @@ image::/images/goodbye-2019-hello-2020/fengye-2.jpg[]
 
 时间是最好的疗伤药。无论我多么爱她，无论多么不愿意，我只能接受现实。我还还有理想要去奋斗，我还有自我价值要去实现，我还有家人需要照顾。转眼间就到了 2019 年，我告诉自己必须振作起来，收拾行囊，重行出发。
 
-大概到今年九月份，我在贺嘉老师的公众号中看到了 https://mp.weixin.qq.com/s/3GKq46kYFUU6WjiGqbujog[“上亿人围观郑爽遭遇冷暴力：只有弱者，才会选择冷暴力”] 这篇文章，再反思自己，我才发现，我自己犯了一个多么大的错误。她跟我争吵，跟我冷战，也许只是想获取更多的关心和爱护，而我就像一个傻子一样，也以冷战回应。曾经她是那么爱我，可惜我辜负了她。心里一直有万分的抱歉，由衷地说一声对不起。
+大概到今年九月份，我在贺嘉老师的公众号中看到了 https://mp.weixin.qq.com/s/3GKq46kYFUU6WjiGqbujog[“上亿人围观郑爽遭遇冷暴力：只有弱者，才会选择冷暴力”^] 这篇文章，再反思自己，我才发现，我自己犯了一个多么大的错误。她跟我争吵，跟我冷战，也许只是想获取更多的关心和爱护，而我就像一个傻子一样，也以冷战回应。曾经她是那么爱我，可惜我辜负了她。心里一直有万分的抱歉，由衷地说一声对不起。
 
 从看了这篇文章以后，我的心门仿佛被打开了一样，会更多地关注和反思自己的不足，防止再次伤害到身边的朋友。开始去读一些关于沟通和个人修身的书。希望自己能尽早克服问题，完善自己。
 
@@ -343,7 +343,7 @@ image::/images/goodbye-2019-hello-2020/fengye-2.jpg[]
 
 今年完成了两件小事。
 
-从今年开始，每年六一儿童节当天（我关注孩子，相信孩子是未来，所以特意选在儿童节当天），向 http://www.hyfoundation.com/[北京海鹰脊柱健康公益基金会] 捐款一千元。这个捐助将持续十年。由于要实施时，已经错误六一儿童节，今年是在 7 月 22 日捐助的。
+从今年开始，每年六一儿童节当天（我关注孩子，相信孩子是未来，所以特意选在儿童节当天），向 http://www.hyfoundation.com/[北京海鹰脊柱健康公益基金会^] 捐款一千元。这个捐助将持续十年。由于要实施时，已经错误六一儿童节，今年是在 7 月 22 日捐助的。
 
 12 月 7 日在朋友圈看到有朋友分享自己登记器官捐献登记记录。这也是我一直以来的一个愿望。
 
@@ -458,9 +458,9 @@ image::/images/goodbye-2019-hello-2020/qiguanjuanxian.jpg[]
 
 准备认真上几门网课，列表如下：
 
-. https://www.bilibili.com/video/av9994383[Model Thinking 模型思维 (双语字幕)]
-. https://www.bilibili.com/video/av9781864[【哈佛大学公开课】幸福课（积极心理学）]
-. http://open.163.com/special/justice/[哈佛大学公开课：公正-该如何做是好？]
+. https://www.bilibili.com/video/av9994383[Model Thinking 模型思维 (双语字幕)^]
+. https://www.bilibili.com/video/av9781864[【哈佛大学公开课】幸福课（积极心理学）^]
+. http://open.163.com/special/justice/[哈佛大学公开课：公正-该如何做是好？^]
 
 === 个人成长
 
@@ -501,12 +501,12 @@ image::/images/goodbye-2019-hello-2020/qiguanjuanxian.jpg[]
 .. 分布式存储
 .. 通信
 .. 时钟同步
-.. https://www.cs.purdue.edu/homes/clifton/cs603/[Advanced Topics in Distributed Systems]
-.. https://www.freecodecamp.org/news/a-thorough-introduction-to-distributed-systems-3b91562c9b3c/[A Thorough Introduction to Distributed Systems]
+.. https://www.cs.purdue.edu/homes/clifton/cs603/[Advanced Topics in Distributed Systems^]
+.. https://www.freecodecamp.org/news/a-thorough-introduction-to-distributed-systems-3b91562c9b3c/[A Thorough Introduction to Distributed Systems^]
 
 这里有一个问题需要关注：如何把技术和工作结合起来？如何把学到的技术在工作中实际使用起来？这是一个值得思考的问题！要学以致用，而不是仅仅学些屠龙之术！
 
-https://leetcode.com/[LeetCode] 刷题不能停！新的一年，每天坚持刷一道题，一周刷五道题。
+https://leetcode.com/[LeetCode^] 刷题不能停！新的一年，每天坚持刷一道题，一周刷五道题。
 
 以前学东西，学过之后总是忘，一个东西要反复看。反思一下，主要是没有沉淀，没有把知识重新再加工输出出来。所以，今年学东西，务必要沉淀下来，把知识再加工后，输出出来。
 
@@ -539,7 +539,7 @@ https://leetcode.com/[LeetCode] 刷题不能停！新的一年，每天坚持刷
 
 ==== 慈善
 
-今年六一儿童节，继续向 http://www.hyfoundation.com/[北京海鹰脊柱健康公益基金会] 捐款一千元。
+今年六一儿童节，继续向 http://www.hyfoundation.com/[北京海鹰脊柱健康公益基金会^] 捐款一千元。
 
 明年计划每个季度拿出一天时间去做一些慈善活动，去接触那些需要帮助的人，了解他们的困境，力所能及地帮助他们。
 
