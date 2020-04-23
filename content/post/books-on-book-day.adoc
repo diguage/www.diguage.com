@@ -1,0 +1,151 @@
+---
+title: "在世界读书日，推荐书单"
+date: 2020-04-23T20:15:14+08:00
+draft: false
+keywords: ["Java","并发"]
+tags: ["个人提升","心理学","架构","方法论","分布式","工作方法","微服务","数据库"]
+categories: ["个人成长","方法论"]
+
+weight: 1
+
+# You can also close(false) or open(true) something for this content.
+# P.S. comment can only be closed
+# comment: false
+# toc: true
+
+---
+
+今天是世界读书日，各种人都在推荐书单。D瓜哥也凑个热闹，水一篇文章，推荐一些书籍。
+
+在前一段时间，D瓜哥已经写了一个书单： https://www.diguage.com/post/java-concurrent-books/[推荐几本 Java 并发编程的书]。为了避免重复，上一个书单中推荐过的书籍，这次就不再重复推荐了。
+
+每年十二个月，D瓜哥就推荐 12 本书，每个月读一本想必压力也不算大。
+
+
+== https://book.douban.com/subject/1013208/[如何阅读一本书？^]
+
+image::/images/books-on-book-day/how-to-read-a-book.jpg[align=center,width=60%]
+
+D瓜哥在年初的时候，刚刚再次重读了这本书。而且，还写了一篇读书笔记： https://www.diguage.com/post/how-to-read-a-book/[《如何阅读一本书？》之读书笔记]。
+
+如果喜欢读书，那么这本书绝对应该是首先阅读的第一本书。一句话总结一下：**用检视阅读的方法来快速筛选出你关注主题的书籍；用分析阅读的方法来吸收一本书的精华；用主题阅读的办法来对多本同一主题的书去伪存真，加工再输出。**
+
+
+== https://book.douban.com/subject/27609489/[远见^]
+
+image::/images/books-on-book-day/the-long-view.jpg[align=center,width=60%]
+
+D瓜哥在去年年末写的年终总结 https://www.diguage.com/post/goodbye-2019-hello-2020/[“告别 2019，迎接 2020”] 中提到了这本书。考虑这本书的实用性和对自身发展的指导意义，所以决定再次推荐这本书。
+
+在这本书中，作者将职业生涯分为：强势开局、聚焦长板和实现持续的影响力三个阶段。
+
+在强势开局阶段，就像要开始一个汽车拉力赛，要努力加添燃料。
+
+在聚焦长板阶段，要努力提高自己的核心竞争力，创造自己的制高点。
+
+在实现持续的影响力阶段，则要优化长尾效应，让自己持续保持领先。
+
+对于职业生涯有追求的小伙伴，尤其是在读大学生，一定要去尽早认真读一读这本书。
+
+
+== https://book.douban.com/subject/10785583/[思考，快与慢^]
+
+image::/images/books-on-book-day/thinking-fast-and-slow.jpg[align=center,width=60%]
+
+这是一本有关心理学方面的书籍。作者丹尼尔•卡尼曼因其与阿莫斯•特沃斯基在决策制定上的研究而荣获了 2002 年度的诺贝尔经济学奖。所以，这本书质量上肯定是有保证的。
+
+这本书主要是介绍认知心理学的。作者在书中，把人的认知分为系统一和系统二。系统一是那种不需要思考的，已经固化在我们基因中的反应，比如看见危险会跑路等；而系统二，则是需要深入思考才能有所收获的事情，比如在新税法下，计算个人应该缴纳的个人所得税。两个系统相辅相成，时刻影响着我们的生活，但我们却有些熟视无睹。
+
+
+== https://book.douban.com/subject/26831789/[穷查理宝典^]
+
+image::/images/books-on-book-day/poor-charlies-almanack.jpg[align=center,width=60%]
+
+提起查理·芒格，也许有些人不知道是谁。（看这篇文章的读者估计都了解）但是，他的搭档估计是人尽皆知，那就是世界股神沃伦·巴菲特。
+
+虽然这本书不是查理·芒格书写的，里面的精华部分，却都是查理的演讲稿。通过这些演讲，你可以看到一个睿智的老人，如何在循循善诱地向你传授他的思维方法。查理给我们介绍了他的思维模型：逆向思维，多元思维模型，打造自己的核心圈，避免嫉妒效应，内部积分卡（用我们古人的话说就是反求诸己）等等。
+
+
+== https://book.douban.com/subject/2328458/[社会性动物^]
+
+image::/images/books-on-book-day/the-social-animal.jpg[align=center,width=60%]
+
+D瓜哥是去年开始读这本书的，非常抱歉目前还没有读完。
+
+这本书是讲述社会心理学的，讲述在这个社会中，人与人之间是如何相互影响的。举一个典型的例子：你思考过吗，什么样的广告最能打动你吗？
+
+
+== https://book.douban.com/subject/33385402/[事实^]
+
+image::/images/books-on-book-day/factfulness.jpg[align=center,width=60%]
+
+比尔·盖茨也推荐了这本书。我也是最近刚刚开始读这本书。还没有读完。就不做过多评价了。用一个问题，勾引一下你的兴趣：
+
+问题：在全世界所有的低收入国家里面，有多少百分比的女孩能够上完小学？
+
+选项：A. 20%  B. 40%  C. 60%
+
+想知道答案，就快点去读这本书吧。
+
+
+== https://book.douban.com/subject/26953606/[人类简史^]
+
+image::/images/books-on-book-day/a-brief-history-of-humankind.jpg[align=center,width=60%]
+
+坦白讲，这本书D瓜哥才读了一半。但是，作者最近发表的一篇文章： http://www.ruanyifeng.com/blog/2020/03/the-world-after-coronavirus.html[尤瓦尔·赫拉利《冠状病毒之后的世界》]，一个史学家站在历史发展的角度去看待疫情对世界发展的影响。由此可对赫拉利的思想窥得一斑。那么，如果感兴趣，他的成名大作《人类简史》就不得不读了。
+
+最近因为疫情影响，在网上看到各种五毛的无脑言论，怼天怼地，仿佛中国要征服世界，征服宇宙一样，真是让人呵呵…
+
+未来几十年时间里，中国未来寻求自身发展，还需要融入到整个世界经济中，在全世界产业链中，力争上游，占领高附加值的产业，比如芯片，5G，大飞机等等。怼这个，怼那个，只能让自己像二战时期的纳粹德国和日本，让自己四面树敌，最后被全世界群殴。
+
+
+== https://book.douban.com/subject/33477229/[上帝掷骰子吗？^]
+
+image::/images/books-on-book-day/did-god-roll-the-dice.jpg[align=center,width=60%]
+
+这是D瓜哥看过的，最好看的科普书，没有之一。
+
+你知道爱因斯坦因为发表相对论，革了物理学的命；但是你知道吗，爱因斯坦也因为自己的顽固守旧阻碍过量子物理的发展。你知道普朗克首次提出量子的概念；但是，你知道吗，普朗克却是非常坚决地反对量子物理的发展。你了解吗薛定谔的猫到底是怎么回事吗？这些料都可以在这本书中读到。
+
+作者通过各种各样的故事展示了量子物理学从无到有，颠覆整个经典物理，然后又重塑整个现代物理的过程。整个故事可谓波澜壮阔，跌宕起伏。
+
+
+== https://book.douban.com/subject/35006892/[程序员修炼之道^]
+
+image::/images/books-on-book-day/the-pragmatic-programmer.jpg[align=center,width=60%]
+
+虽然这本书的第一版英文评注版在D瓜哥的书架上躺了好长时间了，但是D瓜哥一直没有临幸她。最近出第二版了，还是云风翻译地，就果断入手了一本。读了三分之一了。
+
+这本书就是讲述怎么做一个务实的程序员，怎么做一个务实的项目？前几天，书籍刚到手，D瓜哥就水了一篇文章来讲述里面的内容，欢迎移步： https://www.diguage.com/post/the-pragmatic-programmer/[《程序员修炼之道》之提示全集]。
+
+
+== https://book.douban.com/subject/2334288/[大话设计模式^]
+
+image::/images/books-on-book-day/big-talk-design-patterns.jpg[align=center,width=60%]
+
+这是D瓜哥推荐的唯一一本国人写的计算机类图书。作者通过一个一个对话故事，循序渐进地推演出每一种设计模式。真是非常浅显易懂。让人百读不厌。类似的书籍还有， https://book.douban.com/subject/2243615/[Head First 设计模式（中文版） (豆瓣)^]。不过，我个人更喜欢《大话设计模式》。
+
+
+== https://book.douban.com/subject/33425123/[微服务架构设计模式^]
+
+image::/images/books-on-book-day/microservices-patterns.jpg[align=center,width=60%]
+
+这本书是去年刚刚出版的书，在如今微服务如火如荼的形势下，可谓非常赶时髦。这本书针对微服务架构中出现的问题，比如服务如何拆分，分布式事务如何实现等等，一一给出了详细而且系统的解决方案。但是，这本书并不是快餐书，是一本值得反复阅读的书。
+
+
+== https://book.douban.com/subject/27154352/[Designing Data-Intensive Applications^]
+
+image::/images/books-on-book-day/designing-data-intensive-applications.jpg[align=center,width=60%]
+
+这本书可谓一本神书！只看第一部分就能值回书价了。作者是工程和理论的双料王，实力牛叉，书的思路清晰。D瓜哥目前只看完的第一部分，就拿第一部分来实例推荐这本书吧：书的第一部分主要解决的问题是：如何存数据，如何取数据？作者从一个文本文件开始，存的快，读得慢；然后到 B+树，读得快了，但是写的慢；最后到 LSM 结构，终于写的也快了。逐步推进，提出问题，解决问题，然后再发现问题，螺旋上升地演绎数据存储系统的发展。这个思路非常棒！
+
+
+还有很多好书，未能入选，也简单推荐几本： https://book.douban.com/subject/25809012/[爱的博弈 (豆瓣)^]， https://book.douban.com/subject/26711347/[乌合之众 (豆瓣)^] 和 https://book.douban.com/subject/26985299/[小岛经济学 (豆瓣)^]。
+
+做人文、社科相关工作的童鞋，推荐读一读《事实》和《上帝上帝掷股子吗？》。去了解一下理工科基于数据和实证试验的严谨科学思想。
+
+做理工科相关工作的童鞋，推荐读一读《思考 快与慢》和《社会性动物》。去体会一下思维这个看不见、摸不着的东西对人类行为的影响。
+
+跨出自己学科，去探索一个全新的领域，说不定有意外的惊喜，😆
+
+你有什么好书？欢迎留言推荐…
