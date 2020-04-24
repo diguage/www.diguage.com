@@ -1,0 +1,53 @@
+---
+title: "全局唯一 ID 生成方案"
+date: 2020-03-09T14:47:27+08:00
+draft: false
+tags: ["分布式","算法"]
+categories: ["分布式"]
+
+weight: 1
+// toc: true
+
+# You can also close(false) or open(true) something for this content.
+# P.S. comment can only be closed
+# comment: false
+# toc: true
+
+---
+
+image::/images/global-unique-identifier/guid-mindmap.jpeg[align="center"]
+
+== UUID
+== Flickr Ticket Servers
+
+https://code.flickr.net/2010/02/08/ticket-servers-distributed-unique-primary-keys-on-the-cheap/[Ticket Servers: Distributed Unique Primary Keys on the Cheap | code.flickr.com]
+
+== 推特 Snowflake
+== 美团 Leaf
+
+https://github.com/Meituan-Dianping/Leaf[Meituan-Dianping/Leaf: Distributed ID Generate Service]
+
+== 百度 UID
+
+https://github.com/baidu/uid-generator[baidu/uid-generator: UniqueID generator]
+
+== 滴滴 TinyID
+
+https://github.com/didi/tinyid[didi/tinyid: ID Generator id生成器 分布式id生成系统，简单易用、高性能、高可用的id生成系统]
+
+== MongoDB ObjectID
+
+https://docs.mongodb.com/manual/reference/method/ObjectId/[ObjectId — MongoDB Manual]
+
+
+== 参考资料
+
+. https://tech.meituan.com/2017/04/21/mt-leaf.html[Leaf——美团点评分布式ID生成系统 - 美团技术团队]
+. https://tech.meituan.com/2019/03/07/open-source-project-leaf.html[Leaf：美团分布式ID生成服务开源 - 美团技术团队]
+. https://github.com/Meituan-Dianping/Leaf[Meituan-Dianping/Leaf: Distributed ID Generate Service]
+. https://github.com/baidu/uid-generator[baidu/uid-generator: UniqueID generator]
+. https://github.com/didi/tinyid[didi/tinyid: ID Generator id生成器 分布式id生成系统，简单易用、高性能、高可用的id生成系统]
+. https://colobu.com/2020/02/21/ID-generator/?hmsr=toutiao.io&utm_medium=toutiao.io&utm_source=toutiao.io[分布式ID生成方案 | 鸟窝]
+
+
+

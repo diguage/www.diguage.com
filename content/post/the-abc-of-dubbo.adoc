@@ -1,0 +1,170 @@
+---
+title: "Dubbo 入门"
+date: 2020-03-19T14:53:48+08:00
+draft: false
+tags: ["分布式","微服务"]
+categories: ["分布式","微服务"]
+
+weight: 1
+// toc: true
+
+# You can also close(false) or open(true) something for this content.
+# P.S. comment can only be closed
+# comment: false
+# toc: true
+
+---
+
+== 架构
+
+image::/images/the-abc-of-dubbo/dubbo-architecture-roadmap.jpg[]
+
+. 单体应用架构
+. 垂直应用架构
+. 分布式服务架构
+. 流动计算架构 -- 个人觉得称为自适应架构更容易理解
+
+
+image::/images/the-abc-of-dubbo/dubbo-service-governance.jpg[]
+
+
+. 硬件负载均衡器的单点压力变大
+.. 服务注册中心
+.. 服务发现
+.. 软负载均衡
+. 服务依赖复杂，组价依赖图谱
+. 服务调用统计，容量评估
+
+image::/images/the-abc-of-dubbo/dubbo-architecture.jpg[]
+
+. 服务提供方
+. 服务消费方
+. 注册中心
+. 监控中心
+. 服务运行容器
+
+image::/images/the-abc-of-dubbo/dubbo-architecture-future.jpg[]
+
+
+结合监控以及自动部署，升级为流动计算架构。
+
+NOTE: 个人觉得，这块未来会被 Kubernetes 接管。
+
+自动负载策略
+
+. Random LoadBalance
+. RoundRobin LoadBalance
+. LeastActive LoadBalance
+. ConsistentHash LoadBalance -- https://en.wikipedia.org/wiki/Consistent_hashing[Consistent Hashing]
+
+
+=== 线程模型
+
+如果事件处理的逻辑能迅速完成，并且不会发起新的 IO 请求，比如只是在内存中记个标识，则直接在 IO 线程上处理更快，因为减少了线程池调度。
+
+但如果事件处理逻辑较慢，或者需要发起新的 IO 请求，比如需要查询数据库，则必须派发到线程池，否则 IO 线程阻塞，将导致不能接收其它请求。
+
+如果用 IO 线程处理事件，又在事件处理过程中发起新的 IO 请求，比如在连接事件中发起登录请求，会报“可能引发死锁”异常，但不会真死锁。
+
+
+image::/images/the-abc-of-dubbo/dubbo-protocol.jpg[]
+
+==== Dispatcher
+
+* `all` 所有消息都派发到线程池，包括请求，响应，连接事件，断开事件，心跳等。
+* `direct` 所有消息都不派发到线程池，全部在 IO 线程上直接执行。
+* `message` 只有请求响应消息派发到线程池，其它连接断开事件，心跳等消息，直接在 IO 线程上执行。
+* `execution` 只有请求消息派发到线程池，不含响应，响应和其它连接断开事件，心跳等消息，直接在 IO 线程上执行。
+* `connection` 在 IO 线程上，将连接断开事件放入队列，有序逐个执行，其它消息派发到线程池。
+
+
+==== ThreadPool
+
+* `fixed` 固定大小线程池，启动时建立线程，不关闭，一直持有。(缺省)
+* `cached` 缓存线程池，空闲一分钟自动删除，需要时重建。
+* `limited` 可伸缩线程池，但池中的线程数只会增长不会收缩。只增长不收缩的目的是为了避免收缩时突然来了大流量引起的性能问题。
+* `eager` 优先创建Worker线程池。在任务数量大于corePoolSize但是小于maximumPoolSize时，优先创建Worker来处理任务。当任务数量大于maximumPoolSize时，将任务放入阻塞队列中。阻塞队列充满时抛出RejectedExecutionException。
+
+
+
+. 多注册中心注册
+. 不同服务使用不同注册中心
+. 多注册中心引用
+. 分组聚合
+
+
+image::/images/the-abc-of-dubbo/future.jpg[]
+
+从v2.7.0开始，Dubbo的所有异步编程接口开始以 `CompletableFuture` 为基础
+
+基于 NIO 的非阻塞实现并行调用，客户端不需要启动多线程即可完成并行调用多个远程服务，相对多线程开销较小。
+
+[source,java]
+----
+public interface GreetingsService {
+    String sayHi(String name);
+}
+
+public interface GreetingsService {
+    String sayHi(String name);
+    
+    // AsyncSignal is totally optional, you can use any parameter type as long as java allows your to do that.
+    default CompletableFuture<String> sayHi(String name, AsyncSignal signal) { // <1>
+        return CompletableFuture.completedFuture(sayHi(name));
+    }
+}
+----
+<1> Dubbo官方提供 compiler hacker，编译期自动重写同步方法.
+
+
+在调用之前、调用之后、出现异常时，会触发 oninvoke、onreturn、onthrow 三个事件，可以配置当事件发生时，通知哪个类的哪个方法。
+
+
+== 服务化最佳实践
+
+. 建议将服务接口、服务模型、服务异常等均放在 API 包中，因为服务模型和异常也是 API 的一部分。分包原则：重用发布等价原则(REP)，共同重用原则(CRP)。
+. 服务接口尽可能大粒度，每个服务方法应代表一个功能，而不是某功能的一个步骤，否则将面临分布式事务问题。
+. 服务接口建议以业务场景为单位划分，并对相近业务做抽象，防止接口数量爆炸。
+. 不建议使用过于抽象的通用接口。
+. 每个接口都应定义版本号，为后续不兼容升级提供可能。
+. 当不兼容时，先升级一半提供者为新版本，再将消费者全部升为新版本，然后将剩下的一半提供者升为新版本。
+. 服务接口增加方法，或服务模型增加字段，可向后兼容，删除方法或删除字段，将不兼容，枚举类型新增字段也不兼容，需通过变更版本号升级。
+. 如果是业务种类，以后明显会有类型增加，不建议用 Enum，可以用 String 代替。
+. 服务参数及返回值建议使用 POJO 对象，即通过 setter, getter 方法表示属性的对象。
+. 服务参数及返回值都必须是传值调用，而不能是传引用调用。
+. 建议使用异常汇报错误，而不是返回错误码，异常信息能携带更多信息，并且语义更友好。
+. 不要只是因为是 Dubbo 调用，而把调用 try...catch 起来。try...catch 应该加上合适的回滚边界上。
+
+
+== 框架设计
+
+image::/images/the-abc-of-dubbo/dubbo-framework.jpg[]
+
+image::/images/the-abc-of-dubbo/dubbo-architecture.jpg[]
+
+image::/images/the-abc-of-dubbo/dubbo-extension.jpg[]
+
+=== 暴露服务时序
+
+展开总设计图左边服务提供方暴露服务的蓝色初始化链，时序图如下：
+
+image::/images/the-abc-of-dubbo/dubbo-export.jpg[]
+
+=== 引用服务时序
+
+展开总设计图右边服务消费方引用服务的蓝色初始化链，时序图如下：
+
+image::/images/the-abc-of-dubbo/dubbo-refer.jpg[]
+
+
+* 采用 Microkernel + Plugin 模式，Microkernel 只负责组装 Plugin，Dubbo 自身的功能也是通过扩展点实现的，也就是 Dubbo 的所有功能点都可被用户自定义扩展所替换。
+* 采用 URL 作为配置信息的统一格式，所有扩展点都通过传递 URL 携带配置信息。
+
+== 源码实现
+
+自定义 SPI 技术，可以按需加载。
+
+Java SPI 的不足：
+
+. 不能单独地获取某个指定的实现类；
+. 没有 IoC 和 AOP 机制。

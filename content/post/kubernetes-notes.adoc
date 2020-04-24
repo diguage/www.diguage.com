@@ -1,0 +1,18 @@
+---
+title: "Kubernetes 学习笔记"
+date: 2020-03-05T15:58:27+08:00
+draft: true
+keywords: ["Kafka"]
+tags: ["分布式","消息队列","架构","笔记","网络"]
+categories: ["分布式"]
+
+weight: 1
+
+# You can also close(false) or open(true) something for this content.
+# P.S. comment can only be closed
+# comment: false
+# toc: true
+
+---
+
+先占个坑，后续来填…
