@@ -1,0 +1,222 @@
+---
+title: "负载均衡算法及实践"
+date: 2020-05-15T11:37:25+08:00
+draft: false
+keywords: ["Kafka"]
+tags: ["分布式","设计","架构","算法"]
+categories: ["分布式","算法"]
+
+weight: 1
+
+# You can also close(false) or open(true) something for this content.
+# P.S. comment can only be closed
+# comment: false
+# toc: true
+---
+
+前几天在看一个资料时，看到关于负载均衡算法的介绍。最近也在研究 Spring Cloud 和 Apache Dubbo 等微服务框架。正好负载均衡是微服务框架中一个很重要的知识点。就动手做个整理和总结。方便后续学习。
+
+****
+听朋友建议，这篇文章还可以在算法对比，客户端负载均衡与服务端负载均衡区分等两方面做些补充。这些内容后续再补充加入进来。
+****
+
+== 常见的负载均衡算法
+
+[#round-robin]
+=== 轮询(Round Robin)法
+
+轮询选择指的是从已有的后端节点列表中按顺序依次选择一个节点出来提供服务。
+
+image::/images/load-balancing-algorithm/round-robin.png[align="center"]
+
+优点：试图做到请求转移的绝对均衡。实现简单，使用广泛。
+
+[#weighted-round-robin]
+=== 加权轮询(Weighted Round Robin)法
+
+实际使用中各个节点往往都带有不同的权重，所以一般都需要实现带权重的轮询选择。 权重高的被选中的次数多，权重低的被选中的次数少。
+
+image::/images/load-balancing-algorithm/weighted-round_robin.jpg[align="center"]
+
+优点：是 <<round-robin>> 改良版。适用于服务器配置不一致时，可以将配置好的服务器多干活，配置差的服务器少干活以使机器的负载达到相同的水平。
+
+[#static-round-robin]
+=== 静态轮询(Static Round Robin)法
+
+HAProxy 中实现的一个负载均衡算法。
+
+没有后台服务器的限制，服务器启动时，修改权重也不会生效。增删服务器时，服务器准备就绪后，会立即加入到服务队列中。
+
+[#random]
+=== 随机(Random)法
+
+通过随机函数，根据后端服务器列表的大小值来随机选择其中一台进行访问。由概率统计理论可以得知，随着调用量的增大，其实际效果越来越接近于平均分配流量到每一台后端服务器，也就是轮询的效果。
+
+[#weighted-random]
+=== 加权随机(Weighted Random)法
+
+与加权轮询法类似，加权随机法也是根据后端服务器不同的配置和负载情况来配置不同的权重。不同的是，它是按照权重来随机选择服务器的，而不是顺序。
+
+[#ip-hash]
+=== 原地址哈希(IP Hashing)法
+
+源地址哈希的思想是获取客户端访问的IP地址值，通过哈希函数计算得到一个数值，用该数值对服务器列表的大小进行取模运算，得到的结果便是要访问的服务器的序号。
+
+优点：保证了相同客户端 IP 地址将会被哈希到同一台后端服务器，直到后端服务器列表变更。根据此特性可以在服务消费者与服务提供者之间建立有状态的 Session 会话。
+
+[#uri-hash]
+=== URI 哈希(URI Hashing)法
+
+HAProxy 中实现的一个负载均衡算法。支持部分 URI（问号之前）和完整 URI 两种模式。
+
+这个算法可以把同一个 URI 的访问发送到同一台服务器上，以最大程度提高缓存命中率。
+
+该算法支持两个可选参数 `len` 和 `depth`，后跟一个正整数。仅在需要基于URI的开头来平衡服务器时，这些选项可能会很有用。 `len` 参数指示算法仅应考虑URI开头的许多字符来计算哈希。请注意，将 `len` 设置为 `1` 几乎没有意义，因为大多数URI都以前导 `/` 开头。
+
+`depth` 参数指示用于计算哈希的最大目录深度。请求中的每个斜杠都计为一个级别。如果同时指定了两个参数，则在达到任意一个参数时都将停止评估。
+
+哈希算法也有很多中，而且不同算法各有优缺。回头单独开篇整理吧。
+
+[#url-param]
+=== URL 参数(URL Parameter)法
+
+HAProxy 中实现的一个负载均衡算法。根据 URL 参数的哈希值来选择服务器。
+
+很明显，这个负载均衡算法只能应用在七层协议上。
+
+[#http-header-param-name]
+=== HTTP Header 参数(HTTP Header Parameter Name)法
+
+HAProxy 中实现的一个负载均衡算法。根据 HTTP Header 中的指定参数名的参数值取哈希来选择服务器。
+
+很明显，这个负载均衡算法只能应用在七层协议上。
+
+[#consistent-hashing]
+=== 一致性哈希(Consistent Hashing)法
+
+. 首先求出每个Cache的哈希值，并将其配置到一个 0~2^32^ 的圆环区间上。
+. 使用同样的方法求出需要存储对象的哈希值，也将其配置到这个圆环上。
+. 从数据映射到的位置开始顺时针查找，将数据保存到找到的第一个Cache节点上。如果超过 2^32^ 仍然找不到Cache节点，就会保存到第一个Cache节点上。
+
+image::/images/load-balancing-algorithm/consistent-hashing.jpg[align="center"]
+
+==== 新增服务器
+
+在这个环形哈希空间中，服务器 5 被映射在服务器 3 和服务器 4 之间，那么受影响的将仅是沿 服务器 5 逆时针遍历直到下一个服务器（服务器 3）之间的对象（它们本来映射到服务器 4 上）。
+
+image::/images/load-balancing-algorithm/consistent-hashing-add-node.jpg[align="center"]
+
+==== 移除服务器
+
+在这个环形哈希空间中，服务器 3 被移除，那么受影响的将仅是沿服务器 3 逆时针遍历直到下一个服务器（服务器 2）之间的对象（它们本来映射到服务器 3 上）。
+
+image::/images/load-balancing-algorithm/consistent-hashing-remove-node.jpg[align="center"]
+
+==== 虚拟服务器节点
+
+哈希算法并不是保证绝对的平衡，尤其服务器较少的话，对象并不能被均匀的映射到服务器上。为了解决这种情况，Consistent Hashing 引入了“虚拟节点”的概念： “虚拟节点”是实际节点在环形空间的复制品，一个实际节点对应了若干个“虚拟节点”，这个对应个数也成为“复制个数”，“虚拟节点”在哈希空间中以哈希值排列。
+
+仍以4台服务器为例，在下图中看到，引入虚拟节点，并设置“复制个数”为 2 后，共有 8 个“虚拟节点”分部在环形区域上，缓解了映射不均的情况。
+
+image::/images/load-balancing-algorithm/consistent-hashing-virtual-node.jpg[align="center"]
+
+该图中，相同颜色和序号的节点都是由同一台服务器虚拟化出来的节点。可以更加均匀地分配到整个环上，以实现负载的均衡性。
+
+
+[#least-connection]
+=== 最少链接(Least Connection)法
+
+最小连接数算法比较灵活和智能，由于后端服务器的配置不尽相同，对于请求的处理有快有慢，它正是根据后端服务器当前的连接情况，动态地选取其中当前积压连接数最少的一台服务器来处理当前请求，尽可能地提高后端服务器的利用效率，将负载合理地分流到每一台机器。
+
+[#shortest-response]
+=== 最短响应时间(Shortest Response Time)法
+
+监控服务的响应时间，并根据响应时间排序，选择响应时间最短的服务器。
+
+[#weighted-response-time]
+=== 加权响应时间(Weighted Response Time)法
+
+Netflix Ribbon 项目中实现了该算法。根据文档，这个算法来源于 JCS，它是这样搞的：
+
+假设现在有四个节点，A(wt=10), B(wt=30), C(wt=40), D(wt=20)。
+
+将服务器的所有权重加起来，`10+30+40+20=100`。则
+
+* 10 (A's weight) 
+* 40 (A's weight + B's weight) 
+* 80 (A's weight + B's weight + C's weight) 
+* 100(A's weight + B's weight + C's weight + C's weight)
+
+那么，使用随机数生成器，每次生成 1 到 100 的数字 `number`，那么：
+
+* `1  ≤ number ≤ 10` 则将请求发送给 A；
+* `11 ≤ number ≤ 40` 则将请求发送给 B；
+* `41 ≤ number ≤ 80` 则将请求发送给 C；
+* `81 ≤ number ≤ 100` 则将请求发送给 D；
+
+[#zone-avoidance]
+=== 分区回避法
+
+Netflix Ribbon 项目中实现了该算法。
+
+通过分区过滤函数，将不可用的分区中的服务器踢出可选列表，以使请求只会被转发到可用分区上来降低请求的出错率。
+
+[#availability-filtering]
+=== 可用链接过滤法
+
+Netflix Ribbon 项目中实现了该算法。
+
+按照文档说明，它是选出熔断器关闭和链接不超过限制的服务器。
+
+这个没有见其他地方在用，这里就不过多介绍了。
+
+== Spring Cloud 的实现
+
+. <<round-robin>> -- 代码实现在 https://github.com/Netflix/ribbon/blob/master/ribbon-loadbalancer/src/main/java/com/netflix/loadbalancer/RoundRobinRule.java[ribbon/RoundRobinRule.java^]。
+. <<least-connection>> -- 在 Netflix Ribbon 中称为 `BestAvailableRule`，根据 JavaDoc 解释来看，就是“选择最少并发请求的服务器”，也就是“最少链接法”。代码实现在 https://github.com/Netflix/ribbon/blob/master/ribbon-loadbalancer/src/main/java/com/netflix/loadbalancer/BestAvailableRule.java[ribbon/BestAvailableRule.java^]。
+. <<weighted-response-time>> -- 代码实现： https://github.com/Netflix/ribbon/blob/master/ribbon-loadbalancer/src/main/java/com/netflix/loadbalancer/WeightedResponseTimeRule.java[ribbon/WeightedResponseTimeRule.java^]。
+. <<zone-avoidance>> -- 代码实现： https://github.com/Netflix/ribbon/blob/master/ribbon-loadbalancer/src/main/java/com/netflix/loadbalancer/ZoneAvoidanceRule.java[ribbon/ZoneAvoidanceRule.java^]。
+. <<availability-filtering>> -- 代码实现： https://github.com/Netflix/ribbon/blob/master/ribbon-loadbalancer/src/main/java/com/netflix/loadbalancer/AvailabilityFilteringRule.java[ribbon/AvailabilityFilteringRule.java^]。
+. <<random>> -- 代码实现在 https://github.com/Netflix/ribbon/blob/master/ribbon-loadbalancer/src/main/java/com/netflix/loadbalancer/RandomRule.java[ribbon/RandomRule.java^]。
+
+Spring Cloud 3.0.0-SNAPSHOT 版中不再依赖 NetFlix Ribbon 来做负载均衡了。具体支持的负载均衡算法等发布正式版后再来研究。
+
+== Apache Dubbo 的实现
+
+. <<consistent-hashing>> -- 具体实现在 https://github.com/apache/dubbo/blob/master/dubbo-cluster/src/main/java/org/apache/dubbo/rpc/cluster/loadbalance/ConsistentHashLoadBalance.java[dubbo/ConsistentHashLoadBalance.java^]。
+. <<least-connection>> -- 在 Apache Dubbo 中被称为 `LeastActiveLoadBalance`，看文档解释应该就是“最少链接法”。具体实现在 https://github.com/apache/dubbo/blob/master/dubbo-cluster/src/main/java/org/apache/dubbo/rpc/cluster/loadbalance/LeastActiveLoadBalance.java[dubbo/LeastActiveLoadBalance.java^]。
+. <<random>> -- 具体实现在 https://github.com/apache/dubbo/blob/master/dubbo-cluster/src/main/java/org/apache/dubbo/rpc/cluster/loadbalance/RandomLoadBalance.java[dubbo/RandomLoadBalance.java^]。
+. <<round-robin>> -- 具体实现在 https://github.com/apache/dubbo/blob/master/dubbo-cluster/src/main/java/org/apache/dubbo/rpc/cluster/loadbalance/RoundRobinLoadBalance.java[dubbo/RoundRobinLoadBalance.java^]。
+. <<shortest-response>> -- 具体实现在 https://github.com/apache/dubbo/blob/master/dubbo-cluster/src/main/java/org/apache/dubbo/rpc/cluster/loadbalance/ShortestResponseLoadBalance.java[dubbo/ShortestResponseLoadBalance.java^]。
+
+== Nginx 的实现
+
+. <<round-robin>>
+. <<least-connection>>
+. <<ip-hash>>
+. <<weighted-round-robin>>
+
+== HAProxy 的实现
+
+. <<round-robin>> -- HAProxy 文档中指出，最多运行有 4096 台服务器。而且服务器支持慢启动。
+. <<static-round-robin>> -- 在 HAProxy 的实现中，跟 <<round-robin>> 的区别是，没有服务器数量限制。服务器准备就绪后，会立即投入到服务列表中。
+. <<least-connection>>
+. <<ip-hash>>
+. <<uri-hash>>
+. <<url-param>>
+. <<http-header-param-name>>
+. <<random>>
+
+== 参考资料
+
+. http://nginx.org/en/docs/http/load_balancing.html[Using nginx as HTTP load balancer^]
+. http://dubbo.apache.org/zh-cn/docs/source_code_guide/loadbalance.html[Apache Dubbo 负载均衡^]
+. https://cloud.spring.io/spring-cloud-static/spring-cloud-netflix/2.2.2.RELEASE/reference/html/#spring-cloud-ribbon[Spring Cloud Netflix: 7. Client Side Load Balancer: Ribbon^]
+. http://cbonte.github.io/haproxy-dconv/2.0/configuration.html#4.2-balance[HAProxy version 2.0.14 - Configuration Manual^]
+. https://nullcc.github.io/2017/11/23/Web%E5%90%8E%E7%AB%AF%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84%E6%BC%AB%E8%B0%88(2)%E2%80%94%E2%80%94%E4%B8%80%E8%87%B4%E6%80%A7hash%E7%AE%97%E6%B3%95/[Web后端系统架构漫谈(2)——一致性hash算法 | 张先森的代码小屋^]
+. https://typecodes.com/python/consistenthashdistributed1.html[分布式系统：一致性hash算法的应用 - TypeCodes^]
+. http://jiangjiafu.lofter.com/post/1cc5be35_38d6626[一致性哈希算法（Consistent Hashing）-阿涵^]
+. https://docs.citrix.com/en-us/netscaler/12/load-balancing/load-balancing-customizing-algorithms/roundrobin-method.html[Round robin method^]
+
+
+
