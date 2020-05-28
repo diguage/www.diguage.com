@@ -1,5 +1,5 @@
 ---
-title: "Spring 扩展点概览及实战"
+title: "Spring 扩展点概览及实践"
 date: 2020-05-26T17:14:20+08:00
 draft: false
 keywords: ["Java","Spring"]
@@ -18,7 +18,7 @@ weight: 1
 :pygments-style: monokai
 :pygments-linenums-mode: table
 
-学习 Spring 代码，最重要的是学习 Spring 有哪些扩展点，可以利用这些扩展点对 Spring 做哪些扩展操作。说得更具体一点，如果自己开发一个框架，如何与 Spring 进行整合，如果对 Spring 的扩展点有一个比较清晰的认识，势必会事半功倍。
+学习 Spring 代码，最重要的是掌握 Spring 有哪些扩展点，可以利用这些扩展点对 Spring 做什么扩展操作。说得更具体一点，如果自己开发一个框架，如何与 Spring 进行整合，如果对 Spring 的扩展点有一个比较清晰的认识，势必会事半功倍。
 
 == `@Import`
 
@@ -909,11 +909,9 @@ beanFactory.destroyBean(dggDisposableBean);
 
 // == `ReaderEventListener`
 
-== 实战分析
+== 整合实践
 
-=== MyBATIS 与 Spring 整合
-
-注解 `org.mybatis.spring.annotation.MapperScan` 的定义中，有 `@Import(MapperScannerRegistrar.class)` 的声明。看 `MapperScannerRegistrar` 类的声明 `MapperScannerRegistrar implements ImportBeanDefinitionRegistrar, ResourceLoaderAware` 就可以一样看出，是通过实现 `ImportBeanDefinitionRegistrar` 接口来向容器注册了一个 `org.mybatis.spring.mapper.MapperScannerConfigurer` 类的 `BeanDefinition`。
+上面介绍那么多，现在找一些实际项目对整合过程做个分析。先来个简单的。
 
 === Hibernate 与 Spring 整合
 
@@ -967,41 +965,11 @@ Hibernate 与 Spring 整合主要涉及下面几个类：
 </beans>
 ----
 
+Spring 与 Hibernate 的整合过程还是比较简单的，就是把 Hibernate 的相关对象当做普通的 Bean 注册到 Spring 容器中即可。
+
 另外，还有一种 `HibernateTemplate` 方式，和上面的方式类似，就不再赘述。
 
-
-=== Apache Dubbo 与 Spring 整合
-
-. `org.apache.dubbo.config.spring.context.annotation.EnableDubbo`
-
-. `org.apache.dubbo.config.spring.context.annotation.EnableDubboConfig`
-. `org.apache.dubbo.config.spring.context.annotation.DubboConfigConfigurationRegistrar`
-
-
-. `org.apache.dubbo.config.spring.context.annotation.DubboComponentScan`
-. `org.apache.dubbo.config.spring.context.annotation.DubboComponentScanRegistrar`
-
-
-. `org.apache.dubbo.config.spring.beans.factory.config.DubboConfigDefaultPropertyValueBeanPostProcessor`
-. `org.apache.dubbo.config.spring.beans.factory.annotation.ReferenceAnnotationBeanPostProcessor`
-. `org.apache.dubbo.xml.rpc.protocol.xmlrpc.XmlRpcProxyFactoryBean`
-
-. `org.apache.dubbo.config.spring.beans.factory.annotation.ServiceAnnotationBeanPostProcessor` -- 弃用，推荐 `ServiceClassPostProcessor`。
-. `org.apache.dubbo.config.spring.beans.factory.annotation.ServiceClassPostProcessor`
-
-. `org.apache.dubbo.config.spring.schema.DubboBeanDefinitionParser`
-
-. `org.apache.dubbo.config.spring.beans.factory.annotation.DubboConfigAliasPostProcessor`
-
-
-=== Seata 与 Spring 整合
-
-. `io.seata.config.springcloud.EnableSeataSpringConfig`
-. `io.seata.config.springcloud.SpringApplicationContextProviderRegistrar`
-. `HttpAutoConfiguration`
-. `RequiredAnnotationBeanPostProcessor`
-. `SpringCacheAnnotationParser`
-
+原计划还准备添加 Spring 与 MyBATIS 和 Apache Dubbo 整合分析。考虑到本篇内容已经非常长，仔细分析它们的整合过程又需要大篇幅内容，所以，另外单独开文章进行说明。
 
 == 参考资料
 
@@ -1011,7 +979,4 @@ Hibernate 与 Spring 整合主要涉及下面几个类：
 . https://juejin.im/post/5da995d25188256a49204d7b[spring源码系列7：Spring中的InstantiationAwareBeanPostProcessor和BeanPostProcessor的区别 - 掘金^]
 . https://juejin.im/post/5d31b1d2518825276a6f9c70[Dubbo源码之Spring整合 - 掘金^]
 . https://blog.csdn.net/canot/article/details/50512217[详细解释Spring与Hibernate的整合原理_java_不能说的秘密的博客-CSDN博客^]
-. https://blog.csdn.net/qq_36827957/article/details/98725006[Spring Boot 集成Seata(fescar)实现分布式事务处理以及实现机制_java_小老弟的博客-CSDN博客^]
 . https://blog.csdn.net/u012291108/article/details/51886269[bean的加载（九）记录创建bean的ObjectFactory_java_u012291108的博客-CSDN博客^]
-
-

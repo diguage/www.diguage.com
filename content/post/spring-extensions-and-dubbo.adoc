@@ -1,0 +1,50 @@
+---
+title: "Spring 扩展点实践：整合 Apache Dubbo"
+date: 2020-05-28T20:07:55+08:00
+draft: true
+keywords: ["Java","Spring"]
+tags: ["Java","设计","架构","微服务","分布式"]
+categories: ["Java","程序设计"]
+
+weight: 1
+
+# You can also close(false) or open(true) something for this content.
+# P.S. comment can only be closed
+# comment: false
+# toc: true
+---
+
+:source-highlighter: pygments
+:pygments-style: monokai
+:pygments-linenums-mode: table
+
+
+. `org.apache.dubbo.config.spring.context.annotation.EnableDubbo`
+
+. `org.apache.dubbo.config.spring.context.annotation.EnableDubboConfig`
+. `org.apache.dubbo.config.spring.context.annotation.DubboConfigConfigurationRegistrar`
+
+
+. `org.apache.dubbo.config.spring.context.annotation.DubboComponentScan`
+. `org.apache.dubbo.config.spring.context.annotation.DubboComponentScanRegistrar`
+
+
+. `org.apache.dubbo.config.spring.beans.factory.config.DubboConfigDefaultPropertyValueBeanPostProcessor`
+. `org.apache.dubbo.config.spring.beans.factory.annotation.ReferenceAnnotationBeanPostProcessor`
+. `org.apache.dubbo.xml.rpc.protocol.xmlrpc.XmlRpcProxyFactoryBean`
+
+. `org.apache.dubbo.config.spring.beans.factory.annotation.ServiceAnnotationBeanPostProcessor` -- 弃用，推荐 `ServiceClassPostProcessor`。
+. `org.apache.dubbo.config.spring.beans.factory.annotation.ServiceClassPostProcessor`
+
+. `org.apache.dubbo.config.spring.schema.DubboBeanDefinitionParser`
+
+. `org.apache.dubbo.config.spring.beans.factory.annotation.DubboConfigAliasPostProcessor`
+
+
+// === Seata 与 Spring 整合
+
+// . `io.seata.config.springcloud.EnableSeataSpringConfig`
+// . `io.seata.config.springcloud.SpringApplicationContextProviderRegistrar`
+// . `HttpAutoConfiguration`
+// . `RequiredAnnotationBeanPostProcessor`
+// . `SpringCacheAnnotationParser`

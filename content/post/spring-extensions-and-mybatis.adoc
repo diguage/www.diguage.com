@@ -1,0 +1,30 @@
+---
+title: "Spring 扩展点实践：整合 MyBATIS"
+date: 2020-05-28T20:06:46+08:00
+draft: true
+keywords: ["Java","Spring"]
+tags: ["Java","设计","架构","数据库"]
+categories: ["Java","程序设计"]
+
+weight: 1
+
+# You can also close(false) or open(true) something for this content.
+# P.S. comment can only be closed
+# comment: false
+# toc: true
+---
+
+:source-highlighter: pygments
+:pygments-style: monokai
+:pygments-linenums-mode: table
+
+
+MyBATIS 与 Spring 整合
+
+注解 `org.mybatis.spring.annotation.MapperScan` 的定义中，有 `@Import(MapperScannerRegistrar.class)` 的声明。看 `MapperScannerRegistrar` 类的声明 `MapperScannerRegistrar implements ImportBeanDefinitionRegistrar, ResourceLoaderAware` 就可以一样看出，是通过实现 `ImportBeanDefinitionRegistrar` 接口来向容器注册了一个 `org.mybatis.spring.mapper.MapperScannerConfigurer` 类的 `BeanDefinition`。
+
+== 参考资料
+
+. https://www.cnblogs.com/java-chen-hao/p/11833780.html[Mybaits 源码解析 （十）----- Spring-Mybatis框架使用与源码解析 - chen_hao - 博客园^]
+. https://juejin.im/post/5dbff6fae51d455c042008e6[Mybatis源码解析(一) —— mybatis与Spring是如何整合的？ - 掘金^]
+
