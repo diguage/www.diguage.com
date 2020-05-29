@@ -24,25 +24,25 @@ weight: 1
 
 先来看一下 `@Import` 注解的定义：
 
-[source,java]
+[source,java,indent=0]
 ----
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 public @interface Import {
 
-	/**
-	 * {@link Configuration @Configuration}, {@link ImportSelector},
-	 * {@link ImportBeanDefinitionRegistrar}, or regular component classes to import.
-	 */
-	Class<?>[] value();
+  /**
+   * {@link Configuration @Configuration}, {@link ImportSelector},
+   * {@link ImportBeanDefinitionRegistrar}, or regular component classes to import.
+   */
+  Class<?>[] value();
 
 }
 ----
 
 从声明可以看出，使用时，只需要指定 `Class` 实例即可；从方法的文档中可以看出，`Class` 实例可以分为三种：`ImportSelector`、`ImportBeanDefinitionRegistrar` 和常规组件类。示例如下：
 
-[source,java]
+[source,java,indent=0]
 ----
 @Configuration
 @Import(LogImportSelector.class)
@@ -62,7 +62,7 @@ public static class Config {
 
 先来看一下 `ImportSelector` 接口的定义：
 
-[source,java]
+[source,java,indent=0]
 ----
 /**
  * Interface to be implemented by types that determine which @{@link Configuration}
@@ -82,44 +82,44 @@ public static class Config {
  */
 public interface ImportSelector {
 
-	/**
-	 * Select and return the names of which class(es) should be imported based on
-	 * the {@link AnnotationMetadata} of the importing @{@link Configuration} class.
-	 * @return the class names, or an empty array if none
-	 */
-	String[] selectImports(AnnotationMetadata importingClassMetadata);
+  /**
+   * Select and return the names of which class(es) should be imported based on
+   * the {@link AnnotationMetadata} of the importing @{@link Configuration} class.
+   * @return the class names, or an empty array if none
+   */
+  String[] selectImports(AnnotationMetadata importingClassMetadata);
 
-	/**
-	 * Return a predicate for excluding classes from the import candidates, to be
-	 * transitively applied to all classes found through this selector's imports.
-	 * <p>If this predicate returns {@code true} for a given fully-qualified
-	 * class name, said class will not be considered as an imported configuration
-	 * class, bypassing class file loading as well as metadata introspection.
-	 * @return the filter predicate for fully-qualified candidate class names
-	 * of transitively imported configuration classes, or {@code null} if none
-	 * @since 5.2.4
-	 */
-	@Nullable
-	default Predicate<String> getExclusionFilter() {
-		return null;
-	}
+  /**
+   * Return a predicate for excluding classes from the import candidates, to be
+   * transitively applied to all classes found through this selector's imports.
+   * <p>If this predicate returns {@code true} for a given fully-qualified
+   * class name, said class will not be considered as an imported configuration
+   * class, bypassing class file loading as well as metadata introspection.
+   * @return the filter predicate for fully-qualified candidate class names
+   * of transitively imported configuration classes, or {@code null} if none
+   * @since 5.2.4
+   */
+  @Nullable
+  default Predicate<String> getExclusionFilter() {
+    return null;
+  }
 
 }
 ----
 
 从接口文档中就可以看出，使用 `String[] selectImports(AnnotationMetadata importingClassMetadata)` 方法，返回所需要引入的类全限定名即可。实例如下：
 
-[source,java]
+[source,java,indent=0]
 ----
 public class LogImportSelector implements ImportSelector {
-    @Override
-    public String[] selectImports(AnnotationMetadata importingClassMetadata) {
-        return new String[]{
-                UserDao.class.getName(),
-                UserService.class.getName(),
-                ProtoService.class.getName()
-        };
-    }
+  @Override
+  public String[] selectImports(AnnotationMetadata importingClassMetadata) {
+    return new String[]{
+        UserDao.class.getName(),
+        UserService.class.getName(),
+        ProtoService.class.getName()
+    };
+  }
 }
 ----
 
@@ -127,7 +127,7 @@ public class LogImportSelector implements ImportSelector {
 
 先来看一下 `ImportBeanDefinitionRegistrar` 接口的定义：
 
-[source,java]
+[source,java,indent=0]
 ----
 /**
  * Interface to be implemented by types that register additional bean definitions when
@@ -147,51 +147,51 @@ public class LogImportSelector implements ImportSelector {
  */
 public interface ImportBeanDefinitionRegistrar {
 
-	/**
-	 * Register bean definitions as necessary based on the given annotation metadata of
-	 * the importing {@code @Configuration} class.
-	 * <p>Note that {@link BeanDefinitionRegistryPostProcessor} types may <em>not</em> be
-	 * registered here, due to lifecycle constraints related to {@code @Configuration}
-	 * class processing.
-	 * <p>The default implementation delegates to
-	 * {@link #registerBeanDefinitions(AnnotationMetadata, BeanDefinitionRegistry)}.
-	 * @param importingClassMetadata annotation metadata of the importing class
-	 * @param registry current bean definition registry
-	 * @param importBeanNameGenerator the bean name generator strategy for imported beans:
-	 * {@link ConfigurationClassPostProcessor#IMPORT_BEAN_NAME_GENERATOR} by default, or a
-	 * user-provided one if {@link ConfigurationClassPostProcessor#setBeanNameGenerator}
-	 * has been set. In the latter case, the passed-in strategy will be the same used for
-	 * component scanning in the containing application context (otherwise, the default
-	 * component-scan naming strategy is {@link AnnotationBeanNameGenerator#INSTANCE}).
-	 * @since 5.2
-	 * @see ConfigurationClassPostProcessor#IMPORT_BEAN_NAME_GENERATOR
-	 * @see ConfigurationClassPostProcessor#setBeanNameGenerator
-	 */
-	default void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry,
-			BeanNameGenerator importBeanNameGenerator) {
+  /**
+   * Register bean definitions as necessary based on the given annotation metadata of
+   * the importing {@code @Configuration} class.
+   * <p>Note that {@link BeanDefinitionRegistryPostProcessor} types may <em>not</em> be
+   * registered here, due to lifecycle constraints related to {@code @Configuration}
+   * class processing.
+   * <p>The default implementation delegates to
+   * {@link #registerBeanDefinitions(AnnotationMetadata, BeanDefinitionRegistry)}.
+   * @param importingClassMetadata annotation metadata of the importing class
+   * @param registry current bean definition registry
+   * @param importBeanNameGenerator the bean name generator strategy for imported beans:
+   * {@link ConfigurationClassPostProcessor#IMPORT_BEAN_NAME_GENERATOR} by default, or a
+   * user-provided one if {@link ConfigurationClassPostProcessor#setBeanNameGenerator}
+   * has been set. In the latter case, the passed-in strategy will be the same used for
+   * component scanning in the containing application context (otherwise, the default
+   * component-scan naming strategy is {@link AnnotationBeanNameGenerator#INSTANCE}).
+   * @since 5.2
+   * @see ConfigurationClassPostProcessor#IMPORT_BEAN_NAME_GENERATOR
+   * @see ConfigurationClassPostProcessor#setBeanNameGenerator
+   */
+  default void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry,
+      BeanNameGenerator importBeanNameGenerator) {
 
-		registerBeanDefinitions(importingClassMetadata, registry);
-	}
+    registerBeanDefinitions(importingClassMetadata, registry);
+  }
 
-	/**
-	 * Register bean definitions as necessary based on the given annotation metadata of
-	 * the importing {@code @Configuration} class.
-	 * <p>Note that {@link BeanDefinitionRegistryPostProcessor} types may <em>not</em> be
-	 * registered here, due to lifecycle constraints related to {@code @Configuration}
-	 * class processing.
-	 * <p>The default implementation is empty.
-	 * @param importingClassMetadata annotation metadata of the importing class
-	 * @param registry current bean definition registry
-	 */
-	default void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
-	}
+  /**
+   * Register bean definitions as necessary based on the given annotation metadata of
+   * the importing {@code @Configuration} class.
+   * <p>Note that {@link BeanDefinitionRegistryPostProcessor} types may <em>not</em> be
+   * registered here, due to lifecycle constraints related to {@code @Configuration}
+   * class processing.
+   * <p>The default implementation is empty.
+   * @param importingClassMetadata annotation metadata of the importing class
+   * @param registry current bean definition registry
+   */
+  default void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
+  }
 
 }
 ----
 
 这里使用到了 `BeanDefinitionRegistry` 接口，来看一下这个接口的定义：
 
-[source,java]
+[source,java,indent=0]
 ----
 /**
  * Interface for registries that hold bean definitions, for example RootBeanDefinition
@@ -219,78 +219,78 @@ public interface ImportBeanDefinitionRegistrar {
  */
 public interface BeanDefinitionRegistry extends AliasRegistry {
 
-	/**
-	 * Register a new bean definition with this registry.
-	 * Must support RootBeanDefinition and ChildBeanDefinition.
-	 * @param beanName the name of the bean instance to register
-	 * @param beanDefinition definition of the bean instance to register
-	 * @throws BeanDefinitionStoreException if the BeanDefinition is invalid
-	 * @throws BeanDefinitionOverrideException if there is already a BeanDefinition
-	 * for the specified bean name and we are not allowed to override it
-	 * @see GenericBeanDefinition
-	 * @see RootBeanDefinition
-	 * @see ChildBeanDefinition
-	 */
-	void registerBeanDefinition(String beanName, BeanDefinition beanDefinition)
-			throws BeanDefinitionStoreException;
+  /**
+   * Register a new bean definition with this registry.
+   * Must support RootBeanDefinition and ChildBeanDefinition.
+   * @param beanName the name of the bean instance to register
+   * @param beanDefinition definition of the bean instance to register
+   * @throws BeanDefinitionStoreException if the BeanDefinition is invalid
+   * @throws BeanDefinitionOverrideException if there is already a BeanDefinition
+   * for the specified bean name and we are not allowed to override it
+   * @see GenericBeanDefinition
+   * @see RootBeanDefinition
+   * @see ChildBeanDefinition
+   */
+  void registerBeanDefinition(String beanName, BeanDefinition beanDefinition)
+      throws BeanDefinitionStoreException;
 
-	/**
-	 * Remove the BeanDefinition for the given name.
-	 * @param beanName the name of the bean instance to register
-	 * @throws NoSuchBeanDefinitionException if there is no such bean definition
-	 */
-	void removeBeanDefinition(String beanName) throws NoSuchBeanDefinitionException;
+  /**
+   * Remove the BeanDefinition for the given name.
+   * @param beanName the name of the bean instance to register
+   * @throws NoSuchBeanDefinitionException if there is no such bean definition
+   */
+  void removeBeanDefinition(String beanName) throws NoSuchBeanDefinitionException;
 
-	/**
-	 * Return the BeanDefinition for the given bean name.
-	 * @param beanName name of the bean to find a definition for
-	 * @return the BeanDefinition for the given name (never {@code null})
-	 * @throws NoSuchBeanDefinitionException if there is no such bean definition
-	 */
-	BeanDefinition getBeanDefinition(String beanName) throws NoSuchBeanDefinitionException;
+  /**
+   * Return the BeanDefinition for the given bean name.
+   * @param beanName name of the bean to find a definition for
+   * @return the BeanDefinition for the given name (never {@code null})
+   * @throws NoSuchBeanDefinitionException if there is no such bean definition
+   */
+  BeanDefinition getBeanDefinition(String beanName) throws NoSuchBeanDefinitionException;
 
-	/**
-	 * Check if this registry contains a bean definition with the given name.
-	 * @param beanName the name of the bean to look for
-	 * @return if this registry contains a bean definition with the given name
-	 */
-	boolean containsBeanDefinition(String beanName);
+  /**
+   * Check if this registry contains a bean definition with the given name.
+   * @param beanName the name of the bean to look for
+   * @return if this registry contains a bean definition with the given name
+   */
+  boolean containsBeanDefinition(String beanName);
 
-	/**
-	 * Return the names of all beans defined in this registry.
-	 * @return the names of all beans defined in this registry,
-	 * or an empty array if none defined
-	 */
-	String[] getBeanDefinitionNames();
+  /**
+   * Return the names of all beans defined in this registry.
+   * @return the names of all beans defined in this registry,
+   * or an empty array if none defined
+   */
+  String[] getBeanDefinitionNames();
 
-	/**
-	 * Return the number of beans defined in the registry.
-	 * @return the number of beans defined in the registry
-	 */
-	int getBeanDefinitionCount();
+  /**
+   * Return the number of beans defined in the registry.
+   * @return the number of beans defined in the registry
+   */
+  int getBeanDefinitionCount();
 
-	/**
-	 * Determine whether the given bean name is already in use within this registry,
-	 * i.e. whether there is a local bean or alias registered under this name.
-	 * @param beanName the name to check
-	 * @return whether the given bean name is already in use
-	 */
-	boolean isBeanNameInUse(String beanName);
+  /**
+   * Determine whether the given bean name is already in use within this registry,
+   * i.e. whether there is a local bean or alias registered under this name.
+   * @param beanName the name to check
+   * @return whether the given bean name is already in use
+   */
+  boolean isBeanNameInUse(String beanName);
 
 }
 ----
 
 很明显，可以通过 `registerBeanDefinition(String beanName, BeanDefinition beanDefinition)` 方法，向容器在中注入所需要的 `BeanDefinition`，而 `BeanDefinition` 是常见的 Bean 实例的基石。示例如下：
 
-[source,java]
+[source,java,indent=0]
 ----
 public class LogImportBeanDefinitionRegistrar implements ImportBeanDefinitionRegistrar {
-	@Override
-	public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata,
-										BeanDefinitionRegistry registry) {
-		RootBeanDefinition definition = new RootBeanDefinition(UserService.class);
-		registry.registerBeanDefinition(UserService.class.getName(), definition);
-	}
+  @Override
+  public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata,
+                    BeanDefinitionRegistry registry) {
+    RootBeanDefinition definition = new RootBeanDefinition(UserService.class);
+    registry.registerBeanDefinition(UserService.class.getName(), definition);
+  }
 }
 ----
 
@@ -298,7 +298,7 @@ public class LogImportBeanDefinitionRegistrar implements ImportBeanDefinitionReg
 
 这是最简单的情况，直接举例：
 
-[source,java]
+[source,java,indent=0]
 ----
 @Configuration
 @Import(UserService.class)
@@ -306,11 +306,12 @@ public static class Config {
 }
 ----
 
+[#bean-definition-registry-post-processor]
 == `BeanDefinitionRegistryPostProcessor`
 
 先来看一下 `BeanDefinitionRegistryPostProcessor` 的定义：
 
-[source,java]
+[source,java,indent=0]
 ----
 /**
  * Extension to the standard {@link BeanFactoryPostProcessor} SPI, allowing for
@@ -325,15 +326,15 @@ public static class Config {
  */
 public interface BeanDefinitionRegistryPostProcessor extends BeanFactoryPostProcessor {
 
-	/**
-	 * Modify the application context's internal bean definition registry after its
-	 * standard initialization. All regular bean definitions will have been loaded,
-	 * but no beans will have been instantiated yet. This allows for adding further
-	 * bean definitions before the next post-processing phase kicks in.
-	 * @param registry the bean definition registry used by the application context
-	 * @throws org.springframework.beans.BeansException in case of errors
-	 */
-	void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) throws BeansException;
+  /**
+   * Modify the application context's internal bean definition registry after its
+   * standard initialization. All regular bean definitions will have been loaded,
+   * but no beans will have been instantiated yet. This allows for adding further
+   * bean definitions before the next post-processing phase kicks in.
+   * @param registry the bean definition registry used by the application context
+   * @throws org.springframework.beans.BeansException in case of errors
+   */
+  void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) throws BeansException;
 
 }
 ----
@@ -344,24 +345,26 @@ public interface BeanDefinitionRegistryPostProcessor extends BeanFactoryPostProc
 
 实例如下：
 
-[source,java]
+[source,java,indent=0]
 ----
 public class LogBeanDefinitionRegistryPostProcessor implements BeanDefinitionRegistryPostProcessor {
-	@Override
-	public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) throws BeansException {
-		System.out.println(getAndIncrement()
-				+ "LogBeanDefinitionRegistryPostProcessor.postProcessBeanDefinitionRegistry\n");
-		RootBeanDefinition beanDefinition = new RootBeanDefinition(LogBeanFactoryPostProcessor.class);
-		registry.registerBeanDefinition(beanDefinition.getBeanClassName(), beanDefinition);
-	}
+  @Override
+  public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) throws BeansException {
+    System.out.println(getAndIncrement()
+        + "LogBeanDefinitionRegistryPostProcessor.postProcessBeanDefinitionRegistry\n");
+    RootBeanDefinition beanDefinition = new RootBeanDefinition(LogBeanFactoryPostProcessor.class);
+    registry.registerBeanDefinition(beanDefinition.getBeanClassName(), beanDefinition);
+  }
 
-	@Override
-	public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
-		System.out.println(getAndIncrement()
-				+ "LogBeanDefinitionRegistryPostProcessor.postProcessBeanFactory\n");
-	}
+  @Override
+  public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
+    System.out.println(getAndIncrement()
+        + "LogBeanDefinitionRegistryPostProcessor.postProcessBeanFactory\n");
+  }
 }
 ----
+
+`BeanDefinitionRegistryPostProcessor` 在 Spring 内部的使用，最重要的示例就是 `ConfigurationClassPostProcessor`，这个类负责解析 `@Import` 和 `@Configuration` 等注解。感兴趣可以认真研究一下这个类的代码。
 
 
 == `BeanFactoryPostProcessor`
@@ -370,7 +373,7 @@ public class LogBeanDefinitionRegistryPostProcessor implements BeanDefinitionReg
 
 先来看一下接口定义：
 
-[source,java]
+[source,java,indent=0]
 ----
 /**
  * Factory hook that allows for custom modification of an application context's
@@ -416,33 +419,33 @@ public class LogBeanDefinitionRegistryPostProcessor implements BeanDefinitionReg
 @FunctionalInterface
 public interface BeanFactoryPostProcessor {
 
-	/**
-	 * Modify the application context's internal bean factory after its standard
-	 * initialization. All bean definitions will have been loaded, but no beans
-	 * will have been instantiated yet. This allows for overriding or adding
-	 * properties even to eager-initializing beans.
-	 * @param beanFactory the bean factory used by the application context
-	 * @throws org.springframework.beans.BeansException in case of errors
-	 */
-	void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException;
+  /**
+   * Modify the application context's internal bean factory after its standard
+   * initialization. All bean definitions will have been loaded, but no beans
+   * will have been instantiated yet. This allows for overriding or adding
+   * properties even to eager-initializing beans.
+   * @param beanFactory the bean factory used by the application context
+   * @throws org.springframework.beans.BeansException in case of errors
+   */
+  void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException;
 
 }
 ----
 
 若 IoC 容器内添加了实现了 `BeanFactoryPostProcessor` 接口的实现类 Bean，那么在该容器中实例化任何其他 Bean 之前可以回调该 Bean 中的 `postPrcessorBeanFactory()` 方法来对 Bean 的配置元数据进行更改，比如设置 `init-method`，或者将 `Scope` 从 `SINGLETON` 改为 `PROTOTYPE`。示例如下：
 
-[source,java]
+[source,java,indent=0]
 ----
 public class LogBeanFactoryPostProcessor implements BeanFactoryPostProcessor {
-    @Override
-    public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
-        System.out.println(getAndIncrement()
-                + "LogBeanFactoryPostProcessor.postProcessBeanFactory\n");
-        System.out.println(Arrays.toString(beanFactory.getBeanDefinitionNames()).replaceAll(",", ",\n"));
-        BeanDefinition definition = beanFactory.getBeanDefinition(UserService.class.getName());
-        // 设置 init 方法
-        definition.setInitMethodName("init");
-    }
+  @Override
+  public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
+    System.out.println(getAndIncrement()
+        + "LogBeanFactoryPostProcessor.postProcessBeanFactory\n");
+    System.out.println(Arrays.toString(beanFactory.getBeanDefinitionNames()).replaceAll(",", ",\n"));
+    BeanDefinition definition = beanFactory.getBeanDefinition(UserService.class.getName());
+    // 设置 init 方法
+    definition.setInitMethodName("init");
+  }
 }
 ----
 
@@ -475,6 +478,7 @@ public class LogBeanFactoryPostProcessor implements BeanFactoryPostProcessor {
 * *`Instantiation`* -- 实例化，在实例化之前还没有生成对象。
 * *`Initialization`* -- 初始化，对象已经生成，需要对其做进一步的处理，比如赋值等。
 
+[#factory-bean]
 == `FactoryBean`
 
 在对象生成上，有时也许需要做些特殊处理。比如，创建对象过程比较繁琐，希望可以通过实现 `FactoryBean` 来封装初始化过程。
@@ -489,7 +493,7 @@ public class LogBeanFactoryPostProcessor implements BeanFactoryPostProcessor {
 
 示例如下：
 
-[source,java]
+[source,java,indent=0]
 ----
 package com.diguage.truman.context;
 
@@ -506,59 +510,59 @@ import java.util.Arrays;
  * @since 2020-05-26 16:34
  */
 public class FactoryBeanTest {
-	@Test
-	public void test() {
-		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
-		context.register(Config.class);
-		context.refresh();
+  @Test
+  public void test() {
+    AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
+    context.register(Config.class);
+    context.refresh();
 
-		UserService userService = context.getBean(UserService.class);
-		System.out.println(userService.getById(119L));
+    UserService userService = context.getBean(UserService.class);
+    System.out.println(userService.getById(119L));
 
-		System.out.println("-↓----");
-		System.out.println("&userServiceFactoryBean = " // <1>
-				+ context.getBean("&userServiceFactoryBean"));
-		System.out.println(" userServiceFactoryBean = " // <2>
-				+ context.getBean("userServiceFactoryBean"));
-		System.out.println("-↑----");
+    System.out.println("-↓----");
+    System.out.println("&userServiceFactoryBean = " // <1>
+        + context.getBean("&userServiceFactoryBean"));
+    System.out.println(" userServiceFactoryBean = " // <2>
+        + context.getBean("userServiceFactoryBean"));
+    System.out.println("-↑----");
 
-		UserServiceFactoryBean factoryBean = context.getBean(UserServiceFactoryBean.class);
-		System.out.println(factoryBean);
-		System.out.println(Arrays.toString(context.getBeanDefinitionNames())
-				.replaceAll(",", ",\n"));
-	}
+    UserServiceFactoryBean factoryBean = context.getBean(UserServiceFactoryBean.class);
+    System.out.println(factoryBean);
+    System.out.println(Arrays.toString(context.getBeanDefinitionNames())
+        .replaceAll(",", ",\n"));
+  }
 
-	@Configuration
-	public static class Config {
-		@Bean
-		public UserServiceFactoryBean userServiceFactoryBean() {
-			return new UserServiceFactoryBean();
-		}
-	}
+  @Configuration
+  public static class Config {
+    @Bean
+    public UserServiceFactoryBean userServiceFactoryBean() {
+      return new UserServiceFactoryBean();
+    }
+  }
 
 
-	public static class UserService {
-		public String getById(Long id) {
-			return "Name-" + id;
-		}
-	}
+  public static class UserService {
+    public String getById(Long id) {
+      return "Name-" + id;
+    }
+  }
 
-	public static class UserServiceFactoryBean implements FactoryBean<UserService> {
-		@Override
-		public UserService getObject() throws Exception {
-			return new UserService();
-		}
+  public static class UserServiceFactoryBean implements FactoryBean<UserService> {
+    @Override
+    public UserService getObject() throws Exception {
+      return new UserService();
+    }
 
-		@Override
-		public Class<?> getObjectType() {
-			return UserService.class;
-		}
+    @Override
+    public Class<?> getObjectType() {
+      return UserService.class;
+    }
 
-		@Override
-		public boolean isSingleton() {
-			return false;
-		}
-	}
+    @Override
+    public boolean isSingleton() {
+      return false;
+    }
+  }
 }
 ----
 <1> 通过 Bean 名称 `&userServiceFactoryBean` 获得的 Bean 是 `UserServiceFactoryBean` 对象；
@@ -589,7 +593,7 @@ Spring 在解决循环依赖时和在创建 Bean 时，都使用到接口。它�
 
 `BeanPostProcessor` 是 Spring 中最最重要的扩展点。Spring 内部大量的功能 IoC 和 AOP 也都是通过 `BeanPostProcessor` 来实现的。先来看一下接口定义：
 
-[source,java]
+[source,java,indent=0]
 ----
 /**
  * Factory hook that allows for custom modification of new bean instances &mdash;
@@ -629,49 +633,49 @@ Spring 在解决循环依赖时和在创建 Bean 时，都使用到接口。它�
  */
 public interface BeanPostProcessor {
 
-	/**
-	 * Apply this {@code BeanPostProcessor} to the given new bean instance <i>before</i> any bean
-	 * initialization callbacks (like InitializingBean's {@code afterPropertiesSet}
-	 * or a custom init-method). The bean will already be populated with property values.
-	 * The returned bean instance may be a wrapper around the original.
-	 * <p>The default implementation returns the given {@code bean} as-is.
-	 * @param bean the new bean instance
-	 * @param beanName the name of the bean
-	 * @return the bean instance to use, either the original or a wrapped one;
-	 * if {@code null}, no subsequent BeanPostProcessors will be invoked
-	 * @throws org.springframework.beans.BeansException in case of errors
-	 * @see org.springframework.beans.factory.InitializingBean#afterPropertiesSet
-	 */
-	@Nullable
-	default Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
-		return bean;
-	}
+  /**
+   * Apply this {@code BeanPostProcessor} to the given new bean instance <i>before</i> any bean
+   * initialization callbacks (like InitializingBean's {@code afterPropertiesSet}
+   * or a custom init-method). The bean will already be populated with property values.
+   * The returned bean instance may be a wrapper around the original.
+   * <p>The default implementation returns the given {@code bean} as-is.
+   * @param bean the new bean instance
+   * @param beanName the name of the bean
+   * @return the bean instance to use, either the original or a wrapped one;
+   * if {@code null}, no subsequent BeanPostProcessors will be invoked
+   * @throws org.springframework.beans.BeansException in case of errors
+   * @see org.springframework.beans.factory.InitializingBean#afterPropertiesSet
+   */
+  @Nullable
+  default Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+    return bean;
+  }
 
-	/**
-	 * Apply this {@code BeanPostProcessor} to the given new bean instance <i>after</i> any bean
-	 * initialization callbacks (like InitializingBean's {@code afterPropertiesSet}
-	 * or a custom init-method). The bean will already be populated with property values.
-	 * The returned bean instance may be a wrapper around the original.
-	 * <p>In case of a FactoryBean, this callback will be invoked for both the FactoryBean
-	 * instance and the objects created by the FactoryBean (as of Spring 2.0). The
-	 * post-processor can decide whether to apply to either the FactoryBean or created
-	 * objects or both through corresponding {@code bean instanceof FactoryBean} checks.
-	 * <p>This callback will also be invoked after a short-circuiting triggered by a
-	 * {@link InstantiationAwareBeanPostProcessor#postProcessBeforeInstantiation} method,
-	 * in contrast to all other {@code BeanPostProcessor} callbacks.
-	 * <p>The default implementation returns the given {@code bean} as-is.
-	 * @param bean the new bean instance
-	 * @param beanName the name of the bean
-	 * @return the bean instance to use, either the original or a wrapped one;
-	 * if {@code null}, no subsequent BeanPostProcessors will be invoked
-	 * @throws org.springframework.beans.BeansException in case of errors
-	 * @see org.springframework.beans.factory.InitializingBean#afterPropertiesSet
-	 * @see org.springframework.beans.factory.FactoryBean
-	 */
-	@Nullable
-	default Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
-		return bean;
-	}
+  /**
+   * Apply this {@code BeanPostProcessor} to the given new bean instance <i>after</i> any bean
+   * initialization callbacks (like InitializingBean's {@code afterPropertiesSet}
+   * or a custom init-method). The bean will already be populated with property values.
+   * The returned bean instance may be a wrapper around the original.
+   * <p>In case of a FactoryBean, this callback will be invoked for both the FactoryBean
+   * instance and the objects created by the FactoryBean (as of Spring 2.0). The
+   * post-processor can decide whether to apply to either the FactoryBean or created
+   * objects or both through corresponding {@code bean instanceof FactoryBean} checks.
+   * <p>This callback will also be invoked after a short-circuiting triggered by a
+   * {@link InstantiationAwareBeanPostProcessor#postProcessBeforeInstantiation} method,
+   * in contrast to all other {@code BeanPostProcessor} callbacks.
+   * <p>The default implementation returns the given {@code bean} as-is.
+   * @param bean the new bean instance
+   * @param beanName the name of the bean
+   * @return the bean instance to use, either the original or a wrapped one;
+   * if {@code null}, no subsequent BeanPostProcessors will be invoked
+   * @throws org.springframework.beans.BeansException in case of errors
+   * @see org.springframework.beans.factory.InitializingBean#afterPropertiesSet
+   * @see org.springframework.beans.factory.FactoryBean
+   */
+  @Nullable
+  default Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+    return bean;
+  }
 
 }
 ----
@@ -688,30 +692,30 @@ public interface BeanPostProcessor {
 
 少废话，直接上代码：
 
-[source,java]
+[source,java,indent=0]
 ----
 public class LogBeanPostProcessor implements BeanPostProcessor {
-    @Override
-    public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
-        if (bean instanceof UserService) {
-            System.out.println(getAndIncrement()
-                    + "LogBeanPostProcessor.postProcessBeforeInitialization");
-            System.out.println(bean);
-            System.out.println();
-        }
-        return bean;
+  @Override
+  public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+    if (bean instanceof UserService) {
+      System.out.println(getAndIncrement()
+          + "LogBeanPostProcessor.postProcessBeforeInitialization");
+      System.out.println(bean);
+      System.out.println();
     }
+    return bean;
+  }
 
-    @Override
-    public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
-        if (bean instanceof UserService) {
-            System.out.println(getAndIncrement()
-                    + "LogBeanPostProcessor.postProcessAfterInitialization");
-            System.out.println(bean);
-            System.out.println();
-        }
-        return bean;
+  @Override
+  public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+    if (bean instanceof UserService) {
+      System.out.println(getAndIncrement()
+          + "LogBeanPostProcessor.postProcessAfterInitialization");
+      System.out.println(bean);
+      System.out.println();
     }
+    return bean;
+  }
 }
 
 // 将其注册到 BeanFactory 上
@@ -747,41 +751,41 @@ beanFactory.addBeanPostProcessor(new LogBeanPostProcessor());
 
 如果某个 Bean 实现了 `ApplicationContextAware` 接口，那么 Spring 将会将该 Bean 所在的上下文环境 `ApplicationContext` 传递给 `setApplicationContext()` 方法，在 Bean 类中新增一个 `ApplicationContext` 字段用来保存 `ApplicationContext` 的值，并实现 `setApplicationContext()` 方法。
 
-[source,java]
+[source,java,indent=0]
 ----
 @Service
 public static class UserService implements InitializingBean, ApplicationContextAware {
-	@Resource
-	UserDao userDao;
+  @Resource
+  UserDao userDao;
 
-    ApplicationContext applicationContext;
+  ApplicationContext applicationContext;
 
-	public UserService() {
-		System.out.println(getAndIncrement()
-				+ "UserService()\n");
-	}
+  public UserService() {
+    System.out.println(getAndIncrement()
+        + "UserService()\n");
+  }
 
-	@Override
-	public void afterPropertiesSet() throws Exception {
-		System.out.println(getAndIncrement()
-				+ "UserService.afterPropertiesSet\n");
-	}
+  @Override
+  public void afterPropertiesSet() throws Exception {
+    System.out.println(getAndIncrement()
+        + "UserService.afterPropertiesSet\n");
+  }
 
-	public void init() {
-		System.out.println(getAndIncrement()
-				+ "UserService.init\n");
-	}
+  public void init() {
+    System.out.println(getAndIncrement()
+        + "UserService.init\n");
+  }
 
-	String getById(Long id) {
-		return userDao.getById(id);
-	}
+  String getById(Long id) {
+    return userDao.getById(id);
+  }
 
-	@Override
-	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-		System.out.println(getAndIncrement()
-				+ "UserService.setApplicationContext\n");
-        this.applicationContext = applicationContext;
-	}
+  @Override
+  public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+    System.out.println(getAndIncrement()
+        + "UserService.setApplicationContext\n");
+    this.applicationContext = applicationContext;
+  }
 }
 ----
 
@@ -821,7 +825,7 @@ public static class UserService implements InitializingBean, ApplicationContextA
 
 `DestructionAwareBeanPostProcessor` 就可以实现这个功能。先来看一下接口定义：
 
-[source,java]
+[source,java,indent=0]
 ----
 /**
  * Subinterface of {@link BeanPostProcessor} that adds a before-destruction callback.
@@ -834,34 +838,34 @@ public static class UserService implements InitializingBean, ApplicationContextA
  */
 public interface DestructionAwareBeanPostProcessor extends BeanPostProcessor {
 
-	/**
-	 * Apply this BeanPostProcessor to the given bean instance before its
-	 * destruction, e.g. invoking custom destruction callbacks.
-	 * <p>Like DisposableBean's {@code destroy} and a custom destroy method, this
-	 * callback will only apply to beans which the container fully manages the
-	 * lifecycle for. This is usually the case for singletons and scoped beans.
-	 * @param bean the bean instance to be destroyed
-	 * @param beanName the name of the bean
-	 * @throws org.springframework.beans.BeansException in case of errors
-	 * @see org.springframework.beans.factory.DisposableBean#destroy()
-	 * @see org.springframework.beans.factory.support.AbstractBeanDefinition#setDestroyMethodName(String)
-	 */
-	void postProcessBeforeDestruction(Object bean, String beanName) throws BeansException;
+  /**
+   * Apply this BeanPostProcessor to the given bean instance before its
+   * destruction, e.g. invoking custom destruction callbacks.
+   * <p>Like DisposableBean's {@code destroy} and a custom destroy method, this
+   * callback will only apply to beans which the container fully manages the
+   * lifecycle for. This is usually the case for singletons and scoped beans.
+   * @param bean the bean instance to be destroyed
+   * @param beanName the name of the bean
+   * @throws org.springframework.beans.BeansException in case of errors
+   * @see org.springframework.beans.factory.DisposableBean#destroy()
+   * @see org.springframework.beans.factory.support.AbstractBeanDefinition#setDestroyMethodName(String)
+   */
+  void postProcessBeforeDestruction(Object bean, String beanName) throws BeansException;
 
-	/**
-	 * Determine whether the given bean instance requires destruction by this
-	 * post-processor.
-	 * <p>The default implementation returns {@code true}. If a pre-5 implementation
-	 * of {@code DestructionAwareBeanPostProcessor} does not provide a concrete
-	 * implementation of this method, Spring silently assumes {@code true} as well.
-	 * @param bean the bean instance to check
-	 * @return {@code true} if {@link #postProcessBeforeDestruction} is supposed to
-	 * be called for this bean instance eventually, or {@code false} if not needed
-	 * @since 4.3
-	 */
-	default boolean requiresDestruction(Object bean) {
-		return true;
-	}
+  /**
+   * Determine whether the given bean instance requires destruction by this
+   * post-processor.
+   * <p>The default implementation returns {@code true}. If a pre-5 implementation
+   * of {@code DestructionAwareBeanPostProcessor} does not provide a concrete
+   * implementation of this method, Spring silently assumes {@code true} as well.
+   * @param bean the bean instance to check
+   * @return {@code true} if {@link #postProcessBeforeDestruction} is supposed to
+   * be called for this bean instance eventually, or {@code false} if not needed
+   * @since 4.3
+   */
+  default boolean requiresDestruction(Object bean) {
+    return true;
+  }
 
 }
 ----
@@ -869,15 +873,15 @@ public interface DestructionAwareBeanPostProcessor extends BeanPostProcessor {
 由于 `DestructionAwareBeanPostProcessor` 是 `BeanPostProcessor` 子类，由此可见，可以像操作 `BeanPostProcessor` 一样来操作 `DestructionAwareBeanPostProcessor` 实现类。示例如下：
 
 
-[source,java]
+[source,java,indent=0]
 ----
 public class LogDestructionAwareBeanPostProcessor implements DestructionAwareBeanPostProcessor {
-    @Override
-    public void postProcessBeforeDestruction(Object bean, String beanName) throws BeansException {
-        System.out.println(getAndIncrement()
-                + "LogDestructionAwareBeanPostProcessor.postProcessBeforeDestruction");
-        System.out.println(bean.getClass().getName());
-    }
+  @Override
+  public void postProcessBeforeDestruction(Object bean, String beanName) throws BeansException {
+    System.out.println(getAndIncrement()
+        + "LogDestructionAwareBeanPostProcessor.postProcessBeforeDestruction");
+    System.out.println(bean.getClass().getName());
+  }
 }
 
 // 将其注册到 BeanFactory 上
@@ -892,7 +896,7 @@ beanFactory.addBeanPostProcessor(new LogDestructionAwareBeanPostProcessor());
 
 想要触发生命周期函数的 `destroy()` 方法，必须要要手动调用 `beanFactory.destroyBean(bean)` 方法才行：
 
-[source,java]
+[source,java,indent=0]
 ----
 DggDisposableBean dggDisposableBean = applicationContext.getBean(DggDisposableBean.class);
 ConfigurableListableBeanFactory beanFactory = ApplicationContext.getBeanFactory();
@@ -927,41 +931,41 @@ Hibernate 与 Spring 整合主要涉及下面几个类：
 [source,xml]
 ----
 <beans>
-    <bean id="myDataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
-        <property name="driverClassName" value="org.hsqldb.jdbcDriver"/>
-        <property name="url" value="jdbc:hsqldb:hsql://localhost:9001"/>
-        <property name="username" value="sa"/>
-        <property name="password" value=""/>
-    </bean>
+  <bean id="myDataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+    <property name="driverClassName" value="org.hsqldb.jdbcDriver"/>
+    <property name="url" value="jdbc:hsqldb:hsql://localhost:9001"/>
+    <property name="username" value="sa"/>
+    <property name="password" value=""/>
+  </bean>
 
-    <bean id="mySessionFactory" class="org.springframework.orm.hibernate5.LocalSessionFactoryBean">
-        <property name="dataSource" ref="myDataSource"/>
-        <property name="mappingResources">
-            <list>
-                <value>product.hbm.xml</value>
-            </list>
-        </property>
-        <property name="hibernateProperties">
-            <value>
-                hibernate.dialect=org.hibernate.dialect.HSQLDialect
-            </value>
-        </property>
-    </bean>
+  <bean id="mySessionFactory" class="org.springframework.orm.hibernate5.LocalSessionFactoryBean">
+    <property name="dataSource" ref="myDataSource"/>
+    <property name="mappingResources">
+      <list>
+        <value>product.hbm.xml</value>
+      </list>
+    </property>
+    <property name="hibernateProperties">
+      <value>
+        hibernate.dialect=org.hibernate.dialect.HSQLDialect
+      </value>
+    </property>
+  </bean>
 
-    <bean id="transactionManager"
-            class="org.springframework.orm.hibernate5.HibernateTransactionManager">
-        <property name="sessionFactory" ref="sessionFactory"/>
-    </bean>
+  <bean id="transactionManager"
+      class="org.springframework.orm.hibernate5.HibernateTransactionManager">
+    <property name="sessionFactory" ref="sessionFactory"/>
+  </bean>
 
-    <tx:annotation-driven/>
+  <tx:annotation-driven/>
 
-    <bean id="myProductDao" class="product.ProductDaoImpl">
-        <property name="sessionFactory" ref="mySessionFactory"/>
-    </bean>
+  <bean id="myProductDao" class="product.ProductDaoImpl">
+    <property name="sessionFactory" ref="mySessionFactory"/>
+  </bean>
 
-    <bean id="myProductService" class="product.SimpleProductService">
-        <property name="productDao" ref="myProductDao"/>
-    </bean>
+  <bean id="myProductService" class="product.SimpleProductService">
+    <property name="productDao" ref="myProductDao"/>
+  </bean>
 </beans>
 ----
 
