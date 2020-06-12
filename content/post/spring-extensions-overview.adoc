@@ -367,6 +367,7 @@ public class LogBeanDefinitionRegistryPostProcessor implements BeanDefinitionReg
 `BeanDefinitionRegistryPostProcessor` 在 Spring 内部的使用，最重要的示例就是 `ConfigurationClassPostProcessor`，这个类负责解析 `@Import` 和 `@Configuration` 等注解。感兴趣可以认真研究一下这个类的代码。
 
 
+[#bean-factory-post-processor]
 == `BeanFactoryPostProcessor`
 
 `BeanFactory` 生成后，如果想对 `BeanFactory` 进行一些处理，该怎么办呢？`BeanFactoryPostProcessor` 接口就是用来处理 `BeanFactory` 的。
