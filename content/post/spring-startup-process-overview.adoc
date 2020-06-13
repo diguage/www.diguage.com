@@ -58,7 +58,7 @@ _先水一下，回头画个历程图再完善补充一下本文。_
 .. 构造函数
 .. `MergedBeanDefinitionPostProcessor#postProcessMergedBeanDefinition` -- 目前有 `ApplicationListenerDetector`。
 .. `InstantiationAwareBeanPostProcessor#postProcessAfterInstantiation`
-.. `InstantiationAwareBeanPostProcessor#postProcessProperties` -- 完成依赖注入。目前有 `ImportAwareBeanPostProcessor`。
+.. `InstantiationAwareBeanPostProcessor#postProcessProperties` -- 目前有 `ImportAwareBeanPostProcessor`。
 .. `InstantiationAwareBeanPostProcessor#postProcessPropertyValues` -- 从 5.1 开始废弃，使用上面方法代替。
 .. `BeanPostProcessor#postProcessBeforeInitialization` -- 目前有
 ... 用户手动添加的 `BeanPostProcessor`
@@ -75,7 +75,7 @@ _先水一下，回头画个历程图再完善补充一下本文。_
 .. Bean 的构造函数
 .. `MergedBeanDefinitionPostProcessor#postProcessMergedBeanDefinition` -- 目前有 `ApplicationListenerDetector`。
 .. `InstantiationAwareBeanPostProcessor#postProcessAfterInstantiation`
-.. `InstantiationAwareBeanPostProcessor#postProcessProperties` -- 完成依赖注入。完成注入的是下面要介绍的两个类。目前有 `ImportAwareBeanPostProcessor`。
+.. `InstantiationAwareBeanPostProcessor#postProcessProperties` -- 目前有 `ImportAwareBeanPostProcessor`。
 .. `InstantiationAwareBeanPostProcessor#postProcessPropertyValues` -- 从 5.1 开始废弃，使用上面方法代替。
 .. `BeanPostProcessor#postProcessBeforeInitialization` -- 目前有
 ... 用户手动添加的 `BeanPostProcessor`
@@ -93,7 +93,7 @@ _先水一下，回头画个历程图再完善补充一下本文。_
 ... Bean 的构造函数
 ... `MergedBeanDefinitionPostProcessor#postProcessMergedBeanDefinition`
 ... `InstantiationAwareBeanPostProcessor#postProcessAfterInstantiation`
-... `InstantiationAwareBeanPostProcessor#postProcessProperties` -- 完成依赖注入。
+... `InstantiationAwareBeanPostProcessor#postProcessProperties`
 ... `InstantiationAwareBeanPostProcessor#postProcessPropertyValues` -- 从 5.1 开始废弃，使用上面方法代替。
 ... `BeanPostProcessor#postProcessBeforeInitialization`
 ... `init`
@@ -106,7 +106,7 @@ _先水一下，回头画个历程图再完善补充一下本文。_
 .. 构造函数
 .. `MergedBeanDefinitionPostProcessor#postProcessMergedBeanDefinition` -- 目前有 `ApplicationListenerDetector`。
 .. `InstantiationAwareBeanPostProcessor#postProcessAfterInstantiation`
-.. `InstantiationAwareBeanPostProcessor#postProcessProperties` -- 完成依赖注入。
+.. `InstantiationAwareBeanPostProcessor#postProcessProperties`
 .. `InstantiationAwareBeanPostProcessor#postProcessPropertyValues` -- 从 5.1 开始废弃，使用上面方法代替。
 .. `AutowiredAnnotationBeanPostProcessor#setBeanFactory(DefaultListableBeanFactory)` -- 完成 `BeanNameAware`， `BeanClassLoaderAware`， `BeanFactoryAware` 三个 `Aware` 的注入。通过 `AbstractAutowireCapableBeanFactory#invokeAwareMethods` 方法来完成。
 .. `BeanPostProcessor#postProcessBeforeInitialization` -- 目前有
@@ -132,13 +132,13 @@ _先水一下，回头画个历程图再完善补充一下本文。_
 .. 构造函数
 .. `MergedBeanDefinitionPostProcessor#postProcessMergedBeanDefinition` -- 目前有如下三个：
 ... `ApplicationListenerDetector`
-... `CommonAnnotationBeanPostProcessor`
-... `AutowiredAnnotationBeanPostProcessor`
+... `CommonAnnotationBeanPostProcessor` -- 收集依赖信息。
+... `AutowiredAnnotationBeanPostProcessor` -- 收集依赖信息。
 .. `InstantiationAwareBeanPostProcessor#postProcessAfterInstantiation`
-.. `InstantiationAwareBeanPostProcessor#postProcessProperties` -- 完成依赖注入。目前有如下三个：
+.. `InstantiationAwareBeanPostProcessor#postProcessProperties` 目前有如下三个：
 ... `ImportAwareBeanPostProcessor`
-... `CommonAnnotationBeanPostProcessor`
-... `AutowiredAnnotationBeanPostProcessor`
+... `CommonAnnotationBeanPostProcessor` -- 完成依赖注入。
+... `AutowiredAnnotationBeanPostProcessor` -- 完成依赖注入。
 .. `InstantiationAwareBeanPostProcessor#postProcessPropertyValues` -- 从 5.1 开始废弃，使用上面方法代替。
 .. `BeanPostProcessor#postProcessBeforeInitialization` -- 目前有
 ... 用户手动添加的 `BeanPostProcessor`
@@ -180,23 +180,23 @@ _先水一下，回头画个历程图再完善补充一下本文。_
 . `InstantiationAwareBeanPostProcessor#postProcessBeforeInstantiation` -- 目前有如下四个：
 .. `ImportAwareBeanPostProcessor`
 .. `AnnotationAwareAspectJAutoProxyCreator`
-.. `CommonAnnotationBeanPostProcessor`
-.. `AutowiredAnnotationBeanPostProcessor`
+.. `CommonAnnotationBeanPostProcessor` -- 无所事事。
+.. `AutowiredAnnotationBeanPostProcessor` -- 无所事事。
 . 构造函数
 . `MergedBeanDefinitionPostProcessor#postProcessMergedBeanDefinition` -- 目前有如下三个：
-.. `CommonAnnotationBeanPostProcessor`
-.. `AutowiredAnnotationBeanPostProcessor`
-.. `ApplicationListenerDetector`
+.. `CommonAnnotationBeanPostProcessor` -- 收集依赖信息。
+.. `AutowiredAnnotationBeanPostProcessor` -- 收集依赖信息。
+.. `ApplicationListenerDetector` -- 判断 Bean 是否是一个 `ApplicationListener`，是则保留，在后面的 `postProcessAfterInitialization` 方法中，加入到容器的 `applicationListeners` 中。
 . `InstantiationAwareBeanPostProcessor#postProcessAfterInstantiation` -- 与上面的 `postProcessBeforeInstantiation` 方法对应，目前有如下四个：
-.. `ImportAwareBeanPostProcessor`
-.. `AnnotationAwareAspectJAutoProxyCreator`
-.. `CommonAnnotationBeanPostProcessor`
-.. `AutowiredAnnotationBeanPostProcessor`
-. `InstantiationAwareBeanPostProcessor#postProcessProperties` -- 完成依赖注入。目前有如下三个：
-.. `ImportAwareBeanPostProcessor`
-.. `AnnotationAwareAspectJAutoProxyCreator`
-.. `CommonAnnotationBeanPostProcessor`
-.. `AutowiredAnnotationBeanPostProcessor`
+.. `ImportAwareBeanPostProcessor` -- 无所事事。
+.. `AnnotationAwareAspectJAutoProxyCreator` -- 无所事事。
+.. `CommonAnnotationBeanPostProcessor` -- 无所事事。
+.. `AutowiredAnnotationBeanPostProcessor` -- 无所事事。
+. `InstantiationAwareBeanPostProcessor#postProcessProperties` -- 目前有如下三个：
+.. `ImportAwareBeanPostProcessor` -- 如果 Bean 是 `EnhancedConfiguration`（它继承了 `BeanFactoryAware`） 的实现类，则注入 `BeanFactory`。
+.. `AnnotationAwareAspectJAutoProxyCreator` -- 无所事事。
+.. `CommonAnnotationBeanPostProcessor` -- 完成依赖注入。
+.. `AutowiredAnnotationBeanPostProcessor` -- 完成依赖注入。
 . `InstantiationAwareBeanPostProcessor#postProcessPropertyValues` -- 从 5.1 开始废弃，使用上面方法代替。 
 +
 WARNING: 这里要注意，并不是执行完四个类的 `postProcessProperties` 方法，再去执行四个类的 `postProcessPropertyValues` 方法。而是以类为顺序的，执行完一个类的 `postProcessProperties` 方法，然后去执行 `postProcessPropertyValues` 方法。执行完一个类，再去执行下一个类。这个现象在下面的日志中有反应。
@@ -214,23 +214,25 @@ WARNING: 这里要注意，并不是执行完四个类的 `postProcessProperties
 ... `ApplicationEventPublisherAware`
 ... `MessageSourceAware`
 ... `ApplicationContextAware`
-.. `ImportAwareBeanPostProcessor`
-.. `BeanPostProcessorChecker`
-.. `AnnotationAwareAspectJAutoProxyCreator`
-.. `CommonAnnotationBeanPostProcessor`
-.. `AutowiredAnnotationBeanPostProcessor`
-.. `ApplicationListenerDetector`
+.. `ImportAwareBeanPostProcessor` -- 如果实现了 `ImportAware` 接口，则注入 `importMetadata` 信息。
+.. `BeanPostProcessorChecker` -- 无所事事。
+.. `AnnotationAwareAspectJAutoProxyCreator` -- 无所事事。
+.. `CommonAnnotationBeanPostProcessor` -- 调用 `postProcessProperties` 完成注入，注入工作是在 `InjectionMetadata.InjectedElement` 完成的。这里并没有注入，似乎调用了全局设置的初始化操作。需要找文档确认一下。
+.. `AutowiredAnnotationBeanPostProcessor` -- 无所事事。
+.. `ApplicationListenerDetector` -- 无所事事。
 . `InitializingBean#afterPropertiesSet()`
 . `init-method`
 . `BeanPostProcessor#postProcessAfterInitialization` 方法 -- 目前有
 .. 用户手动添加的 `BeanPostProcessor`
 .. `ApplicationContextAwareProcessor` -- 继承默认实现，什么操作也不做。
-.. `ImportAwareBeanPostProcessor`
-.. `BeanPostProcessorChecker`
-.. `AnnotationAwareAspectJAutoProxyCreator`
-.. `CommonAnnotationBeanPostProcessor`
-.. `AutowiredAnnotationBeanPostProcessor`
-.. `ApplicationListenerDetector`
+.. `ImportAwareBeanPostProcessor` -- 继承默认实现，什么操作也不做。
+.. `BeanPostProcessorChecker` -- 如果 Bean 是 `BeanPostProcessor` 子类，则检查 `BeanPostProcessor` 数量。
+.. `AnnotationAwareAspectJAutoProxyCreator` -- 检查 Bean 和提前暴露的引用是否相同，不同则重新生成代理对象。
+.. `CommonAnnotationBeanPostProcessor` -- 继承父类实现，无所事事。 
+.. `AutowiredAnnotationBeanPostProcessor` -- 继承父类实现，无所事事。 
+.. `ApplicationListenerDetector` -- 将 `ApplicationListener` 类型的 Bean，加入到容器的 `applicationListeners` 中，方便容器开始监听。
+
+初始化之前，似乎可以设置全局的初始化操作。忘了具体在哪个类中了？
 
 == Bean 创建流程补充说明
 
