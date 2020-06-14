@@ -174,7 +174,7 @@ image::/images/spring-startup-process-overview/spring-bean-lifecycle.svg[align="
 . 将 `AnnotationAwareAspectJAutoProxyCreator` 对象注册到容器中。以下会随着 `BeanPostProcessor` 的调用，也会被执行。
 . 重新添加 `ApplicationListenerDetector`，其实就是换了个位置，将其调整到了最后。
 . 到此为止，`registerBeanPostProcessors(beanFactory)` 方法调用完毕。
-. 调用 `initMessageSource()` 方法。
+. 调用 `initMessageSource()` 方法，注册 `MessageSource` Bean。
 . 调用 `initApplicationEventMulticaster()` 方法，注册 `SimpleApplicationEventMulticaster` 对象，
 . 调用 `onRefresh()` 方法，这是空方法，方便做扩展。
 . 调用 `registerListeners()` 方法，但是似乎什么也没做。
@@ -186,7 +186,17 @@ image::/images/spring-startup-process-overview/spring-bean-lifecycle.svg[align="
 .. `CommonAnnotationBeanPostProcessor`
 .. `AutowiredAnnotationBeanPostProcessor`
 .. `ApplicationListenerDetector`
-. 调用 `finishRefresh()` -- 启动生命周期函数，广播刷新完成通知。
+. 调用 `finishRefresh()` -- 启动生命周期函数，广播刷新完成通知。具体如下：
+.. 清理 `Resource` 缓存（也就是被扫描到的各种类，自定义类，以及相关父类和所实现的接口）。（像是在 `ImportSelector` 中声明的类。但是没有找到添加到缓存的地方？）
+.. 注册 `LifecycleProcessor`，并通过它启动所有的 `LifecycleProcessor` 和它自身。没有看出来干什么用的？
+.. 广播 `ContextRefreshedEvent` 事件。
+.. 将 `ConfigurableApplicationContext` 注册到 `LiveBeansView` 上，如果它存在的话。
+.. 清理各种缓存
+... 启动过程中的反射相关缓存，比如 `init-method`，`Aware` 相关的方法，注入需要的字段等等；
+... `AnnotationFilter` 相关缓存；
+... 注解元素缓存和生命周期函数（`Aware`、`InitializingBean`、`BeanFactoryPostProcessor`等）缓存清空
+... 解析类型缓存清空
+... 反省结果清空
 
 == Bean 创建流程
 
