@@ -1,5 +1,5 @@
 ---
-title: "Spring 启动流程概述"
+title: "Spring 启动流程及 Bean 生命周期概述"
 date: 2020-06-13T00:31:25+08:00
 draft: false
 keywords: ["Java","Spring"]
@@ -19,13 +19,13 @@ weight: 1
 :pygments-style: monokai
 :pygments-linenums-mode: table
 
-Spring 初始化流程中，总有一些小地方搞的不是很清楚，干脆直接通过修改代码增加日志输出，使用断点单步调试，把整个流程捋顺了一点点的。
+对于 Spring 启动流程和 Bean 的生命周期，总有一些小地方搞的不是很清楚，干脆直接通过修改代码增加日志输出，使用断点单步调试，把整个流程捋顺了一点点的。
 
-除了加载配置文件或者基础配置类外，Spring 的启动过程几乎可以认为就是 `AbstractApplicationContext#refresh` 可以说就包括了 Spring 启动全流程，下面的流程分析也是以这个方法为骨架来展开的。
+除了加载配置文件或者基础配置类外，Spring 的启动过程几乎都被封装在 `AbstractApplicationContext#refresh` 方法中，可以说弄清楚了这个方法的执行过程，就摸清楚了 Spring 启动全流程，下面的流程分析也是以这个方法为骨架来展开的。
 
-直接上图，内容较多，图片文字偏小，请放大看（矢量图，可以任意放大）：
+直接上图：Spring Bean 生命周期流程图。内容较多，图片文字偏小，请放大看（矢量图，可以任意放大）：
 
-image::/images/spring-startup-process-overview/spring-bean-lifecycle.svg[]
+image::/images/spring-startup-process-overview/spring-bean-lifecycle.svg[align="center",title="Spring Bean 生命周期流程图",alt="Spring Bean 生命周期流程图",width="98%"]
 
 下面是文字说明。
 
@@ -35,8 +35,19 @@ image::/images/spring-startup-process-overview/spring-bean-lifecycle.svg[]
 
 . 调用 `prepareRefresh()` 方法，初始化属性源(property source)配置。
 . 调用 `obtainFreshBeanFactory()` 获得 `ConfigurableListableBeanFactory` 对象。
-. 准备 `BeanFactory`，添加必要的 Bean，在 `AbstractApplicationContext#prepareBeanFactory` 中完成。
-. 下面通过 `AbstractApplicationContext#invokeBeanFactoryPostProcessors` 方法，开始执行 `BeanFactoryPostProcessor` 相关的方法
+. 调用 `prepareBeanFactory`，准备 `BeanFactory`，添加必要的 Bean；添加 `ApplicationContextAwareProcessor`、`ApplicationListenerDetector` 处理器；注册环境相关的 Bean。
+. 下面通过 `AbstractApplicationContext#invokeBeanFactoryPostProcessors` 方法，开始执行 `BeanDefinitionRegistryPostProcessor` 和 `BeanFactoryPostProcessor` 相关的方法。这个方法流程起始也很简单：
++
+目前，除了用户自定义的 `BeanDefinitionRegistryPostProcessor` 和 `BeanFactoryPostProcessor` 外，Spring 内置的，只有 `ConfigurationClassPostProcessor` 一个类。所以，把这个类的实现摸清楚了，`AbstractApplicationContext#invokeBeanFactoryPostProcessors` 就可以跳过了。
++
+.. 首先，执行 `BeanDefinitionRegistryPostProcessor#postProcessBeanDefinitionRegistry` 方法，顺序如下：
+... 用户手动添加的 `BeanDefinitionRegistryPostProcessor`；
+... 实现 `PriorityOrdered` 接口的 `BeanDefinitionRegistryPostProcessor`；
+... 实现 `Ordered` 接口的 `BeanDefinitionRegistryPostProcessor`；
+... 普通 `BeanDefinitionRegistryPostProcessor`，只要发现有新加入的，就循环调用。
+.. 然后，执行 `BeanFactoryPostProcessor#postProcessBeanFactory` 方法。顺序如下：
+... 实现 `BeanDefinitionRegistryPostProcessor` 接口的类；
+... 实现 `BeanFactoryPostProcessor` 接口的类。
 . 先执行用户手动添加的 `BeanDefinitionRegistryPostProcessor#postProcessBeanDefinitionRegistry(DefaultListableBeanFactory)`
 +
 关于 `BeanDefinitionRegistryPostProcessor` 的处理流程，D瓜哥在 https://www.diguage.com/post/spring-extensions-overview/#bean-factory-post-processor[Spring 扩展点概览及实践：BeanDefinitionRegistryPostProcessor^] 中有更详细的描述，不了解的朋友请参考那篇文章的介绍。
