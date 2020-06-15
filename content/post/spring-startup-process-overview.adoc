@@ -198,7 +198,7 @@ image::/images/spring-startup-process-overview/spring-bean-lifecycle.svg[align="
 ... 解析类型缓存清空
 ... 反省结果清空
 
-== Bean 创建流程
+== Bean 生命周期
 
 创建 Bean，需要经过如下流程：
 
@@ -262,7 +262,7 @@ WARNING: 这里要注意，并不是执行完四个类的 `postProcessProperties
 
 初始化之前，似乎可以设置全局的初始化操作。忘了具体在哪个类中了？
 
-== Bean 创建流程补充说明
+== Bean 生命周期补充说明
 
 下面对创建 Bean 的流程做进一步说明：
 
