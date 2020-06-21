@@ -138,6 +138,7 @@ public class Employees {
 
 整个实例代码中，只有 `@MapperScan(basePackages = "com.diguage.truman.mybatis")` 这个注解和 MyBATIS 的配置相关，我们就从这里开始吧。
 
+[#mapper-scan]
 == `@MapperScan` 处理
 
 D瓜哥在 https://www.diguage.com/post/spring-extensions-overview/#bean-definition-registry-post-processor[Spring 扩展点概览及实践：BeanDefinitionRegistryPostProcessor^] 中已经指出 `ConfigurationClassPostProcessor` 负责处理 `@Configuration` 注解。所以，可以直接去看这个类的代码。
