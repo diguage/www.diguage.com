@@ -68,52 +68,51 @@ image::/images/spring-framework/BeanDefinition.svg[align="center",title="BeanDef
 
 下面主要介绍一下它的核心内部属性：
 
-. **`Map<String, Object> attributes = new LinkedHashMap<>()`**：配置的属性以及属性值。
-. **`Object source`**：存储 Bean 来源，有时是 XML `Element` 对象。还可以是其他对象。
-. **`Object beanClass`**：Bean 的类型定义，有时是 `Class` 类型的对象；有时是类的全限定名，此时就是 `String` 类型。
-. **`abstractFlag = false`**：默认为 `false`。如果为 `true`，则表示不打算实例化该 Bean，仅仅作为其他 Bean 的父 Bean。一般与 `parent` 一起使用，设置 `abstract` 的 Bean 定义不需要创建实例，仅仅作为 `parent` 来进行一些通用的配置，后面的 Bean 通过设置 `parent` 来获取相应的配置信息，从而达到简化配置的目的。
-. **`Boolean lazyInit`**：是否懒加载。
-. **`int autowireMode = AUTOWIRE_NO`**：注入模式，默认为 `AUTOWIRE_NO`。一共有五个可选项：
+. `Map<String, Object> attributes = new LinkedHashMap<>()`：配置的属性以及属性值。
+. `Object source`：存储 Bean 来源，有时是 XML `Element` 对象。还可以是其他对象。
+. `Object beanClass`：Bean 的类型定义，有时是 `Class` 类型的对象；有时是类的全限定名，此时就是 `String` 类型。
+. `abstractFlag = false`：默认为 `false`。如果为 `true`，则表示不打算实例化该 Bean，仅仅作为其他 Bean 的父 Bean。一般与 `parent` 一起使用，设置 `abstract` 的 Bean 定义不需要创建实例，仅仅作为 `parent` 来进行一些通用的配置，后面的 Bean 通过设置 `parent` 来获取相应的配置信息，从而达到简化配置的目的。
+. `Boolean lazyInit`：是否懒加载。
+. `int autowireMode = AUTOWIRE_NO`：注入模式，默认为 `AUTOWIRE_NO`。一共有五个可选项：
 .. `AUTOWIRE_NO` -- 不自动注入。
 .. `AUTOWIRE_BY_NAME` -- 根据名称自动注入。
 .. `AUTOWIRE_BY_TYPE` -- 根据类型自动注入。
 .. `AUTOWIRE_CONSTRUCTOR` -- 自动根据构造函数注入。
 .. `AUTOWIRE_AUTODETECT` -- 自动检测。
-. **`int dependencyCheck = DEPENDENCY_CHECK_NONE`**：依赖检测。一共有四个可选项：
+. `int dependencyCheck = DEPENDENCY_CHECK_NONE`：依赖检测。一共有四个可选项：
 .. `DEPENDENCY_CHECK_NONE` -- 不进行依赖检测。
 .. `DEPENDENCY_CHECK_OBJECTS` -- 只检测对象引用。
 .. `DEPENDENCY_CHECK_SIMPLE` -- 只检测简单对象：基础类型、`Enum`、`CharSequence`、`Number`、`Date`、`Temporal`、`URI`、`URL`、`Locale`、`Class` 以及这些类型的数组对象。
 .. `DEPENDENCY_CHECK_ALL` -- 检测所有依赖。
-. **`String[] dependsOn`**：依赖对象的 Bean 名称。
-. **`boolean autowireCandidate = true`**：声明是否是其他依赖的候选 Bean；只会影响根据类型注入的情况，不会影响根据名称明确指明依赖的情况。
-. **`boolean primary = false`**：是否是首选 Bean，标注了 `@Primary` 则为 `true`。当 A 类型的 Bean 需要注入 B 类型的实现类，并且 B 类型的实现类有多个，在按类型将 B 的实现类注入到 A 中时，优先注入该属性为 `true` 的实现类，当然如果同一个类的实现类有多个 `primary` 为 `true`，则抛出异常。
-. **`Map<String, AutowireCandidateQualifier> qualifiers = new LinkedHashMap<>()`**：
-. **`Supplier<?> instanceSupplier`**：产生对象的生产者。
-. **`boolean nonPublicAccessAllowed = true`**：是否允许访问非 `public` 的构造器和方法。
-. **`boolean lenientConstructorResolution = true`**：是否采用宽容模式来解析构造函数。如果是 `false`，则只要参数类型不匹配就抛出异常。
-. **`String factoryBeanName`**：当 Bean 的创建方式是以工厂进行创建的时候，该方法设置工厂的名称。
-. **`String factoryMethodName`**：工厂创建 Bean 时，设置创建 Bean 的方法名称。
-. **`ConstructorArgumentValues constructorArgumentValues`**：构造函数参数值。
-. **`MutablePropertyValues propertyValues`**： 获取类的属性和属性值的类 `PropertyValue`。
-. **`MethodOverrides methodOverrides = new MethodOverrides()`**：
-. **`String initMethodName`**：初始化方法名，对应 `init-method` 或者 `@PostConstruct` 标注的方法。
-. **`String destroyMethodName`**：销毁方法名，对应 `` 或 `@PreDestroy` 标注的方法。
-. **`boolean enforceInitMethod = true`**：强制初始化方法，默认是 `false`。如果为 `true`，而且 `initMethodName` 为空，则报错。
-. **`boolean enforceDestroyMethod = true`**：强制销毁方法，默认是 `false`。如果为 `true`，而且 `destroyMethodName` 为空，则报错。
-. **`boolean synthetic = false`**：是否是合成的。
-. **`int role = BeanDefinition.ROLE_APPLICATION`**：Bean 角色。可选项有三个：
+. `String[] dependsOn`：依赖对象的 Bean 名称。
+. `boolean autowireCandidate = true`：声明是否是其他依赖的候选 Bean；只会影响根据类型注入的情况，不会影响根据名称明确指明依赖的情况。
+. `boolean primary = false`：是否是首选 Bean，标注了 `@Primary` 则为 `true`。当 A 类型的 Bean 需要注入 B 类型的实现类，并且 B 类型的实现类有多个，在按类型将 B 的实现类注入到 A 中时，优先注入该属性为 `true` 的实现类，当然如果同一个类的实现类有多个 `primary` 为 `true`，则抛出异常。
+. `Map<String, AutowireCandidateQualifier> qualifiers = new LinkedHashMap<>()`：
+. `Supplier<?> instanceSupplier`：产生对象的生产者。
+. `boolean nonPublicAccessAllowed = true`：是否允许访问非 `public` 的构造器和方法。
+. `boolean lenientConstructorResolution = true`：是否采用宽容模式来解析构造函数。如果是 `false`，则只要参数类型不匹配就抛出异常。
+. `String factoryBeanName`：当 Bean 的创建方式是以工厂进行创建的时候，该方法设置工厂的名称。
+. `String factoryMethodName`：工厂创建 Bean 时，设置创建 Bean 的方法名称。
+. `ConstructorArgumentValues constructorArgumentValues`：构造函数参数值。
+. `MutablePropertyValues propertyValues`： 获取类的属性和属性值的类 `PropertyValue`。
+. `MethodOverrides methodOverrides = new MethodOverrides()`：
+. `String initMethodName`：初始化方法名，对应 `init-method` 或者 `@PostConstruct` 标注的方法。
+. `String destroyMethodName`：销毁方法名，对应 `` 或 `@PreDestroy` 标注的方法。
+. `boolean enforceInitMethod = true`：强制初始化方法，默认是 `false`。如果为 `true`，而且 `initMethodName` 为空，则报错。
+. `boolean enforceDestroyMethod = true`：强制销毁方法，默认是 `false`。如果为 `true`，而且 `destroyMethodName` 为空，则报错。
+. `boolean synthetic = false`：是否是合成的。
+. `int role = BeanDefinition.ROLE_APPLICATION`：Bean 角色。可选项有三个：
 .. `ROLE_APPLICATION` -- 为应用程序定义。
 .. `ROLE_SUPPORT` -- 为应用程序定义的比较大的对象。
 .. `ROLE_INFRASTRUCTURE` -- 内部定义的基础 Bean。
-. **`String description`**：Bean 描述。
-. **`Resource resource`**：Bean 的来源 `Resource` 对象。
-. **`AnnotationMetadata metadata`**： 注解元信息。
-. **`MethodMetadata factoryMethodMetadata`**：方法注解元信息。
-
+. `String description`：Bean 描述。
+. `Resource resource`：Bean 的来源 `Resource` 对象。
+. `AnnotationMetadata metadata`： 注解元信息。
+. `MethodMetadata factoryMethodMetadata`：方法注解元信息。
 
 `BeanDefinition` 的代码在 https://github.com/spring-projects/spring-framework/blob/master/spring-beans/src/main/java/org/springframework/beans/factory/config/BeanDefinition.java[spring-framework/BeanDefinition.java^] 中。感兴趣，可以自己 clone 下来，把玩把玩。
 
-下一篇文章，D瓜哥重点带大家了解一下 `BeanFactory`。敬请期待。
+下一篇文章，D瓜哥重点带大家了解一下 `BeanFactory`： https://www.diguage.com/post/dive-into-spring-core-data-structure-bean-factory/[深入剖析 Spring 核心数据结构：BeanFactory]。
 
 == 参考资料
 
