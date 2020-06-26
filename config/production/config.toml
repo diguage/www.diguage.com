@@ -51,7 +51,7 @@ googleAnalytics = "UA-32893826-1" # Enable Google Analytics by entering your tra
 #   name = "归档"
 #   weight = 20
 #   identifier = "archives"
-#   url = "/post/"
+#   url = "/archives/"
 [[menu.main]]
   name = "分类"
   weight = 40
