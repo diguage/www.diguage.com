@@ -6,6 +6,7 @@ paginate = "10" # Number of posts per page
 theme = "mainroad"
 disqusShortname = "" # Enable comments by entering your Disqus shortname
 googleAnalytics = "UA-32893826-1" # Enable Google Analytics by entering your tracking id
+baiduAnalytics = "ae7f1fd4c53f019313f5a1db9b0d4803" # Enable Google Analytics by entering your tracking id
 pygmentsUseClasses = true
 
 [Author]
