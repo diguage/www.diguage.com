@@ -22,7 +22,24 @@ weight: 1
 
 除了加载配置文件或者基础配置类外，Spring 的启动过程几乎都被封装在 `AbstractApplicationContext#refresh` 方法中，可以说弄清楚了这个方法的执行过程，就摸清楚了 Spring 启动全流程，下面的流程分析也是以这个方法为骨架来展开的。
 
-== 整体启动流程
+== 流程概要
+
+下面完整流程有些太复杂，所以，提炼一个简要的过程，方便糊弄面试官，哈哈哈😆
+
+. 创建容器，读取 `applicationContext.register(Config.class)` 指定的配置。
+. 准备 `BeanFactory`，注册容器本身和 `BeanFactory` 实例，以及注册环境配置信息等。
+. 执行 `BeanDefinitionRegistryPostProcessor#postProcessBeanDefinitionRegistry` 注册 `BeanDefinition`。有三点需要注意：
+.. 目前只有一个 `ConfigurationClassPostProcessor` 实现类，Spring 中大量的 Bean 都是在这一步被该类注册到容器中的。
+.. 执行顺序是 ① `PriorityOrdered` ② `Ordered` ③ 普通的顺序来执行
+.. 在执行上一步是，如果发现注册了 `BeanDefinitionRegistryPostProcessor` 类型的 Bean，就会在循环里继续调用 `postProcessBeanDefinitionRegistry` 方法。MyBATIS 和 Spring 整合的 `MapperScannerConfigurer` 类就是在这一步执行的。
+. 执行 `BeanFactoryPostProcessor#postProcessBeanFactory` 方法。目前只有一个 `ConfigurationClassPostProcessor` 实现类。
+. 注册 `CommonAnnotationBeanPostProcessor` 和 `AutowiredAnnotationBeanPostProcessor` 为 `BeanPostProcessor`。
+. 注册 `ApplicationEventMulticaster`，用于广播事件的。
+. 注册 `ApplicationListener`
+. 预加载以及注册所有非懒加载的 Bean
+
+
+== 完整启动流程
 
 . 调用 `prepareRefresh()` 方法，初始化属性源(property source)配置。
 . 调用 `obtainFreshBeanFactory()` 获得 `ConfigurableListableBeanFactory` 对象。
