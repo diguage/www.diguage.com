@@ -2,7 +2,7 @@
 title: "只要一部计算机，就可以创造出无限的世界"
 date: 2009-04-21T00:00:00+08:00
 draft: false
-tags: ["数据库","Java","算法","方法论"]
+tags: ["数据库","Java","算法"]
 categories: ["个人成长","方法论"]
 
 weight: 1

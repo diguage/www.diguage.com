@@ -3,7 +3,7 @@ title: "学习方法总结"
 date: 2019-10-17T20:37:00+08:00
 lastmod: 2019-10-17T20:37:00+08:00
 draft: false
-tags: ["方法论", "个人提升", "脑图"]
+tags: ["个人提升", "脑图"]
 categories: ["方法论"]
 
 weight: 1
