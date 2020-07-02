@@ -4,7 +4,7 @@ date: 2020-07-02T10:13:16+08:00
 draft: false
 keywords: ["Redis","Spring"]
 tags: ["存储","设计","架构"]
-categories: ["网络","程序设计","算法"]
+categories: ["程序设计","算法","分布式"]
 
 weight: 1
 
@@ -89,7 +89,7 @@ image::/images/redis/redis-ziplist-structure.jpg[]
 +
 `<zltail>` 的存在，使得我们可以很方便地找到最后一项（不用遍历整个ziplist），从而可以在ziplist尾端快速地执行push或pop操作。
 +
-. `<zllen>`: 16bit， 表示ziplist中数据项（entry）的个数。zllen字段因为只有16bit，所以可以表达的最大值为2^16-1。`<zllen>` 等于16bit全为1的情况，那么 `<zllen>` 就不表示数据项个数了，这时要想知道 ziplist 中数据项总数，那么必须对ziplist从头到尾遍历各个数据项，才能计数出来。
+. `<zllen>`: 16bit， 表示ziplist中数据项（entry）的个数。zllen字段因为只有16bit，所以可以表达的最大值为2^16^-1。`<zllen>` 等于16bit全为1的情况，那么 `<zllen>` 就不表示数据项个数了，这时要想知道 ziplist 中数据项总数，那么必须对ziplist从头到尾遍历各个数据项，才能计数出来。
 . `<entry>`: 表示真正存放数据的数据项，长度不定。一个数据项（entry）也有它自己的内部结构，这个稍后再解释。
 . `<zlend>`: ziplist 最后 1 个字节，是一个结束标记，值固定等于 255。
 
