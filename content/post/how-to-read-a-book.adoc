@@ -4,6 +4,7 @@ date: 2020-01-08T22:23:51+08:00
 draft: false
 tags: ["读书","笔记"]
 categories: ["方法论"]
+thumbnail: "images/books-on-book-day/how-to-read-a-book.jpg"
 
 weight: 1
 // toc: true
