@@ -5,6 +5,7 @@ draft: false
 keywords: ["Java","Kafa"]
 tags: ["Java","设计","架构","分布式"]
 categories: ["Java","程序设计","分布式"]
+thumbnail: "images/kafka/kafka-logo.png"
 
 weight: 1
 

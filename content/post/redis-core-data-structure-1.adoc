@@ -5,6 +5,7 @@ draft: false
 keywords: ["Redis","Spring"]
 tags: ["存储","设计","架构"]
 categories: ["程序设计","算法","分布式"]
+thumbnail: "images/redis/redis-logo.png"
 
 weight: 1
 
@@ -21,9 +22,9 @@ weight: 1
 
 Redis 目前是使用最广泛的缓存中间件。其突出特点就是支持多种常见的数据结构。对比 JDK 集合类的实现，Redis 的实现表现出很多独到之处，很多地方设计得别具匠心。下面就来简要介绍一下。
 
-== 链表
+== linkedlist
 
-Redis 底层也有很多地方使用到链表，并且也是双向链表。
+Redis 底层也有很多地方使用到 linkedlist，并且也是双向链表。
 
 .adlist.h
 [source,c,{source_attr}]
@@ -49,12 +50,14 @@ typedef struct list {
 } list;
 ----
 
-Redis 的链表实现特点是：
+Redis 的 linkedlist 实现特点是：
 
 . 双向：节点带有前后指针；
 . 无环：首尾没有相连，所以没有构成环状；
 . 链表保存了首尾指针；
 . 多态：可以保存不同类型的值，这里成为泛型也许更符合 Java 中的语义。
+
+Redis 在 2014 年实现了 <<quicklist>>，并使用 quicklist 代替了 linkedlist。所以，现在 linkedlist 几乎已经是废弃状态。
 
 == ziplist
 
@@ -189,7 +192,7 @@ image::/images/redis/redis-ziplist-sample.png[]
 
 Redis 在下面这个几个地方使用了 ziplist：
 
-. 列表键值包含少了的列表项，并且列表项只是整数或者短小的字符串时。（在最新版 Redis 中测试，显示的是 quicklist。在下面 <<quicklist>> 小节中，可以看到，quicklist 中间使用的是 ziplist，只是外面被 quicklist 包裹着。）
+. 列表包含少量的列表项，并且列表项只是整数或者短小的字符串时。（在下面 <<quicklist>> 小节中，在最新版 Redis 中测试，显示的是 quicklist，而 quicklist 内部使用的是 ziplist 来存储数据，只是外面被 quicklist 包裹着。）
 . 在哈希键值包含少量键值对，并且每个键值对只包含整数或短小字符串时。
 +
 [source,bash,{source_attr}]

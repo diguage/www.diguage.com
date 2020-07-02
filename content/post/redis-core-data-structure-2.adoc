@@ -1,10 +1,11 @@
 ---
 title: "Redis 核心数据结构（二）"
-date: 2020-07-02T11:11:11+08:00
+date: 2020-07-03T00:39:43+08:00
 draft: false
 keywords: ["Redis","Spring"]
 tags: ["存储","设计","架构"]
 categories: ["程序设计","算法","分布式"]
+thumbnail: "images/redis/redis-logo.png"
 
 weight: 1
 
@@ -18,9 +19,12 @@ weight: 1
 :pygments-style: monokai
 :pygments-linenums-mode: table
 :source_attr: indent=0,subs="attributes,verbatim"
+:image_attr: align=center
 
 
 在上一篇文章： https://www.diguage.com/post/redis-core-data-structure-1/[Redis 核心数据结构（1）] 中，介绍了链表、ziplist、quicklist 数据结构。这篇文章，来介绍一下 skiplist、dict。
+
+
 
 == skiplist
 
@@ -59,7 +63,7 @@ typedef struct zset {
 
 skiplist，顾名思义，首先它是一个list。实际上，它是在有序链表的基础上发展起来的。
 
-image::/images/redis/skiplist.png[]
+image::/images/redis/skiplist.png[{image_attr}]
 
 当我们想查找数据的时候，可以先沿着跨度大的链进行查找。当碰到比待查数据大的节点时，再回到跨度小的链表中进行查找。
 
@@ -67,7 +71,7 @@ skiplist正是受这种多层链表的想法的启发而设计出来的。按照
 
 skiplist为了避免这一问题，它不要求上下相邻两层链表之间的节点个数有严格的对应关系，而是为每个节点随机出一个层数(level)。
 
-image::/images/redis/redis-skiplist-insertions.png[]
+image::/images/redis/redis-skiplist-insertions.png[{image_attr}]
 
 插入操作只需要修改插入节点前后的指针，而不需要对很多节点都进行调整。这就降低了插入操作的复杂度。实际上，这是 skiplist 的一个很重要的特性，这让它在插入性能上明显优于平衡树的方案。
 
@@ -78,7 +82,7 @@ skiplist，翻译成中文，可以翻译成“跳表”或“跳跃表”，指
 . 在平衡树种，如何做范围查找？先确定边界，然后其他节点怎么查找？
 ****
 
-image::/images/redis/redis_skiplist_example.png[]
+image::/images/redis/redis_skiplist_example.png[{image_attr}]
 
 . skiplist 中 key 允许重复。
 . 在比较时，不仅比较分数（即key），还要比较数据自身。
@@ -281,10 +285,274 @@ Developer
 hashtable
 ----
 <1> 这是 64 个字符。
-<2> 这是 65 个字符
+<2> 这是 65 个字符。
 
 
 通过 `t_hash.c/hashTypeConvertZiplist` 方法来转换。
+
+== 总结
+
+下面从 Redis 接口的层面，来看一下底层实现时用到的数据结构：
+
+
+Redis 中并没有直接使用以上所说的各种数据结构来实现键值数据库，而是基于一种对象，对象底层再间接的引用上文所说的具体的数据结构。结构如下图：
+
+image::/images/redis/object-ptr.png[{image_attr}]
+
+=== 字符串（strings）
+
+image::/images/redis/object-string.png[{image_attr}]
+
+embstr 和 raw 都是由SDS动态字符串构成的。唯一区别是：raw 是分配内存的时候，redisobject 和 sds 各分配一块内存，而 embstr 是 redisobject 和 raw 在一块儿内存中。
+
+WARNING: 39 个字节的分界线没有实验出来。在代码中也没有翻找出来。所以，这个知识点还需要验证。
+
+[source,bash,{source_attr}]
+----
+$ redis-cli --raw
+
+127.0.0.1:6379> APPEND names 119
+3
+
+127.0.0.1:6379> GET names
+119
+
+127.0.0.1:6379> TYPE names
+string
+
+127.0.0.1:6379> OBJECT encoding names
+int
+
+127.0.0.1:6379> APPEND names " D瓜哥"
+11
+
+127.0.0.1:6379> GET names
+119 D瓜哥
+
+127.0.0.1:6379> OBJECT encoding names
+raw
+
+127.0.0.1:6379> SET names "119 D瓜哥"
+OK
+
+127.0.0.1:6379> OBJECT encoding names
+embstr
+
+127.0.0.1:6379> SET names "119 diguage D瓜哥 https://www.diguage.com"
+OK
+
+127.0.0.1:6379> OBJECT encoding profile
+embstr
+
+127.0.0.1:6379> SET names "0123456789012345678901234567890123456789"
+OK
+
+127.0.0.1:6379> OBJECT encoding profile
+embstr
+
+127.0.0.1:6379> SET names "012345678901234567890123456789012345678S"
+OK
+----
+
+=== 散列（hashes）
+
+image::/images/redis/object-hash.png[{image_attr}]
+
+Redis 的散列（hashes）的底层存储可以使用 ziplist 和 hashtable。当散列（hashes）可以同时满足以下两个条件时，散列（hashes）使用 ziplist 编码。
+
+. 散列（hashes）保存的所有键值对的键和值的字符串长度都小于 64 字节。（通过参数 `hash-max-ziplist-value` 来调节，默认是 64）
+. 散列（hashes）保存的键值对数量小于 512 个。（通过参数 `hash-max-ziplist-entries` 来调节，默认是 512）
+
+使用 ziplist 编码，每个 key/value 存储结果中 key 用一个 zipEntry 存储，value 用一个 zipEntry 存储。
+
+[source,bash,{source_attr}]
+----
+$ redis-cli --raw
+
+127.0.0.1:6379> HMSET profile name "D瓜哥" site "https://www.diguage.com" job "Developer"
+OK
+
+127.0.0.1:6379> TYPE profile
+hash
+
+127.0.0.1:6379> OBJECT encoding profile
+ziplist
+
+127.0.0.1:6379> HSET profile address "1234567890123456789012345678901234567890123456789012345678901234" // <1>
+1
+
+127.0.0.1:6379> HVALS profile
+D瓜哥
+https://www.diguage.com
+Developer
+1234567890123456789012345678901234567890123456789012345678901234
+127.0.0.1:6379> OBJECT encoding profile
+ziplist
+
+127.0.0.1:6379> HSET profile address "12345678901234567890123456789012345678901234567890123456789012345" // <2>
+0
+
+127.0.0.1:6379> HVALS profile
+https://www.diguage.com
+D瓜哥
+12345678901234567890123456789012345678901234567890123456789012345
+Developer
+
+127.0.0.1:6379> OBJECT encoding profile
+hashtable
+----
+<1> 这是 64 个字符。
+<2> 这是 65 个字符。
+
+ 
+=== 列表（lists）
+
+*列表（lists）底层是用 quicklist。*
+
+查看 Redis 的 t_list.c 文件的提交记录可以看出，从 2014 年 Redis 实现了 quicklist 之后，就把 列表（lists）的实现全部改成 quicklist 来实现了。网上很多很多资料显示列表（lists）有两种不同的编码方案，那都已经过时了。
+
+[source,bash,{source_attr}]
+----
+$ redis-cli --raw
+
+127.0.0.1:6379> RPUSH names diguage "D瓜哥" "https://www.diguage.com/"
+2
+
+127.0.0.1:6379> LRANGE names 0 -1
+diguage
+D瓜哥
+https://www.diguage.com/
+
+127.0.0.1:6379> TYPE names
+list
+
+127.0.0.1:6379> OBJECT encoding names
+quicklist
+----
+
+
+=== 集合（sets）
+
+image::/images/redis/object-set.jpeg[{image_attr}]
+
+
+Redis 的集合（sets）的底层存储可以使用 intset 和 hashtable。当集合（sets）可以同时满足以下两个条件时，集合（sets）使用 intset 编码。
+
+. 集合（sets）保存的所有值都是整数，而且数字范围在 -2^64^ ~ 2^64^-1 之间。
+. 集合（sets）保存的键数量小于 512 个，（通过 `set-max-intset-entries` 参数调节，默认是 512）。
+
+
+[source,bash,{source_attr}]
+----
+$ redis-cli --raw
+
+127.0.0.1:6379> SADD numbers 1 2 3
+3
+
+127.0.0.1:6379> SMEMBERS numbers
+1
+2
+3
+
+127.0.0.1:6379> TYPE numbers
+set
+
+127.0.0.1:6379> OBJECT encoding numbers
+intset
+
+127.0.0.1:6379> SADD numbers "https://www.diguage.com"
+1
+
+127.0.0.1:6379> SMEMBERS numbers
+https://www.diguage.com
+2
+1
+3
+
+127.0.0.1:6379> TYPE numbers
+set
+
+127.0.0.1:6379> OBJECT encoding numbers
+hashtable
+----
+
+=== 有序集合（sorted sets）
+
+image::/images/redis/object-zset.png[{image_attr}]
+
+. 当数据较少时，sorted set是由一个 ziplist 来实现的。其中集合元素按照分值从小到大排序。
+. 当数据多的时候，sorted set 是由一个叫 zset 的数据结构来实现的，这个 zset 包含一个 dict + 一个 skiplist。dict 用来查询数据到分数(score)的对应关系，而 skiplist 用来根据分数查询数据（可能是范围查找）。查看编码显示的是 skiplist。
+
+转换的条件是：
+
+. 有序集合保存的元素数量小于 128 个；（通过参数 `zset-max-ziplist-entries` 来调节，默认为 128。）
+. 有序集合保存的所有元素成员的长度都要小于 64 个字节；（通过参数 `zset-max-ziplist-value` 来调节，默认为 64。）
+
+
+[source,bash,{source_attr}]
+----
+$ redis-cli --raw
+
+127.0.0.1:6379> ZADD NameRanking 1 "D瓜哥"
+1
+
+127.0.0.1:6379> ZADD NameRanking 2 "https://www.diguage.com"
+1
+
+127.0.0.1:6379> ZADD NameRanking 3 "https://github.com/diguage"
+1
+
+127.0.0.1:6379> ZRANGE NameRanking 0 -1 WITHSCORES
+D瓜哥
+1
+https://www.diguage.com
+2
+https://github.com/diguage
+3
+
+127.0.0.1:6379> TYPE NameRanking
+zset
+
+127.0.0.1:6379> OBJECT encoding NameRanking
+ziplist
+
+127.0.0.1:6379> ZADD NameRanking 4 "1234567890123456789012345678901234567890123456789012345678901234"
+1
+
+127.0.0.1:6379> ZRANGE NameRanking 0 -1 WITHSCORES
+D瓜哥
+1
+https://www.diguage.com
+2
+https://github.com/diguage
+3
+1234567890123456789012345678901234567890123456789012345678901234
+4
+
+127.0.0.1:6379> OBJECT encoding NameRanking
+ziplist
+
+127.0.0.1:6379> ZADD NameRanking 5 "12345678901234567890123456789012345678901234567890123456789012345"
+1
+
+127.0.0.1:6379> ZRANGE NameRanking 0 -1 WITHSCORES
+D瓜哥
+1
+https://www.diguage.com
+2
+https://github.com/diguage
+3
+1234567890123456789012345678901234567890123456789012345678901234
+4
+12345678901234567890123456789012345678901234567890123456789012345
+5
+
+127.0.0.1:6379> OBJECT encoding NameRanking
+skiplist
+
+127.0.0.1:6379> TYPE NameRanking
+zset
+----
 
 
 == 参考资料
@@ -293,4 +561,5 @@ hashtable
 . https://mp.weixin.qq.com/s?__biz=MzA4NTg1MjM0Mg==&mid=2657261425&idx=1&sn=d840079ea35875a8c8e02d9b3e44cf95&scene=21#wechat_redirect[Redis为什么用跳表而不用平衡树？- 张铁蕾^]
 . https://mp.weixin.qq.com/s?__biz=MzA4NTg1MjM0Mg==&mid=2657261203&idx=1&sn=f7ff61ce42e29b874a8026683875bbb1&scene=21#wechat_redirect[Redis内部数据结构详解(1)——dict^]
 . https://diguage.github.io/jdk-source-analysis/[JDK 源码分析^]
+. https://i6448038.github.io/2019/12/01/redis-data-struct/[图解redis五种数据结构底层实现(动图哦) - 菜刚RyuGou的博客^] -- 这篇博客的动图特别棒，推荐！
 
