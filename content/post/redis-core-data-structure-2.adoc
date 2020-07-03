@@ -18,7 +18,7 @@ weight: 1
 :source-highlighter: pygments
 :pygments-style: monokai
 :pygments-linenums-mode: table
-:source_attr: indent=0,subs="attributes,verbatim"
+:source_attr: indent=0,subs="attributes,verbatim,quotes"
 :image_attr: align=center
 
 
@@ -299,13 +299,47 @@ Redis 中并没有直接使用以上所说的各种数据结构来实现键值�
 
 image::/images/redis/object-ptr.png[{image_attr}]
 
+注：图中 `inset` 是笔误，应该是 `intset`。
+
 === 字符串（strings）
 
 image::/images/redis/object-string.png[{image_attr}]
 
-embstr 和 raw 都是由SDS动态字符串构成的。唯一区别是：raw 是分配内存的时候，redisobject 和 sds 各分配一块内存，而 embstr 是 redisobject 和 raw 在一块儿内存中。
+int 编码的数字范围是： `-2^63^ ~ 2^63^ - 1`，超出这个范围就会变成 embstr。
 
-WARNING: 39 个字节的分界线没有实验出来。在代码中也没有翻找出来。所以，这个知识点还需要验证。
+[source,bash,{source_attr}]
+----
+127.0.0.1:6379> set n63 9223372036854775807
+OK
+
+// 2^63^ - 1 为 int
+127.0.0.1:6379> OBJECT encoding n63
+int
+
+127.0.0.1:6379> set n64 9223372036854775808
+OK
+
+// 2^63^ - 1 不能再自增，否则报溢出错误
+127.0.0.1:6379> INCR n63
+ERR increment or decrement would overflow
+
+// 2^63^ 为 embstr
+127.0.0.1:6379> OBJECT encoding n64
+embstr
+
+// -2^63^ 为 int
+127.0.0.1:6379> set n-63 -9223372036854775808
+OK
+
+127.0.0.1:6379> OBJECT encoding n-63
+int
+
+// -2^63^ 不能自减，否则报溢出错误
+127.0.0.1:6379> DECR n-63
+ERR increment or decrement would overflow
+----
+
+embstr 和 raw 都是由SDS动态字符串构成的。唯一区别是：raw 是分配内存的时候，redisobject 和 sds 各分配一块内存，而 embstr 是 redisobject 和 raw 在一块儿内存中。两者的界限在 `object.c/OBJ_ENCODING_EMBSTR_SIZE_LIMIT` 常量中定义，不能通过参数调节。
 
 [source,bash,{source_attr}]
 ----
@@ -329,29 +363,48 @@ int
 127.0.0.1:6379> GET names
 119 D瓜哥
 
+// 注意：这里出现了 raw
 127.0.0.1:6379> OBJECT encoding names
 raw
 
 127.0.0.1:6379> SET names "119 D瓜哥"
 OK
 
+127.0.0.1:6379> GET names
+119 D瓜哥
+
+// 注意：直接 SET 确实 embstr 编码
 127.0.0.1:6379> OBJECT encoding names
 embstr
 
-127.0.0.1:6379> SET names "119 diguage D瓜哥 https://www.diguage.com"
+127.0.0.1:6379> SET names "D瓜哥 https://www.diguage.com/"
 OK
 
-127.0.0.1:6379> OBJECT encoding profile
+127.0.0.1:6379> GET names
+D瓜哥 https://www.diguage.com/
+
+127.0.0.1:6379> OBJECT encoding names
 embstr
 
-127.0.0.1:6379> SET names "0123456789012345678901234567890123456789"
+127.0.0.1:6379> SET names "01234567890123456789012345678901234567890123"
 OK
 
-127.0.0.1:6379> OBJECT encoding profile
+127.0.0.1:6379> GET names
+01234567890123456789012345678901234567890123
+
+// 注意：44 个是 embstr
+127.0.0.1:6379> OBJECT encoding names
 embstr
 
-127.0.0.1:6379> SET names "012345678901234567890123456789012345678S"
+127.0.0.1:6379> SET names "012345678901234567890123456789012345678901234"
 OK
+
+127.0.0.1:6379> GET names
+012345678901234567890123456789012345678901234
+
+// 注意：45 个是 raw
+127.0.0.1:6379> OBJECT encoding names
+raw
 ----
 
 === 散列（hashes）
@@ -433,7 +486,7 @@ quicklist
 
 === 集合（sets）
 
-image::/images/redis/object-set.jpeg[{image_attr}]
+image::/images/redis/object-set.png[{image_attr}]
 
 
 Redis 的集合（sets）的底层存储可以使用 intset 和 hashtable。当集合（sets）可以同时满足以下两个条件时，集合（sets）使用 intset 编码。
