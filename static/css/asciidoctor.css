@@ -110,3 +110,7 @@ b.conum * {
 .conum:not([data-value]):empty {
     display: none
 }
+
+.line-through {
+    text-decoration: line-through;
+}

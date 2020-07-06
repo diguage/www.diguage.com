@@ -28,7 +28,19 @@ image::/images/spring-framework/spring-bean-lifecycle.svg[align="center",title="
 
 下面是文字说明。
 
-== Bean 生命周期
+== Bean 生命周期简述
+
+. 调用 `InstantiationAwareBeanPostProcessor#postProcessBeforeInstantiation`，主要是判断 `AnnotationAwareAspectJAutoProxyCreator` 是否可以生成代理。
+. 调用构造函数
+. 调用 `MergedBeanDefinitionPostProcessor#postProcessMergedBeanDefinition`，主要是通过 `CommonAnnotationBeanPostProcessor`、 `AutowiredAnnotationBeanPostProcessor` 收集依赖信息。
+. [.line-through]#`InstantiationAwareBeanPostProcessor#postProcessAfterInstantiation`，这步什么也没做。#
+. 调用 `InstantiationAwareBeanPostProcessor#postProcessProperties`，主要是完成依赖注入。
+. 调用 `AutowiredAnnotationBeanPostProcessor#setBeanFactory`，注入 `BeanFactory` 等相关信息。
+. 调用 `BeanPostProcessor#postProcessBeforeInitialization`，主要是注入 `ApplicationContext` 等相关信息。
+. 调用 `InitializingBean#afterPropertiesSet`、 `init-method` 方法
+. 调用 `BeanPostProcessor#postProcessAfterInitialization`，主要是生成 AOP 代理类。
+
+== Bean 生命周期详解
 
 从 `getBean()` 方法获取 Bean 时，如果缓存中没有对应的 Bean，则会创建 Bean，整个流程如下：
 
