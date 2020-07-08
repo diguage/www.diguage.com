@@ -57,7 +57,7 @@ image::/images/spring-framework/BeanFactory.svg[align="center",title="BeanFactor
 . `Set<String> inCreationCheckExclusions = Collections.newSetFromMap(new ConcurrentHashMap<>(16))`：不需要检查的正在创建的 Bean 名称集合。
 . `Set<Exception> suppressedExceptions`：存储创建过程中发现的异常。
 . `boolean singletonsCurrentlyInDestruction = false`：是否正在销毁单例 Bean。
-. `Map<String, Object> disposableBeans = new LinkedHashMap<>()`：丢弃的 Bean。
+. `Map<String, Object> disposableBeans = new LinkedHashMap<>()`：需要在销毁时释放资源的 Bean。在 `AbstractBeanFactory#registerDisposableBeanIfNecessary` 中可以看到，所有的单例 Bean 都通过 `DisposableBeanAdapter` 适配器添加到该属性中了。在 `DefaultSingletonBeanRegistry#destroySingleton` 和 `DefaultSingletonBeanRegistry#destroySingletons` 中执行 `destroy()` 操作。
 . `Map<String, Set<String>> containedBeanMap = new ConcurrentHashMap<>(16)`：在 Bean 名称之间包含映射：Bean 名称到 Bean 所包含的一组 Bean 名称。
 . [#dependent-bean-map]`Map<String, Set<String>> dependentBeanMap = new ConcurrentHashMap<>(64)`
 +
