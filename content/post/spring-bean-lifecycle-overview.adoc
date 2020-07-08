@@ -50,7 +50,7 @@ image::/images/spring-framework/spring-bean-lifecycle.svg[align="center",title="
 .. `CommonAnnotationBeanPostProcessor` -- 无所事事。
 .. `AutowiredAnnotationBeanPostProcessor` -- 继承父类实现，无所事事。
 . 构造函数
-. `MergedBeanDefinitionPostProcessor#postProcessMergedBeanDefinition` -- 目前有如下三个：
+. [#post-process-merged-bean-definition]`MergedBeanDefinitionPostProcessor#postProcessMergedBeanDefinition` -- 目前有如下三个：
 .. `CommonAnnotationBeanPostProcessor` -- 收集 `@Resource` 依赖信息，`initMethods` 和 `destroyMethods` 等信息。(就是 `@PostConstruct` 和 `@PreDestroy` 标注的方法。)这些信息被缓存到了 `this.injectionMetadataCache` 变量中，注入时从这个变量中取值。
 .. `AutowiredAnnotationBeanPostProcessor` -- 收集 `@Autowired` 的依赖信息。这些信息被缓存到了 `this.injectionMetadataCache` 变量中，注入时从这个变量中取值。
 .. `ApplicationListenerDetector` -- 判断 Bean 是否是一个 `ApplicationListener`，是则保留，在后面的 `postProcessAfterInitialization` 方法中，加入到容器的 `applicationListeners` 中。

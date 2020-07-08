@@ -85,7 +85,12 @@ image::/images/spring-framework/BeanDefinition.svg[align="center",title="BeanDef
 .. `DEPENDENCY_CHECK_OBJECTS` -- 只检测对象引用。
 .. `DEPENDENCY_CHECK_SIMPLE` -- 只检测简单对象：基础类型、`Enum`、`CharSequence`、`Number`、`Date`、`Temporal`、`URI`、`URL`、`Locale`、`Class` 以及这些类型的数组对象。
 .. `DEPENDENCY_CHECK_ALL` -- 检测所有依赖。
-. `String[] dependsOn`：依赖对象的 Bean 名称。
+. [#depends-on]`String[] dependsOn`： 这个属性在 `spring-beans.xsd / xsd:attribute / depends-on` 中有说明。原文是这样说的：__The names of the beans that this bean depends on being initialized. The bean factory will guarantee that these beans get initialized before this bean.__所以，这个属性并不是一个“需要注入的依赖”，而是 Bean 创建的前后依赖关系。这一点可能跟大多数人的认识不一样。
++
+Bean 属性的依赖存在 `CommonAnnotationBeanPostProcessor#injectionMetadataCache` 和 `AutowiredAnnotationBeanPostProcessor#injectionMetadataCache` 属性中。在 https://www.diguage.com/post/spring-bean-lifecycle-overview/#post-process-merged-bean-definition[Spring Bean 生命周期概述^] 中描述的关于属性的依赖读取和注入也是靠这个两个属性来保存依赖关系的。
++
+在 https://www.diguage.com/post/dive-into-spring-core-data-structure-bean-factory/#dependent-bean-map[深入剖析 Spring 核心数据结构：BeanFactory : `Map<String, Set<String>> dependentBeanMap`^] 中提到的 `DefaultSingletonBeanRegistry#dependentBeanMap` 和 `DefaultSingletonBeanRegistry#dependenciesForBeanMap` 两个属性，保存了这个 `dependsOn` 依赖关系的正向关系和反向关系。
++
 . `boolean autowireCandidate = true`：声明是否是其他依赖的候选 Bean；只会影响根据类型注入的情况，不会影响根据名称明确指明依赖的情况。
 . `boolean primary = false`：是否是首选 Bean，标注了 `@Primary` 则为 `true`。当 A 类型的 Bean 需要注入 B 类型的实现类，并且 B 类型的实现类有多个，在按类型将 B 的实现类注入到 A 中时，优先注入该属性为 `true` 的实现类，当然如果同一个类的实现类有多个 `primary` 为 `true`，则抛出异常。
 . `Map<String, AutowireCandidateQualifier> qualifiers = new LinkedHashMap<>()`：

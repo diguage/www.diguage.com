@@ -59,8 +59,11 @@ image::/images/spring-framework/BeanFactory.svg[align="center",title="BeanFactor
 . `boolean singletonsCurrentlyInDestruction = false`：是否正在销毁单例 Bean。
 . `Map<String, Object> disposableBeans = new LinkedHashMap<>()`：丢弃的 Bean。
 . `Map<String, Set<String>> containedBeanMap = new ConcurrentHashMap<>(16)`：在 Bean 名称之间包含映射：Bean 名称到 Bean 所包含的一组 Bean 名称。
-. `Map<String, Set<String>> dependentBeanMap = new ConcurrentHashMap<>(64)`：Bean 名称到它所依赖的 Bean 直接的映射。
-. `Map<String, Set<String>> dependenciesForBeanMap = new ConcurrentHashMap<>(64)`：被依赖的 Bean 到需要这个 Bean 的映射。与 `dependentBeanMap` 属于一正一反的关系。两个相加，就是双向映射。
+. [#dependent-bean-map]`Map<String, Set<String>> dependentBeanMap = new ConcurrentHashMap<>(64)`
++
+该属性和下面的 `dependenciesForBeanMap` 属性的详细说明，请在 https://www.diguage.com/post/dive-into-spring-core-data-structure-bean-definition/#depends-on[深入剖析 Spring 核心数据结构：BeanDefinition : `String[\] dependsOn`] 中查看。
++
+. `Map<String, Set<String>> dependenciesForBeanMap = new ConcurrentHashMap<>(64)`：与上面的 `dependentBeanMap` 属性正好一正一反的关系。两个相加，就是双向映射。
 . `Map<String, Object> factoryBeanObjectCache = new ConcurrentHashMap<>(16)`：由 `FactoryBean` 创建的单例对象的缓存。
 
 === `BeanFactory`
