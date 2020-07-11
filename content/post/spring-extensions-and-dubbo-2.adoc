@@ -1,0 +1,147 @@
+---
+title: "Spring 扩展点实践：整合 Apache Dubbo（二）"
+date: 2020-07-11T16:20:00+08:00
+draft: false
+keywords: ["Java","Spring"]
+tags: ["Java","设计","架构","微服务","分布式"]
+categories: ["Java","程序设计"]
+thumbnail: "images/spring-framework/dubbo-logo.jpg"
+
+weight: 1
+
+# You can also close(false) or open(true) something for this content.
+# P.S. comment can only be closed
+# comment: false
+# toc: true
+---
+
+:source-highlighter: pygments
+:pygments-style: monokai
+:pygments-linenums-mode: table
+:source_attr: indent=0,subs="attributes,verbatim,quotes"
+:image_attr: align=center
+
+. Consumer 的生成
+. 注解生成
+
+在 https://www.diguage.com/post/spring-extensions-and-dubbo-1/[Spring 扩展点实践：整合 Apache Dubbo（一）^] 中，D瓜哥介绍了 Dubbo 如何使用 Spring 的插件机制与 Spring 整合。限于篇幅原因，上一篇文章只介绍到了服务提供者的注册。本篇文章继续上一篇文章的主题，继续介绍 Spring 与 Dubbo 的整合过程。先来讲解一下服务消费者的生成过程。
+
+== Dubbo 生成服务消费者的过程
+
+先来看看 XML 配置文件：
+
+.`dubbo-demo/dubbo-demo-xml/dubbo-demo-xml-consumer/src/main/resources/spring/dubbo-consumer.xml`
+[source,xml,{source_attr}]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:dubbo="http://dubbo.apache.org/schema/dubbo"
+       xmlns="http://www.springframework.org/schema/beans"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                           http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://dubbo.apache.org/schema/dubbo
+                           http://dubbo.apache.org/schema/dubbo/dubbo.xsd">
+
+    <dubbo:application name="demo-consumer"/>
+
+    <dubbo:registry address="zookeeper://127.0.0.1:2181"/>
+
+    <dubbo:reference id="demoService" check="false" interface="org.apache.dubbo.demo.DemoService"/>
+
+</beans>
+----
+
+我们先看一下 `ReferenceBean` 类的声明：
+
+.`org.apache.dubbo.config.spring.ReferenceBean`
+[source,java,{source_attr}]
+----
+public class ReferenceBean<T> extends ReferenceConfig<T> implements FactoryBean,
+        ApplicationContextAware, InitializingBean, DisposableBean {
+    
+    // 此处省略 N 行代码
+
+    @Override
+    public Object getObject() {
+        return get();
+    }
+
+    // 此处省略 N 行代码
+
+    @Override
+    @SuppressWarnings({"unchecked"})
+    public void afterPropertiesSet() throws Exception {
+
+        // Initializes Dubbo's Config Beans before @Reference bean autowiring
+        prepareDubboConfigBeans();
+
+        // lazy init by default.
+        if (init == null) {
+            init = false;
+        }
+
+        // eager init if necessary.
+        if (shouldInit()) {
+            getObject();
+        }
+    }
+
+    // 此处省略 N 行代码
+}
+----
+
+这个类实现了 `FactoryBean` 接口，D瓜哥在 http://localhost:1313/post/spring-extensions-overview/#factory-bean[Spring 扩展点概览及实践：FactoryBean^] 中对 `FactoryBean` 介绍。所以，请在上面的 `getObject()` 打个断点。
+
+另外，这个类还实现了 `InitializingBean`，D瓜哥在 http://localhost:1313/post/spring-bean-lifecycle-overview/[Spring Bean 生命周期概述^] 中介绍了这个接口的用途。不了解的，请移步。
+
+启动服务消费者程序，开始调试代码。跳过上文结束的配置解析阶段，进入到 `org.apache.dubbo.config.bootstrap.DubboBootstrap#start` 方法中。在这里，它调用了内部私有方法 `referServices()`。
+
+今晚有事，明天继续写…
+
+
+
+
+// == Apache Dubbo Consumer Service Bean 的创建
+
+// . `ReferenceAnnotationBeanPostProcessor`
+
+
+
+// [source,java,{source_attr}]
+// ----
+// 这是啥？
+// ----
+
+// image::/images/spring-framework/dubbo-logo.jpg[{image_attr}]
+
+
+
+// . `org.apache.dubbo.config.spring.context.annotation.EnableDubbo`
+
+// . `org.apache.dubbo.config.spring.context.annotation.EnableDubboConfig`
+// . `org.apache.dubbo.config.spring.context.annotation.DubboConfigConfigurationRegistrar`
+
+
+// . `org.apache.dubbo.config.spring.context.annotation.DubboComponentScan`
+// . `org.apache.dubbo.config.spring.context.annotation.DubboComponentScanRegistrar`
+
+
+// . `org.apache.dubbo.config.spring.beans.factory.config.DubboConfigDefaultPropertyValueBeanPostProcessor`
+// . `org.apache.dubbo.config.spring.beans.factory.annotation.ReferenceAnnotationBeanPostProcessor`
+// . `org.apache.dubbo.xml.rpc.protocol.xmlrpc.XmlRpcProxyFactoryBean`
+
+// . `org.apache.dubbo.config.spring.beans.factory.annotation.ServiceAnnotationBeanPostProcessor` -- 弃用，推荐 `ServiceClassPostProcessor`。
+// . `org.apache.dubbo.config.spring.beans.factory.annotation.ServiceClassPostProcessor`
+
+// . `org.apache.dubbo.config.spring.schema.DubboBeanDefinitionParser`
+
+// . `org.apache.dubbo.config.spring.beans.factory.annotation.DubboConfigAliasPostProcessor`
+
+
+// === Seata 与 Spring 整合
+
+// . `io.seata.config.springcloud.EnableSeataSpringConfig`
+// . `io.seata.config.springcloud.SpringApplicationContextProviderRegistrar`
+// . `HttpAutoConfiguration`
+// . `RequiredAnnotationBeanPostProcessor`
+// . `SpringCacheAnnotationParser`
