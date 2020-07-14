@@ -213,6 +213,7 @@ Apache Dubbo 最初就说通过 Spring 插件机制实现了它与 Spring 的整
 
 这里，我们需要注意的是 `registerCommonBeans(registry)` 方法：
 
+[#register-common-beans]
 .`org.apache.dubbo.config.spring.util.DubboBeanUtils#registerCommonBeans`
 [source,java,{source_attr}]
 ----
