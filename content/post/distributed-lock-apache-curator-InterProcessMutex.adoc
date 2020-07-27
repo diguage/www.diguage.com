@@ -400,6 +400,8 @@ default CompletableFuture<Void> postSafeNotify(Object monitorHolder)
 
 这行关键的代码的意思是：监听上一个节点（排序后前一个节点）的变化。因为在 `internalLockLoop` 方法中调用了 `wait(time)` 方法，将运行线程等待；所以，需要一个唤醒操作。而这个监听事件就实现了唤醒操作。
 
+监听上一个节点变化是为了防止羊群效应的出现。因为只有一个线程获得锁，过多线程唤醒只会造成无用的操作，浪费资源。
+
 这里有一个需要深入思考的点：如果前一个节点删除，这个线程还会被唤醒吗？答案是可以的。逻辑这样的：前一个节点删除，必然触发一个事件，这个事件就可以唤醒已经等待的线程；线程就会做一个循环，检查是否能获得锁，如果可以就结束循环；如果不可以，则会再次选择前一个节点注册监听器，然后进入等待状态。
 
 来看一下它如何获取孩子节点的：
@@ -566,3 +568,5 @@ default CompletableFuture<Void> postSafeNotify(Object monitorHolder)
 . https://www.cnblogs.com/shileibrave/p/9854921.html[Apache Curator之InterProcessMutex源码分析（四） - shileishmily - 博客园^]
 . https://curator.apache.org/[Apache Curator^]
 . https://juejin.im/post/5bbb0d8df265da0abd3533a5[再有人问你分布式锁，这篇文章扔给他 - 掘金^]
+. https://zhuanlan.zhihu.com/p/60007452[【分布式】基于ZooKeeper的分布式锁（一） - 知乎^]
+. https://zhuanlan.zhihu.com/p/60779842[【分布式】基于ZooKeeper的分布式锁（二） - 知乎^]
