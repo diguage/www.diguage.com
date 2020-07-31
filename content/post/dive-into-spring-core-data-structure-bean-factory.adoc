@@ -46,12 +46,16 @@ image::/images/spring-framework/BeanFactory.svg[align="center",title="BeanFactor
 
 == 核心属性
 
+[#registry]
 === Registry
 
 . `Map<String, String> aliasMap = new ConcurrentHashMap<>(16)`：别名到 Bean 名称的映射。
 . **`Map<String, Object> singletonObjects = new ConcurrentHashMap<>(256)`**：Bean 名称到单例 Bean 的映射。可以理解成，这就是所谓的容器。
-. `Map<String, ObjectFactory<?>> singletonFactories = new HashMap<>(16)`：Bean 名称到 Bean 的 `ObjectFactory` 对象的映射，在容器解决循环依赖时，用于存储中间状态。
 . `Map<String, Object> earlySingletonObjects = new HashMap<>(16)`：Bean 到“未成熟”单例 Bean 的映射。该 Bean 对象只是被创建出来，但是还没有注入依赖。在容器解决循环依赖时，用于存储中间状态。
+. `Map<String, ObjectFactory<?>> singletonFactories = new HashMap<>(16)`：Bean 名称到 Bean 的 `ObjectFactory` 对象的映射，在容器解决循环依赖时，用于存储中间状态。
++
+关于这三个属性的进一步说明，请移步： https://www.diguage.com//post/spring-circular-dependence/[源码剖析 Spring 循环依赖]。
++
 . `Set<String> registeredSingletons = new LinkedHashSet<>(256)`：已经被注册过的 Bean 名称集合。
 . `Set<String> singletonsCurrentlyInCreation = Collections.newSetFromMap(new ConcurrentHashMap<>(16))`：正在创建的 Bean 名称集合。
 . `Set<String> inCreationCheckExclusions = Collections.newSetFromMap(new ConcurrentHashMap<>(16))`：不需要检查的正在创建的 Bean 名称集合。
