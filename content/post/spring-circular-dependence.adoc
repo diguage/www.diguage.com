@@ -332,6 +332,7 @@ protected void populateBean(String beanName, RootBeanDefinition mbd, @Nullable B
 
 在 https://www.diguage.com/post/spring-bean-lifecycle-overview/[Spring Bean 生命周期概述] 中对 Bean 的生命周期做了概要的介绍。这里就体现出来 `CommonAnnotationBeanPostProcessor` 和 `AutowiredAnnotationBeanPostProcessor` 的作用。上面我们用的是 `@Autowired` 注解。所以，这里使用 `AutowiredAnnotationBeanPostProcessor` 来处理。
 
+[#inject-call-chain]
 ==== 依赖注入的调用链
 
 查找依赖的调用链很繁琐，中间有牵涉到 Bean 创建的过程，这里只列出调用过程中的主要方法列表，需要请根据自己需要来单步调试。
@@ -442,13 +443,19 @@ protected void addSingleton(String beanName, Object singletonObject) {
 
 == 小结
 
+这里，假设 `A → B` 和 `B → A` 两层循环依赖来说明问题
 
-. Bean 是调用 `instanceWrapper = createBeanInstance(beanName, mbd, args);` 方法创建出来了实例，然后又通过 `addSingletonFactory(beanName, () -> getEarlyBeanReference(beanName, mbd, bean));` 将已经创建的实例封装到一个 `ObjectFactory<?> singletonFactory` 匿名类中，放入到三级缓存中。
-. 在获取 Bean 时，从一级缓存中获取；没有则向二级缓存查找；如果再次没有则向三级缓存查找。找到对应的 `ObjectFactory` 对象时，则调用 `getObject()` 方法，获取上面创建的那个实例，加入到二级缓存中，把三级缓存对应的数据清理掉。这样就可以继续开始注入程序了。
-. 调动 `populateBean(beanName, mbd, instanceWrapper);` 方法，通过 `CommonAnnotationBeanPostProcessor` 和 `AutowiredAnnotationBeanPostProcessor` 的 `postProcessProperties` 方法完成依赖注入。
+. 通过 `applicationContext.getBean(A.class)` 方法，委托给 `AbstractBeanFactory#doGetBean` 方法来尝试获取 Bean；获取不到则开始创建；
+.. Bean 是调用 `instanceWrapper = createBeanInstance(beanName, mbd, args);` 方法创建出来了实例，然后又通过 `addSingletonFactory(beanName, () -> getEarlyBeanReference(beanName, mbd, bean));` 将已经创建的实例封装到一个 `ObjectFactory<?> singletonFactory` 匿名类中，放入到三级缓存中。
+.. 在 `populateBean(beanName, mbd, instanceWrapper);` 方法，通过 `CommonAnnotationBeanPostProcessor` 和 `AutowiredAnnotationBeanPostProcessor` 的 `postProcessProperties` 查找依赖，完成注入。
+... 查找依赖时，就会通过调用 `getBean(beanName)` 获取 Bean `B`。此时，还没有 Bean `B`，则会从这里的第二步开始执行，创建实例，封装后加入到三级缓存 `singletonFactories` 中，调用 `populateBean(beanName, mbd, instanceWrapper);` 方法，通过 `CommonAnnotationBeanPostProcessor` 和 `AutowiredAnnotationBeanPostProcessor` 的 `postProcessProperties` 查找依赖，完成注入。依赖注入的过程，请看 <<inject-call-chain>> 小节。
+... 到这里，就要查找 Bean `A` 了，一二三级缓存依次来查找(`DefaultSingletonBeanRegistry#getSingleton(beanName, allowEarlyReference)`)，在三级缓存中，找到了对应的 `ObjectFactory<?> singletonFactory` 实例，然后调用 `getObject()` 方法，获得 `A` 的实例，将其加入到二级缓存中，将三级中的相关内容清理掉。从这里也可以看出，通过 `AbstractBeanFactory#doGetBean` 方法获得的 Bean 不一定是完全初始化好的 Bean，有可能是一个未完成初始化的实例对象。
+... 获得 `A` 的实例后，就可以完成 Bean `B` 的初始化，调用 `DefaultSingletonBeanRegistry#addSingleton` 方法，将其加入一级缓存 `singletonObjects` 中，也就是容器中。（由于 Bean `B` 可以直接完成依赖注入，则它不会从三级缓存跳到二级缓存。最后的三级缓存在调用 `addSingleton` 方法时，直接被清理掉了。）
+.. 到这里就可以获取 Bean `B` 了，然后完成 `A` 的依赖注入。
+. 最后，通过调用 `DefaultSingletonBeanRegistry#addSingleton` 方法，将 Bean `A` 加入到一级缓存 `singletonObjects` 中，也就是容器中。所有的初始化工作就完成了。
 
 
-有两种情况，Spring 是没办法完成循环注入的：
+需要注意的是，有两种情况，Spring 是没办法完成循环注入的：
 
 . 构造函数注入 -- 这种要求在实例之前创建好依赖的实例，但是明显无法完成，所以不能解决循环依赖。
 . `PROTOTYPE` 类型的 Bean 相互依赖 -- 刚刚看到，上面的三级缓存变量都是为 `SINGLETON` 类型的 Bean 准备的。`PROTOTYPE` 类型的 Bean 在检查到循环依赖时，就直接抛异常了。
