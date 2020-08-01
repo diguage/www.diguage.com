@@ -19,6 +19,7 @@ googleAnalytics = "UA-32893826-1" # Enable Google Analytics by entering your tra
   twitter_cards = true
   readmore = true # Show "Read more" button in list if true
   authorbox = true
+  pager = true
   post_navigation = true
   post_meta = ["author","date", "categories"] # Order of post meta information
   dateformat = "2006-01-02"
