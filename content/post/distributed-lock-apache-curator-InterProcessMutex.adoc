@@ -560,6 +560,8 @@ default CompletableFuture<Void> postSafeNotify(Object monitorHolder)
 
 另外，ZooKeeper 是一个 CP 系统，支持操作正确返回，就不需要考虑系统一致性问题。这一点和基于 Redis 实现的分布式锁也有很大的区别。
 
+Apache Curator 不仅仅实现了分布式锁，还是实现了分布式读写锁。下一篇文章就来分析一下这个分布式读写锁： https://www.diguage.com/post/distributed-lock-apache-curator-interprocessreadwritelock/[分布式锁之 Apache Curator InterProcessReadWriteLock]。
+
 == 参考资料
 
 . https://redis.io/topics/distlock[Distributed locks with Redis – Redis^]
