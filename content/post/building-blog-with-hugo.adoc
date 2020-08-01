@@ -1,0 +1,191 @@
+---
+title: "使用 Hugo 搭建博客"
+date: 2020-08-01T16:09:43+08:00
+draft: false
+keywords: ["Hugo","博客"]
+tags: ["个人提升","产品"]
+categories: ["个人成长","方法论"]
+thumbnail: "images/building-blog-with-hugo/hugo-logo.svg"
+
+weight: 1
+---
+
+:source-highlighter: pygments
+:pygments-style: monokai
+:pygments-linenums-mode: table
+:source_attr: indent=0,subs="attributes,verbatim,quotes"
+:image_attr: align=center
+
+一个朋友对D瓜哥的博客感兴趣，觉得很好玩。问我怎么玩，D瓜哥也懒得手把手教了，干脆写篇文章来做个说明吧。也许对其他朋友也有所帮助。
+
+== 潮起潮落
+
+D瓜哥早在 2012年就使用 WordPress 搭建了一个博客： https://wordpress.diguage.com/["地瓜哥"博客网—分享技术带来的喜悦^]，WordPress 不亏是全世界最流行的开源 CMS 系统，各种插件可以满足非常对的需求。当年D瓜哥还想研究一下它的源代码，可惜对 PHP（对，就是那个拍黄片的）无感，没有坚持下去。
+
+但是，再熟悉了 MarkDown、 https://asciidoctor.org/[Asciidoctor^]（D瓜哥是 AsciiDoctor 的死忠粉，坚决支持它的发展） 等轻量级标记语言后，愈发觉得 WordPress 太繁琐：写作一个小时，排版发布一小时。实在是太浪费时间了。
+
+先尝试了一下 https://antora.org/[Antora^]，之所以选它，是因为它是 AsciiDoctor 的作者发起的项目，对 AsciiDoctor 的支持性非常好。尝试了一段时间后，发现它更适合写产品说明书，更适合像阿里云等这种对外提供产品，需要提供在线产品说明书的情况。不适合做个人博客。
+
+去年，经过多次测试后（主要测试对 AsciiDoctor 的支持性），发现现在D瓜哥用的这个主题对 AsciiDoctor 支持得不错，随后下定决心切换到了 https://gohugo.io/[Hugo^]。
+
+== Hugo 简介
+
+关于 Hugo 的介绍，直接转摘维基百科的介绍了：
+
+[quote, https://zh.wikipedia.org/wiki/Hugo_(軟件)]
+____
+Hugo 是一个用 Go 编写的静态网站生成器，2013由 Steve Francia 原创，自 v0.14 (2015年) 由 Bjørn Erik Pedersen 主力开发，并由全球各地的开发者和用户提交贡献。Hugo 以 Apache License 2.0 许可的开放源代码项目。
+
+Hugo 一般只需几秒钟就能生成一个网站（每页少于 1 毫秒），被称为“世界上最快的网站构建框架”，也使 Hugo 大受欢迎，成为最热门的静态网站生成器之一，被广泛采用。例如，2015年7月，Netlify 推出专为 Hugo 而设的网站托管服务，而2017年，Smashing Magazine 推出重新设计的官方网站，从原来的 WordPress 迁移到基于 Hugo 的 JAMstack 解决方案。
+____
+
+Hugo 确实非常快，Kubernetes 的官网以及文档就是使用 Hugo 生成的，那么庞大的文档，在本地预览是，启动服务器也非常快。
+
+D瓜哥在查资料时，遇到从 Hexo 切换到 Hugo 的案例，主要原因就是 Hugo 的速度惊人。我们就直接上 Hugo 了。
+
+
+== 安装
+
+关于安装，直接使用 Hugo 的官方文档可以参考 https://gohugo.io/getting-started/installing/[Install Hugo^]，这里做个概要翻译：
+
+=== Mac
+
+在 Mac 下安装 Hugo 非常简单，使用 https://brew.sh/index_zh-cn[Homebrew^] 只需要下面这一条命令即可：
+
+[source,bash,{source_attr}]
+----
+brew install hugo
+----
+
+TIP: 不了解 Homebrew 的，可以点击上面的链接，自行了解。
+
+=== Linux
+
+Linux 也支持 https://docs.brew.sh/Homebrew-on-Linux[Homebrew^] 了，可喜可贺，上面的命令可以复用了：
+
+[source,bash,{source_attr}]
+----
+brew install hugo
+----
+
+=== Windows
+
+Windows 安装，可以使用 https://chocolatey.org/[Chocolatey - The package manager for Windows^]，也非常简单，一条命令：
+
+[source,bash,{source_attr}]
+----
+choco install hugo -confirm
+
+// 如果需要支持 Sass/SCSS，可以使用扩展版 
+choco install hugo-extended -confirm
+----
+
+== 创建网站
+
+安装完成后，就会有一条命令行工具 `hugo`，后续操作大部分都需要这条命令参与。
+
+=== 新建站点
+
+新建站点非常简单，也是一条命令行：
+
+[source,bash,{source_attr}]
+----
+hugo new site diguage.com # diguage.com 这个名字可以随意取，它其实就是一个文件夹名。
+----
+
+上述命令会生成一个名为 `diguage.com` 的文件夹，下面对文件夹结构做个说明：
+
+[source,bash,{source_attr}]
+----
+$ tree diguage.com
+diguage.com
+├── archetypes
+│   └── default.md
+├── config.toml # 配置文件
+├── content     # 以后的文章就放在这个目录下
+├── data
+├── layouts     
+├── static      # 这里存放静态资源文件，比如 CSS、JS 以及图片
+└── themes      # 这里存放主题
+----
+
+新建的站点，还没有加入 Git 版本管理，进入到这个目录下，执行一下如下命令，完成 Git Repo 的初始化：
+
+[source,bash,{source_attr}]
+----
+git init . # 这步做不做都可以，但是推荐将博客放在 GitHub 或者 Gitee 上，更安全
+----
+
+新建站点后，我们开始添加主题。
+
+=== 添加主题
+
+在 Hugo 的官网上 https://themes.gohugo.io/[Hugo Themes^] 有非常非常多的主题，可以根据自己的喜好选择一个主题。
+
+https://themes.gohugo.io/hugo-theme-jane/[Hugo Theme Jane^] 是D瓜哥比较中意的一款主题，而且是由国人开发的，对中文支持也非常好。这里就选它作为示例来演示。
+
+每个主题页面都有按照介绍，直接按照安装介绍来操作就好。
+
+[source,bash,{source_attr}]
+----
+git clone https://github.com/xianmin/hugo-theme-jane.git --depth=1 themes/jane
+----
+
+克隆完成后，使用如下命令完成配置：
+
+[source,bash,{source_attr}]
+----
+# 将示例内容拷贝到新建站点中
+cp -r themes/jane/exampleSite/content ./
+
+# 将默认配置拷贝到新建站点的配置中
+cp themes/jane/exampleSite/config.toml ./
+----
+
+然后启动预览：
+
+[source,bash,{source_attr}]
+----
+hugo server
+----
+
+默认是 `1313` 端口号，在浏览器中直接访问 http://localhost:1314/ 就可以访问到新建的博客了。
+
+根据自己的需要，修改根目录下的 `config.toml` 文件，来修改自己站点的配置。
+
+
+== 附加工具推荐
+
+=== 主题推荐
+
+Hugo 的主题特别特别多，这里推荐两款私以为比较漂亮的主题：
+
+==== Jane
+
+https://themes.gohugo.io/hugo-theme-jane/[Hugo Theme Jane^] 应该是国人开发的一个主题。对中文支持得比较好，整体页面也简洁大方，干净利落。并且响应性和移动友好性也都特别棒。
+
+image::/images/building-blog-with-hugo/hugo-theme-jane.png[{image_attr},title="Hugo Theme Jane",alt="Hugo Theme Jane",width="98%"]
+
+==== Mainroad
+
+https://themes.gohugo.io/mainroad/[Hugo Themes Mainroad^] 是我目前正在使用的主题，通过添加 CSS 可以很好的支持 AsciiDoctor。美中不足的是，它原生不支持“归档”页面。等有机会，D瓜哥把自己改造后的主题发布出来。
+
+image::/images/building-blog-with-hugo/hugo-theme-mainroad.png[{image_attr},title="Hugo Theme Mainroad",alt="Hugo Theme Mainroad",width="98%"]
+
+=== VS Code 插件
+
+https://marketplace.visualstudio.com/items?itemName=akmittal.hugofy[hugofy^] 是 VS Code 下的一个插件，可以方便我们创建文章，非常方便，推荐。
+
+=== 自动发布
+
+D瓜哥推荐把博客的 Repo 放在 GitHub 上，使用 GitHub Action 可以非常方便地发布到 GitHub Pages，简直爽得不要不要的。
+
+image::/images/building-blog-with-hugo/github-action-for-hugo.svg[{image_attr},title="Hugo to GH Pages",alt="Hugo to GH Pages",width="98%"]
+
+https://github.com/marketplace/actions/hugo-to-gh-pages[Hugo to GH Pages^] 就是这样一个 GitHub Action 插件。大家可以尝试一下。
+
+大家还有什么问题，欢迎留言讨论……
+
+== 参考资料
+
+. https://github.com/marketplace/actions/hugo-to-gh-pages[Hugo to GH Pages · Actions · GitHub Marketplace^]
