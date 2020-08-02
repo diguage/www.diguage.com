@@ -1,0 +1,64 @@
+---
+title: "Java 网络编程：BIO、NIO 和 AIO"
+date: 2020-06-27T11:16:53+08:00
+draft: false
+keywords: ["Java","Spring"]
+tags: ["Java","设计","架构"]
+categories: ["Java","程序设计"]
+
+weight: 1
+
+# You can also close(false) or open(true) something for this content.
+# P.S. comment can only be closed
+# comment: false
+# toc: true
+---
+
+:source-highlighter: pygments
+:pygments-style: monokai
+:pygments-linenums-mode: table
+
+
+一直对 Java 网络编程中的各种 I/O 模式很迷惑。什么 BIO？什么 NIO？NIO 是 New IO？还是 Nonblocking IO？还有 JDK 又出了一个 AIO。这又是什么鬼？
+
+最近看到 Doug Lea 的一个 PPT： http://gee.cs.oswego.edu/dl/cpjslides/nio.pdf[Scalable IO in Java^]，有种豁然开朗的感觉。趁着假期，撸些代码，把这个文档也消化吸收一下。
+
+== 概况
+
+== I/O 模型
+
+== Reactor 模式
+
+=== 单 Reactor 单线程
+=== 单 Reactor 多线程
+
+. Reactor 对象通过 select 监控客户端请求事件，收到事件后，通过 dispatch 进行分发
+. 如果建立连接请求，则又 Acceptor 通过 accept 处理连接请求，然后创建一个 Handler 对象处理完成连接后的各种事件
+. 如果不是连接请求，则由 reactor 分发调用连接对应的 handler 来处理
+. handler 只负责响应事件，不做具体的业务处理，通过 read 读取数据后，会分发给后面的 worker 线程池的某个线程处理业务
+. worker 线程池会分配独立线程完成真正的业务，并将结果返回给 handler
+. handler 收到响应后，通过 send 将结果返回给 client
+
+
+=== 主从 Reactor
+
+. 主 Reactor 通过 select 监听连接事件，收到事件后，通过 Acceptor 处理连接事件
+. 当 Acceptor 处理连接事件后，MainReactor 将连接分配给 SubReactor
+. SubReactor 将连接加入到连接队列进行监听，并创建 handler 进行各种事件处理
+
+
+
+=== BIO
+
+=== NIO
+
+=== AIO
+
+== 参考资料
+
+. http://gee.cs.oswego.edu/dl/cpjslides/nio.pdf[Scalable IO in Java -- Doug Lea^]
+. https://jinlipool.com/2019/01/23/scalable-io-in-java/[《Scalable IO in Java》学习笔记 - 赵乐的博客 | Zhl Blog^]
+. https://www.cnblogs.com/dafanjoy/p/11217708.html[《Scalable IO in Java》译文 - bigfan - 博客园^]
+. https://zhuanlan.zhihu.com/p/149721215[结合代码详细聊聊 Java 网络编程中的 BIO、NIO 和 AIO - 知乎^]
+. https://zhuanlan.zhihu.com/p/53191925[^]
+
