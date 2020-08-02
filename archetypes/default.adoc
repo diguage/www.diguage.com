@@ -1,0 +1,20 @@
+---
+title: "{{ replace .Name "-" " " | title }}"
+date: {{ .Date }}
+draft: true
+keywords: [""]
+tags: [""]
+categories: [""]
+thumbnail: "images/"
+
+weight: 1
+---
+
+:source-highlighter: pygments
+:pygments-style: monokai
+:pygments-linenums-mode: table
+:source_attr: indent=0,subs="attributes,verbatim,quotes"
+:image_attr: align=center
+
+image::/images/[{image_attr},title="",alt=""]
+
