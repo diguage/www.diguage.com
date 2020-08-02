@@ -3,7 +3,8 @@ title: "HikariCP 源码分析 --  ConcurrentBag"
 date: 2020-05-06T17:12:55+08:00
 draft: false
 tags: ["Java", "并发", "设计"]
-categories: ["Java"]
+categories: ["Java","程序设计","算法"]
+thumbnail: "images/java/java-15.png"
 
 weight: 1
 
@@ -232,3 +233,5 @@ public boolean remove(final T bagEntry)
 ----
 
 D瓜哥这里有一个疑问：只处理了状态是 `STATE_IN_USE` 和 `STATE_RESERVED` 的元素。那么，状态是 `STATE_NOT_IN_USE` 的元素，为什么不能删除？
+
+下一节，我们来分析一下 HikariCP 中另外一个非常重要的数据结构： https://www.diguage.com/post/hikari-cp-source-analysis-fast-list/[FastList]。
