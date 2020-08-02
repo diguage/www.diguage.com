@@ -92,12 +92,13 @@ WARNING: 这里要注意，并不是执行完四个类的 `postProcessProperties
 .. `ApplicationListenerDetector` -- 无所事事。
 . `InitializingBean#afterPropertiesSet()`
 . `init-method`
+[#after-initialization]
 . `BeanPostProcessor#postProcessAfterInitialization` 方法 -- 目前有
 .. 用户手动添加的 `BeanPostProcessor`
 .. `ApplicationContextAwareProcessor` -- 继承默认实现，无所事事。
 .. `ImportAwareBeanPostProcessor` -- 继承默认实现，无所事事。
 .. `BeanPostProcessorChecker` -- 如果 Bean 是 `BeanPostProcessor` 子类，则检查 `BeanPostProcessor` 数量。
-.. `AnnotationAwareAspectJAutoProxyCreator` -- 检查 Bean 和提前暴露的引用是否相同，不同则重新生成代理对象。
+.. `AnnotationAwareAspectJAutoProxyCreator` -- 检查 Bean 和提前暴露的引用是否相同，不同则重新生成代理对象。**注意：绝大部分的 AOP 代理生成都是在这个方法中完成的。**在 https://www.diguage.com//post/spring-aop-bootstrap/[Spring AOP 源码分析：入门] 中有更详细的说明。
 .. `CommonAnnotationBeanPostProcessor` -- 继承父类实现，无所事事。 
 .. `AutowiredAnnotationBeanPostProcessor` -- 继承父类实现，无所事事。 
 .. `ApplicationListenerDetector` -- 将 `ApplicationListener` 类型的 Bean，加入到容器的 `applicationListeners` 中，方便容器开始监听。
