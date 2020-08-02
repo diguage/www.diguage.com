@@ -1,0 +1,152 @@
+---
+title: "Seata 入门"
+date: 2020-07-14T20:33:40+08:00
+draft: false
+keywords: ["Redis","Spring"]
+tags: ["存储","设计","架构"]
+categories: ["程序设计","算法","分布式"]
+thumbnail: "images/seata/seata-logo.png"
+
+weight: 1
+
+---
+
+
+:source-highlighter: pygments
+:pygments-style: monokai
+:pygments-linenums-mode: table
+:source_attr: indent=0,subs="attributes,verbatim,quotes"
+:image_attr: align=center
+
+== 源码分析
+
+image::/images/seata/typical-process.png[{image_attr}]
+
+* **Seata TC（Transaction Coordinator）**，事务协调者，会接受全局事务的开启、提交、回滚，分支事务的注册。通过它的协调，达到多事务的一致性。
+* **Seata TM（Transaction Manager）**，事务管理器，或者可以理解成事务的发起者，负责向 TC 发起全局事务的开启、提交、回滚。
+* **Seata RM（Resource Manager）**，资源管理器，或者可以理解成事务的参与者，负责向 TC 发起分支事务的注册、提交，接收自 TC 请求的分支事务的提交、回滚。
+
+=== common 模块
+
+
+提供 Seata 封装的工具类、异常类等，大概在 1639 行代码左右。
+
+=== core 模块
+
+提供 Seata 封装的 RPC、数据模型、通信消息格式等，大概在 7212 行。
+
+=== config 模块
+
+config 模块是 Seata 对配置中心的接入，用于 Seata TC 和 Seata RM 从配置中心，读取配置。大概在 782 + 251 行代码左右。
+
+可以只关注 core + ZK 的实现。
+
+需要注意的是： `ZookeeperConfiguration` 继承自 `AbstractConfiguration`。core 模块中， `FileConfiguration` 继承自 `AbstractConfiguration`。
+
+=== discovery 模块
+
+可以只关注 core + ZK 的实现。
+
+这个模块实现了两个功能：注册发现和负载均衡。功能如下：
+
+* 用于 Seata TC 注册到注册中心。
+* 用于 Seata TM 从注册中心发现 Seata TC 。
+
+大概在 212 + 254 行代码左右。
+
+`ZookeeperRegisterServiceImpl` 继承自 `RegistryService`； `FileRegistryServiceImpl` 继承自 `RegistryService`。
+
+=== rm 模块
+
+rm 模块，Seata 对 RM 的核心实现，大概在 336 行代码。
+
+rm-datasource 模块，Seata 通过对 JDBC 拓展，从而实现对 MySQL 等的透明接入 Seata RM 的实现，大概在 9001 行代码。
+
+rm 和 rm-datasource 项目，是我们需要重点看的项目。虽然 rm-datasource 项目看起来代码很多，但是考虑到对 JDBC 相关接口的实现，很多是重复代码，实际算下来，也不会有这么大的代码量。
+
+=== server 模块
+
+server 模块，Seata 对 TC 的核心实现，提供了事务协调、锁、事务状态、事务会话等功能，大概在 6434 行代码。
+
+server 模块，是另外一个我们需要花精力去研究的模块。
+
+=== tm 模块
+
+tm 模块，Seata 对 TM 的实现，提供了全局事务管理，例如说事务的发起，提交，回滚等，大概在 898 行代码。
+
+
+tm 模块，也是一个我们需要花精力去研究的模块。
+
+=== tcc 模块
+
+tcc 模块，Seata 对 TCC 事务模式的实现，大概 1010 行代码。
+
+
+=== spring 模块
+
+spring 模块，Spring 对 Seata 集成的实现，大概在 1007 行代码。例如说，使用 `@GlobalTransactional` 注解，自动创建全局事务，就是通过 seata-spring 模块来实现的。
+
+
+=== integration 模块
+
+integration 项目，用于对不同框架的集成，大概在 1780 行代码左右。目前提供了 dubbo、gRPC、HTTP、Motan、SOFA-RPC 框架的集成。
+
+
+总共要看的，有三万行代码：1639 + 7212 + 782 + 251 + 212 + 254 + 9001 + 336 + 6434 + 898 + 1010 + 1007 + 1780 = 30816。
+
+== 入门
+
+* 刚性事务
+** XA -- 干的就是 2PC 的事情。大概会有 10 倍的性能衰减。
+** 2PC
+** 3PC
+* 柔性事务
+** TCC
+** Saga -- 基于事务补偿的事务。业务侵入比较大。
+** 事务消息
+** 最大努力通知事务
+
+
+事务模型
+
+. AT 模式：原始支持。设计和初衷非常好。类似使用 XA 来解决事务，但是性能衰减又很少。
+. TCC 模式： 0.4 版支持
+. Saga 模式： 0.9 版支持
+. XA 模式： 1.2 版支持
+
+愿景：像使用本地事务一样使用分布式事务，提供一站式解决方案。
+
+支持的微服务框架： Dubbo，Spring Cloud， Sofa-rpc，Motan 和 gRPC 等 RPC 框架
+
+高可用：支持基于数据库存储的集群模式，水平扩展能力强
+
+高可扩展性：支持配置中心、注册中心、SPI 扩展
+
+组成模块
+
+. TC Transaction Coordinator 事务协调器，维护全局事务的运行状态，负责协调并驱动全局事务的提交或回滚。
+. TM Transaction Manager 控制全局事务的边界，负责开启一个全局事务，并最终发起全局提交或全局回滚的协议；
+. RM Resource Manager 控制分支事务，负责分支注册、状态汇报，并接受事务协调器的指令，驱动分支（本地）事务的提交和回滚。
+
+
+
+
+== AT 模式
+
+一种无侵入的分布式事务解决方案，2PC 的广义实现。源自阿里云 GTS AT 模式的开源版。
+
+* 低成本：编程模型不变，轻依赖不需要为分布式事务场景做特定设计。
+* 高性能：一阶段提交，不阻塞；连接释放，保证整个系统的吞吐。
+* 高可用：极端的异常情况下，可以暂时跳过异常事务，保证系统可用。
+
+* 一阶段：
+** 拦截“业务SQL”
+** 生成前镜像
+** 生成后镜像
+* 二阶段
+** TC 向所有 RM 发起提交/回滚
+
+分支事务提交前拿到全局锁。
+
+
+
