@@ -22,7 +22,7 @@ weight: 1
 
 D瓜哥早在 2012年就使用 WordPress 搭建了一个博客： https://wordpress.diguage.com/["地瓜哥"博客网—分享技术带来的喜悦^]，WordPress 不亏是全世界最流行的开源 CMS 系统，各种插件可以满足非常对的需求。当年D瓜哥还想研究一下它的源代码，可惜对 PHP（对，就是那个拍黄片的）无感，没有坚持下去。
 
-但是，再熟悉了 MarkDown、 https://asciidoctor.org/[Asciidoctor^]（D瓜哥是 AsciiDoctor 的死忠粉，坚决支持它的发展） 等轻量级标记语言后，愈发觉得 WordPress 太繁琐：写作一个小时，排版发布一小时。实在是太浪费时间了。
+但是，在熟悉了 MarkDown、 https://asciidoctor.org/[Asciidoctor^]（D瓜哥是 AsciiDoctor 的死忠粉，坚决支持它的发展） 等轻量级标记语言后，愈发觉得 WordPress 太繁琐：写作一个小时，排版发布一小时。实在是太浪费时间了。
 
 先尝试了一下 https://antora.org/[Antora^]，之所以选它，是因为它是 AsciiDoctor 的作者发起的项目，对 AsciiDoctor 的支持性非常好。尝试了一段时间后，发现它更适合写产品说明书，更适合像阿里云等这种对外提供产品，需要提供在线产品说明书的情况。不适合做个人博客。
 
@@ -155,6 +155,42 @@ hugo server
 
 
 == 附加工具推荐
+
+=== 轻量级标记语言
+
+使用 Hugo 搭配轻量级标记语言才是绝配！轻量级标记语言在增加稍许复杂性的情况下，可以大大提高文档的美观性和可读性。所以，可乐而不为？
+
+这里，推荐两款轻量级标记语言。
+
+==== AsciiDoctor
+
+首先，推荐的是 https://asciidoctor.org/[Asciidoctor^]。本网站的所有文档都是使用 AsciiDoctor 格式来书写的。
+
+Asciidoctor 是一套处理 AsciiDoc 的完整工具链。同时，还提供了非常完善的文档。这样，几乎可以一站式解决常见问题，而不用找各种插件来搭积木。
+
+AsciiDoctor 在比 MarkDown 复杂度上增加了一点点，但是功能却强大好多好多倍！如果说 MarkDown 是出版界的小学生，那么 AsciiDoctor 就是出版界的大学毕业生。（在 GitHub 上读到的一句话，原文找不到了。）O'Reilly 就基于 AsciiDoctor 开发了在线图书编辑系统。
+
+常用的文档有这么几个：
+
+. https://asciidoctor.org/docs/asciidoc-syntax-quick-reference/[AsciiDoc Syntax Quick Reference^] -- 这是一个入门文档。常见的功能基本都可以找到说明介绍。如果想玩高级功能，可以去下面文档查找。
+. https://asciidoctor.org/docs/user-manual/[Asciidoctor User Manual^] -- 这是 AsciiDoctor 的完整文档，五花八门的功能介绍都可以找到。找不到可以去 https://github.com/asciidoctor/asciidoctor[GitHub^] 上提 Issue，如果用英文，一般一天之内就会有人回复的。
+. https://github.com/asciidoctor/asciidoctor-diagram[AsciiDoctor Diagram^] -- 需要图表支持的，这里提供了丰富的图表集成。
+. https://github.com/asciidoctor/asciidoctor-pdf[AsciiDoctor PDF^] -- 想要直接转化成 PDF，没问题，这个工具就能帮你搞定！
+
+==== MarkDown
+
+坦白讲，MarkDown 是D瓜哥最早接触的轻量级标记语言。也是目前使用最广泛的轻量级标记语言。GitHub，Gitlab 以及很多工具都有完善地支持！
+
+MarkDown 也是 Hugo 原生支持的标记语言，渲染速度非常快。同时，还支持很多简码（shortcode）。如果第一次接触，为了省去不必要的麻烦，建议从 MarkDown 玩起。
+
+但是，MarkDown 美中不足的是，它没有标准化，有非常多的方言和扩展。这里给几个比较
+
+. https://www.markdownguide.org/basic-syntax/[Markdown Guide: Basic Syntax^] -- 这是一个可读性非常好的 MarkDown 教程，可以从这里开始。
+. https://www.markdowntutorial.com/lesson/1/[Markdown Tutorial^] -- 这是一个交互教程。
+. https://github.github.com/gfm/[GitHub Flavored Markdown Spec^] -- GitHub 改进过的 MarkDown，玩 GitHub 必备。
+. https://mmark.miek.nl/post/syntax/#title-block[Syntax | Mmark: powerful markdown parser^] -- 这是 hugo 支持的 MarkDown 格式。做个作为备查，或者你想玩高级玩法的时候的一个参考资料。
+
+上面给的文档很多，找一个自己感兴趣的，通读下来，各种语法实验一遍，学会就行。不必全部通读。
 
 === 主题推荐
 
