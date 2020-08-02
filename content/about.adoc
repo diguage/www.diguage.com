@@ -1,24 +1,30 @@
 ---
 title: "关于"
 date: 2019-10-19T23:30:52+08:00
-lastmod: 2019-10-19T23:30:52+08:00
+lastmod: 2020-08-02T17:07:14+08:00
 menu: "main"
 weight: 50
 
 # you can close something for this content if you open it in config.toml.
 comment: false
 mathjax: false
+pager: false
+authorbox: false
 ---
+
+// image::/images/avatar.jpg[]
+
+image::/images/goodbye-2019-hello-2020/yangzhuoyongcuo-3.jpg[]
 
 D瓜哥，码农一枚。
 
-喜欢开源，热爱技术，相信计算机可以改变世界。
+热爱技术，喜欢开源，乐于分享，相信计算机可以改变世界。
 
-好读书不求甚解，偏爱历史，经济学，金融，认知心理学，数学，古典文学等。希望以书为马，畅游古今中外，做一个有趣的人。
+好读书不求甚解，偏爱历史，经济学，金融学，心理学(尤其是认知心理学、社会心理学)，数学，古典文学等。希望以书为马，畅游古今中外，做一个有趣的人。
 
-喜欢户外运动、跑步、自驾游、露营🏕等。感兴趣，欢迎约起…
+喜欢户外运动、跑步、自驾游、露营🏕、野炊等。感兴趣，欢迎勾搭…
 
-旧版博客及学习笔记：
+对于写作体验有近乎苛刻的追求。所以，针对博客，折腾过好多次。旧版博客及学习笔记：
 
 * https://wordpress.diguage.com/[旧版"地瓜哥"博客网, window="_blank"]
 * https://notes.diguage.com/mysql/[MySQL 学习笔记^Alpha^, window="_blank"]
@@ -26,3 +32,8 @@ D瓜哥，码农一枚。
 * https://notes.diguage.com/design-patterns/[深入学习设计模式^Alpha^, window="_blank"]
 * https://diguage.github.io/leetcode/[LeetCode 刷题笔记^Alpha^, window="_blank"]
 * https://notes.diguage.com/java-concurrency/[Java 并发学习笔记^Alpha^, window="_blank"]
+
+有感于自己走过的弯路、踩过的大坑，不想让后浪们再次深陷泥潭。所以，发起了一个“火枪手计划”。目前产出的资料，如果有用，欢迎拿走不谢。也欢迎参与进来，一起给火枪手播种火苗，前浪后浪一起浪：
+
+* https://github.com/huoqiangshou/fireworks[火枪手：入坑须知^]
+* https://github.com/huoqiangshou/fireworks/blob/master/plan.adoc[火枪手：大学计算机学习攻略^]
