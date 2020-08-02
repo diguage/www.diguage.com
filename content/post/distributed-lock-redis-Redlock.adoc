@@ -1,0 +1,60 @@
+---
+title: "分布式锁之 Redis Redlock"
+date: 2020-07-21T19:10:05+08:00
+draft: false
+keywords: ["Java","分布式","分布式锁"]
+tags: ["Java","设计","架构","微服务","分布式"]
+categories: ["Java","程序设计"]
+thumbnail: "images/distributed-system/distributed-lock.svg"
+
+weight: 1
+
+# You can also close(false) or open(true) something for this content.
+# P.S. comment can only be closed
+# comment: false
+# toc: true
+---
+
+:source-highlighter: pygments
+:pygments-style: monokai
+:pygments-linenums-mode: table
+:source_attr: indent=0,subs="attributes,verbatim,quotes"
+:image_attr: align=center
+
+
+[source,java,{source_attr}]
+----
+----
+
+
+[source,java,{source_attr}]
+----
+----
+
+
+[source,java,{source_attr}]
+----
+----
+
+
+[source,java,{source_attr}]
+----
+----
+
+
+[source,java,{source_attr}]
+----
+----
+
+
+
+
+
+
+
+
+== 参考资料
+
+. https://redis.io/topics/distlock[Distributed locks with Redis – Redis^]
+. https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html[How to do distributed locking — Martin Kleppmann’s blog^]
+. https://blog.staynoob.cn/post/2019/03/is-distributed-lock-safe/[分布式锁真的“安全”吗？ - 许炎的个人博客^] -- 这篇文章非常棒！
