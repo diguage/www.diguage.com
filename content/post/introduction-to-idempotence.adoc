@@ -1,0 +1,30 @@
+---
+title: "幂等性浅析"
+date: 2020-08-07T15:38:35+08:00
+draft: true
+keywords: [""]
+tags: [""]
+categories: [""]
+thumbnail: "images/"
+
+weight: 1
+---
+
+:source-highlighter: pygments
+:pygments-style: monokai
+:pygments-linenums-mode: table
+:source_attr: indent=0,subs="attributes,verbatim,quotes"
+:image_attr: align=center
+
+image::/images/[{image_attr},title="",alt=""]
+
+
+
+== 更新的幂等操作
+
+=== 更新状态
+
+=== 更新库存
+
+. 将 GUID 向 BloomFilter 中添加，如果不成功则直接返回；否则，继续执行下面的步骤
+. 进行更新库存操作。
