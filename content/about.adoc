@@ -37,3 +37,5 @@ D瓜哥，码农一枚。
 
 * https://github.com/huoqiangshou/fireworks[火枪手：入坑须知^]
 * https://github.com/huoqiangshou/fireworks/blob/master/plan.adoc[火枪手：大学计算机学习攻略^]
+
+关于“火枪手计划”，有什么意见和建议，欢迎留言讨论；或者去 https://github.com/huoqiangshou/fireworks[火枪手：入坑须知^] 提交 Issue。
