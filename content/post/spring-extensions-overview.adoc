@@ -18,6 +18,7 @@ weight: 1
 :source-highlighter: pygments
 :pygments-style: monokai
 :pygments-linenums-mode: table
+:source_attr: indent=0,subs="attributes,verbatim,quotes,macros"
 
 学习 Spring 代码，最重要的是掌握 Spring 有哪些扩展点，可以利用这些扩展点对 Spring 做什么扩展操作。说得更具体一点，如果自己开发一个框架，如何与 Spring 进行整合，如果对 Spring 的扩展点有一个比较清晰的认识，势必会事半功倍。
 
@@ -25,7 +26,7 @@ weight: 1
 
 先来看一下 `@Import` 注解的定义：
 
-[source,java,indent=0]
+[source,java,{source_attr}]
 ----
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
@@ -43,7 +44,7 @@ public @interface Import {
 
 从声明可以看出，使用时，只需要指定 `Class` 实例即可；从方法的文档中可以看出，`Class` 实例可以分为三种：`ImportSelector`、`ImportBeanDefinitionRegistrar` 和常规组件类。示例如下：
 
-[source,java,indent=0]
+[source,java,{source_attr}]
 ----
 @Configuration
 @Import(LogImportSelector.class)
@@ -63,7 +64,7 @@ public static class Config {
 
 先来看一下 `ImportSelector` 接口的定义：
 
-[source,java,indent=0]
+[source,java,{source_attr}]
 ----
 /**
  * Interface to be implemented by types that determine which @{@link Configuration}
@@ -110,7 +111,7 @@ public interface ImportSelector {
 
 从接口文档中就可以看出，使用 `String[] selectImports(AnnotationMetadata importingClassMetadata)` 方法，返回所需要引入的类全限定名即可。实例如下：
 
-[source,java,indent=0]
+[source,java,{source_attr}]
 ----
 public class LogImportSelector implements ImportSelector {
   @Override
@@ -128,7 +129,7 @@ public class LogImportSelector implements ImportSelector {
 
 先来看一下 `ImportBeanDefinitionRegistrar` 接口的定义：
 
-[source,java,indent=0]
+[source,java,{source_attr}]
 ----
 /**
  * Interface to be implemented by types that register additional bean definitions when
@@ -283,7 +284,7 @@ public interface BeanDefinitionRegistry extends AliasRegistry {
 
 很明显，可以通过 `registerBeanDefinition(String beanName, BeanDefinition beanDefinition)` 方法，向容器在中注入所需要的 `BeanDefinition`，而 `BeanDefinition` 是常见的 Bean 实例的基石。示例如下：
 
-[source,java,indent=0]
+[source,java,{source_attr}]
 ----
 public class LogImportBeanDefinitionRegistrar implements ImportBeanDefinitionRegistrar {
   @Override
@@ -299,7 +300,7 @@ public class LogImportBeanDefinitionRegistrar implements ImportBeanDefinitionReg
 
 这是最简单的情况，直接举例：
 
-[source,java,indent=0]
+[source,java,{source_attr}]
 ----
 @Configuration
 @Import(UserService.class)
@@ -312,7 +313,7 @@ public static class Config {
 
 先来看一下 `BeanDefinitionRegistryPostProcessor` 的定义：
 
-[source,java,indent=0]
+[source,java,{source_attr}]
 ----
 /**
  * Extension to the standard {@link BeanFactoryPostProcessor} SPI, allowing for
@@ -346,7 +347,7 @@ public interface BeanDefinitionRegistryPostProcessor extends BeanFactoryPostProc
 
 实例如下：
 
-[source,java,indent=0]
+[source,java,{source_attr}]
 ----
 public class LogBeanDefinitionRegistryPostProcessor implements BeanDefinitionRegistryPostProcessor {
   @Override
@@ -375,7 +376,7 @@ public class LogBeanDefinitionRegistryPostProcessor implements BeanDefinitionReg
 
 先来看一下接口定义：
 
-[source,java,indent=0]
+[source,java,{source_attr}]
 ----
 /**
  * Factory hook that allows for custom modification of an application context's
@@ -436,7 +437,7 @@ public interface BeanFactoryPostProcessor {
 
 若 IoC 容器内添加了实现了 `BeanFactoryPostProcessor` 接口的实现类 Bean，那么在该容器中实例化任何其他 Bean 之前可以回调该 Bean 中的 `postPrcessorBeanFactory()` 方法来对 Bean 的配置元数据进行更改，比如设置 `init-method`，或者将 `Scope` 从 `SINGLETON` 改为 `PROTOTYPE`。示例如下：
 
-[source,java,indent=0]
+[source,java,{source_attr}]
 ----
 public class LogBeanFactoryPostProcessor implements BeanFactoryPostProcessor {
   @Override
@@ -495,7 +496,7 @@ public class LogBeanFactoryPostProcessor implements BeanFactoryPostProcessor {
 
 示例如下：
 
-[source,java,indent=0]
+[source,java,{source_attr}]
 ----
 package com.diguage.truman.context;
 
@@ -595,7 +596,7 @@ Spring 在解决循环依赖时和在创建 Bean 时，都使用到接口。它�
 
 `BeanPostProcessor` 是 Spring 中最最重要的扩展点。Spring 内部大量的功能 IoC 和 AOP 也都是通过 `BeanPostProcessor` 来实现的。先来看一下接口定义：
 
-[source,java,indent=0]
+[source,java,{source_attr}]
 ----
 /**
  * Factory hook that allows for custom modification of new bean instances &mdash;
@@ -694,7 +695,7 @@ public interface BeanPostProcessor {
 
 少废话，直接上代码：
 
-[source,java,indent=0]
+[source,java,{source_attr}]
 ----
 public class LogBeanPostProcessor implements BeanPostProcessor {
   @Override
@@ -753,7 +754,7 @@ beanFactory.addBeanPostProcessor(new LogBeanPostProcessor());
 
 如果某个 Bean 实现了 `ApplicationContextAware` 接口，那么 Spring 将会将该 Bean 所在的上下文环境 `ApplicationContext` 传递给 `setApplicationContext()` 方法，在 Bean 类中新增一个 `ApplicationContext` 字段用来保存 `ApplicationContext` 的值，并实现 `setApplicationContext()` 方法。
 
-[source,java,indent=0]
+[source,java,{source_attr}]
 ----
 @Service
 public static class UserService implements InitializingBean, ApplicationContextAware {
@@ -827,7 +828,7 @@ public static class UserService implements InitializingBean, ApplicationContextA
 
 `DestructionAwareBeanPostProcessor` 就可以实现这个功能。先来看一下接口定义：
 
-[source,java,indent=0]
+[source,java,{source_attr}]
 ----
 /**
  * Subinterface of {@link BeanPostProcessor} that adds a before-destruction callback.
@@ -875,7 +876,7 @@ public interface DestructionAwareBeanPostProcessor extends BeanPostProcessor {
 由于 `DestructionAwareBeanPostProcessor` 是 `BeanPostProcessor` 子类，由此可见，可以像操作 `BeanPostProcessor` 一样来操作 `DestructionAwareBeanPostProcessor` 实现类。示例如下：
 
 
-[source,java,indent=0]
+[source,java,{source_attr}]
 ----
 public class LogDestructionAwareBeanPostProcessor implements DestructionAwareBeanPostProcessor {
   @Override
@@ -898,7 +899,7 @@ beanFactory.addBeanPostProcessor(new LogDestructionAwareBeanPostProcessor());
 
 想要触发生命周期函数的 `destroy()` 方法，必须要要手动调用 `beanFactory.destroyBean(bean)` 方法才行：
 
-[source,java,indent=0]
+[source,java,{source_attr}]
 ----
 DggDisposableBean dggDisposableBean = applicationContext.getBean(DggDisposableBean.class);
 ConfigurableListableBeanFactory beanFactory = ApplicationContext.getBeanFactory();
@@ -930,7 +931,7 @@ Hibernate 与 Spring 整合主要涉及下面几个类：
 
 实例代码：
 
-[source,xml]
+[source,xml,{source_attr}]
 ----
 <beans>
   <bean id="myDataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">

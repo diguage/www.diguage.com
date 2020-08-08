@@ -18,6 +18,7 @@ weight: 1
 :source-highlighter: pygments
 :pygments-style: monokai
 :pygments-linenums-mode: table
+:source_attr: indent=0,subs="attributes,verbatim,quotes,macros"
 
 
 在上一篇文章 https://www.diguage.com/post/spring-extensions-overview/[Spring 扩展点概览及实践^] 中介绍了 Spring 内部存在的扩展点。学以致用，现在来分析一下 Spring 与 MyBATIS 的整合流程。
@@ -28,7 +29,7 @@ weight: 1
 
 数据库方面，直接使用功能了 MySQL 示例数据库： https://dev.mysql.com/doc/employee/en/[MySQL : Employees Sample Database^]，需要的话，自行下载。
 
-[source,java,indent=0]
+[source,java,{source_attr}]
 ----
 package com.diguage.truman.mybatis;
 
@@ -86,7 +87,7 @@ public class MybatisTest {
 ----
 
 .EmployeesMapper
-[source,java,indent=0]
+[source,java,{source_attr}]
 ----
 package com.diguage.truman.mybatis;
 
@@ -105,7 +106,7 @@ public interface EmployeesMapper {
 
 
 .Employees
-[source,java,indent=0]
+[source,java,{source_attr}]
 ----
 package com.diguage.truman.mybatis;
 
@@ -148,7 +149,7 @@ D瓜哥在 https://www.diguage.com/post/spring-extensions-overview/#bean-definit
 
 
 .`ConfigurationClassPostProcessor#processConfigBeanDefinitions`
-[source,java,indent=0]
+[source,java,{source_attr}]
 ----
 // Parse each @Configuration class
 ConfigurationClassParser parser = new ConfigurationClassParser(
@@ -164,7 +165,7 @@ do {
 在 `parser.parse(candidates);` 这行代码打一个断点，然后一步一步跟下去，就到了 `ConfigurationClassParser` 的 `doProcessConfigurationClass` 方法里：
 
 .`ConfigurationClassParser#doProcessConfigurationClass`
-[source,java,indent=0]
+[source,java,{source_attr}]
 ----
   /**
    * Apply processing and build a complete {@link ConfigurationClass} by reading the
@@ -187,7 +188,7 @@ do {
 
 请注意这里的 `getImports(sourceClass)`，我们看一下这个方法：
 
-[source,java,indent=0]
+[source,java,{source_attr}]
 ----
   /**
    * Returns {@code @Import} class, considering all meta-annotations.
@@ -235,7 +236,7 @@ do {
 
 我们接着看 `processImports` 方法：
 
-[source,java,indent=0]
+[source,java,{source_attr}]
 ----
   private void processImports(ConfigurationClass configClass, SourceClass currentSourceClass,
     Collection<SourceClass> importCandidates, Predicate<String> exclusionFilter,
@@ -259,7 +260,7 @@ do {
 接着，回到 `processConfigBeanDefinitions` 方法：
 
 .`ConfigurationClassPostProcessor#processConfigBeanDefinitions`
-[source,java,indent=0]
+[source,java,{source_attr}]
 ----
       parser.parse(candidates);
       parser.validate();
@@ -279,7 +280,7 @@ do {
 进入 `this.reader.loadBeanDefinitions(configClasses);` 方法：
 
 .`ConfigurationClassBeanDefinitionReader#loadBeanDefinitions`
-[source,java,indent=0]
+[source,java,{source_attr}]
 ----
   /**
    * Read {@code configurationModel}, registering bean definitions
@@ -328,7 +329,7 @@ do {
 到这里就调用到了 `MapperScannerRegistrar` 的 `registerBeanDefinitions` 方法：
 
 .`MapperScannerRegistrar#registerBeanDefinitions(AnnotationMetadata, BeanDefinitionRegistry)`
-[source,java,indent=0]
+[source,java,{source_attr}]
 ----
   /**
    * {@inheritDoc}
@@ -412,7 +413,7 @@ do {
 
 先看一下 `MapperScannerConfigurer` 的类型定义：
 
-[source,java,indent=0]
+[source,java,{source_attr}]
 ----
 public class MapperScannerConfigurer
     implements BeanDefinitionRegistryPostProcessor, InitializingBean, ApplicationContextAware, BeanNameAware {
@@ -423,7 +424,7 @@ public class MapperScannerConfigurer
 来看看 `postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry)` 的定义：
 
 .`MapperScannerConfigurer#postProcessBeanDefinitionRegistry`
-[source,java,indent=0]
+[source,java,{source_attr}]
 ----
   @Override
   public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) {
@@ -457,7 +458,7 @@ public class MapperScannerConfigurer
 
 老规矩，先看看 `ClassPathMapperScanner` 的定义：
 
-[source,java,indent=0]
+[source,java,{source_attr}]
 ----
 public class ClassPathMapperScanner extends ClassPathBeanDefinitionScanner {
 
@@ -473,7 +474,7 @@ public class ClassPathMapperScanner extends ClassPathBeanDefinitionScanner {
 从这里可以看出，`ClassPathMapperScanner` 就是一个 `ClassPathBeanDefinitionScanner`，根据类名可以得知，扫描 `class path` 并生成 `BeanDefinition`。来看一下 `scan(String... basePackages)`
 
 .`ClassPathBeanDefinitionScanner#scan`
-[source,java,indent=0]
+[source,java,{source_attr}]
 ----
   /**
    * Perform a scan within the specified base packages.
@@ -497,7 +498,7 @@ public class ClassPathMapperScanner extends ClassPathBeanDefinitionScanner {
 这里把实际扫描工作委托给了 `doScan(basePackages)` 方法，而这个方法被 `ClassPathMapperScanner` 重写了，来看一下它的实现：
 
 .`ClassPathMapperScanner#doScan`
-[source,java,indent=0]
+[source,java,{source_attr}]
 ----
   /**
    * Calls the parent search that will search and register all the candidates. Then the registered objects are post
@@ -521,7 +522,7 @@ public class ClassPathMapperScanner extends ClassPathBeanDefinitionScanner {
 实际的扫描工作还是由父类 `super.doScan(basePackages)` 完成，只是又对扫描结果做了进一步处理： `processBeanDefinitions(beanDefinitions)`。
 
 .`ClassPathMapperScanner#processBeanDefinitions`
-[source,java,indent=0]
+[source,java,{source_attr}]
 ----
   private void processBeanDefinitions(Set<BeanDefinitionHolder> beanDefinitions) {
     GenericBeanDefinition definition;
@@ -584,7 +585,7 @@ public class ClassPathMapperScanner extends ClassPathBeanDefinitionScanner {
 
 来看一下 `MapperFactoryBean` 的类型定义：
 
-[source,java,indent=0]
+[source,java,{source_attr}]
 ----
 public class MapperFactoryBean<T> extends SqlSessionDaoSupport implements FactoryBean<T> {
 
