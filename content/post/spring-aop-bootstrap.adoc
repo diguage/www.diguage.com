@@ -154,5 +154,5 @@ protected Object wrapIfNecessary(Object bean, String beanName, Object cacheKey) 
 . `getAdvicesAndAdvisorsForBean(beanClass, beanName, targetSource)` 获取了所有符合条件的增强信息。
 . `createProxy(beanClass, beanName, specificInterceptors, targetSource)` 创建了代理对象。
 
-这和 `postProcessBeforeInstantiation` 方法中的处理就一样了。经过千山万水，终于成功在延安胜利会师。下一篇文章，我们就来介绍一下如何获取通知以及如何创建代理。
+这和 `postProcessBeforeInstantiation` 方法中的处理就一样了。经过千山万水，终于成功在延安胜利会师。下一篇文章 https://www.diguage.com/post/spring-aop-get-advices/[Spring AOP 源码分析：获得通知]，重点介绍一下如何获取通知。
 

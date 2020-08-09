@@ -190,6 +190,7 @@ git pull
 git rebase master
 ----
 
+[#example-code]
 == 示例代码
 
 原来使用 Spring，需要 XML 文件。甚至，现在的文档中也有大量的 XML 配置。为了方便起见，D瓜哥介绍一个不需要使用 XML 配置文件可以跑起来的写法：
