@@ -329,5 +329,5 @@ public static boolean canApply(Pointcut pc, Class<?> targetClass, boolean hasInt
 }
 ----
 
-结果类型和方法的双重筛选后，就可以把符合条件的 Advice(通知/增强)给选择出来了。下一篇文章，来介绍一下如果创建代理类。
+结果类型和方法的双重筛选后，就可以把符合条件的 Advice(通知/增强)给选择出来了。下一篇文章，来介绍一下如果创建代理类： https://www.diguage.com/post/spring-aop-create-proxy-jdk/[Spring AOP 源码分析：创建代理（一）]。
 
