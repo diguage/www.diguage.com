@@ -341,6 +341,9 @@ Spring 代码庞大，除去测试代码，还有 22 多万行正式的 Java 代
 . https://www.diguage.com/post/spring-bean-lifecycle-overview/[Spring Bean 生命周期概述 - "地瓜哥"博客网^]
 . https://www.diguage.com/post/spring-aop-process-overview/[Spring AOP 处理流程概述 - "地瓜哥"博客网^]
 . https://www.diguage.com/post/spring-aop-bootstrap/[Spring AOP 源码分析：入门 - "地瓜哥"博客网^]
+. https://www.diguage.com/post/spring-aop-get-advices/[Spring AOP 源码分析：获得通知 - "地瓜哥"博客网^]
+. https://www.diguage.com/post/spring-aop-create-proxy-jdk/[Spring AOP 源码分析：创建代理（一） - "地瓜哥"博客网^]
+
 
 学习 Spring 源码，一个关键点就是学习 Spring 支持的扩展点，一方面可以帮助理解 Spring 的设计；另外一方面也可以帮助我们在需要的时候，对 Spring 做一定的扩展，简化我们的代码。下面这几篇文章重点介绍了 Spring 支持的扩展点以及这些扩展点的应用示例：
 
@@ -348,6 +351,11 @@ Spring 代码庞大，除去测试代码，还有 22 多万行正式的 Java 代
 . https://www.diguage.com/post/spring-extensions-and-mybatis/[Spring 扩展点实践：整合 MyBATIS - "地瓜哥"博客网^]
 . https://www.diguage.com/post/spring-extensions-and-dubbo-1/[Spring 扩展点实践：整合 Apache Dubbo（一） - "地瓜哥"博客网^]
 . https://www.diguage.com/post/spring-extensions-and-dubbo-2/[Spring 扩展点实践：整合 Apache Dubbo（二） - "地瓜哥"博客网^]
+
+除此之外，通过对 Spring 源码实现的了解，还要可以更快地定位问题原因，寻找出合适的解决方案：
+
+. https://www.diguage.com/post/spring-circular-dependence/[源码剖析 Spring 循环依赖 - "地瓜哥"博客网^]
+. https://github.com/seata/seata-samples/pull/367[add Jakarta Annotations API by diguage · Pull Request #367 · seata/seata-samples^] -- 这个 PR 还要求对 Dubbo 的源码实现有一点的了解。
 
 == 奇技淫巧
 
