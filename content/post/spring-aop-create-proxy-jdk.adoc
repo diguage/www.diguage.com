@@ -380,5 +380,7 @@ public Object proceed() throws Throwable {
 }
 ----
 
-贴代码太多，篇幅有又老长了。关于利用 cglib 创建代理的过程，留到下一篇文章来重点介绍吧。
+`ReflectiveMethodInvocation` 通过递归调用 `proceed()` 方法，来实现链式调用的。因为链本身是一个 `List` 对象，每次递归调用时，只需要推进其下标就可以实现链式调用的效果。
+
+贴代码太多，篇幅有又老长了。关于利用 cglib 创建代理的过程，留到下一篇文章来重点介绍： https://www.diguage.com//post/spring-aop-create-proxy-cglib/[Spring AOP 源码分析：创建代理（二）^]。
 
