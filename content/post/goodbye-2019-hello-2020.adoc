@@ -157,6 +157,7 @@ weight: 1
 
 从去年开始，我树立的一个宗旨，脑子和腿，总有一个在路上。所以，今年搞了几次自驾游和露营。
 
+[#duanwu-travel]
 ==== 端午浪天涯
 
 去年自驾游时，就听郭静和超超说起热阿线和达达线。利用端午放假的时间，和超超一起，又约上小悦悦和珊珊，一行四人，于 6 月 6 号从清河出发，开启了为期三天的自驾游之旅。
@@ -187,6 +188,7 @@ image::/images/goodbye-2019-hello-2020/xianhua.jpg[]
 
 image::/images/goodbye-2019-hello-2020/xiangshu.jpg[]
 
+在 https://www.diguage.com/post/love-poems-digests-at-qixi/#zhixiangshu[在七夕“摘”情诗] 中，对这张照片做了简要介绍，感兴趣请移步。
 
 ==== 妈妈来北京游玩
 

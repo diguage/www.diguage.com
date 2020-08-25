@@ -3,7 +3,7 @@ title: "暗想"
 date: 2020-02-14T20:39:36+08:00
 draft: false
 tags: ["诗歌"]
-categories: ["个人成长"]
+categories: ["个人成长","文学"]
 
 weight: 1
 // toc: true
