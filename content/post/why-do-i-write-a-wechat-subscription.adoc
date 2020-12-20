@@ -1,0 +1,24 @@
+---
+title: "Why Do I Write a Wechat"
+date: 2020-12-16T00:32:09+08:00
+draft: true
+keywords: [""]
+tags: [""]
+categories: [""]
+thumbnail: "images/"
+
+weight: 1
+---
+
+:source-highlighter: pygments
+:pygments-style: monokai
+:pygments-linenums-mode: table
+:source_attr: indent=0,subs="attributes,verbatim,quotes,macros"
+:image_attr: align=center
+
+image::/images/[title="",alt="",{image_attr}]
+
+[source%nowrap,java,{source_attr}]
+----
+// code
+----
