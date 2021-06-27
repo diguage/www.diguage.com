@@ -1,0 +1,155 @@
+---
+title: "从 Spring PR 中学习代码技巧"
+date: 2021-06-27T18:20:28+08:00
+draft: false
+keywords: ["Java","Spring"]
+tags: ["Java","设计","架构"]
+categories: ["Java","程序设计"]
+thumbnail: "images/spring-framework/spring-logo.jpg"
+
+weight: 1
+---
+
+:source-highlighter: pygments
+:pygments-style: monokai
+:pygments-linenums-mode: table
+
+D瓜哥经常关注 Spring 的 PR 与 Issue。在众多 Contributor 中，除了 Spring 团队成员之外，我对 https://github.com/stsypanov[stsypanov (Сергей Цыпанов)^] 印象很深刻。这哥们给 Spring 提了非常多的 PR，请看列表 https://github.com/spring-projects/spring-framework/pulls?page=1&q=author%3Astsypanov+is%3Aclosed[Pull requests · spring-projects/spring-framework^]，而且这个哥们的 PR 都非常有特点，绝大部分是性能提升方面的 PR，而且还会给出 JMH 的测试结果。不愧是毛熊人，做事细致严谨。
+
+这周心血来潮，把这哥们的 PR 翻一翻，希望可以学习一些编码技巧。简单记录一下，以备以后回顾学习。
+
+== 提高 `Map` 的遍历性能
+
+请看： https://github.com/spring-projects/spring-framework/pull/1891/files[SPR-17074 Replace iteration over Map::keySet with Map::entrySet by stsypanov · Pull Request #1891^]
+
+摘取一个示例如下：
+
+[source%nowrap,java,indent=0,highlight=32;34]
+----
+| before update                                    | after update
+---------------------------------------------------|-------------------------------------------------------------------------
+for (String attributeName : attributes.keySet()) { | for (Map.Entry<String, Object> attributeEntry : attributes.entrySet()) {
+                                                   |     String attributeName = attributeEntry.getKey();
+    Object value = attributes.get(attributeName);  |     Object value = attributeEntry.getValue();
+----
+
+这个改动很小，但是对性能的改善还是比较显著的。翻看自己项目的代码，还是有不少是改动前的写法。
+
+针对这点，D瓜哥也给 Spring 发了一个 PR： https://github.com/spring-projects/spring-framework/pull/27100[Improve performance of iteration in GroovyBeanDefinitionReader by diguage · Pull Request #27100^]。相信不久就会合并到 `main` 分支的。
+
+所以，给 Spring 以及其他开源项目提 PR，其实一点也不难。只要，你花心思去研究，肯定有机会的。不过，也反思一点：我这个 PR 有点东施效颦的感觉，有点刷 KPI 的样子。还是应该脚踏实地去好好研究，提更多更有建设性意见的 PR。
+
+== `StringJoiner`
+
+看这个 PR： https://github.com/spring-projects/spring-framework/pull/22430/files[Use StringJoiner where possible to simplify String joining by stsypanov · Pull Request #22430^] 才知道，原来在 Java 8 直接内置了 `StringJoiner`，翻看 `StringJoiner` 的源码，你会发现它出来可以设置连接符，竟然还可以设置前置符和后置符。后续也可以使用这个工具类。
+
+类似的 PR 还有： https://github.com/spring-projects/spring-framework/pull/22539/files[Use StringJoiner where possible to simplify String joining by stsypanov · Pull Request #22539^]。
+
+
+== `ArrayList` 初始化
+
+请看： https://github.com/spring-projects/spring-framework/pull/22418/files[Some very simple improvements regarding usage of ArrayList by stsypanov · Pull Request #22418^]。
+
+从 PR 中摘录出两个修改片段：
+
+[source%nowrap,java,indent=0]
+----
+| before update                          | after update
+-----------------------------------------|--------------------------------------------------------------
+List<String> result = new ArrayList<>(); | List<String> result = new ArrayList<>(Arrays.asList(array1));
+result.addAll(Arrays.asList(array1));    |
+----
+
+[source%nowrap,java,indent=0]
+----
+| before update                                            | after update
+-----------------------------------------------------------|-------------------------------------------------------
+                                                           | if (headers == null) {
+                                                           |     return Collections.emptyList();
+                                                           | }
+List<String> matchingHeaderNames = new ArrayList<>();      | List<String> matchingHeaderNames = new ArrayList<>();
+if (headers != null) {                                     | for (String key : headers.keySet()) {
+    for (String key : headers.keySet()) {                  |     if (PatternMatchUtils.simpleMatch(pattern, key)) {
+        if (PatternMatchUtils.simpleMatch(pattern, key)) { |         matchingHeaderNames.add(key);
+            matchingHeaderNames.add(key);                  |		
+        }                                                  |
+----
+
+`new ArrayList<>(Arrays.asList(array1))` 与 `Collections.emptyList()` 都是一些值得关注的代码小技巧。另外，在第二个修改片段中，直接进行空值判断，还可以减少下面代码的括号嵌套层数。
+
+== 字符串连接
+
+https://github.com/spring-projects/spring-framework/pull/22466[Simplify String concatenation by stsypanov · Pull Request #22466^] 这个 PR 改动很小，代码也乏善可陈。但是，在这个 PR 的描述中，Contributor 给出了这个 PR 的解释，里面给出的 Reference： https://alblue.bandlem.com/2016/04/jmh-stringbuffer-stringbuilder.html[StringBuffer and StringBuilder performance with JMH^] ，详细对比了不同情况下，“字符串连接”的性能情况，读一读还是有不少收获的。这里直接把文章结论引入过来：
+
+* `StringBuilder` is better than `StringBuffer`
+* `StringBuilder.append(a).append(b)` is better than `StringBuilder.append(a+b)`
+* `StringBuilder.append(a).append(b)` is better than `StringBuilder.append(a); StringBuilder.append(b);`
+* `StringBuilder.append()` and `+` are only equivalent _provided_ that they are not nested and you don’t need to pre-sizing the builder
+* Pre-sizing the `StringBuilder` is like pre-sizing an `ArrayList`; if you know the approximate size you can reduce the garbage by specifying a capacity up-front
+
+== 数组填充
+
+https://github.com/spring-projects/spring-framework/pull/22595/files[Use Arrays::fill instead of hand-written loop by stsypanov · Pull Request #22595^] 这个 PR 也值得看一看。
+
+[source%nowrap,java,indent=0]
+----
+| before update                          | after update
+-----------------------------------------|--------------------------------
+for (int i = 0; i < bytes.length; i++) { | Arrays.fill(bytes, (byte) 'h');
+    bytes[i] = 'h';                      |
+}                                        |
+----
+
+用一行代码代替三行代码，何乐而不为呢？另外，估计很多人不知道 `Arrays.fill(array, object);` 这个 API。
+
+== `Comparator`
+
+请看： https://github.com/spring-projects/spring-framework/pull/23098/files[Simplify comparison of primitives by stsypanov · Pull Request #23098^]
+
+[source%nowrap,java,indent=0]
+----
+| before update                                        | after update
+-------------------------------------------------------|---------------------------------------------
+Arrays.sort(ctors, (c1, c2) -> {                       | Arrays.sort(ctors, (c1, c2) -> {
+    int c1pl = c1.getParameterCount();                 |     int c1pl = c1.getParameterCount();
+    int c2pl = c2.getParameterCount();                 |     int c2pl = c2.getParameterCount();
+    return (c1pl < c2pl ? -1 : (c1pl > c2pl ? 1 : 0)); |     return Integer.compare(c1pl, c2pl);
+});                                                    | });
+----
+
+Contributor 使用 `Integer.compare(int, int)` 来简化比较代码。所以，以后比较整数可以使用 `Integer.compare(int, int)`。
+
+其实，还可以更进一步：
+
+[source%nowrap,java,indent=0]
+----
+| before update                         | after update
+----------------------------------------|---------------------------------------------
+Arrays.sort(ctors, (c1, c2) -> {        | Arrays.sort(ctors, Comparator.comparingInt(Constructor::getParameterCount));
+    int c1pl = c1.getParameterCount();  |
+    int c2pl = c2.getParameterCount();  |
+    return Integer.compare(c1pl, c2pl); |
+});                                     |
+----
+
+所以，我提了一个 PR： https://github.com/spring-projects/spring-framework/pull/27102[Simplify Comparator using method references. Improve #23098 by diguage · Pull Request #27102^]。
+
+== 数组克隆
+
+请看： https://github.com/spring-projects/spring-framework/pull/23986/files[Use array.clone() instead of manual array creation by stsypanov · Pull Request #23986^]。
+
+[source%nowrap,java,indent=0]
+----
+| before update                                    | after update
+---------------------------------------------------|---------------------------------------------
+String[] copy = new String[state.length];          | return state.clone();
+System.arraycopy(state, 0, copy, 0, state.length); |
+return copy;                                       |
+----
+
+复制数组，以前只知 `System.arraycopy` 可以高效完成任务，以后可以使用 `array.clone()` 。
+
+
+== 参考资料
+
+. https://alblue.bandlem.com/2016/04/jmh-stringbuffer-stringbuilder.html[StringBuffer and StringBuilder performance with JMH^]
