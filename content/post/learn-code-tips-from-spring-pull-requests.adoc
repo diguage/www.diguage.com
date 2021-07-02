@@ -26,11 +26,14 @@ D瓜哥经常关注 Spring 的 PR 与 Issue。在众多 Contributor 中，除了
 
 [source%nowrap,java,indent=0,highlight=32;34]
 ----
-| before update                                    | after update
----------------------------------------------------|-------------------------------------------------------------------------
-for (String attributeName : attributes.keySet()) { | for (Map.Entry<String, Object> attributeEntry : attributes.entrySet()) {
-                                                   |     String attributeName = attributeEntry.getKey();
-    Object value = attributes.get(attributeName);  |     Object value = attributeEntry.getValue();
+// --before update------------------------------------------------------
+for (String attributeName : attributes.keySet()) { 
+    Object value = attributes.get(attributeName);  
+
+// --after update-------------------------------------------------------
+for (Map.Entry<String, Object> attributeEntry : attributes.entrySet()) {
+    String attributeName = attributeEntry.getKey();
+    Object value = attributeEntry.getValue();
 ----
 
 这个改动很小，但是对性能的改善还是比较显著的。翻看自己项目的代码，还是有不少是改动前的写法。
@@ -54,25 +57,33 @@ for (String attributeName : attributes.keySet()) { | for (Map.Entry<String, Obje
 
 [source%nowrap,java,indent=0]
 ----
-| before update                          | after update
------------------------------------------|--------------------------------------------------------------
-List<String> result = new ArrayList<>(); | List<String> result = new ArrayList<>(Arrays.asList(array1));
-result.addAll(Arrays.asList(array1));    |
+// --before update-------------------------------------------
+List<String> result = new ArrayList<>();
+result.addAll(Arrays.asList(array1));
+
+// --after update--------------------------------------------
+List<String> result = new ArrayList<>(Arrays.asList(array1));
 ----
 
 [source%nowrap,java,indent=0]
 ----
-| before update                                            | after update
------------------------------------------------------------|-------------------------------------------------------
-                                                           | if (headers == null) {
-                                                           |     return Collections.emptyList();
-                                                           | }
-List<String> matchingHeaderNames = new ArrayList<>();      | List<String> matchingHeaderNames = new ArrayList<>();
-if (headers != null) {                                     | for (String key : headers.keySet()) {
-    for (String key : headers.keySet()) {                  |     if (PatternMatchUtils.simpleMatch(pattern, key)) {
-        if (PatternMatchUtils.simpleMatch(pattern, key)) { |         matchingHeaderNames.add(key);
-            matchingHeaderNames.add(key);                  |		
-        }                                                  |
+// --before update----------------------------------------
+List<String> matchingHeaderNames = new ArrayList<>();
+if (headers != null) {
+    for (String key : headers.keySet()) {
+        if (PatternMatchUtils.simpleMatch(pattern, key)) {
+            matchingHeaderNames.add(key);                  
+        }
+
+// --after update-----------------------------------------
+if (headers == null) {
+    return Collections.emptyList();
+}
+List<String> matchingHeaderNames = new ArrayList<>();
+for (String key : headers.keySet()) {
+    if (PatternMatchUtils.simpleMatch(pattern, key)) {
+        matchingHeaderNames.add(key);
+    }
 ----
 
 `new ArrayList<>(Arrays.asList(array1))` 与 `Collections.emptyList()` 都是一些值得关注的代码小技巧。另外，在第二个修改片段中，直接进行空值判断，还可以减少下面代码的括号嵌套层数。
@@ -93,11 +104,13 @@ https://github.com/spring-projects/spring-framework/pull/22595/files[Use Arrays:
 
 [source%nowrap,java,indent=0]
 ----
-| before update                          | after update
------------------------------------------|--------------------------------
-for (int i = 0; i < bytes.length; i++) { | Arrays.fill(bytes, (byte) 'h');
-    bytes[i] = 'h';                      |
-}                                        |
+// --before update----------------------
+for (int i = 0; i < bytes.length; i++) { 
+    bytes[i] = 'h';
+}
+
+// --after update-----------------------
+Arrays.fill(bytes, (byte) 'h');
 ----
 
 用一行代码代替三行代码，何乐而不为呢？另外，估计很多人不知道 `Arrays.fill(array, object);` 这个 API。
@@ -108,13 +121,19 @@ for (int i = 0; i < bytes.length; i++) { | Arrays.fill(bytes, (byte) 'h');
 
 [source%nowrap,java,indent=0]
 ----
-| before update                                        | after update
--------------------------------------------------------|---------------------------------------------
-Arrays.sort(ctors, (c1, c2) -> {                       | Arrays.sort(ctors, (c1, c2) -> {
-    int c1pl = c1.getParameterCount();                 |     int c1pl = c1.getParameterCount();
-    int c2pl = c2.getParameterCount();                 |     int c2pl = c2.getParameterCount();
-    return (c1pl < c2pl ? -1 : (c1pl > c2pl ? 1 : 0)); |     return Integer.compare(c1pl, c2pl);
-});                                                    | });
+// --before update------------------------------------
+Arrays.sort(ctors, (c1, c2) -> {
+    int c1pl = c1.getParameterCount();
+    int c2pl = c2.getParameterCount();
+    return (c1pl < c2pl ? -1 : (c1pl > c2pl ? 1 : 0));
+});
+
+// --after update-------------------------------------
+Arrays.sort(ctors, (c1, c2) -> {
+    int c1pl = c1.getParameterCount();
+    int c2pl = c2.getParameterCount();
+    return Integer.compare(c1pl, c2pl);
+});
 ----
 
 Contributor 使用 `Integer.compare(int, int)` 来简化比较代码。所以，以后比较整数可以使用 `Integer.compare(int, int)`。
@@ -123,13 +142,15 @@ Contributor 使用 `Integer.compare(int, int)` 来简化比较代码。所以，
 
 [source%nowrap,java,indent=0]
 ----
-| before update                         | after update
-----------------------------------------|---------------------------------------------
-Arrays.sort(ctors, (c1, c2) -> {        | Arrays.sort(ctors, Comparator.comparingInt(Constructor::getParameterCount));
-    int c1pl = c1.getParameterCount();  |
-    int c2pl = c2.getParameterCount();  |
-    return Integer.compare(c1pl, c2pl); |
-});                                     |
+// --before update----------------------------------------------------------
+Arrays.sort(ctors, (c1, c2) -> {        
+    int c1pl = c1.getParameterCount();
+    int c2pl = c2.getParameterCount();
+    return Integer.compare(c1pl, c2pl);
+});
+
+// --after update-----------------------------------------------------------
+Arrays.sort(ctors, Comparator.comparingInt(Constructor::getParameterCount));
 ----
 
 所以，我提了一个 PR： https://github.com/spring-projects/spring-framework/pull/27102[Simplify Comparator using method references. Improve #23098 by diguage · Pull Request #27102^]。
@@ -140,11 +161,13 @@ Arrays.sort(ctors, (c1, c2) -> {        | Arrays.sort(ctors, Comparator.comparin
 
 [source%nowrap,java,indent=0]
 ----
-| before update                                    | after update
----------------------------------------------------|---------------------------------------------
-String[] copy = new String[state.length];          | return state.clone();
-System.arraycopy(state, 0, copy, 0, state.length); |
-return copy;                                       |
+// --before update--------------------------------
+String[] copy = new String[state.length];
+System.arraycopy(state, 0, copy, 0, state.length);
+return copy;
+
+// --after update---------------------------------
+return state.clone();
 ----
 
 复制数组，以前只知 `System.arraycopy` 可以高效完成任务，以后可以使用 `array.clone()` 。
