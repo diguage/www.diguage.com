@@ -113,10 +113,29 @@ Paxos has two significant drawbacks.
 
 * The first drawback is that Paxos is exceptionally difficult to understand.
 * The second problem with Paxos is that it does not provide a good foundation for building practical implementations
+** One reason is that there is no widely agreedupon algorithm for multi-Paxos.
+** Furthermore, the Paxos architecture is a poor one for building practical systems;
+** Another problem is that Paxos uses a symmetric peer-to-peer approach at its core
 ____
 
 Paxos 的两个缺点：难以理解 和 缺乏良好的构建基础。
 
+[quote]
+If aseries of decisions must be made, it is simpler and fasterto first elect a leader, then have the leader coordinate thedecisions.
+
+这种方式更优？还是 Leader 主导更优？有待专门文章来论证。
+
+[quote]
+Each implementation begins with Paxos, discovers the difficulties in implementing it, and then develops a significantly different architecture.
+
+<<chubby>> 的论文中，似乎也证实了这一点：
+
+[quote, The Chubby lock service for loosely-coupled distributed systems]
+____
+There are significant gaps between the description ofthe Paxos algorithm and the needs of a real-worldsystem. . . . the final system will be based on an un-proven protocol.
+____
+
+有机会把 <<chubby>> 的论文也读一下。
 
 [bibliography]
 == 参考资料

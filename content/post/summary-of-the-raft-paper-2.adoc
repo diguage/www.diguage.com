@@ -1,0 +1,110 @@
+---
+title: "Raft 论文摘要（二）"
+date: 2021-07-05T19:58:32+08:00
+draft: false
+tags: ["论文","分布式","算法","架构"]
+categories: ["分布式","算法"]
+thumbnail: "images/raft/solo.svg"
+
+weight: 1
+---
+
+// :doctype: book
+:image_attr: align=center,width=100%
+
+
+在上一篇文章中，通过阅读 https://raft.github.io/raft.pdf[《In Search of an Understandable Consensus Algorithm》] 前三节的内容，对论文的大致内容做了简介，简单说明了一下 Replicated state machines 的用途以及 Paxos 本身存在的问题。
+
+== 4. Designing for understandability
+
+[quote]
+____
+several goals in designing Raft: 
+
+* it must providea complete and practical foundation for system building;
+* it must be safe under all conditions and available under typical operating conditions; 
+* it must be efficient for common operations.
+
+Our most important goal -- and most difficult challenge -- was **understandability**.
+____
+
+从这里可以看出，Raft 设计的初衷就是为了易于理解和便于构建。
+
+[quote]
+There were numerous points in the design of Raft where we had to choose among alternative approaches. In these situations we evaluated the alternatives based on understandability.
+
+总之，一切出发点就是易于理解。但是，这里就有一个疑问了，在整个设计中，有没有什么地方为了理解而舍弃效率？有哪些地方？如何改进？
+
+[quote]
+____
+We used two techniquesthat are generally applicable:
+
+* The first technique is the well-known approach of problem decomposition: wherever possible, we divided problems into separate pieces that could be solved, explained, and understood relatively independently.
+* Our second approach was to simplify the state spaceby reducing the number of states to consider, making the system more coherent and eliminating nondeterminism where possible.
+____
+
+从目录来看，这两个
+
+[quote]
+We used randomization to simplify the Raft leader election algorithm.
+
+在选举中，定时器的时长是随机的，确实可以减少冲突发生的概率。
+
+
+== 5. The Raft consensus algorithm
+
+
+
+image::/images/raft/states.png[{image_attr},title="状态",alt="状态"]
+
+image::/images/raft/append-entries-rpc.png[{image_attr},title="AppendEntries RPC",alt="AppendEntries RPC"]
+
+image::/images/raft/request-vote-RPC.png[{image_attr},title="RequestVote RPC",alt="RequestVote RPC"]
+
+image::/images/raft/rules-for-servers.png[{image_attr},title="Rules for Servers",alt="Rules for Servers"]
+
+image::/images/raft/raft-guarantees.png[{image_attr},title="Raft Guarantees",alt="Raft Guarantees"]
+
+
+
+image::/images/raft/terms.png[{image_attr},title="Terms",alt="Terms"]
+
+[quote]
+Raft implements consensus by first electing a distinguished leader, then giving the leader complete responsibility for managing the replicated log.
+
+
+[quote]
+____
+Raft decomposes the consensus problem into three relatively independent subproblems:
+
+* **Leader election**: a new leader must be chosen when an existing leader fails;
+* **Log replication**: the leader must accept log entries from clients and replicate them across the cluster, forcing the other logs to agree with its own;
+* **Safety**: the key safety property for Raft is the State Machine Safety Property in Figure 3: if any serverhas applied a particular log entry to its state machine,then no other server may apply a different commandfor the same log index.
+____
+
+image::/images/raft/server-states.png[{image_attr},title="Server states",alt="Server states"]
+
+
+=== 5.1  Raft basics
+
+[quote]
+____
+At any given time each server is in one of three states: leader, follower, orcandidate. In normal operation thereis exactly one leader and all of the other servers are fol-lowers.
+
+Followers issue no requests ontheir own but simply respond to requests from leaders and candidates.
+
+The leader handles all client requests.
+
+Candidate is used to elect a new leader.
+____
+
+Follower 不处理请求，只响应 Leader 和 Candidate 的请求。
+
+Leader 处理所有的 Client 请求。
+
+
+[bibliography]
+== 参考资料
+
+* [[[chubby, Google Chubby]]] https://research.google.com/archive/chubby-osdi06.pdf[The Chubby lock service for loosely-coupled distributed systems]
+* [[[zookeeper, Apache ZooKeeper]]] https://www.usenix.org/legacy/event/atc10/tech/full_papers/Hunt.pdf[ZooKeeper: Wait-free coordination for Internet-scale systems]
