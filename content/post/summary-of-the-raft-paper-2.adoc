@@ -66,9 +66,6 @@ image::/images/raft/rules-for-servers.png[{image_attr},title="Rules for Servers"
 image::/images/raft/raft-guarantees.png[{image_attr},title="Raft Guarantees",alt="Raft Guarantees"]
 
 
-
-image::/images/raft/terms.png[{image_attr},title="Terms",alt="Terms"]
-
 [quote]
 Raft implements consensus by first electing a distinguished leader, then giving the leader complete responsibility for managing the replicated log.
 
@@ -96,11 +93,44 @@ Followers issue no requests ontheir own but simply respond to requests from lead
 The leader handles all client requests.
 
 Candidate is used to elect a new leader.
-____
+____git
 
 Follower 不处理请求，只响应 Leader 和 Candidate 的请求。
 
 Leader 处理所有的 Client 请求。
+
+[quote]
+Raft divides time intotermsof arbitrary length. Terms are numbered with consecutive integers. Each term begins with anelection. Raft ensures that there is at most oneleader in a given term.
+
+image::/images/raft/terms.png[{image_attr},title="Terms",alt="Terms"]
+
+[quote]
+Terms act as a logical clock in Raft. Each server stores a **current term** number, which increases monotonically over time. Current terms are exchanged whenever servers communicate; if one server’s current term is smaller than the other’s, then it updates its current term to the larger value. If a candidate or leader discovers that its term is out of date, it immediately reverts to follower state. If a server receives a request with a stale term number, it rejects the request.
+
+Terms 在 Raft 中相当于一个逻辑时钟。
+
+[quote]
+____
+Raft servers communicate using remote procedure calls(RPCs):
+
+. RequestVote RPCs are initiated by candidates during elections.
+. AppendEntries RPCs are initiated by leaders to replicate log entries and to provide a form of heartbeat.
+. A third RPC for transferring snapshots betweenservers.
+____
+
+Raft 服务器之间使用 RPC 通信，前两种 RPC 格式是必须的，最后一种是附加的。
+
+
+=== 5.2 Leader election
+
+[quote]
+____
+Raft uses a heartbeat mechanism to trigger leader election. 
+
+Leaders send periodic heartbeats (AppendEntries RPCs that carry no log entries)to all followers in order to maintain their authority. 
+
+If a follower receives no communication over a period of time called the **election timeout**, then it assumes there is no viable leader and begins an election to choose a new leader.
+____
 
 
 [bibliography]
