@@ -26,16 +26,18 @@ D瓜哥，码农一枚。
 
 对于写作体验有近乎苛刻的追求。所以，针对博客，折腾过好多次。旧版博客及学习笔记：
 
-* https://wordpress.diguage.com/[旧版"地瓜哥"博客网, window="_blank"]
-* https://notes.diguage.com/mysql/[MySQL 学习笔记^Alpha^, window="_blank"]
-* https://diguage.github.io/jdk-source-analysis/[JDK 源码分析^Alpha^, window="_blank"]
-* https://notes.diguage.com/design-patterns/[深入学习设计模式^Alpha^, window="_blank"]
-* https://diguage.github.io/leetcode/[LeetCode 刷题笔记^Alpha^, window="_blank"]
-* https://notes.diguage.com/java-concurrency/[Java 并发学习笔记^Alpha^, window="_blank"]
+* https://wordpress.diguage.com/[旧版"地瓜哥"博客网^]
+* https://notes.diguage.com/mysql/[MySQL 学习笔记^Alpha^^]
+* https://diguage.github.io/jdk-source-analysis/[JDK 源码分析^Alpha^^]
+* https://notes.diguage.com/design-patterns/[深入学习设计模式^Alpha^^]
+* http://diguage.github.io/spring-framework/[Spring 源码分析^Alpha^^]
+* https://diguage.github.io/leetcode/[LeetCode 刷题笔记^Alpha^^]
+* https://notes.diguage.com/java-concurrency/[Java 并发学习笔记^Alpha^^]
 
 有感于自己走过的弯路、踩过的大坑，不想让后浪们再次深陷泥潭。所以，发起了一个“火枪手计划”。目前产出的资料，如果有用，欢迎拿走不谢。也欢迎参与进来，一起给火枪手播种火苗，前浪后浪一起浪：
 
 * https://github.com/huoqiangshou/fireworks[火枪手：入坑须知^]
 * https://github.com/huoqiangshou/fireworks/blob/master/plan.adoc[火枪手：大学计算机学习攻略^]
+* https://github.com/huoqiangshou/fireworks/blob/master/assignment.adoc[火枪手：自学 Java 系列实验^]
 
 关于“火枪手计划”，有什么意见和建议，欢迎留言讨论；或者去 https://github.com/huoqiangshou/fireworks[火枪手：入坑须知^] 提交 Issue。
