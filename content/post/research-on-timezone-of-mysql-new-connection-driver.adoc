@@ -1,0 +1,157 @@
+---
+title: "关于 MySQL 新版连接驱动时区对齐问题的研究"
+date: 2021-07-07T10:23:41+08:00
+draft: false
+tags: ["存储","数据库"]
+categories: ["数据存储","程序设计"]
+thumbnail: "images/mysql/mysql-logo.svg"
+
+weight: 1
+---
+
+// :doctype: book
+:source-highlighter: pygments
+:pygments-style: monokai
+:pygments-linenums-mode: table
+:source_attr: indent=0,subs="attributes,verbatim,quotes,macros"
+:image_attr: align=center,width=100%
+
+
+在一个项目开量验证过程中，发现 createDate 字段不正确，比正确时间晚了十四个小时。调研发现，这是一个非常典型的问题。现在把定位问题的思路和解决办法给大家做个分享。
+
+首先，检查数据库配置，查询线上生产环境配置，结果如下：
+
+image::/images/mysql/mysql-variable.png[{image_attr},title="MySQL 变量",alt="MySQL 变量"]
+
+同时，检查线上生产环境 MySQL 版本，为问题复现做准备：
+
+image::/images/mysql/mysql-version.png[{image_attr},title="MySQL 版本",alt="MySQL 版本"]
+
+从数据库配置上来说，基本正常，没有发现什么问题。（持续运行了这么长时间，有问题应该早就发现了。）
+
+其次，检查数据库连接配置，正式环境的链接配置如下：
+
+[source,{source_attr}]
+----
+jdbc:mysql://<host>:3306/<schema>?createDatabaseIfNotExist=true
+    &characterEncoding=utf-8&useUnicode=true&connectTimeout=2000
+    &socketTimeout=2000&autoReconnect=true
+----
+
+数据库连接也没有问题。
+
+第三，询问 SA 线上服务器时区配置，回复上是 CST，这个和数据库对应，没有问题。
+
+image::/images/mysql/talk-to-sa.png[{image_attr},title="与 SA 沟通",alt="与 SA 沟通"]
+
+配置检查正常，那么只好在本地搭建环境，重现问题，再寻求解决方案。由于项目是基于 Spring Boot 2.3.7.RELEASE 开发的，相关依赖也尽量使用 Spring Boot 指定版本的，所以，很快把开发环境搭好了。
+
+在配置服务器环境时，遇到一点小小的问题：我一直以为有个时区名称叫 CST，就在网上去查怎么设置，结果徒劳半天也没有找到。后来上开发机检查开发机时区配置，发现是 `Asia/Shanghai`。将测试服务器设置为该时区，数据库内部查询时区，显示和服务器一直。
+
+调试代码中，发现 MySQL 连接驱动的代码中，有配置时区的相关代码，如下：
+
+
+.`com.mysql.cj.protocol.a.NativeProtocol#configureTimezone`
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * Configures the client's timezone if required.
+ *
+ * @throws CJException
+ *             if the timezone the server is configured to use can't be
+ *             mapped to a Java timezone.
+ */
+public void configureTimezone() {
+    // 获取服务器时区
+    String configuredTimeZoneOnServer = this.serverSession.getServerVariable("time_zone");
+ 
+    // 如果服务器时区是 SYSTEM，则使用服务器的 system_time_zone 时区设置
+    if ("SYSTEM".equalsIgnoreCase(configuredTimeZoneOnServer)) {
+        configuredTimeZoneOnServer = this.serverSession.getServerVariable("system_time_zone");
+    }
+     
+    // 获取客户端时区配置
+    String canonicalTimezone = getPropertySet().getStringProperty(PropertyKey.serverTimezone).getValue();
+ 
+    // 如果服务器时区不为空，切客户端时区配置不可用，则使用服务器的时区配置
+    if (configuredTimeZoneOnServer != null) {
+        // user can override this with driver properties, so don't detect if that's the case
+        if (canonicalTimezone == null || StringUtils.isEmptyOrWhitespaceOnly(canonicalTimezone)) {
+            try {
+                canonicalTimezone = TimeUtil.getCanonicalTimezone(configuredTimeZoneOnServer, getExceptionInterceptor());
+            } catch (IllegalArgumentException iae) {
+                throw ExceptionFactory.createException(WrongArgumentException.class, iae.getMessage(), getExceptionInterceptor());
+            }
+        }
+    }
+ 
+    if (canonicalTimezone != null && canonicalTimezone.length() > 0) {
+        // 为该会话设置时区
+        this.serverSession.setServerTimeZone(TimeZone.getTimeZone(canonicalTimezone));
+ 
+        //
+        // The Calendar class has the behavior of mapping unknown timezones to 'GMT' instead of throwing an exception, so we must check for this...
+        //
+        if (!canonicalTimezone.equalsIgnoreCase("GMT") && this.serverSession.getServerTimeZone().getID().equals("GMT")) {
+            throw ExceptionFactory.createException(WrongArgumentException.class, Messages.getString("Connection.9", new Object[] { canonicalTimezone }),
+                    getExceptionInterceptor());
+        }
+    }
+ 
+}
+----
+
+调试代码，截图如下：
+
+image::/images/mysql/debug-code-1.png[{image_attr},title="调试代码",alt="调试代码"]
+
+从这张图中，可以看出：客户端没有配置时区，所以为 null；服务器时区是 CST，和生产环境的 MySQL 配置一直。
+
+image::/images/mysql/debug-code-2.png[{image_attr},title="调试代码",alt="调试代码"]
+
+从这里可以看出，最后使用的时区设置就是：CST。接下来看一下 TimeZone 的实例：
+
+image::/images/mysql/debug-code-3.png[{image_attr},title="调试代码",alt="调试代码"]
+
+这里发现了问题：为什么 rawOffset 是 6h？
+
+上网搜索资料发现，CST 有非常大的歧义，CST可以为如下4个不同的时区的缩写：
+
+* 美国中部时间：Central Standard Time (USA) UT-6:00
+* 澳大利亚中部时间：Central Standard Time (Australia) UT+9:30
+* 中国标准时间：China Standard Time UT+8:00
+* 古巴标准时间：Cuba Standard Time UT-4:00
+
+很明显，程序把 CST 解析成了“美国中部时间：Central Standard Time (USA) UT-6:00”：
+
+image::/images/mysql/central-time-zone-cst.png[{image_attr},title="CST时区",alt="CST时区"]
+
+
+存入数据库，发现比当前时间晚十四个小时。问题得以复现。
+
+多说一句：由于美国实行冬夏时令，在冬季是相差六个小时，在夏季是相差五个小时。
+
+从上面的代码中可以看出，可以通过在客户端中指定时区配置，来覆盖服务器端的时区配置，将数据库连接修改（在最后加了时区配置项）如下：
+
+[source,{source_attr}]
+----
+jdbc:mysql://<host>:3306/<schema>?createDatabaseIfNotExist=true
+    &characterEncoding=utf-8&useUnicode=true&connectTimeout=2000
+    &socketTimeout=2000&autoReconnect=true&serverTimezone=Asia/Shanghai
+----
+
+运行代码，调试如下：
+
+image::/images/mysql/debug-code-4.png[{image_attr},title="调试代码",alt="调试代码"]
+
+再来查看 TimeZone 实例，截图如下：
+
+image::/images/mysql/debug-code-5.png[{image_attr},title="调试代码",alt="调试代码"]
+
+最后存库，时间正常。
+
+image::/images/mysql/timezone-test-data.png[{image_attr},title="时区测试数据",alt="时区测试数据"]
+
+第一条数据是，问题复现的存储；第二条是将时区修改成 `Asia/Shanghai` 的结果；最后一条是将时区修改成 UTC 的结果，正好相差八个小时。
+
+综上：**为了防止该类问题的再次发生，应该为客户端连接配置时区，直接在连接 URL 后面加参数  `serverTimezone=Asia/Shanghai` 即可。**

@@ -93,7 +93,7 @@ Followers issue no requests ontheir own but simply respond to requests from lead
 The leader handles all client requests.
 
 Candidate is used to elect a new leader.
-____git
+____
 
 Follower 不处理请求，只响应 Leader 和 Candidate 的请求。
 
