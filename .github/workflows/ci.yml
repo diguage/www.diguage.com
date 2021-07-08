@@ -4,7 +4,7 @@ on:
     branches:
       - master
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout 🛎️
@@ -35,12 +35,19 @@ jobs:
         run: |
           alias asciidoctor="asciidoctor --attribute=experimental=true --attribute=icons=font"
           hugo --minify
+      
+      - name: Setup Node.js 🕸
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16'
 
-      # TODO 压缩 CSS
-      # - name: Custom Code Style 🐦
-      #   run: |
-      #     sudo apt install -y sed
-      #     sed -i 's/<\/head>/<style>p>code{color: #d14 !important;background-color: #f5f5f5 !important;border: 1px solid #e1e1e8;white-space: nowrap;border-radius: 3px;}<\/style>\n<\/head>/' truman/build/docs/asciidoc/index.html
+      - name: Compress Style 🍭
+        run: |
+          npm install cssnano-cli --global
+          cd public/css
+          cssnano asciidoctor.css asciidoctor.min.css
+          rm -rf asciidoctor.css
+          mv asciidoctor.min.css asciidoctor.css
 
       - name: Deploy 🚀
         continue-on-error: true

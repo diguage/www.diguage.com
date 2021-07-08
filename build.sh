@@ -2,7 +2,7 @@
 
 rm -rf public
 
-hugo
+hugo --minify
 
 cd ./public/
 
