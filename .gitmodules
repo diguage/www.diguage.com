@@ -1,3 +1,4 @@
 [submodule "themes/mainroad"]
 	path = themes/mainroad
-	url = git@github.com:Vimux/Mainroad.git
+	url = https://github.com/diguage/hugo-theme-mainroad.git
+	branch = v85
