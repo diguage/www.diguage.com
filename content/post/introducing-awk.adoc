@@ -1,0 +1,439 @@
+---
+title: "AWK 简介"
+date: 2021-07-10T10:14:47+08:00
+draft: false
+categories: ["程序设计","开发工具","操作系统"]
+tags: ["Linux","Shell"]
+thumbnail: "images/gnu/auk.jpg"
+
+weight: 1
+---
+
+// :doctype: book
+:source-highlighter: pygments
+:pygments-style: monokai
+:pygments-linenums-mode: table
+:source_attr: indent=0,subs="attributes,verbatim,quotes,macros"
+:image_attr: align=center,width=100%
+
+这周需要处理一个日志文件，有一次体会到 AWK 强大和方便，但也认识到自己对 AWK 了解的粗浅。所以，写篇文章再深入学习一下。
+
+根据维基百科显示，AWK 于二十世纪七十年代在 Bell Labs 创建；其名字来源于三位创始人：  Alfred Aho、Peter Weinberger and Brian Kernighan。AWK 是一个现在几乎每台 Linux 机器上都会有这个命令。
+
+AWK 是一种领域专用语言，专用设计用于文本处理，常用于提取文本或者生成报告。 AWK 也像 Shell 一样，方言和实现众多。D瓜哥这里选择最常用的 GNU AWK 实现。
+
+AWK 是以行为单位来处理文本的。它不仅仅是一个命令行，而且是一门语言。
+
+先展示一下我们的实例程序：
+
+[source,bash,{source_attr}]
+----
+$ cat employee.txt
+ajay manager account 45000
+sunil clerk account 25000
+varun manager sales 50000
+amit manager account 47000
+tarun peon sales 15000
+deepak clerk sales 23000
+sunil peon sales 13000
+satvik director purchase 80000
+----
+
+AWK 的基本用法如下：
+
+[source,bash,{source_attr}]
+----
+# ① 基本格式
+$ awk 动作 文件名
+
+# ② 标准 I/O 格式
+$ cat 文件名 | awk 动作
+----
+
+先给大家来个 Hello World：
+
+[source,bash,{source_attr}]
+----
+$ awk '{print}' employee.txt
+ajay manager account 45000
+sunil clerk account 25000
+varun manager sales 50000
+amit manager account 47000
+tarun peon sales 15000
+deepak clerk sales 23000
+sunil peon sales 13000
+satvik director purchase 80000
+----
+
+当然，也可以这样写：
+
+[source,bash,{source_attr}]
+----
+$ cat employee.txt | awk '{print}'
+ajay manager account 45000
+sunil clerk account 25000
+varun manager sales 50000
+amit manager account 47000
+tarun peon sales 15000
+deepak clerk sales 23000
+sunil peon sales 13000
+satvik director purchase 80000
+----
+
+另外，需要特别说明一点，可以指定分隔符，例如：
+
+[source,bash,{source_attr}]
+----
+$ echo "root:x:0:0:root:/root:/bin/bash" | awk -F: '{print $1, $NF}'
+root /bin/bash
+----
+
+还可以指定多个分隔符：
+
+[source,bash,{source_attr}]
+----
+$ echo "root:x:0:0:root:/root:/bin/bash" | awk -F[:/] '{print $1, $NF}'
+root bash
+----
+
+上文提到了，AWK 是以行（默认分隔符是换行符，也可以指定不同字符）为单位来进行处理文本的。默认情况下， AWK 会以空格或者制表符来分割行，以 `$$1`、 `$2`、 `$3` 等来表示第一、二、三列，以此类推。另外一点需要注意 `$0` 比较特殊，它表示整行。所以，完整打印文件也可以这样
+
+[source,bash,{source_attr}]
+----
+$ awk '{print $0}' employee.txt
+ajay manager account 45000
+sunil clerk account 25000
+varun manager sales 50000
+amit manager account 47000
+tarun peon sales 15000
+deepak clerk sales 23000
+sunil peon sales 13000
+satvik director purchase 80000
+----
+
+输出第一列和第三列可以这样写：
+
+[source,bash,{source_attr}]
+----
+$ awk '{print $1, $3}' employee.txt
+ajay account
+sunil account
+varun sales
+amit account
+tarun sales
+deepak sales
+sunil sales
+satvik purchase
+----
+
+在 `print` 命令中，如果需要原样输出，则需要使用双引号括起来。所以，默认分隔符是空格，如果需要指定分隔符可以这样写：
+
+[source,bash,{source_attr}]
+----
+$ awk '{print $1 ", " $3}' employee.txt
+ajay, account
+sunil, account
+varun, sales
+amit, account
+tarun, sales
+deepak, sales
+sunil, sales
+satvik, purchase
+----
+
+除了上面变量外，AWK 还内置了其他很多变量：
+
+. `FILENAME`：当前文件名
+. `NF`：表示当前行有多少个字段，那么 `$NF` 就表示最后一行； `$(NF-1)` 则表示倒数第二列。
+. `NR`：表示当前行数；
+. `FS`：字段分隔符，默认是空格和制表符。
+. `RS`：行分隔符，用于分割每一行，默认是换行符。
+. `OFS`：输出字段的分隔符，用于打印时分隔字段，默认为空格。
+. `ORS`：输出记录的分隔符，用于打印时分隔记录，默认为换行符。
+. `OFMT`：数字输出的格式，默认为％.6g。
+
+我们输出一下当前行号以及每行的第一列和最后一列：
+
+[source,bash,{source_attr}]
+----
+$ awk '{print NR, $1, $NF}' employee.txt #<1>
+1 ajay 45000
+2 sunil 25000
+3 varun 50000
+4 amit 47000
+5 tarun 15000
+6 deepak 23000
+7 sunil 13000
+8 satvik 80000
+----
+<1> 注意： `NR` 前面不能加 `$` 符。
+
+输出有些凌乱，可以使用 AWK 的格式化输出：
+
+[source,bash,{source_attr}]
+----
+$ awk '{printf "%2d %-7s %-6d\n", NR, $1, $NF}' employee.txt
+ 1 ajay    45000
+ 2 sunil   25000
+ 3 varun   50000
+ 4 amit    47000
+ 5 tarun   15000
+ 6 deepak  23000
+ 7 sunil   13000
+ 8 satvik  80000
+----
+
+我们这里用到了 `%d`、 `%s` 格式化符。 AWK 内置的格式化符如下：
+
+* `%a, %A` -- 打印浮点数。
+* `%c` -- 将数字以字符打印。
+* `%d, %i` -- 打印整数。
+* `%e, %E` -- 用科学计算法打印数字。
+* `%f` -- 打印浮点数；
+* `%F` -- 类似 `%f`，只是无穷大或者去穷小以大写字母打印。
+* `%g, %G` -- 使用科学计数法打印数字； `%G` 使用 `E` 代替 `e`。
+* `%o` -- 打印无符号八进制整数。
+* `%s` -- 打印字符串
+* `%u` -- 打印无符号整数。
+* `%x, %X` -- 打印十六进制的无符号整数。 `%X` 使用 `A~F` 表示字母； `%x` 使用 `a~f` 表示字母。
+* `%%` -- 打印 `%`。
+
+除了可以格式化输出， AWK 还可以像 `grep` 那样做过滤。
+
+[source,bash,{source_attr}]
+----
+$ awk '/ac/ {print $0}' employee.txt #<1>
+ajay manager account 45000
+sunil clerk account 25000
+amit manager account 47000
+----
+<1> `/ac/` 表示过滤出包含 `ac` 字符串的行，类似 `grep ac`
+
+还可以反向过滤：
+
+[source,bash,{source_attr}]
+----
+$ awk '! /ac/ {print $0}' employee.txt
+varun manager sales 50000
+tarun peon sales 15000
+deepak clerk sales 23000
+sunil peon sales 13000
+satvik director purchase 80000
+----
+
+结合上面的变量，还可以输出奇数行：
+
+[source,bash,{source_attr}]
+----
+$ awk ' NR % 2 == 1 {print $1, $NF}' employee.txt
+ajay 45000
+varun 50000
+tarun 15000
+sunil 13000
+----
+
+还可以输出第三行以后的内容：
+
+[source,bash,{source_attr}]
+----
+$ awk ' NR > 3 {print $1, $NF}' employee.txt
+amit 47000
+tarun 15000
+deepak 23000
+sunil 13000
+satvik 80000
+----
+
+还可以让指定列等于指定值：
+
+[source,bash,{source_attr}]
+----
+$ awk '$2 == "manager" {print $1, $NF}' employee.txt
+ajay 45000
+varun 50000
+amit 47000
+----
+
+过滤条件还支持逻辑运算符。假如我们第一列是标题，那么第一列肯定是要输出的。可以这样写：
+
+[source,bash,{source_attr}]
+----
+$ awk '$2 == "clerk" || NR == 1 {print $1, $2}' employee.txt
+ajay manager #<1>
+sunil clerk
+deepak clerk
+----
+<1> 由于示例数据没有标题，这就是第一行数据。
+
+来试试试试与运算符：
+
+[source,bash,{source_attr}]
+----
+$ awk '$2 == "clerk" && $3 == "sales" {print $1, $2, $3}' employee.txt
+deepak clerk sales
+----
+
+初次之外， AWK 还支持 `if ~ else` 语句：
+
+[source,bash,{source_attr}]
+----
+$ awk '{ if(NR % 2 == 1) print $1, $NF; else print "///" }' employee.txt
+ajay 45000
+///
+varun 50000
+///
+tarun 15000
+///
+sunil 13000
+///
+----
+
+当然，省掉 `else` 部分也是可以的：
+
+[source,bash,{source_attr}]
+----
+$ awk '{ if(NR % 2 == 1) print $1, $NF }' employee.txt
+ajay 45000
+varun 50000
+tarun 15000
+sunil 13000
+----
+
+开篇就做了说明， AWK 其实是一门编程语言。那么，内置函数必定是支持的。
+
+首先，看一个字符串处理的函数：
+
+[source,bash,{source_attr}]
+----
+$ awk '{print toupper($1)}' employee.txt
+AJAY
+SUNIL
+VARUN
+AMIT
+TARUN
+DEEPAK
+SUNIL
+SATVIK
+----
+
+再来看看 `substr` 结合 `touuper` 完成首字母大写操作：
+
+[source,bash,{source_attr}]
+----
+$ awk '{print toupper(substr($1, 1, 1)) substr($1, 2)}' employee.txt
+Ajay
+Sunil
+Varun
+Amit
+Tarun
+Deepak
+Sunil
+Satvik
+----
+
+AWK 的内置函数还有很多，详细信息请看 https://www.gnu.org/software/gawk/manual/html_node/Functions.html[Functions (The GNU Awk User’s Guide)^]。
+
+下面给大家介绍一下 AWK 工作流程： AWK 还可以通过 `BEGIN` 和 `END` 来指定前置处理和后置处理。整个工作流程如下：
+
+image::/images/gnu/awk-workflow.jpg[{image_attr},title="AWK Workflow",alt="AWK Workflow"]
+
+下面来演示一下：
+
+[source,{source_attr}]
+----
+$ awk 'BEGIN{printf "\n%-7s %-9s %-8s %6s\n","Name","Title","Tag","Salary"} #<1>
+       {printf "%-7s %-9s %-8s %6d\n", $1, $2, $3, $4}                      #<2>
+       {sum += $4}                                                          #<3>
+       END{printf "\nSum ---------------------- %d\n", sum;                 #<4>
+           printf "Avg ---------------------- %6d\n", sum/NR;}' employee.txt
+
+Name    Title     Tag      Salary
+ajay    manager   account   45000
+sunil   clerk     account   25000
+varun   manager   sales     50000
+amit    manager   account   47000
+tarun   peon      sales     15000
+deepak  clerk     sales     23000
+sunil   peon      sales     13000
+satvik  director  purchase  80000
+
+Sum ---------------------- 298000
+Avg ----------------------  37250
+----
+<1> 使用 `BEGIN` 输出标题
+<2> 格式化输出
+<3> 求收入总和
+<4> 使用 `END` 输出总和和平均值
+
+
+今天暂且学习到此。随着对 AWK 的学习越来越深入，感觉其越来越博大精深。值得研究的点还有很多，后续再写文章介绍。
+
+// https://www.unix.com/shell-programming-and-scripting/116970-find-min-group.html
+
+// A123|Peter|20
+// A123|Jack |10
+// B222|Helen|15
+// B222|Jane |13
+// B222|Guy  |30
+
+// I want for find the min for $3 group by $1.
+
+// awk -F"|" '$1 in min {if($3 < min[$1]){min[$1]=$3;s[$1]=$2};next}
+// {min[$1]=$3;s[$1]=$2}
+// END{for(i in min)print i FS s[i] FS min[i]}
+// ' file
+
+// awk -F"," '$1 in min {if($2 < min[$1]){min[$1]=$2};next} {min[$1]=$2} END{for(i in min)print i FS min[i]}' file
+
+
+
+// [source,bash,{source_attr}]
+// ----
+// $ 
+// ----
+
+// [source,bash,{source_attr}]
+// ----
+// $ 
+// ----
+
+// [source,bash,{source_attr}]
+// ----
+// $ 
+// ----
+
+// [source,bash,{source_attr}]
+// ----
+// $ 
+// ----
+
+// [source,bash,{source_attr}]
+// ----
+// $ 
+// ----
+
+// [source,bash,{source_attr}]
+// ----
+// $ 
+// ----
+
+// [source,bash,{source_attr}]
+// ----
+// $ 
+// ----
+
+// [source,bash,{source_attr}]
+// ----
+// $ 
+// ----
+
+
+== 参考资料
+
+. https://coolshell.cn/articles/9070.html[AWK 简明教程^]
+. http://www.ruanyifeng.com/blog/2018/11/awk.html[awk 入门教程^]
+. https://awk.readthedocs.io/en/latest/[AWK程序设计语言^]
+. https://en.wikipedia.org/wiki/AWK[AWK - Wikipedia^]
+. https://www.gnu.org/software/gawk/manual/html_node/Printf.html[Printf (The GNU Awk User’s Guide)^]
+. https://www.tutorialspoint.com/awk/index.htm[Awk Tutorial^]
+. https://www.grymoire.com/Unix/Awk.html[Awk - A Tutorial and Introduction^]
