@@ -9,7 +9,7 @@ thumbnail: "images/gnu/auk.jpg"
 weight: 1
 ---
 
-// :doctype: book
+:doctype: book
 :source-highlighter: pygments
 :pygments-style: monokai
 :pygments-linenums-mode: table
@@ -339,12 +339,12 @@ image::/images/gnu/awk-workflow.jpg[{image_attr},title="AWK Workflow",alt="AWK W
 
 下面来演示一下：
 
-[source,{source_attr}]
+[source,bash,{source_attr},line-comment=#]
 ----
-$ awk 'BEGIN{printf "\n%-7s %-9s %-8s %6s\n","Name","Title","Tag","Salary"} #<1>
-       {printf "%-7s %-9s %-8s %6d\n", $1, $2, $3, $4}                      #<2>
-       {sum += $4}                                                          #<3>
-       END{printf "\nSum ---------------------- %d\n", sum;                 #<4>
+$ awk 'BEGIN{printf "\n%-7s %-9s %-8s %6s\n","Name","Title","Tag","Salary"} \ # <1>
+       {printf "%-7s %-9s %-8s %6d\n", $1, $2, $3, $4}                      \ # <2>
+       {sum += $4}                                                          \ # <3>
+       END{printf "\nSum ---------------------- %d\n", sum;                 \ # <4>
            printf "Avg ---------------------- %6d\n", sum/NR;}' employee.txt
 
 Name    Title     Tag      Salary
@@ -364,6 +364,19 @@ Avg ----------------------  37250
 <2> 格式化输出
 <3> 求收入总和
 <4> 使用 `END` 输出总和和平均值
+
+
+[source,ruby]
+----
+require 'sinatra' # <1>
+
+get '/hi' do # <2>
+  "Hello World!" # <3>
+end
+----
+<1> Library import
+<2> URL mapping
+<3> Content for response
 
 
 今天暂且学习到此。随着对 AWK 的学习越来越深入，感觉其越来越博大精深。值得研究的点还有很多，后续再写文章介绍。
