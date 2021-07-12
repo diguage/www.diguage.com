@@ -33,7 +33,7 @@ jobs:
 
       - name: Run Hugo 🔧
         run: |
-          alias asciidoctor="asciidoctor --attribute=experimental=true --attribute=icons=font"
+          alias asciidoctor="asciidoctor --attribute=experimental=true --attribute=icons=font --attribute=safe=safe"
           hugo --minify
       
       - name: Setup Node.js 🕸
