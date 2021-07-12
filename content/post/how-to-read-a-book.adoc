@@ -2,18 +2,11 @@
 title: "《如何阅读一本书？》之读书笔记"
 date: 2020-01-08T22:23:51+08:00
 draft: false
-tags: ["读书","笔记"]
-categories: ["方法论","个人成长"]
+categories: ["阅读摘要"]
+tags: ["书籍", "方法论"]
 thumbnail: "images/books-on-book-day/how-to-read-a-book.jpg"
 
 weight: 1
-// toc: true
-
-# You can also close(false) or open(true) something for this content.
-# P.S. comment can only be closed
-# comment: false
-# toc: true
-
 ---
 
 :icons: font

@@ -2,9 +2,9 @@
 title: "深入剖析 Spring 核心数据结构：BeanDefinition"
 date: 2020-06-21T21:18:57+08:00
 draft: false
-keywords: ["Java","Spring"]
-tags: ["Java","设计","架构"]
-categories: ["Java","程序设计"]
+keywords: ["Java","Spring","程序设计","源码分析", "数据结构"]
+categories: ["程序设计"]
+tags: ["Java","源码分析","Spring", "数据结构"]
 thumbnail: "images/spring-framework/spring-logo.jpg"
 
 weight: 1

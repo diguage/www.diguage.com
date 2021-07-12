@@ -2,16 +2,12 @@
 title: "HikariCP 源码分析 --  ConcurrentBag"
 date: 2020-05-06T17:12:55+08:00
 draft: false
-tags: ["Java", "并发", "设计"]
-categories: ["Java","程序设计","算法"]
+keywords: ["程序设计", "数据存储", "Java", "并发", "算法", "源码分析", "数据库", "数据结构", "HikariCP"]
+categories: ["程序设计", "数据存储"]
+tags: ["Java", "并发", "算法", "源码分析", "数据库", "数据结构"]
 thumbnail: "images/java/java-15.png"
 
 weight: 1
-
-# You can also close(false) or open(true) something for this content.
-# P.S. comment can only be closed
-# comment: false
-# toc: true
 ---
 
 :source-highlighter: pygments

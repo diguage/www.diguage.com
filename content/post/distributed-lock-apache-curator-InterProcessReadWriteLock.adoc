@@ -2,17 +2,12 @@
 title: "分布式锁之 Apache Curator InterProcessReadWriteLock"
 date: 2020-07-22T10:45:44+08:00
 draft: false
-keywords: ["Java","分布式","分布式锁"]
-tags: ["Java","设计","架构","微服务","分布式"]
-categories: ["Java","程序设计","分布式"]
+keywords: ["Java","分布式","分布式锁","架构","微服务","ZooKeeper","Redis","系统架构","程序设计","数据存储","源码分析"]
+categories: ["系统架构","程序设计","数据存储"]
+tags: ["Java","架构","微服务","分布式","ZooKeeper","Redis","源码分析"]
 thumbnail: "images/distributed-system/distributed-lock.svg"
 
 weight: 1
-
-# You can also close(false) or open(true) something for this content.
-# P.S. comment can only be closed
-# comment: false
-# toc: true
 ---
 
 :source-highlighter: pygments

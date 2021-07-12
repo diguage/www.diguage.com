@@ -2,17 +2,11 @@
 title: "动态规划入门"
 date: 2020-01-20T15:20:28+08:00
 draft: false
-tags: ["算法","动态规划","分治","递归"]
-categories: ["算法"]
+keywords: ["程序设计","阅读摘要","算法","动态规划","分治","递归","书籍"]
+categories: ["程序设计","阅读摘要"]
+tags: ["算法","动态规划","分治","递归","书籍"]
 
 weight: 1
-// toc: true
-
-# You can also close(false) or open(true) something for this content.
-# P.S. comment can only be closed
-# comment: false
-# toc: true
-
 ---
 
 [TIP]

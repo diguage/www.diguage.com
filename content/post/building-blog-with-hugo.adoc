@@ -2,9 +2,9 @@
 title: "使用 Hugo 搭建博客"
 date: 2020-08-01T16:09:43+08:00
 draft: false
-keywords: ["Hugo","博客"]
-tags: ["个人提升","产品"]
-categories: ["个人成长","方法论"]
+keywords: ["Hugo","博客","开发工具","职业发展","产品","Git","Linux"]
+categories: ["开发工具","职业发展"]
+tags: ["产品"]
 thumbnail: "images/building-blog-with-hugo/hugo-logo.svg"
 
 weight: 1

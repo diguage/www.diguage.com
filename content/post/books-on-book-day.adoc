@@ -2,17 +2,11 @@
 title: "在世界读书日，推荐书单"
 date: 2020-04-23T20:15:14+08:00
 draft: false
-keywords: ["Java","并发"]
-tags: ["个人提升","心理学","架构","分布式","工作方法","微服务","数据库"]
-categories: ["个人成长","方法论"]
+keywords: ["Java","并发","微服务架构","数据存储","数据库","设计模式","心理学"]
+categories: ["阅读摘要","系统架构","职业发展"]
+tags: ["心理学","分布式","微服务","数据库","设计模式"]
 
 weight: 1
-
-# You can also close(false) or open(true) something for this content.
-# P.S. comment can only be closed
-# comment: false
-# toc: true
-
 ---
 
 今天是世界读书日，各种人都在推荐书单。D瓜哥也凑个热闹，水一篇文章，推荐一些书籍。
