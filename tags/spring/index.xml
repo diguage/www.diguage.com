@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Spring on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/spring/</link><description>Recent content in Spring on "地瓜哥"博客网</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Sat, 08 Aug 2020 07:53:32 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/spring/index.xml" rel="self" type="application/rss+xml"/><item><title>如何阅读 Spring 源码？</title><link>https://www.diguage.com/post/how-to-read-spring-sources/</link><pubDate>Sat, 08 Aug 2020 07:53:32 +0800</pubDate><guid>https://www.diguage.com/post/how-to-read-spring-sources/</guid><description>昨晚原计划给几个朋友简单介绍一下阅读 Spring 源码的方法。结果，大家因为各种原因没能及时参加。后来，就取消分享了。干脆写一篇文章出来，感兴趣欢迎自取。
+代码准备 Spring Framework 是开源的，代码托管在 GitHub 上： Spring Framework。任何人都可以方便地获得它的源代码。所以，如果想阅读 Spring 的源代码，当然是直接把代码克隆到本地，然后直接在 IDE（推荐 IDEA）中进行调试了。另外，还需要存放自己写一些测试和文档。所以，最好把代码 fork 到自己的账户下，从 master 上切出一个新分支并 push 到自己的 Repo 中，这样自己就可以随意更新了。具体步骤如下：
+克隆代码
+# 直接克隆原始仓库为 origin git clone git@github.com:spring-projects/spring-framework.git fork 代码，D瓜哥直接 fork 到自己账户下了： diguage/spring-framework。
+添加原创仓库地址：
+# 添加自己仓库为 diguage # 这样就能在所有项目中保持命名的一致性，方便标识 git remote add diguage git@github.com:diguage/spring-framework.git 创建新分支
+# 创建新分支 git switch -c analysis # 将新分支 push 到自己的 Repo 中 git push diguage analysis 这样，在这个新分支上，就可以随意折腾了。</description></item><item><title>深入剖析 Spring 核心数据结构：BeanFactory</title><link>https://www.diguage.com/post/dive-into-spring-core-data-structure-bean-factory/</link><pubDate>Fri, 26 Jun 2020 15:30:08 +0800</pubDate><guid>https://www.diguage.com/post/dive-into-spring-core-data-structure-bean-factory/</guid><description>在 深入剖析 Spring 核心数据结构：BeanDefinition 中，介绍了 BeanDefinition。网上很多文章介绍 BeanDefinition 的 API，D瓜哥却要反其道而行之，从内部属性来分析一下。下面我们开始。
+继承体系 Spring 非常好地遵循了面向对象的设计原则：面向接口编程。不放过任何可以提取出成接口的机会。虽然感觉似乎增加了类的继承关系，增加了一点的复杂度。但是，却带来了非常好的可扩展性。而 BeanFactory 的继承体系就是一个非常典型的例子。我们来看一下它的继承体系：
+Figure 1. BeanFactory 继承体系 AliasRegistry：别名注册器。Spring 中，别名注册相关的功能就是从这里实现的。
+SimpleAliasRegistry：别名注册器的一个简单实现，从内部属性可以看出，它是把别名映射信息存到一个 Map 中了。
+DefaultSingletonBeanRegistry：默认的单例 Bean 注册器，从内部属性来说，也是基于 Map 实现的。
+FactoryBeanRegistrySupport： FactoryBean 注册器。
+SingletonBeanRegistry：单例 Bean 注册器。
+BeanDefinitionRegistry： BeanDefinition 注册器。
+BeanFactory：容器的基类。
+ListableBeanFactory：在基本容器基础上，增加了遍历相关功能。
+HierarchicalBeanFactory：在基本容器基础上，增加了父子上下级容器关联。
+AutowireCapableBeanFactory：在基本容器基础上，增加了自动注入功能。
+ConfigurableBeanFactory：对容器增加可配置性，比如父级容器、ClassLoader、TypeConverter 等。
+ConfigurableListableBeanFactory：可配置可遍历容器。</description></item><item><title>深入剖析 Spring 核心数据结构：BeanDefinition</title><link>https://www.diguage.com/post/dive-into-spring-core-data-structure-bean-definition/</link><pubDate>Sun, 21 Jun 2020 21:18:57 +0800</pubDate><guid>https://www.diguage.com/post/dive-into-spring-core-data-structure-bean-definition/</guid><description>林纳斯·托瓦兹（Linus Torvalds）说：“我从心底认为，优秀的程序员与平庸的程序员之间的区别，是在于认为自己的代码重要还是数据结构更加重要。平庸的程序员眼里只有代码，优秀的程序员则关注数据结构及之前的关系。” 也许很多人觉得 Spring 神秘莫测，但是如果了解了它的核心数据结构，很多问题迎刃而解。
+Spring 中两个数据结构最核心：① BeanDefinition，用于表示 Bean 的定义；② BeanFactory，用于表示整个 IoC 容器。
+在前面文章 Spring Bean 生命周期概述中，介绍了 Spring Bean 的生命周期。不知道大家有没有思考过 Spring 在内部是如何表示一个 Bean 的？本篇文章，就来聊一聊 BeanDefinition
+问题 使用 Spring 时，尤其是使用 XML 配置的时候，也许我们会这样的问题：
+Bean 怎么表示？
+Bean 的依赖怎么表示？
+init-method 方法怎么存储？
+Bean 的一些属性，比如 lazy-init 等，怎么表示？
+Bean 构造函数的参数怎么存储？
+…​
+Java 也有类似的问题，比如怎么表示一个类？Java 通过反射 API 来解决这个问题：
+Class</description></item></channel></rss>

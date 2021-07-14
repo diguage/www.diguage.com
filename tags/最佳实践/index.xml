@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>最佳实践 on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5/</link><description>Recent content in 最佳实践 on "地瓜哥"博客网</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Wed, 14 Jul 2021 10:52:58 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5/index.xml" rel="self" type="application/rss+xml"/><item><title>日志最佳实践探究</title><link>https://www.diguage.com/post/logging-best-practices/</link><pubDate>Wed, 14 Jul 2021 10:52:58 +0800</pubDate><guid>https://www.diguage.com/post/logging-best-practices/</guid><description>加入公司以来，参与了很多个项目的开发维护；也排查处理过很多线上问题；为了写 Mock 测试，也专门去日志系统上扒拉过不少日志等等。在整个过程中，对日志的认识有了不少更深刻的认识和体会。也发现不少问题。这里先从存在的问题展开论述。
+日志存在的问题 从个人的眼光上来看，当前的系统存在如下问题：
+必要日志没有打印出来，导致在追踪问题或测试代码时，带来不必要的麻烦。比如查看一个接口的返回值用于 Mock 测试；再比如 RPC 调用报错，返回值以及错误信息没有打印到日志中，不知道具体错误原因是什么。
+日志抽取中日志路径配置错误，导致日志重复收集，带来不必要的处理和存储成本。
+日志代码不规范，导致不必要的性能消耗；或者大促时，日志降级不生效。
+日志框架繁多，造成造成冲突，遗漏部分日志。
+日志配置不规范，不利于日志的采集和清洗。
+日志和调用链路物理隔离，查看一个请求的整个调用链路上的日志非常不方便，不利于问题的快速排查和定位。
+大家的系统中，存在什么样的日志问题？欢迎留言交流讨论。
+针对这些问题，我觉得有些地方值得发力一下。然后，做了一些探索，总结一下，以备后续使用。
+日志最佳实践探索 对于日志的使用，相信所有的开发人员都比较清楚，网上也有大量资料，相关日志框架的官方文档，也写的非常详尽，这里就不再赘述。
+本文从一个角度对日志规范进行探究：在排查问题时，能否通过日志来尽快地了解系统运行状态，定位问题原因？另外，由于 Java 的日志框架特别多，有一些比较容易迷惑的问题，尝试做出一点总结。
+系统运行后，不严格地说，再去观察系统运行状态，就类似于在黑夜中行走。此时，向你扔过来一块板砖🧱，那么，事后如何追责呢？
+请问：你能否成功躲开这块叫做 Bug 的板砖🧱？
+日志用来记录用户操作、系统运行状态等，是一个系统的重要组成部分。然而，由于日志通常不属于系统的核心功能，但是在日志对于排查问题，有无可替代的作用，理应得到所有开发人员的重视（不重视，怎么甩锅？！）！
+If dog is a man’s best friend, logs are software engineer’s best friend.
+— Geshan Manandhar Logging best practices 好的日志可以帮助系统的开发和运维人员：</description></item></channel></rss>

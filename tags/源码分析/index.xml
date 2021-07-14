@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>源码分析 on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/</link><description>Recent content in 源码分析 on "地瓜哥"博客网</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Wed, 14 Jul 2021 10:52:58 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/index.xml" rel="self" type="application/rss+xml"/><item><title>日志最佳实践探究</title><link>https://www.diguage.com/post/logging-best-practices/</link><pubDate>Wed, 14 Jul 2021 10:52:58 +0800</pubDate><guid>https://www.diguage.com/post/logging-best-practices/</guid><description>加入公司以来，参与了很多个项目的开发维护；也排查处理过很多线上问题；为了写 Mock 测试，也专门去日志系统上扒拉过不少日志等等。在整个过程中，对日志的认识有了不少更深刻的认识和体会。也发现不少问题。这里先从存在的问题展开论述。
+日志存在的问题 从个人的眼光上来看，当前的系统存在如下问题：
+必要日志没有打印出来，导致在追踪问题或测试代码时，带来不必要的麻烦。比如查看一个接口的返回值用于 Mock 测试；再比如 RPC 调用报错，返回值以及错误信息没有打印到日志中，不知道具体错误原因是什么。
+日志抽取中日志路径配置错误，导致日志重复收集，带来不必要的处理和存储成本。
+日志代码不规范，导致不必要的性能消耗；或者大促时，日志降级不生效。
+日志框架繁多，造成造成冲突，遗漏部分日志。
+日志配置不规范，不利于日志的采集和清洗。
+日志和调用链路物理隔离，查看一个请求的整个调用链路上的日志非常不方便，不利于问题的快速排查和定位。
+大家的系统中，存在什么样的日志问题？欢迎留言交流讨论。
+针对这些问题，我觉得有些地方值得发力一下。然后，做了一些探索，总结一下，以备后续使用。
+日志最佳实践探索 对于日志的使用，相信所有的开发人员都比较清楚，网上也有大量资料，相关日志框架的官方文档，也写的非常详尽，这里就不再赘述。
+本文从一个角度对日志规范进行探究：在排查问题时，能否通过日志来尽快地了解系统运行状态，定位问题原因？另外，由于 Java 的日志框架特别多，有一些比较容易迷惑的问题，尝试做出一点总结。
+系统运行后，不严格地说，再去观察系统运行状态，就类似于在黑夜中行走。此时，向你扔过来一块板砖🧱，那么，事后如何追责呢？
+请问：你能否成功躲开这块叫做 Bug 的板砖🧱？
+日志用来记录用户操作、系统运行状态等，是一个系统的重要组成部分。然而，由于日志通常不属于系统的核心功能，但是在日志对于排查问题，有无可替代的作用，理应得到所有开发人员的重视（不重视，怎么甩锅？！）！
+If dog is a man’s best friend, logs are software engineer’s best friend.
+— Geshan Manandhar Logging best practices 好的日志可以帮助系统的开发和运维人员：</description></item><item><title>如何阅读 Spring 源码？</title><link>https://www.diguage.com/post/how-to-read-spring-sources/</link><pubDate>Sat, 08 Aug 2020 07:53:32 +0800</pubDate><guid>https://www.diguage.com/post/how-to-read-spring-sources/</guid><description>昨晚原计划给几个朋友简单介绍一下阅读 Spring 源码的方法。结果，大家因为各种原因没能及时参加。后来，就取消分享了。干脆写一篇文章出来，感兴趣欢迎自取。
+代码准备 Spring Framework 是开源的，代码托管在 GitHub 上： Spring Framework。任何人都可以方便地获得它的源代码。所以，如果想阅读 Spring 的源代码，当然是直接把代码克隆到本地，然后直接在 IDE（推荐 IDEA）中进行调试了。另外，还需要存放自己写一些测试和文档。所以，最好把代码 fork 到自己的账户下，从 master 上切出一个新分支并 push 到自己的 Repo 中，这样自己就可以随意更新了。具体步骤如下：
+克隆代码
+# 直接克隆原始仓库为 origin git clone git@github.com:spring-projects/spring-framework.git fork 代码，D瓜哥直接 fork 到自己账户下了： diguage/spring-framework。
+添加原创仓库地址：
+# 添加自己仓库为 diguage # 这样就能在所有项目中保持命名的一致性，方便标识 git remote add diguage git@github.com:diguage/spring-framework.git 创建新分支
+# 创建新分支 git switch -c analysis # 将新分支 push 到自己的 Repo 中 git push diguage analysis 这样，在这个新分支上，就可以随意折腾了。</description></item><item><title>HikariCP 源码分析 -- FastList</title><link>https://www.diguage.com/post/hikari-cp-source-analysis-fast-list/</link><pubDate>Sun, 02 Aug 2020 15:06:02 +0800</pubDate><guid>https://www.diguage.com/post/hikari-cp-source-analysis-fast-list/</guid><description>在前面的文章 HikariCP 源码分析 — ConcurrentBag 中，D瓜哥分析了一下 HikariCP 中一个非常重要的数据结构 ConcurrentBag。
+今天，继续再介绍 HikariCP 中另一个很关键的数据结构： FastList。
+FastList 本身的实现非常简单，要理解它的奥秘，就需要结合 Java 原生集合类的 ArrayList 来比较性地看。
+构造函数 先来对比一下两者的构造函数。先来看看 FastList：
+FastList public final class FastList&amp;lt;T&amp;gt; implements List&amp;lt;T&amp;gt;, RandomAccess, Serializable { private static final long serialVersionUID = -4598088075242913858L; private final Class&amp;lt;?&amp;gt; clazz; private T[] elementData; private int size; / * Construct a FastList with a default size of 32. * @param clazz the Class stored in the collection */ @SuppressWarnings(&amp;#34;unchecked&amp;#34;) public FastList(Class&amp;lt;?</description></item><item><title>分布式锁之 Apache Curator InterProcessReadWriteLock</title><link>https://www.diguage.com/post/distributed-lock-apache-curator-interprocessreadwritelock/</link><pubDate>Wed, 22 Jul 2020 10:45:44 +0800</pubDate><guid>https://www.diguage.com/post/distributed-lock-apache-curator-interprocessreadwritelock/</guid><description>在上一篇文章 分布式锁之 Apache Curator InterProcessMutex 中介绍了基于 ZooKeeper 实现的互斥锁。除此之外，还可以实现读写锁。这篇文章就来简要介绍一下 InterProcessReadWriteLock 的实现原理。
+老规矩，先看看类的注释：
+/** * &amp;lt;p&amp;gt; * A re-entrant read/write mutex that works across JVMs. Uses Zookeeper to hold the lock. All processes * in all JVMs that use the same lock path will achieve an inter-process critical section. Further, this mutex is * &amp;#34;fair&amp;#34; - each user will get the mutex in the order requested (from ZK&amp;#39;s point of view).</description></item><item><title>分布式锁之 Apache Curator InterProcessMutex</title><link>https://www.diguage.com/post/distributed-lock-apache-curator-interprocessmutex/</link><pubDate>Tue, 21 Jul 2020 10:13:21 +0800</pubDate><guid>https://www.diguage.com/post/distributed-lock-apache-curator-interprocessmutex/</guid><description>对分布式锁耳熟能详。不过，一直关注的是基于 Redis 实现的分布式锁。知道 ZooKeeper 也可以实现分布式锁。但是，原来的想法是把 Redis 那个思路切换到 ZooKeeper 上来实现就好。今天了解到 Apache Curator 内置了分布式锁的实现： InterProcessMutex。查看了一下源码实现，发现跟基于 Redis 实现的源码相比，在思路上还是有很大不同的。所以，特别作文记录一下。
+先来看一下，整体流程：
+结合流程图和源码，加锁的过程是这样的：
+先判断本地是否有锁数据，如果有则对锁定次数自增一下，然后返回 true；
+如果没有锁数据，则尝试获取锁：
+在指定路径下创建临时顺序节点
+获取指定路径下，所有节点，检查自身是否是序号最小的节点：
+如果自身序号最小，则获得锁；否则
+如果自身不是序号最小的节点，则通过 while 自旋 + wait(times) 不断尝试获取锁，直到成功。
+获得锁后，把锁信息缓存在本地 ConcurrentMap&amp;lt;Thread, LockData&amp;gt; threadData 变量中，方便计算重入。
+在 ZooKeeper 中的结构大致如下：
+下面我们逐个方法进行分析说明。先来看一下 InterProcessMutex 的注释：
+/** * A re-entrant mutex that works across JVMs.</description></item><item><title>深入剖析 Spring 核心数据结构：BeanFactory</title><link>https://www.diguage.com/post/dive-into-spring-core-data-structure-bean-factory/</link><pubDate>Fri, 26 Jun 2020 15:30:08 +0800</pubDate><guid>https://www.diguage.com/post/dive-into-spring-core-data-structure-bean-factory/</guid><description>在 深入剖析 Spring 核心数据结构：BeanDefinition 中，介绍了 BeanDefinition。网上很多文章介绍 BeanDefinition 的 API，D瓜哥却要反其道而行之，从内部属性来分析一下。下面我们开始。
+继承体系 Spring 非常好地遵循了面向对象的设计原则：面向接口编程。不放过任何可以提取出成接口的机会。虽然感觉似乎增加了类的继承关系，增加了一点的复杂度。但是，却带来了非常好的可扩展性。而 BeanFactory 的继承体系就是一个非常典型的例子。我们来看一下它的继承体系：
+Figure 1. BeanFactory 继承体系 AliasRegistry：别名注册器。Spring 中，别名注册相关的功能就是从这里实现的。
+SimpleAliasRegistry：别名注册器的一个简单实现，从内部属性可以看出，它是把别名映射信息存到一个 Map 中了。
+DefaultSingletonBeanRegistry：默认的单例 Bean 注册器，从内部属性来说，也是基于 Map 实现的。
+FactoryBeanRegistrySupport： FactoryBean 注册器。
+SingletonBeanRegistry：单例 Bean 注册器。
+BeanDefinitionRegistry： BeanDefinition 注册器。
+BeanFactory：容器的基类。
+ListableBeanFactory：在基本容器基础上，增加了遍历相关功能。
+HierarchicalBeanFactory：在基本容器基础上，增加了父子上下级容器关联。
+AutowireCapableBeanFactory：在基本容器基础上，增加了自动注入功能。
+ConfigurableBeanFactory：对容器增加可配置性，比如父级容器、ClassLoader、TypeConverter 等。
+ConfigurableListableBeanFactory：可配置可遍历容器。</description></item><item><title>深入剖析 Spring 核心数据结构：BeanDefinition</title><link>https://www.diguage.com/post/dive-into-spring-core-data-structure-bean-definition/</link><pubDate>Sun, 21 Jun 2020 21:18:57 +0800</pubDate><guid>https://www.diguage.com/post/dive-into-spring-core-data-structure-bean-definition/</guid><description>林纳斯·托瓦兹（Linus Torvalds）说：“我从心底认为，优秀的程序员与平庸的程序员之间的区别，是在于认为自己的代码重要还是数据结构更加重要。平庸的程序员眼里只有代码，优秀的程序员则关注数据结构及之前的关系。” 也许很多人觉得 Spring 神秘莫测，但是如果了解了它的核心数据结构，很多问题迎刃而解。
+Spring 中两个数据结构最核心：① BeanDefinition，用于表示 Bean 的定义；② BeanFactory，用于表示整个 IoC 容器。
+在前面文章 Spring Bean 生命周期概述中，介绍了 Spring Bean 的生命周期。不知道大家有没有思考过 Spring 在内部是如何表示一个 Bean 的？本篇文章，就来聊一聊 BeanDefinition
+问题 使用 Spring 时，尤其是使用 XML 配置的时候，也许我们会这样的问题：
+Bean 怎么表示？
+Bean 的依赖怎么表示？
+init-method 方法怎么存储？
+Bean 的一些属性，比如 lazy-init 等，怎么表示？
+Bean 构造函数的参数怎么存储？
+…​
+Java 也有类似的问题，比如怎么表示一个类？Java 通过反射 API 来解决这个问题：
+Class</description></item><item><title>HikariCP 源码分析 -- ConcurrentBag</title><link>https://www.diguage.com/post/hikari-cp-source-analysis-concurrent-bag/</link><pubDate>Wed, 06 May 2020 17:12:55 +0800</pubDate><guid>https://www.diguage.com/post/hikari-cp-source-analysis-concurrent-bag/</guid><description>以前无意间搜资料了解到 HikariCP，一下子就被它的简洁代码和卓越性能吸引住了。以前也有翻过它的代码，但是不是很系统，最近再次翻阅，正好做些笔记，方便以后学习。
+D瓜哥最近在学习 Java 并发知识。那就从 HikariCP 自定义的并发集合 ConcurrentBag 开始学习。
+在 HikariCP 的 Wiki 中，有 Down the Rabbit Hole · ConcurrentBag 的章节来专门介绍 ConcurrentBag：
+ConcurrentBag 的灵感借鉴自 C# .NET 的 ConcurrentBag 类。但是实现却是完全不同的。这里的 ConcurrentBag 有如下特性：
+A lock-free design
+ThreadLocal caching
+Queue-stealing
+Direct hand-off optimizations
+下面，通过代码来对此做个说明。
+在 ConcurrentBag 类的定义中，声明了集合元素必须是 IConcurrentBagEntry 的子类。先来看看这个接口的定义：
+public interface IConcurrentBagEntry { int STATE_NOT_IN_USE = 0; int STATE_IN_USE = 1; int STATE_REMOVED = -1; int STATE_RESERVED = -2; boolean compareAndSet(int expectState, int newState); void setState(int newState); int getState(); } 接下来，看一下成员变量：</description></item></channel></rss>

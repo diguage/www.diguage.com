@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>微服务 on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/</link><description>Recent content in 微服务 on "地瓜哥"博客网</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Wed, 22 Jul 2020 10:45:44 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/index.xml" rel="self" type="application/rss+xml"/><item><title>分布式锁之 Apache Curator InterProcessReadWriteLock</title><link>https://www.diguage.com/post/distributed-lock-apache-curator-interprocessreadwritelock/</link><pubDate>Wed, 22 Jul 2020 10:45:44 +0800</pubDate><guid>https://www.diguage.com/post/distributed-lock-apache-curator-interprocessreadwritelock/</guid><description>在上一篇文章 分布式锁之 Apache Curator InterProcessMutex 中介绍了基于 ZooKeeper 实现的互斥锁。除此之外，还可以实现读写锁。这篇文章就来简要介绍一下 InterProcessReadWriteLock 的实现原理。
+老规矩，先看看类的注释：
+/** * &amp;lt;p&amp;gt; * A re-entrant read/write mutex that works across JVMs. Uses Zookeeper to hold the lock. All processes * in all JVMs that use the same lock path will achieve an inter-process critical section. Further, this mutex is * &amp;#34;fair&amp;#34; - each user will get the mutex in the order requested (from ZK&amp;#39;s point of view).</description></item><item><title>分布式锁之 Apache Curator InterProcessMutex</title><link>https://www.diguage.com/post/distributed-lock-apache-curator-interprocessmutex/</link><pubDate>Tue, 21 Jul 2020 10:13:21 +0800</pubDate><guid>https://www.diguage.com/post/distributed-lock-apache-curator-interprocessmutex/</guid><description>对分布式锁耳熟能详。不过，一直关注的是基于 Redis 实现的分布式锁。知道 ZooKeeper 也可以实现分布式锁。但是，原来的想法是把 Redis 那个思路切换到 ZooKeeper 上来实现就好。今天了解到 Apache Curator 内置了分布式锁的实现： InterProcessMutex。查看了一下源码实现，发现跟基于 Redis 实现的源码相比，在思路上还是有很大不同的。所以，特别作文记录一下。
+先来看一下，整体流程：
+结合流程图和源码，加锁的过程是这样的：
+先判断本地是否有锁数据，如果有则对锁定次数自增一下，然后返回 true；
+如果没有锁数据，则尝试获取锁：
+在指定路径下创建临时顺序节点
+获取指定路径下，所有节点，检查自身是否是序号最小的节点：
+如果自身序号最小，则获得锁；否则
+如果自身不是序号最小的节点，则通过 while 自旋 + wait(times) 不断尝试获取锁，直到成功。
+获得锁后，把锁信息缓存在本地 ConcurrentMap&amp;lt;Thread, LockData&amp;gt; threadData 变量中，方便计算重入。
+在 ZooKeeper 中的结构大致如下：
+下面我们逐个方法进行分析说明。先来看一下 InterProcessMutex 的注释：
+/** * A re-entrant mutex that works across JVMs.</description></item><item><title>Spring 扩展点实践：整合 Apache Dubbo（二）</title><link>https://www.diguage.com/post/spring-extensions-and-dubbo-2/</link><pubDate>Sat, 11 Jul 2020 16:20:00 +0800</pubDate><guid>https://www.diguage.com/post/spring-extensions-and-dubbo-2/</guid><description>在 Spring 扩展点实践：整合 Apache Dubbo（一） 中，D瓜哥介绍了 Dubbo 如何使用 Spring 的插件机制与 Spring 整合。限于篇幅原因，上一篇文章只介绍到了服务提供者的注册。本篇文章继续上一篇文章的主题，继续介绍 Spring 与 Dubbo 的整合过程。先来讲解一下服务消费者的生成过程。
+Dubbo 生成服务消费者的过程 先来看看 XML 配置文件：
+dubbo-demo/dubbo-demo-xml/dubbo-demo-xml-consumer/src/main/resources/spring/dubbo-consumer.xml &amp;lt;?xml version=&amp;#34;1.0&amp;#34; encoding=&amp;#34;UTF-8&amp;#34;?&amp;gt; &amp;lt;beans xmlns:xsi=&amp;#34;http://www.w3.org/2001/XMLSchema-instance&amp;#34; xmlns:dubbo=&amp;#34;http://dubbo.apache.org/schema/dubbo&amp;#34; xmlns=&amp;#34;http://www.springframework.org/schema/beans&amp;#34; xsi:schemaLocation=&amp;#34;http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://dubbo.apache.org/schema/dubbo http://dubbo.apache.org/schema/dubbo/dubbo.xsd&amp;#34;&amp;gt; &amp;lt;dubbo:application name=&amp;#34;demo-consumer&amp;#34;/&amp;gt; &amp;lt;dubbo:registry address=&amp;#34;zookeeper://127.0.0.1:2181&amp;#34;/&amp;gt; &amp;lt;dubbo:reference id=&amp;#34;demoService&amp;#34; check=&amp;#34;false&amp;#34; interface=&amp;#34;org.apache.dubbo.demo.DemoService&amp;#34;/&amp;gt; &amp;lt;/beans&amp;gt; 我们先看一下 ReferenceBean 类的声明：
+org.apache.dubbo.config.spring.ReferenceBean public class ReferenceBean&amp;lt;T&amp;gt; extends ReferenceConfig&amp;lt;T&amp;gt; implements FactoryBean, ApplicationContextAware, InitializingBean, DisposableBean { // 此处省略 N 行代码 @Override public Object getObject() { return get(); } // 此处省略 N 行代码 @Override @SuppressWarnings({&amp;#34;unchecked&amp;#34;}) public void afterPropertiesSet() throws Exception { // Initializes Dubbo&amp;#39;s Config Beans before @Reference bean autowiring prepareDubboConfigBeans(); // lazy init by default.</description></item><item><title>Spring 扩展点实践：整合 Apache Dubbo（一）</title><link>https://www.diguage.com/post/spring-extensions-and-dubbo-1/</link><pubDate>Thu, 09 Jul 2020 16:28:35 +0800</pubDate><guid>https://www.diguage.com/post/spring-extensions-and-dubbo-1/</guid><description>在上一篇文章 Spring 扩展点概览及实践 中介绍了 Spring 内部存在的扩展点。 Spring 扩展点实践：整合 MyBATIS 中，D瓜哥带大家了解了一下 MyBATIS 如何利用 Spring 的扩展点实现了与 Spring 的完美整合。现在，学以致用，我们继续来分析一下 Spring 与 Apache Dubbo 的整合流程。
+示例程序 Apache Dubbo 仓库中就有很完整的示例。D瓜哥直接拿来使用就不再搭建示例程序了。
+首先，需要启动一个 ZooKeeper 实例。查看 Dubbo 的依赖可以看出，最新版代码依赖的 ZooKeeper 是 3.4.13 版。所以，为了最好的兼容性，就要选用 3.4.X 版的 ZooKeeper 服务器。D瓜哥直接使用 Docker 启动 ZooKeeper 了。命令如下：
+docker run --rm --name zookeeper -d -p 2181:2181 zookeeper:3.4.14 这次我们使用 Apache Dubbo 的 dubbo-demo/dubbo-demo-xml 示例。
+第二步，启动服务提供者程序，找到 DUBBO/dubbo-demo/dubbo-demo-xml/dubbo-demo-xml-provider/src/main/java/org/apache/dubbo/demo/provider/Application.java，运行该类。
+第三步，运行服务消费者程序，找到 DUBBO/dubbo-demo/dubbo-demo-xml/dubbo-demo-xml-consumer/src/main/java/org/apache/dubbo/demo/consumer/Application.java，运行该类。
+如果没有任何错误，则在终端可以看到 result: async result 输出。</description></item><item><title>在世界读书日，推荐书单</title><link>https://www.diguage.com/post/books-on-book-day/</link><pubDate>Thu, 23 Apr 2020 20:15:14 +0800</pubDate><guid>https://www.diguage.com/post/books-on-book-day/</guid><description>今天是世界读书日，各种人都在推荐书单。D瓜哥也凑个热闹，水一篇文章，推荐一些书籍。
+在前一段时间，D瓜哥已经写了一个书单： 推荐几本 Java 并发编程的书。为了避免重复，上一个书单中推荐过的书籍，这次就不再重复推荐了。
+每年十二个月，D瓜哥就推荐 12 本书，每个月读一本想必压力也不算大。
+如何阅读一本书？ D瓜哥在年初的时候，刚刚再次重读了这本书。而且，还写了一篇读书笔记： 《如何阅读一本书？》之读书笔记。
+如果喜欢读书，那么这本书绝对应该是首先阅读的第一本书。一句话总结一下：用检视阅读的方法来快速筛选出你关注主题的书籍；用分析阅读的方法来吸收一本书的精华；用主题阅读的办法来对多本同一主题的书去伪存真，加工再输出。
+远见 D瓜哥在去年年末写的年终总结 “告别 2019，迎接 2020” 中提到了这本书。考虑这本书的实用性和对自身发展的指导意义，所以决定再次推荐这本书。
+在这本书中，作者将职业生涯分为：强势开局、聚焦长板和实现持续的影响力三个阶段。
+在强势开局阶段，就像要开始一个汽车拉力赛，要努力加添燃料。
+在聚焦长板阶段，要努力提高自己的核心竞争力，创造自己的制高点。
+在实现持续的影响力阶段，则要优化长尾效应，让自己持续保持领先。
+对于职业生涯有追求的小伙伴，尤其是在读大学生，一定要去尽早认真读一读这本书。
+思考，快与慢 这是一本有关心理学方面的书籍。作者丹尼尔•卡尼曼因其与阿莫斯•特沃斯基在决策制定上的研究而荣获了 2002 年度的诺贝尔经济学奖。所以，这本书质量上肯定是有保证的。
+这本书主要是介绍认知心理学的。作者在书中，把人的认知分为系统一和系统二。系统一是那种不需要思考的，已经固化在我们基因中的反应，比如看见危险会跑路等；而系统二，则是需要深入思考才能有所收获的事情，比如在新税法下，计算个人应该缴纳的个人所得税。两个系统相辅相成，时刻影响着我们的生活，但我们却有些熟视无睹。
+穷查理宝典 提起查理·芒格，也许有些人不知道是谁。（看这篇文章的读者估计都了解）但是，他的搭档估计是人尽皆知，那就是世界股神沃伦·巴菲特。
+虽然这本书不是查理·芒格书写的，里面的精华部分，却都是查理的演讲稿。通过这些演讲，你可以看到一个睿智的老人，如何在循循善诱地向你传授他的思维方法。查理给我们介绍了他的思维模型：逆向思维，多元思维模型，打造自己的核心圈，避免嫉妒效应，内部积分卡（用我们古人的话说就是反求诸己）等等。
+社会性动物 D瓜哥是去年开始读这本书的，非常抱歉目前还没有读完。
+这本书是讲述社会心理学的，讲述在这个社会中，人与人之间是如何相互影响的。举一个典型的例子：你思考过吗，什么样的广告最能打动你吗？
+事实 比尔·盖茨也推荐了这本书。我也是最近刚刚开始读这本书。还没有读完。就不做过多评价了。用一个问题，勾引一下你的兴趣：</description></item></channel></rss>

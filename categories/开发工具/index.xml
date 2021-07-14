@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>开发工具 on "地瓜哥"博客网</title><link>https://www.diguage.com/categories/%E5%BC%80%E5%8F%91%E5%B7%A5%E5%85%B7/</link><description>Recent content in 开发工具 on "地瓜哥"博客网</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Wed, 14 Jul 2021 10:52:58 +0800</lastBuildDate><atom:link href="https://www.diguage.com/categories/%E5%BC%80%E5%8F%91%E5%B7%A5%E5%85%B7/index.xml" rel="self" type="application/rss+xml"/><item><title>日志最佳实践探究</title><link>https://www.diguage.com/post/logging-best-practices/</link><pubDate>Wed, 14 Jul 2021 10:52:58 +0800</pubDate><guid>https://www.diguage.com/post/logging-best-practices/</guid><description>加入公司以来，参与了很多个项目的开发维护；也排查处理过很多线上问题；为了写 Mock 测试，也专门去日志系统上扒拉过不少日志等等。在整个过程中，对日志的认识有了不少更深刻的认识和体会。也发现不少问题。这里先从存在的问题展开论述。
+日志存在的问题 从个人的眼光上来看，当前的系统存在如下问题：
+必要日志没有打印出来，导致在追踪问题或测试代码时，带来不必要的麻烦。比如查看一个接口的返回值用于 Mock 测试；再比如 RPC 调用报错，返回值以及错误信息没有打印到日志中，不知道具体错误原因是什么。
+日志抽取中日志路径配置错误，导致日志重复收集，带来不必要的处理和存储成本。
+日志代码不规范，导致不必要的性能消耗；或者大促时，日志降级不生效。
+日志框架繁多，造成造成冲突，遗漏部分日志。
+日志配置不规范，不利于日志的采集和清洗。
+日志和调用链路物理隔离，查看一个请求的整个调用链路上的日志非常不方便，不利于问题的快速排查和定位。
+大家的系统中，存在什么样的日志问题？欢迎留言交流讨论。
+针对这些问题，我觉得有些地方值得发力一下。然后，做了一些探索，总结一下，以备后续使用。
+日志最佳实践探索 对于日志的使用，相信所有的开发人员都比较清楚，网上也有大量资料，相关日志框架的官方文档，也写的非常详尽，这里就不再赘述。
+本文从一个角度对日志规范进行探究：在排查问题时，能否通过日志来尽快地了解系统运行状态，定位问题原因？另外，由于 Java 的日志框架特别多，有一些比较容易迷惑的问题，尝试做出一点总结。
+系统运行后，不严格地说，再去观察系统运行状态，就类似于在黑夜中行走。此时，向你扔过来一块板砖🧱，那么，事后如何追责呢？
+请问：你能否成功躲开这块叫做 Bug 的板砖🧱？
+日志用来记录用户操作、系统运行状态等，是一个系统的重要组成部分。然而，由于日志通常不属于系统的核心功能，但是在日志对于排查问题，有无可替代的作用，理应得到所有开发人员的重视（不重视，怎么甩锅？！）！
+If dog is a man’s best friend, logs are software engineer’s best friend.
+— Geshan Manandhar Logging best practices 好的日志可以帮助系统的开发和运维人员：</description></item><item><title>AWK 简介</title><link>https://www.diguage.com/post/introducing-awk/</link><pubDate>Sat, 10 Jul 2021 10:14:47 +0800</pubDate><guid>https://www.diguage.com/post/introducing-awk/</guid><description>这周需要处理一个日志文件，有一次体会到 AWK 强大和方便，但也认识到自己对 AWK 了解的粗浅。所以，写篇文章再深入学习一下。
+根据维基百科显示，AWK 于二十世纪七十年代在 Bell Labs 创建；其名字来源于三位创始人： Alfred Aho、Peter Weinberger and Brian Kernighan。AWK 是一个现在几乎每台 Linux 机器上都会有这个命令。
+AWK 是一种领域专用语言，专用设计用于文本处理，常用于提取文本或者生成报告。 AWK 也像 Shell 一样，方言和实现众多。D瓜哥这里选择最常用的 GNU AWK 实现。
+AWK 是以行为单位来处理文本的。它不仅仅是一个命令行，而且是一门语言。
+先展示一下我们的实例程序：
+$ cat employee.txt ajay manager account 45000 sunil clerk account 25000 varun manager sales 50000 amit manager account 47000 tarun peon sales 15000 deepak clerk sales 23000 sunil peon sales 13000 satvik director purchase 80000 AWK 的基本用法如下：</description></item><item><title>使用 Hugo 搭建博客</title><link>https://www.diguage.com/post/building-blog-with-hugo/</link><pubDate>Sat, 01 Aug 2020 16:09:43 +0800</pubDate><guid>https://www.diguage.com/post/building-blog-with-hugo/</guid><description>一个朋友对D瓜哥的博客感兴趣，觉得很好玩。问我怎么玩，D瓜哥也懒得手把手教了，干脆写篇文章来做个说明吧。也许对其他朋友也有所帮助。
+潮起潮落 D瓜哥早在 2012年就使用 WordPress 搭建了一个博客： &amp;#34;地瓜哥&amp;#34;博客网—分享技术带来的喜悦，WordPress 不亏是全世界最流行的开源 CMS 系统，各种插件可以满足非常对的需求。当年D瓜哥还想研究一下它的源代码，可惜对 PHP（对，就是那个拍黄片的）无感，没有坚持下去。
+但是，在熟悉了 MarkDown、 Asciidoctor（D瓜哥是 AsciiDoctor 的死忠粉，坚决支持它的发展） 等轻量级标记语言后，愈发觉得 WordPress 太繁琐：写作一个小时，排版发布一小时。实在是太浪费时间了。
+先尝试了一下 Antora，之所以选它，是因为它是 AsciiDoctor 的作者发起的项目，对 AsciiDoctor 的支持性非常好。尝试了一段时间后，发现它更适合写产品说明书，更适合像阿里云等这种对外提供产品，需要提供在线产品说明书的情况。不适合做个人博客。
+去年，经过多次测试后（主要测试对 AsciiDoctor 的支持性），发现现在D瓜哥用的这个主题对 AsciiDoctor 支持得不错，随后下定决心切换到了 Hugo。
+Hugo 简介 关于 Hugo 的介绍，直接转摘维基百科的介绍了：
+Hugo 是一个用 Go 编写的静态网站生成器，2013由 Steve Francia 原创，自 v0.14 (2015年) 由 Bjørn Erik Pedersen 主力开发，并由全球各地的开发者和用户提交贡献。Hugo 以 Apache License 2.0 许可的开放源代码项目。
+Hugo 一般只需几秒钟就能生成一个网站（每页少于 1 毫秒），被称为“世界上最快的网站构建框架”，也使 Hugo 大受欢迎，成为最热门的静态网站生成器之一，被广泛采用。例如，2015年7月，Netlify 推出专为 Hugo 而设的网站托管服务，而2017年，Smashing Magazine 推出重新设计的官方网站，从原来的 WordPress 迁移到基于 Hugo 的 JAMstack 解决方案。</description></item></channel></rss>

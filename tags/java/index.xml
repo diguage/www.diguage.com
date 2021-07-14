@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Java on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/java/</link><description>Recent content in Java on "地瓜哥"博客网</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Sun, 27 Jun 2021 18:20:28 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/java/index.xml" rel="self" type="application/rss+xml"/><item><title>从 Spring PR 中学习代码技巧</title><link>https://www.diguage.com/post/learn-code-tips-from-spring-pull-requests/</link><pubDate>Sun, 27 Jun 2021 18:20:28 +0800</pubDate><guid>https://www.diguage.com/post/learn-code-tips-from-spring-pull-requests/</guid><description>D瓜哥经常关注 Spring 的 PR 与 Issue。在众多 Contributor 中，除了 Spring 团队成员之外，我对 stsypanov (Сергей Цыпанов) 印象很深刻。这哥们给 Spring 提了非常多的 PR，请看列表 Pull requests · spring-projects/spring-framework，而且这个哥们的 PR 都非常有特点，绝大部分是性能提升方面的 PR，而且还会给出 JMH 的测试结果。不愧是毛熊人，做事细致严谨。
+这周心血来潮，把这哥们的 PR 翻一翻，希望可以学习一些编码技巧。简单记录一下，以备以后回顾学习。
+提高 Map 的遍历性能 请看： SPR-17074 Replace iteration over Map::keySet with Map::entrySet by stsypanov · Pull Request #1891
+摘取一个示例如下：
+// --before update------------------------------------------------------ for (String attributeName : attributes.keySet()) { Object value = attributes.get(attributeName); // --after update------------------------------------------------------- for (Map.Entry&amp;lt;String, Object&amp;gt; attributeEntry : attributes.</description></item><item><title>Spring AOP 源码分析：创建代理（二）</title><link>https://www.diguage.com/post/spring-aop-create-proxy-cglib/</link><pubDate>Tue, 11 Aug 2020 15:00:46 +0800</pubDate><guid>https://www.diguage.com/post/spring-aop-create-proxy-cglib/</guid><description>Spring AOP 源码分析：入门 中，梳理出来了 Spring AOP 的入口。 Spring AOP 源码分析：获得通知 中着重介绍了如何获取通知。上一篇文章 Spring AOP 源码分析：创建代理（一） 重点介绍了一下切面链的组装和基于 JDK 动态代理的 AOP 的实现，这篇文章介绍一下基于 cglib 的代理类是生成。
+cglib 简介 CGLIB（Code Generator Library）是一个高性能的代码生成库，被广泛应用于 AOP 框架（Spring）中以提供方法拦截功能，主要以继承目标类的方式来进行拦截实现，因此 CGLIB 可以对无接口的类进行代理。
+CGLIB代理主要通过操作字节码的方式为对象引入方法调用时访问操作，底层使用了ASM来操作字节码生成新的类，ASM是一个短小精悍的字节码操作框架。CGLIB的应用栈如下：
+最新版的 Hibernate 已经把字节码库从 cglib 切换为 Byte Buddy。
+JDK 动态代理是通过实现 InvocationHandler 接口，在其 invoke 方法中添加切面逻辑。而 cglib 则是通过实现 MethodInterceptor 接口，在其 invoke 方法中添加切面逻辑。
+下面看一下在 Spring 中，是如何实现利用 cglib 来实现 AOP 编程的？
+CglibAopProxy 先看一下创建代理对象的方法：</description></item><item><title>Spring AOP 源码分析：创建代理（一）</title><link>https://www.diguage.com/post/spring-aop-create-proxy-jdk/</link><pubDate>Mon, 10 Aug 2020 14:10:00 +0800</pubDate><guid>https://www.diguage.com/post/spring-aop-create-proxy-jdk/</guid><description>Figure 1. Spring AOP 源码分析：入门 中，梳理出来了 Spring AOP 的入口。上一篇文章 Spring AOP 源码分析：获得通知 中着重介绍了如何获取通知。接着上一篇文章，这篇文章介绍一下如何创建代理。
+AbstractAutoProxyCreator#createProxy protected Object createProxy(Class&amp;lt;?&amp;gt; beanClass, @Nullable String beanName, @Nullable Object[] specificInterceptors, TargetSource targetSource) { if (this.beanFactory instanceof ConfigurableListableBeanFactory) { AutoProxyUtils.exposeTargetClassConfigurableListableBeanFactory) this.beanFactory, beanName, beanClass); } // 创建代理工厂对象 ProxyFactory proxyFactory = new ProxyFactory(); // 获取当前类的属性 proxyFactory.copyFrom(this); //如果没有使用CGLib代理 if (!proxyFactory.isProxyTargetClass( { // 是否可能使用CGLib代理 // 决定对于给定的 Bean 是否应该使用 targetClass 而不是他的接口代理 if (shouldProxyTargetClass(beanClass, beanName)) { proxyFactory.setProxyTargetClass(true); } else { // 查看beanClass对应的类是否含有InitializingBean.</description></item><item><title>Spring AOP 源码分析：获得通知</title><link>https://www.diguage.com/post/spring-aop-get-advices/</link><pubDate>Sun, 09 Aug 2020 15:46:50 +0800</pubDate><guid>https://www.diguage.com/post/spring-aop-get-advices/</guid><description>在文章 Spring AOP 处理流程概述 中，对 Spring AOP 有了一个整体认识。在文章 Spring AOP 源码分析：入门 中，对 Spring AOP 的相关入口做了分析。这篇文章就带大家看一看，Spring AOP 是如何获取通知的？
+示例代码 在 如何阅读 Spring 源码？: 示例代码 中，已经给出了一个完整的 AOP 示例代码。为了节省篇幅，请直接参考那篇文章的示例代码，这里就不在赘述。
+注册 Advice(通知/增强) 请根据 Spring AOP 源码分析：入门 中提到的关键方法入口处，打上断点，开始调试。
+首先，需要明确一点的是：对于切面（使用 @Aspect 注解标注过的类）在 Spring 容器中，也是被统一f封装为 BeanDefinition 实例的，也需要通过一个方式，将其注册到 Spring 容器中。比如，就像 示例代码 那样，通过 ImportSelector 方式，使用类名，将其注册到容器中。这样，就可以利用 Spring 容器对 Bean 的 API 来统一处理了。
+Advice(通知/增强)几乎是在意想不到的地方完成注册的：在第一次调用 AbstractAutoProxyCreator#postProcessBeforeInstantiation 方法时，通过 AspectJAwareAdvisorAutoProxyCreator#shouldSkip 方法，完成了切面的注册。下面，我们对这个过程抽丝剥茧，逐步分析。
+先来看看 findCandidateAdvisors 方法：
+AnnotationAwareAspectJAutoProxyCreator#findCandidateAdvisors @Override protected List&amp;lt;Advisor&amp;gt; findCandidateAdvisors() { // Add all the Spring advisors found according to superclass rules.</description></item><item><title>如何阅读 Spring 源码？</title><link>https://www.diguage.com/post/how-to-read-spring-sources/</link><pubDate>Sat, 08 Aug 2020 07:53:32 +0800</pubDate><guid>https://www.diguage.com/post/how-to-read-spring-sources/</guid><description>昨晚原计划给几个朋友简单介绍一下阅读 Spring 源码的方法。结果，大家因为各种原因没能及时参加。后来，就取消分享了。干脆写一篇文章出来，感兴趣欢迎自取。
+代码准备 Spring Framework 是开源的，代码托管在 GitHub 上： Spring Framework。任何人都可以方便地获得它的源代码。所以，如果想阅读 Spring 的源代码，当然是直接把代码克隆到本地，然后直接在 IDE（推荐 IDEA）中进行调试了。另外，还需要存放自己写一些测试和文档。所以，最好把代码 fork 到自己的账户下，从 master 上切出一个新分支并 push 到自己的 Repo 中，这样自己就可以随意更新了。具体步骤如下：
+克隆代码
+# 直接克隆原始仓库为 origin git clone git@github.com:spring-projects/spring-framework.git fork 代码，D瓜哥直接 fork 到自己账户下了： diguage/spring-framework。
+添加原创仓库地址：
+# 添加自己仓库为 diguage # 这样就能在所有项目中保持命名的一致性，方便标识 git remote add diguage git@github.com:diguage/spring-framework.git 创建新分支
+# 创建新分支 git switch -c analysis # 将新分支 push 到自己的 Repo 中 git push diguage analysis 这样，在这个新分支上，就可以随意折腾了。</description></item><item><title>Spring AOP 源码分析：入门</title><link>https://www.diguage.com/post/spring-aop-bootstrap/</link><pubDate>Fri, 07 Aug 2020 00:00:00 +0800</pubDate><guid>https://www.diguage.com/post/spring-aop-bootstrap/</guid><description>在上一篇文章 Spring AOP 处理流程概述 中，对 Spring AOP 有了一个整体认识。这篇文章就带大家做一个细致的源码分析。
+登堂入室 使用 Spring AOP 也很简单，只需要在配置类上加上 @EnableAspectJAutoProxy 注解即可。这个注解处理过程与 Spring 扩展点实践：整合 MyBATIS 中 “@MapperScan 处理” 类似，不同的是，Spring AOP 注册了 AnnotationAwareAspectJAutoProxyCreator，它是一个 InstantiationAwareBeanPostProcessor。具体的类图如下：
+Figure 1. AnnotationAwareAspectJAutoProxyCreator 的继承体系 在正式开始源码分析之前，有一点必须强调一下：Spring AOP 只是借用了 AspectJ 的一些注解和个别关键 API，而整体实现是 Spring 自己完成的，并不是基于 AspectJ 实现的。这一点跟很多人的认识是不一样的，需要特别指出。
+D瓜哥在 Spring Bean 生命周期概述 中指出：创建 AOP 代理对象，有两个时机：
+调用 InstantiationAwareBeanPostProcessor#postProcessBeforeInstantiation 时，通过调用 AnnotationAwareAspectJAutoProxyCreator 对象的 postProcessBeforeInstantiation 方法来创建对象；
+调用 BeanPostProcessor#postProcessAfterInitialization 时，通过调用 AnnotationAwareAspectJAutoProxyCreator 对象的 postProcessAfterInitialization 方法来创建对象；</description></item><item><title>HikariCP 源码分析 -- FastList</title><link>https://www.diguage.com/post/hikari-cp-source-analysis-fast-list/</link><pubDate>Sun, 02 Aug 2020 15:06:02 +0800</pubDate><guid>https://www.diguage.com/post/hikari-cp-source-analysis-fast-list/</guid><description>在前面的文章 HikariCP 源码分析 — ConcurrentBag 中，D瓜哥分析了一下 HikariCP 中一个非常重要的数据结构 ConcurrentBag。
+今天，继续再介绍 HikariCP 中另一个很关键的数据结构： FastList。
+FastList 本身的实现非常简单，要理解它的奥秘，就需要结合 Java 原生集合类的 ArrayList 来比较性地看。
+构造函数 先来对比一下两者的构造函数。先来看看 FastList：
+FastList public final class FastList&amp;lt;T&amp;gt; implements List&amp;lt;T&amp;gt;, RandomAccess, Serializable { private static final long serialVersionUID = -4598088075242913858L; private final Class&amp;lt;?&amp;gt; clazz; private T[] elementData; private int size; / * Construct a FastList with a default size of 32. * @param clazz the Class stored in the collection */ @SuppressWarnings(&amp;#34;unchecked&amp;#34;) public FastList(Class&amp;lt;?</description></item><item><title>源码剖析 Spring 循环依赖</title><link>https://www.diguage.com/post/spring-circular-dependence/</link><pubDate>Fri, 31 Jul 2020 18:33:30 +0800</pubDate><guid>https://www.diguage.com/post/spring-circular-dependence/</guid><description>循环依赖在编程中是一个常见问题（当然，这并不是最佳实践）。并且，Spring 如何解决循环依赖这个问题在面试中也经常见。下面，D瓜哥就从源码的层面深入剖析一下这个问题。
+示例程序 先展示一下示例程序：
+package com.diguage.truman.context; import org.apache.commons.logging.Log; import org.apache.commons.logging.LogFactory; import org.junit.jupiter.api.Test; import org.springframework.beans.factory.annotation.Autowired; import org.springframework.context.annotation.AnnotationConfigApplicationContext; import org.springframework.context.annotation.Configuration; import org.springframework.context.annotation.Import; import org.springframework.context.annotation.ImportSelector; import org.springframework.core.type.AnnotationMetadata; import org.springframework.stereotype.Component; /** * @author D瓜哥, https://www.diguage.com/ * @since 2020-05-24 13:02 */ public class CircularDependenceSingletonTest { public static final Log log = LogFactory.getLog(CircularDependenceSingletonTest.class); @Test public void test() { AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext(); applicationContext.register(Config.class); applicationContext.refresh(); log.info(applicationContext.getBean(A.class)); log.info(applicationContext.getBean(B.class)); log.info(applicationContext.getBean(C.class)); log.info(&amp;#34;-A--------&amp;#34;); A a = applicationContext.getBean(A.class); log.info(a); log.</description></item><item><title>分布式锁之 Apache Curator InterProcessReadWriteLock</title><link>https://www.diguage.com/post/distributed-lock-apache-curator-interprocessreadwritelock/</link><pubDate>Wed, 22 Jul 2020 10:45:44 +0800</pubDate><guid>https://www.diguage.com/post/distributed-lock-apache-curator-interprocessreadwritelock/</guid><description>在上一篇文章 分布式锁之 Apache Curator InterProcessMutex 中介绍了基于 ZooKeeper 实现的互斥锁。除此之外，还可以实现读写锁。这篇文章就来简要介绍一下 InterProcessReadWriteLock 的实现原理。
+老规矩，先看看类的注释：
+/** * &amp;lt;p&amp;gt; * A re-entrant read/write mutex that works across JVMs. Uses Zookeeper to hold the lock. All processes * in all JVMs that use the same lock path will achieve an inter-process critical section. Further, this mutex is * &amp;#34;fair&amp;#34; - each user will get the mutex in the order requested (from ZK&amp;#39;s point of view).</description></item><item><title>分布式锁之 Apache Curator InterProcessMutex</title><link>https://www.diguage.com/post/distributed-lock-apache-curator-interprocessmutex/</link><pubDate>Tue, 21 Jul 2020 10:13:21 +0800</pubDate><guid>https://www.diguage.com/post/distributed-lock-apache-curator-interprocessmutex/</guid><description>对分布式锁耳熟能详。不过，一直关注的是基于 Redis 实现的分布式锁。知道 ZooKeeper 也可以实现分布式锁。但是，原来的想法是把 Redis 那个思路切换到 ZooKeeper 上来实现就好。今天了解到 Apache Curator 内置了分布式锁的实现： InterProcessMutex。查看了一下源码实现，发现跟基于 Redis 实现的源码相比，在思路上还是有很大不同的。所以，特别作文记录一下。
+先来看一下，整体流程：
+结合流程图和源码，加锁的过程是这样的：
+先判断本地是否有锁数据，如果有则对锁定次数自增一下，然后返回 true；
+如果没有锁数据，则尝试获取锁：
+在指定路径下创建临时顺序节点
+获取指定路径下，所有节点，检查自身是否是序号最小的节点：
+如果自身序号最小，则获得锁；否则
+如果自身不是序号最小的节点，则通过 while 自旋 + wait(times) 不断尝试获取锁，直到成功。
+获得锁后，把锁信息缓存在本地 ConcurrentMap&amp;lt;Thread, LockData&amp;gt; threadData 变量中，方便计算重入。
+在 ZooKeeper 中的结构大致如下：
+下面我们逐个方法进行分析说明。先来看一下 InterProcessMutex 的注释：
+/** * A re-entrant mutex that works across JVMs.</description></item><item><title>Spring 扩展点实践：整合 Apache Dubbo（二）</title><link>https://www.diguage.com/post/spring-extensions-and-dubbo-2/</link><pubDate>Sat, 11 Jul 2020 16:20:00 +0800</pubDate><guid>https://www.diguage.com/post/spring-extensions-and-dubbo-2/</guid><description>在 Spring 扩展点实践：整合 Apache Dubbo（一） 中，D瓜哥介绍了 Dubbo 如何使用 Spring 的插件机制与 Spring 整合。限于篇幅原因，上一篇文章只介绍到了服务提供者的注册。本篇文章继续上一篇文章的主题，继续介绍 Spring 与 Dubbo 的整合过程。先来讲解一下服务消费者的生成过程。
+Dubbo 生成服务消费者的过程 先来看看 XML 配置文件：
+dubbo-demo/dubbo-demo-xml/dubbo-demo-xml-consumer/src/main/resources/spring/dubbo-consumer.xml &amp;lt;?xml version=&amp;#34;1.0&amp;#34; encoding=&amp;#34;UTF-8&amp;#34;?&amp;gt; &amp;lt;beans xmlns:xsi=&amp;#34;http://www.w3.org/2001/XMLSchema-instance&amp;#34; xmlns:dubbo=&amp;#34;http://dubbo.apache.org/schema/dubbo&amp;#34; xmlns=&amp;#34;http://www.springframework.org/schema/beans&amp;#34; xsi:schemaLocation=&amp;#34;http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://dubbo.apache.org/schema/dubbo http://dubbo.apache.org/schema/dubbo/dubbo.xsd&amp;#34;&amp;gt; &amp;lt;dubbo:application name=&amp;#34;demo-consumer&amp;#34;/&amp;gt; &amp;lt;dubbo:registry address=&amp;#34;zookeeper://127.0.0.1:2181&amp;#34;/&amp;gt; &amp;lt;dubbo:reference id=&amp;#34;demoService&amp;#34; check=&amp;#34;false&amp;#34; interface=&amp;#34;org.apache.dubbo.demo.DemoService&amp;#34;/&amp;gt; &amp;lt;/beans&amp;gt; 我们先看一下 ReferenceBean 类的声明：
+org.apache.dubbo.config.spring.ReferenceBean public class ReferenceBean&amp;lt;T&amp;gt; extends ReferenceConfig&amp;lt;T&amp;gt; implements FactoryBean, ApplicationContextAware, InitializingBean, DisposableBean { // 此处省略 N 行代码 @Override public Object getObject() { return get(); } // 此处省略 N 行代码 @Override @SuppressWarnings({&amp;#34;unchecked&amp;#34;}) public void afterPropertiesSet() throws Exception { // Initializes Dubbo&amp;#39;s Config Beans before @Reference bean autowiring prepareDubboConfigBeans(); // lazy init by default.</description></item><item><title>Spring 扩展点实践：整合 Apache Dubbo（一）</title><link>https://www.diguage.com/post/spring-extensions-and-dubbo-1/</link><pubDate>Thu, 09 Jul 2020 16:28:35 +0800</pubDate><guid>https://www.diguage.com/post/spring-extensions-and-dubbo-1/</guid><description>在上一篇文章 Spring 扩展点概览及实践 中介绍了 Spring 内部存在的扩展点。 Spring 扩展点实践：整合 MyBATIS 中，D瓜哥带大家了解了一下 MyBATIS 如何利用 Spring 的扩展点实现了与 Spring 的完美整合。现在，学以致用，我们继续来分析一下 Spring 与 Apache Dubbo 的整合流程。
+示例程序 Apache Dubbo 仓库中就有很完整的示例。D瓜哥直接拿来使用就不再搭建示例程序了。
+首先，需要启动一个 ZooKeeper 实例。查看 Dubbo 的依赖可以看出，最新版代码依赖的 ZooKeeper 是 3.4.13 版。所以，为了最好的兼容性，就要选用 3.4.X 版的 ZooKeeper 服务器。D瓜哥直接使用 Docker 启动 ZooKeeper 了。命令如下：
+docker run --rm --name zookeeper -d -p 2181:2181 zookeeper:3.4.14 这次我们使用 Apache Dubbo 的 dubbo-demo/dubbo-demo-xml 示例。
+第二步，启动服务提供者程序，找到 DUBBO/dubbo-demo/dubbo-demo-xml/dubbo-demo-xml-provider/src/main/java/org/apache/dubbo/demo/provider/Application.java，运行该类。
+第三步，运行服务消费者程序，找到 DUBBO/dubbo-demo/dubbo-demo-xml/dubbo-demo-xml-consumer/src/main/java/org/apache/dubbo/demo/consumer/Application.java，运行该类。
+如果没有任何错误，则在终端可以看到 result: async result 输出。</description></item><item><title>Kafka 常见面试题</title><link>https://www.diguage.com/post/kafka-interview-questions/</link><pubDate>Wed, 01 Jul 2020 18:08:51 +0800</pubDate><guid>https://www.diguage.com/post/kafka-interview-questions/</guid><description>Kafka 是由 LinkedIn 开发的一个分布式的消息系统，使用 Scala 编写，它以可水平扩展和高吞吐率而被广泛使用。Kafka 本身设计也非常精巧，有很多关键的知识点需要注意。在面试中，也常常被问到。整理篇文章，梳理一下自己的知识点。
+架构设计问题 Kafka 整体架构如下：
+Figure 1. Kafka 架构 Kafka 架构分为以下几个部分
+Producer：消息生产者，就是向 Kafka Broker 发消息的客户端。
+Consumer：消息消费者，向 Kafka Broker 取消息的客户端。
+Topic：可以理解为一个队列，一个 Topic 又分为一个或多个分区。
+Consumer Group：这是 Kafka 用来实现一个 Topic 消息的广播（发给所有的 Consumer）和单播（发给任意一个 Consumer）的手段。一个 Topic 可以有多个 Consumer Group。
+Broker：一台 Kafka 服务器就是一个 Broker。一个集群由多个 Broker 组成。一个 Broker 可以容纳多个 Topic。
+Partition：为了实现扩展性，一个非常大的 Topic 可以分布到多个 Broker上，每个 Partition 是一个有序的队列。Partition 中的每条消息都会被分配一个有序的id（offset）。将消息发给 Consumer，Kafka 只保证按一个 Partition 中的消息的顺序，不保证一个 Topic 的整体（多个 Partition 间）的顺序。</description></item><item><title>深入剖析 Spring 核心数据结构：BeanFactory</title><link>https://www.diguage.com/post/dive-into-spring-core-data-structure-bean-factory/</link><pubDate>Fri, 26 Jun 2020 15:30:08 +0800</pubDate><guid>https://www.diguage.com/post/dive-into-spring-core-data-structure-bean-factory/</guid><description>在 深入剖析 Spring 核心数据结构：BeanDefinition 中，介绍了 BeanDefinition。网上很多文章介绍 BeanDefinition 的 API，D瓜哥却要反其道而行之，从内部属性来分析一下。下面我们开始。
+继承体系 Spring 非常好地遵循了面向对象的设计原则：面向接口编程。不放过任何可以提取出成接口的机会。虽然感觉似乎增加了类的继承关系，增加了一点的复杂度。但是，却带来了非常好的可扩展性。而 BeanFactory 的继承体系就是一个非常典型的例子。我们来看一下它的继承体系：
+Figure 1. BeanFactory 继承体系 AliasRegistry：别名注册器。Spring 中，别名注册相关的功能就是从这里实现的。
+SimpleAliasRegistry：别名注册器的一个简单实现，从内部属性可以看出，它是把别名映射信息存到一个 Map 中了。
+DefaultSingletonBeanRegistry：默认的单例 Bean 注册器，从内部属性来说，也是基于 Map 实现的。
+FactoryBeanRegistrySupport： FactoryBean 注册器。
+SingletonBeanRegistry：单例 Bean 注册器。
+BeanDefinitionRegistry： BeanDefinition 注册器。
+BeanFactory：容器的基类。
+ListableBeanFactory：在基本容器基础上，增加了遍历相关功能。
+HierarchicalBeanFactory：在基本容器基础上，增加了父子上下级容器关联。
+AutowireCapableBeanFactory：在基本容器基础上，增加了自动注入功能。
+ConfigurableBeanFactory：对容器增加可配置性，比如父级容器、ClassLoader、TypeConverter 等。
+ConfigurableListableBeanFactory：可配置可遍历容器。</description></item><item><title>深入剖析 Spring 核心数据结构：BeanDefinition</title><link>https://www.diguage.com/post/dive-into-spring-core-data-structure-bean-definition/</link><pubDate>Sun, 21 Jun 2020 21:18:57 +0800</pubDate><guid>https://www.diguage.com/post/dive-into-spring-core-data-structure-bean-definition/</guid><description>林纳斯·托瓦兹（Linus Torvalds）说：“我从心底认为，优秀的程序员与平庸的程序员之间的区别，是在于认为自己的代码重要还是数据结构更加重要。平庸的程序员眼里只有代码，优秀的程序员则关注数据结构及之前的关系。” 也许很多人觉得 Spring 神秘莫测，但是如果了解了它的核心数据结构，很多问题迎刃而解。
+Spring 中两个数据结构最核心：① BeanDefinition，用于表示 Bean 的定义；② BeanFactory，用于表示整个 IoC 容器。
+在前面文章 Spring Bean 生命周期概述中，介绍了 Spring Bean 的生命周期。不知道大家有没有思考过 Spring 在内部是如何表示一个 Bean 的？本篇文章，就来聊一聊 BeanDefinition
+问题 使用 Spring 时，尤其是使用 XML 配置的时候，也许我们会这样的问题：
+Bean 怎么表示？
+Bean 的依赖怎么表示？
+init-method 方法怎么存储？
+Bean 的一些属性，比如 lazy-init 等，怎么表示？
+Bean 构造函数的参数怎么存储？
+…​
+Java 也有类似的问题，比如怎么表示一个类？Java 通过反射 API 来解决这个问题：
+Class</description></item><item><title>Spring AOP 处理流程概述</title><link>https://www.diguage.com/post/spring-aop-process-overview/</link><pubDate>Sat, 20 Jun 2020 19:16:35 +0800</pubDate><guid>https://www.diguage.com/post/spring-aop-process-overview/</guid><description>AOP 是 Spring 框架的最核心的两个功能之一，在前面的 Spring 启动流程概述 和 Spring Bean 生命周期概述 两篇文章中，分别介绍了 Spring 启动过程和 Spring Bean 的生命周期，对 IoC 有了一个细致介绍。这里来细致分析一下 Spring AOP 的实现原理和处理流程。
+基本概念 先来了解几个基本概念，D瓜哥私以为这些概念是 AOP 中最核心的内容，了解了基本概念，可以说基本上掌握了一半的 AOP 内容。
+学习概念最权威的地方，当然就是官方文档。所以，这些概念可以在 Spring Framework Documentation: AOP Concepts 中看到最权威的介绍。
+Join point(连接点): 所谓的连接点是指那些被拦截到的点。在 Spring 中，连接点指的是方法，因为 Spring 只支持方法类型的连接点。在 Spring 中，使用
+Pointcut(切入点): 所谓的切入点，是指要对哪些 Join point(连接点) 进行拦截的定义。如果 Join point(连接点) 是全集，那么 Pointcut(切入点) 就是被选中的子集。写 AOP 代码的时候，一般是用 Pointcut(切入点) 表达式进行对 Join point(连接点) 进行选择。
+Advice(通知/增强): 所谓的通知就是指拦截到 Join point(连接点) 之后所要做的事情。通知根据作用位置不同，又细分为：</description></item><item><title>Spring Bean 生命周期概述</title><link>https://www.diguage.com/post/spring-bean-lifecycle-overview/</link><pubDate>Sat, 20 Jun 2020 17:33:07 +0800</pubDate><guid>https://www.diguage.com/post/spring-bean-lifecycle-overview/</guid><description>在 Spring 启动流程概述 中，分析了 Spring 的启动流程。本文就来说明一下 Spring Bean 整个生命周期。如果有不清楚的地方，可以参考上文的“附录：启动日志”。
+直接上图：Spring Bean 生命周期流程图。内容较多，图片文字偏小，请放大看（矢量图，可以任意放大）：
+Figure 1. Spring Bean 生命周期流程图 下面是文字说明。
+Bean 生命周期简述 调用 InstantiationAwareBeanPostProcessor#postProcessBeforeInstantiation，主要是判断 AnnotationAwareAspectJAutoProxyCreator 是否可以生成代理。
+调用构造函数
+调用 MergedBeanDefinitionPostProcessor#postProcessMergedBeanDefinition，主要是通过 CommonAnnotationBeanPostProcessor、 AutowiredAnnotationBeanPostProcessor 收集依赖信息。
+InstantiationAwareBeanPostProcessor#postProcessAfterInstantiation，这步什么也没做。
+调用 InstantiationAwareBeanPostProcessor#postProcessProperties，主要是完成依赖注入。
+调用 AutowiredAnnotationBeanPostProcessor#setBeanFactory，注入 BeanFactory 等相关信息。
+调用 BeanPostProcessor#postProcessBeforeInitialization，主要是注入 ApplicationContext 等相关信息。
+调用 InitializingBean#afterPropertiesSet、 init-method 方法
+调用 BeanPostProcessor#postProcessAfterInitialization，主要是生成 AOP 代理类。</description></item><item><title>Spring 启动流程概述</title><link>https://www.diguage.com/post/spring-startup-process-overview/</link><pubDate>Sat, 13 Jun 2020 00:31:25 +0800</pubDate><guid>https://www.diguage.com/post/spring-startup-process-overview/</guid><description>对于 Spring 启动流程和 Bean 的生命周期，总有一些小地方搞的不是很清楚，干脆直接通过修改代码增加日志输出，使用断点单步调试，把整个流程捋顺了一点点的。
+除了加载配置文件或者基础配置类外，Spring 的启动过程几乎都被封装在 AbstractApplicationContext#refresh 方法中，可以说弄清楚了这个方法的执行过程，就摸清楚了 Spring 启动全流程，下面的流程分析也是以这个方法为骨架来展开的。
+流程概要 下面完整流程有些太复杂，所以，提炼一个简要的过程，方便糊弄面试官，哈哈哈😆
+创建容器，读取 applicationContext.register(Config.class) 指定的配置。
+准备 BeanFactory，注册容器本身和 BeanFactory 实例，以及注册环境配置信息等。
+执行 BeanDefinitionRegistryPostProcessor#postProcessBeanDefinitionRegistry 注册 BeanDefinition。有三点需要注意：
+目前只有一个 ConfigurationClassPostProcessor 实现类，Spring 中大量的 Bean 都是在这一步被该类注册到容器中的。
+执行顺序是 ① PriorityOrdered ② Ordered ③ 普通的顺序来执行
+在执行上一步是，如果发现注册了 BeanDefinitionRegistryPostProcessor 类型的 Bean，就会在循环里继续调用 postProcessBeanDefinitionRegistry 方法。MyBATIS 和 Spring 整合的 MapperScannerConfigurer 类就是在这一步执行的。
+执行 BeanFactoryPostProcessor#postProcessBeanFactory 方法。目前只有一个 ConfigurationClassPostProcessor 实现类。</description></item><item><title>Spring 扩展点实践：整合 MyBATIS</title><link>https://www.diguage.com/post/spring-extensions-and-mybatis/</link><pubDate>Thu, 28 May 2020 20:06:46 +0800</pubDate><guid>https://www.diguage.com/post/spring-extensions-and-mybatis/</guid><description>在上一篇文章 Spring 扩展点概览及实践 中介绍了 Spring 内部存在的扩展点。学以致用，现在来分析一下 Spring 与 MyBATIS 的整合流程。
+示例程序 为了方便分析源码，先根据官方文档 mybatis-spring – MyBatis-Spring | Getting Started 搭建起一个简单实例。
+数据库方面，直接使用功能了 MySQL 示例数据库： MySQL : Employees Sample Database，需要的话，自行下载。
+package com.diguage.truman.mybatis; import com.mysql.cj.jdbc.Driver; import com.zaxxer.hikari.HikariDataSource; import org.apache.ibatis.session.Configuration; import org.junit.jupiter.api.Test; import org.mybatis.spring.SqlSessionFactoryBean; import org.mybatis.spring.annotation.MapperScan; import org.springframework.beans.factory.annotation.Autowired; import org.springframework.context.annotation.AnnotationConfigApplicationContext; import org.springframework.context.annotation.Bean; import javax.sql.DataSource; /** * @author D瓜哥, https://www.diguage.com/ * @since 2020-05-29 17:11 */ public class MybatisTest { @Test public void test() { AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(); context.</description></item><item><title>Spring 扩展点概览及实践</title><link>https://www.diguage.com/post/spring-extensions-overview/</link><pubDate>Tue, 26 May 2020 17:14:20 +0800</pubDate><guid>https://www.diguage.com/post/spring-extensions-overview/</guid><description>学习 Spring 代码，最重要的是掌握 Spring 有哪些扩展点，可以利用这些扩展点对 Spring 做什么扩展操作。说得更具体一点，如果自己开发一个框架，如何与 Spring 进行整合，如果对 Spring 的扩展点有一个比较清晰的认识，势必会事半功倍。
+@Import 先来看一下 @Import 注解的定义：
+@Target(ElementType.TYPE) @Retention(RetentionPolicy.RUNTIME) @Documented public @interface Import { /** * {@link Configuration @Configuration}, {@link ImportSelector}, * {@link ImportBeanDefinitionRegistrar}, or regular component classes to import. */ Class&amp;lt;?&amp;gt;[] value(); } 从声明可以看出，使用时，只需要指定 Class 实例即可；从方法的文档中可以看出，Class 实例可以分为三种：ImportSelector、ImportBeanDefinitionRegistrar 和常规组件类。示例如下：
+@Configuration @Import(LogImportSelector.class) public static class Config { } 在 org.springframework.context.annotation.ConfigurationClassParser#processImports 方法中，集中了对 @Import 注解的处理。从代码可以非常清晰地看出，分了三种情况进行处理：
+ImportSelector</description></item><item><title>HikariCP 源码分析 -- ConcurrentBag</title><link>https://www.diguage.com/post/hikari-cp-source-analysis-concurrent-bag/</link><pubDate>Wed, 06 May 2020 17:12:55 +0800</pubDate><guid>https://www.diguage.com/post/hikari-cp-source-analysis-concurrent-bag/</guid><description>以前无意间搜资料了解到 HikariCP，一下子就被它的简洁代码和卓越性能吸引住了。以前也有翻过它的代码，但是不是很系统，最近再次翻阅，正好做些笔记，方便以后学习。
+D瓜哥最近在学习 Java 并发知识。那就从 HikariCP 自定义的并发集合 ConcurrentBag 开始学习。
+在 HikariCP 的 Wiki 中，有 Down the Rabbit Hole · ConcurrentBag 的章节来专门介绍 ConcurrentBag：
+ConcurrentBag 的灵感借鉴自 C# .NET 的 ConcurrentBag 类。但是实现却是完全不同的。这里的 ConcurrentBag 有如下特性：
+A lock-free design
+ThreadLocal caching
+Queue-stealing
+Direct hand-off optimizations
+下面，通过代码来对此做个说明。
+在 ConcurrentBag 类的定义中，声明了集合元素必须是 IConcurrentBagEntry 的子类。先来看看这个接口的定义：
+public interface IConcurrentBagEntry { int STATE_NOT_IN_USE = 0; int STATE_IN_USE = 1; int STATE_REMOVED = -1; int STATE_RESERVED = -2; boolean compareAndSet(int expectState, int newState); void setState(int newState); int getState(); } 接下来，看一下成员变量：</description></item><item><title>推荐几本 Java 并发编程的书</title><link>https://www.diguage.com/post/java-concurrent-books/</link><pubDate>Wed, 25 Mar 2020 16:32:12 +0800</pubDate><guid>https://www.diguage.com/post/java-concurrent-books/</guid><description>最近，D瓜哥的一个小伙伴向我抱怨，Java 并发是个大坑，问我怎么看？我回答，当然是用眼睛看啊…
+D瓜哥觉得，想学好 Java 并发，最重要的还是啃书。幸运的是，Java 中还是有不少关于并发的优秀书籍可以看。正好利用这个机会，把看过的、个人认为还不错的书推荐一波。没有看过的就不多言了。
+Java并发编程实战 如果只选一本书来深入研究并发，那肯定是这本书。
+Java并发编程实战 (豆瓣) — 这本书是必看的。JDK 中 JUC 就是这本书的作者们写的。虽然书名含有 Java 一次，但是，里面更多是原理性的东西，各种语言都适用。只是例子少了一些。这本书需要多读几遍。（据说翻译不行，推荐看英文版）
+放个英文版图片镇楼：
+Java并发编程的艺术 Java并发编程的艺术 (豆瓣) — 这本书也不错，讲了很多源码方面的内容，非常棒。另外，在讲解 Double Lock 方面的知识时，涉及了很多 Java Memory Model 方面的知识，可以先看看 深入理解Java虚拟机（第3版）(豆瓣) 最后两章的内容，来提前补充一下这么方面的知识。
+实战Java高并发程序设计 实战Java高并发程序设计（第2版） (豆瓣) — 这本书也不错，针对 Java 8 写的，Java 8 中的很多新知识都有涉猎，例子也很全面。广度和深度，得到了兼顾，非常棒。
+Java编程思想 Java编程思想（第4版）(豆瓣) — 虽然这本书已经出来十余年了，但是依然经典。第 21 章 并发，用大量的例子和陈述来介绍并发。非常棒。美中不足，是针对 Java 5 编写的，现在已经 Java 8 了。不过，作者又出了一本书，可以理解成升级版。</description></item><item><title>只要一部计算机，就可以创造出无限的世界</title><link>https://www.diguage.com/post/computer-create-world/</link><pubDate>Tue, 21 Apr 2009 00:00:00 +0800</pubDate><guid>https://www.diguage.com/post/computer-create-world/</guid><description>曾经写给学弟学妹的一封信。我觉得还行，发出来，希望对刚学计算机专业的朋友有所帮助。当然，如果哪位朋友有更好的想法，也请留言，大家讨论讨论。原文如下：
+致师弟师妹的一封信 各位朋友：
+大家好！
+从本周开始，我必须专心为我的前程奋斗了。很可惜不能和大家一起学习了。这封信就算是我和大家的一个告别吧。
+首先，感谢史老师给我提供这个和大家一起学习和交流的机会，让我和大家一起度过了一段特殊而愉快的时光。
+其次，我应该感谢大家。由于本人水平有限，也许我没能让大家从我这里学到太多知识，但是大家却让我学会了很多东西，锻炼了我很多方面的能力。单凭这一点，我就应该感谢大家。同时，很多人把我当朋友，更使我感激不尽。
+再次，在这短暂而又宝贵的大学时光里，大家走的路应该和我的基本一样。我以一个过来人的身份，和大家分享一下我的学习经验吧，希望可以让大家少走甚至不走弯路。
+先说一点我们所学科目的情况吧。
+Linux：一定要动手敲指令。在我们一年半的学习时光里，我认为Linux是我们所学的所有实践性学科里面最简单的一科了！只要把指令记好用熟就行了！另外，指令不需要背，用多了自然就记住了。（相信95%的同学都知道cd是什么意思吧！为什么呢？因为用它的次数多！）多提一点，一定要多尝试！
+Java或者C#或者PHP（由于个人比较喜欢Java，所以，一下描述Java的地方，你可以同样换成C#或在PHP等）：这是我们大家必须要下苦功夫学好的课！而且一定一定要学精！它们在我们的课程体系结构中的作用，就像是地基对于这个房子的作用！根基不好，房子很难建高的！即使建好也是豆腐渣工程。毕竟“空中楼阁”只存在于我们的想象中。它们是学习JSP、ASP.NET、J2EE、“游戏开发”、网页开发等等的基础，Java或者C#或者PHP学不会，这些课很难学好！（我这里有Java的教学视频，感兴趣的同学可以来我寝室拷贝。也可以上网下载：http://www.verycd.com/topics/93279/（请下载J2SE的））
+数据库：重点是关系模型、 SQL语句以及后面的数据库设计。做动态网站的技术、做桌面程序，甚至做手机应用等，都会用到数据库！以后工作中数据模型设计、数据查询等都要求有比较扎实的数据库基础才行。
+数据结构：我个人认为学习数据结构就是学习一种解决问题的思想。其实，类库已经实现了我们所学的所有的数据结构，到时会用就行了！
+现在NBA正在进行季后赛，就用乔丹的一句话，作为所有学科的一个共同的建议送给大家：
+I can accept failure, but I can’t accept not trying.
+— Michael Jordan 其实学习就是不断尝试，不断总结，不断进取的一个过程。我可以用我的尝试告你一个正确的结果，但是自己尝试出来的结果印象更加深刻！
+再说一点我的个人的学习感触吧。我个人认为，这些比我们大家在学校学到知识更为重要！知识马上就会过时，但是学习的方法却可以带领我们走的更远。
+一、享受学习。如果我们把学习当成像玩游戏、听音乐一样的娱乐活动时，我想这会给我们一种全新的感觉。Study hard，have fun，make history！ By Jeff Bezos &amp;amp; Joy Lee （努力学习，乐在其中，并创造历史！—Jeff Bezos（Amazon.com的创办者兼CEO，Joy Lee就是我。(*__*) 嘻嘻…… 这句话是我从他的一句话里改编过来的！））</description></item></channel></rss>

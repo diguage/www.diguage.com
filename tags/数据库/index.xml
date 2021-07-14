@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>数据库 on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/</link><description>Recent content in 数据库 on "地瓜哥"博客网</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Wed, 07 Jul 2021 10:23:41 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/index.xml" rel="self" type="application/rss+xml"/><item><title>关于 MySQL 新版连接驱动时区对齐问题的研究</title><link>https://www.diguage.com/post/research-on-timezone-of-mysql-new-connection-driver/</link><pubDate>Wed, 07 Jul 2021 10:23:41 +0800</pubDate><guid>https://www.diguage.com/post/research-on-timezone-of-mysql-new-connection-driver/</guid><description>在一个项目开量验证过程中，发现 createDate 字段不正确，比正确时间晚了十四个小时。调研发现，这是一个非常典型的问题。现在把定位问题的思路和解决办法给大家做个分享。
+首先，检查数据库配置，查询线上生产环境配置，结果如下：
+Figure 1. MySQL 变量 同时，检查线上生产环境 MySQL 版本，为问题复现做准备：
+Figure 2. MySQL 版本 从数据库配置上来说，基本正常，没有发现什么问题。（持续运行了这么长时间，有问题应该早就发现了。）
+其次，检查数据库连接配置，正式环境的链接配置如下：
+jdbc:mysql://&amp;lt;host&amp;gt;:3306/&amp;lt;schema&amp;gt;?createDatabaseIfNotExist=true &amp;amp;characterEncoding=utf-8&amp;amp;useUnicode=true&amp;amp;connectTimeout=2000 &amp;amp;socketTimeout=2000&amp;amp;autoReconnect=true 数据库连接也没有问题。
+第三，询问 SA 线上服务器时区配置，回复上是 CST，这个和数据库对应，没有问题。
+Figure 3. 与 SA 沟通 配置检查正常，那么只好在本地搭建环境，重现问题，再寻求解决方案。由于项目是基于 Spring Boot 2.3.7.RELEASE 开发的，相关依赖也尽量使用 Spring Boot 指定版本的，所以，很快把开发环境搭好了。
+在配置服务器环境时，遇到一点小小的问题：我一直以为有个时区名称叫 CST，就在网上去查怎么设置，结果徒劳半天也没有找到。后来上开发机检查开发机时区配置，发现是 Asia/Shanghai。将测试服务器设置为该时区，数据库内部查询时区，显示和服务器一直。
+调试代码中，发现 MySQL 连接驱动的代码中，有配置时区的相关代码，如下：
+com.mysql.cj.protocol.a.NativeProtocol#configureTimezone /** * Configures the client&amp;#39;s timezone if required.</description></item><item><title>HikariCP 源码分析 -- FastList</title><link>https://www.diguage.com/post/hikari-cp-source-analysis-fast-list/</link><pubDate>Sun, 02 Aug 2020 15:06:02 +0800</pubDate><guid>https://www.diguage.com/post/hikari-cp-source-analysis-fast-list/</guid><description>在前面的文章 HikariCP 源码分析 — ConcurrentBag 中，D瓜哥分析了一下 HikariCP 中一个非常重要的数据结构 ConcurrentBag。
+今天，继续再介绍 HikariCP 中另一个很关键的数据结构： FastList。
+FastList 本身的实现非常简单，要理解它的奥秘，就需要结合 Java 原生集合类的 ArrayList 来比较性地看。
+构造函数 先来对比一下两者的构造函数。先来看看 FastList：
+FastList public final class FastList&amp;lt;T&amp;gt; implements List&amp;lt;T&amp;gt;, RandomAccess, Serializable { private static final long serialVersionUID = -4598088075242913858L; private final Class&amp;lt;?&amp;gt; clazz; private T[] elementData; private int size; / * Construct a FastList with a default size of 32. * @param clazz the Class stored in the collection */ @SuppressWarnings(&amp;#34;unchecked&amp;#34;) public FastList(Class&amp;lt;?</description></item><item><title>Spring 扩展点实践：整合 MyBATIS</title><link>https://www.diguage.com/post/spring-extensions-and-mybatis/</link><pubDate>Thu, 28 May 2020 20:06:46 +0800</pubDate><guid>https://www.diguage.com/post/spring-extensions-and-mybatis/</guid><description>在上一篇文章 Spring 扩展点概览及实践 中介绍了 Spring 内部存在的扩展点。学以致用，现在来分析一下 Spring 与 MyBATIS 的整合流程。
+示例程序 为了方便分析源码，先根据官方文档 mybatis-spring – MyBatis-Spring | Getting Started 搭建起一个简单实例。
+数据库方面，直接使用功能了 MySQL 示例数据库： MySQL : Employees Sample Database，需要的话，自行下载。
+package com.diguage.truman.mybatis; import com.mysql.cj.jdbc.Driver; import com.zaxxer.hikari.HikariDataSource; import org.apache.ibatis.session.Configuration; import org.junit.jupiter.api.Test; import org.mybatis.spring.SqlSessionFactoryBean; import org.mybatis.spring.annotation.MapperScan; import org.springframework.beans.factory.annotation.Autowired; import org.springframework.context.annotation.AnnotationConfigApplicationContext; import org.springframework.context.annotation.Bean; import javax.sql.DataSource; /** * @author D瓜哥, https://www.diguage.com/ * @since 2020-05-29 17:11 */ public class MybatisTest { @Test public void test() { AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(); context.</description></item><item><title>HikariCP 源码分析 -- ConcurrentBag</title><link>https://www.diguage.com/post/hikari-cp-source-analysis-concurrent-bag/</link><pubDate>Wed, 06 May 2020 17:12:55 +0800</pubDate><guid>https://www.diguage.com/post/hikari-cp-source-analysis-concurrent-bag/</guid><description>以前无意间搜资料了解到 HikariCP，一下子就被它的简洁代码和卓越性能吸引住了。以前也有翻过它的代码，但是不是很系统，最近再次翻阅，正好做些笔记，方便以后学习。
+D瓜哥最近在学习 Java 并发知识。那就从 HikariCP 自定义的并发集合 ConcurrentBag 开始学习。
+在 HikariCP 的 Wiki 中，有 Down the Rabbit Hole · ConcurrentBag 的章节来专门介绍 ConcurrentBag：
+ConcurrentBag 的灵感借鉴自 C# .NET 的 ConcurrentBag 类。但是实现却是完全不同的。这里的 ConcurrentBag 有如下特性：
+A lock-free design
+ThreadLocal caching
+Queue-stealing
+Direct hand-off optimizations
+下面，通过代码来对此做个说明。
+在 ConcurrentBag 类的定义中，声明了集合元素必须是 IConcurrentBagEntry 的子类。先来看看这个接口的定义：
+public interface IConcurrentBagEntry { int STATE_NOT_IN_USE = 0; int STATE_IN_USE = 1; int STATE_REMOVED = -1; int STATE_RESERVED = -2; boolean compareAndSet(int expectState, int newState); void setState(int newState); int getState(); } 接下来，看一下成员变量：</description></item><item><title>在世界读书日，推荐书单</title><link>https://www.diguage.com/post/books-on-book-day/</link><pubDate>Thu, 23 Apr 2020 20:15:14 +0800</pubDate><guid>https://www.diguage.com/post/books-on-book-day/</guid><description>今天是世界读书日，各种人都在推荐书单。D瓜哥也凑个热闹，水一篇文章，推荐一些书籍。
+在前一段时间，D瓜哥已经写了一个书单： 推荐几本 Java 并发编程的书。为了避免重复，上一个书单中推荐过的书籍，这次就不再重复推荐了。
+每年十二个月，D瓜哥就推荐 12 本书，每个月读一本想必压力也不算大。
+如何阅读一本书？ D瓜哥在年初的时候，刚刚再次重读了这本书。而且，还写了一篇读书笔记： 《如何阅读一本书？》之读书笔记。
+如果喜欢读书，那么这本书绝对应该是首先阅读的第一本书。一句话总结一下：用检视阅读的方法来快速筛选出你关注主题的书籍；用分析阅读的方法来吸收一本书的精华；用主题阅读的办法来对多本同一主题的书去伪存真，加工再输出。
+远见 D瓜哥在去年年末写的年终总结 “告别 2019，迎接 2020” 中提到了这本书。考虑这本书的实用性和对自身发展的指导意义，所以决定再次推荐这本书。
+在这本书中，作者将职业生涯分为：强势开局、聚焦长板和实现持续的影响力三个阶段。
+在强势开局阶段，就像要开始一个汽车拉力赛，要努力加添燃料。
+在聚焦长板阶段，要努力提高自己的核心竞争力，创造自己的制高点。
+在实现持续的影响力阶段，则要优化长尾效应，让自己持续保持领先。
+对于职业生涯有追求的小伙伴，尤其是在读大学生，一定要去尽早认真读一读这本书。
+思考，快与慢 这是一本有关心理学方面的书籍。作者丹尼尔•卡尼曼因其与阿莫斯•特沃斯基在决策制定上的研究而荣获了 2002 年度的诺贝尔经济学奖。所以，这本书质量上肯定是有保证的。
+这本书主要是介绍认知心理学的。作者在书中，把人的认知分为系统一和系统二。系统一是那种不需要思考的，已经固化在我们基因中的反应，比如看见危险会跑路等；而系统二，则是需要深入思考才能有所收获的事情，比如在新税法下，计算个人应该缴纳的个人所得税。两个系统相辅相成，时刻影响着我们的生活，但我们却有些熟视无睹。
+穷查理宝典 提起查理·芒格，也许有些人不知道是谁。（看这篇文章的读者估计都了解）但是，他的搭档估计是人尽皆知，那就是世界股神沃伦·巴菲特。
+虽然这本书不是查理·芒格书写的，里面的精华部分，却都是查理的演讲稿。通过这些演讲，你可以看到一个睿智的老人，如何在循循善诱地向你传授他的思维方法。查理给我们介绍了他的思维模型：逆向思维，多元思维模型，打造自己的核心圈，避免嫉妒效应，内部积分卡（用我们古人的话说就是反求诸己）等等。
+社会性动物 D瓜哥是去年开始读这本书的，非常抱歉目前还没有读完。
+这本书是讲述社会心理学的，讲述在这个社会中，人与人之间是如何相互影响的。举一个典型的例子：你思考过吗，什么样的广告最能打动你吗？
+事实 比尔·盖茨也推荐了这本书。我也是最近刚刚开始读这本书。还没有读完。就不做过多评价了。用一个问题，勾引一下你的兴趣：</description></item><item><title>只要一部计算机，就可以创造出无限的世界</title><link>https://www.diguage.com/post/computer-create-world/</link><pubDate>Tue, 21 Apr 2009 00:00:00 +0800</pubDate><guid>https://www.diguage.com/post/computer-create-world/</guid><description>曾经写给学弟学妹的一封信。我觉得还行，发出来，希望对刚学计算机专业的朋友有所帮助。当然，如果哪位朋友有更好的想法，也请留言，大家讨论讨论。原文如下：
+致师弟师妹的一封信 各位朋友：
+大家好！
+从本周开始，我必须专心为我的前程奋斗了。很可惜不能和大家一起学习了。这封信就算是我和大家的一个告别吧。
+首先，感谢史老师给我提供这个和大家一起学习和交流的机会，让我和大家一起度过了一段特殊而愉快的时光。
+其次，我应该感谢大家。由于本人水平有限，也许我没能让大家从我这里学到太多知识，但是大家却让我学会了很多东西，锻炼了我很多方面的能力。单凭这一点，我就应该感谢大家。同时，很多人把我当朋友，更使我感激不尽。
+再次，在这短暂而又宝贵的大学时光里，大家走的路应该和我的基本一样。我以一个过来人的身份，和大家分享一下我的学习经验吧，希望可以让大家少走甚至不走弯路。
+先说一点我们所学科目的情况吧。
+Linux：一定要动手敲指令。在我们一年半的学习时光里，我认为Linux是我们所学的所有实践性学科里面最简单的一科了！只要把指令记好用熟就行了！另外，指令不需要背，用多了自然就记住了。（相信95%的同学都知道cd是什么意思吧！为什么呢？因为用它的次数多！）多提一点，一定要多尝试！
+Java或者C#或者PHP（由于个人比较喜欢Java，所以，一下描述Java的地方，你可以同样换成C#或在PHP等）：这是我们大家必须要下苦功夫学好的课！而且一定一定要学精！它们在我们的课程体系结构中的作用，就像是地基对于这个房子的作用！根基不好，房子很难建高的！即使建好也是豆腐渣工程。毕竟“空中楼阁”只存在于我们的想象中。它们是学习JSP、ASP.NET、J2EE、“游戏开发”、网页开发等等的基础，Java或者C#或者PHP学不会，这些课很难学好！（我这里有Java的教学视频，感兴趣的同学可以来我寝室拷贝。也可以上网下载：http://www.verycd.com/topics/93279/（请下载J2SE的））
+数据库：重点是关系模型、 SQL语句以及后面的数据库设计。做动态网站的技术、做桌面程序，甚至做手机应用等，都会用到数据库！以后工作中数据模型设计、数据查询等都要求有比较扎实的数据库基础才行。
+数据结构：我个人认为学习数据结构就是学习一种解决问题的思想。其实，类库已经实现了我们所学的所有的数据结构，到时会用就行了！
+现在NBA正在进行季后赛，就用乔丹的一句话，作为所有学科的一个共同的建议送给大家：
+I can accept failure, but I can’t accept not trying.
+— Michael Jordan 其实学习就是不断尝试，不断总结，不断进取的一个过程。我可以用我的尝试告你一个正确的结果，但是自己尝试出来的结果印象更加深刻！
+再说一点我的个人的学习感触吧。我个人认为，这些比我们大家在学校学到知识更为重要！知识马上就会过时，但是学习的方法却可以带领我们走的更远。
+一、享受学习。如果我们把学习当成像玩游戏、听音乐一样的娱乐活动时，我想这会给我们一种全新的感觉。Study hard，have fun，make history！ By Jeff Bezos &amp;amp; Joy Lee （努力学习，乐在其中，并创造历史！—Jeff Bezos（Amazon.com的创办者兼CEO，Joy Lee就是我。(*__*) 嘻嘻…… 这句话是我从他的一句话里改编过来的！））</description></item></channel></rss>

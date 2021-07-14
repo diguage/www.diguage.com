@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>OKR on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/okr/</link><description>Recent content in OKR on "地瓜哥"博客网</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Tue, 31 Dec 2019 19:20:00 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/okr/index.xml" rel="self" type="application/rss+xml"/><item><title>告别 2019，迎接 2020</title><link>https://www.diguage.com/post/goodbye-2019-hello-2020/</link><pubDate>Tue, 31 Dec 2019 19:20:00 +0800</pubDate><guid>https://www.diguage.com/post/goodbye-2019-hello-2020/</guid><description>我的 2019 在 2018 年底，我写了 “2019 年度计划” 对 2019 年做了一个简单的规划。2019 年如白驹过隙，稍纵即逝。又到一年年底，现在对这一年做一个总结。
+虽然这一年，我一直在意有这么一个计划，但是从来没有认真总结反思过。为了回顾一下，刚刚又打开计划去看，生活才发现过得如此苍白无力。抛开计划，按时间顺序，从头到尾，随意来说吧。
+读书 今年读了几本书：
+《小岛经济学》
+《小王子（英文版）》
+《未来世界的幸存者》
+《白夜行》
+《教父》
+《远见》
+《如何阅读一本书？》
+《文明之光（第一册）》
+《基督山伯爵》
+《Kubernetes in Action》
+《富爸爸穷爸爸》
+《巴菲特与索罗斯的投资习惯》
+《幸福的方法》
+《魔鬼聊天术》
+《拆掉思维里的墙》
+挑选几本来简单说说吧。
+《小岛经济学》 《小岛经济学》是今年读完的第一本书，也算是去年留下的一个尾巴。奥地利经济学派主张政府不干预的观点。这本书简单描述了经济发展的过程，从莽荒时代，手工作业开始，逐步引入工具，提高生产力；随着生产力的提升，人口的增多，经济活动增多，开始物物交换；从物物交换过渡到货币交易，然后银行业兴起；生产力再次提高，以及货币的增加，投资也成为必要，资本市场应运而生；随着地区优势的凸显，资源整合也势在必行，接着发展起了跨国贸易，换汇成为必要，汇率也就被引入进来；随着资本市场的繁荣，埋藏的地雷被引爆，通货膨胀，货币贬值，资本市场崩溃，社会进入大萧条，然后重置继续发展……</description></item><item><title>OKR 学习笔记 - 未来展望</title><link>https://www.diguage.com/post/okr-notes-future-vision/</link><pubDate>Tue, 22 Oct 2019 00:00:00 +0800</pubDate><guid>https://www.diguage.com/post/okr-notes-future-vision/</guid><description>29 | 他们落地 OKR 都失败了，原因出在哪儿？ 为何这家初创公司落地 OKR 失败了？ 拿 OKR 当 KPI 用，只是通过 OKR 看结果，而忽略了 OKR 执行过程中的跟踪与复盘，最终导致 OKR 没用对，KPI 也没用好。
+对于初创公司而言，生存固然重要，但成长也不可忽视，OKR 既能实现目标，又能关注成长。
+为何这家传统企业落地 OKR 失败了？ 为何这家互联网公司落地 OKR 失败了？ 总结 没有充分理解 OKR 的核心概念，更没有真正体会到 OKR 的精髓，容易将 OKR 当 KPI 用。
+当正确理解 OKR 后，就应该快速落地，并及时跟踪落地效果，持续收集员工反馈。
+OKR 的本质就是简单，所以没必要让 OKR 落地变得复杂，无需与流程和制度相绑定。
+30 | 用什么工具，能加强OKR落地效果？ OKR 初步落地，用什么工具？ 与“表格”相比，我更倾向于“看板”，不是电子看板，而是实体看板，需要将它固定在墙上，而且办公区域内，越多的同事看到它越好。
+看板使得 OKR 的价值发挥到了极致。</description></item><item><title>OKR 学习笔记 - 管理心经</title><link>https://www.diguage.com/post/okr-notes-management-scripture/</link><pubDate>Mon, 21 Oct 2019 18:44:00 +0800</pubDate><guid>https://www.diguage.com/post/okr-notes-management-scripture/</guid><description>15 | 技术团队真的是“成本中心”吗？如何改变这一现状？ 如何体现技术团队的价值？ 要回答技术团队如何产生价值的问题，首先要让同事们知道工程师们每天到底在做什么。
+除了在技术团队核心工作方面来体现价值以外，你还需要在日常的项目中体现技术团队的价值。
+如何使用 OKR 体现项目价值？ Why：为何我们要做这个项目，这个项目主要是为了解决什么问题？
+What：对于项目所解决的问题而言，它所能产生的价值到底有多大？
+How：项目上线后，是否能够有效地去验证项目的价值？如何验证？
+技术团队所交付项目的价值。
+如何持续地体现技术团队价值？ 不要告诉工程师们应该做些什么，更不要告诉他们应该怎么去做，而要告诉他们为什么要做。
+O 的完成率是其下每个 KR 完成率的平均值。
+对于曾经做过的项目所产生的价值，你还需要阶段性地向你的上级领导汇报，从而建立领导和你之间的信任，这同样也能体现技术团队的价值。
+总结 一些技巧：
+项目 OKR 无需你一个人来制定，你需要与协作伙伴们共同来完成。
+通过“引导式”提问方法，让你的伙伴们认可通过 OKR 来验证项目价值的方法。
+持续体现技术团队价值，通过定期向大家同步项目 OKR 完成率，这个方法值得尝试。
+16 | 大家都说“向上管理”很重要，你想学一些“套路”吗？ 向下管理指的是管理自己的团队等； 向上管理指的是与自己的领导有效沟通； 横向管理指的是与自己的跨部门同事进行工作协同。
+向上管理，到底管理的是什么？ 问题 为何与自己的领导一言不合，就会选择离职呢？其根本原因还是在于自己和领导之间的沟通出现了问题。</description></item><item><title>OKR 学习笔记 - 操作指南</title><link>https://www.diguage.com/post/okr-notes-operation-guide/</link><pubDate>Sun, 20 Oct 2019 18:44:00 +0800</pubDate><guid>https://www.diguage.com/post/okr-notes-operation-guide/</guid><description>08 | 如何轻松制定OKR？方法原来如此简单 你制定的 O 对不对？ O 是 OKR 中“What”的层面，它解决了“做什么”的问题。
+O 最核心的特性就一定在于它对组织、团队、个人所能提供的价值上：
+对于组织目标而言，当一位 CEO 制定组织目标时，他需要结合企业战略规划来制定 OKR，他所制定的 O 就必须具备商业价值。
+如果你是团队负责人，那么你一定要考虑：怎样的 O 能帮助你的团队产生价值。
+综上所述，在制定 O 时，你需要注意以下三条核心原则：
+O 要有实际价值，你要深度思考。
+O 要能激励人心，你要善于表达。
+O 要短期可实现，你要脚踏实地。
+分享三条注意事项：
+O 尽可能要以动词形式开头。例如：打造……、建设……、实现……。
+O 用通俗易懂的语言来表达。一定不要写一些自认为“高大上”的词汇，除非大家理解上都可以达成一致。
+O 最好能附上一句目标描述。建议为 O 增加一句话描述，就“为何我要写这个目标？”这一问题，来向大家讲解。
+你制定的 KR 好不好？ KR 是针对 OKR 中“How”的层面，它解决了具体“怎么做”的问题。</description></item><item><title>OKR 学习笔记 - 快速入门</title><link>https://www.diguage.com/post/okr-notes-quickstart/</link><pubDate>Sat, 19 Oct 2019 18:44:00 +0800</pubDate><guid>https://www.diguage.com/post/okr-notes-quickstart/</guid><description>01 | 你想要快速理解OKR吗？看这篇文章就够了 越来越火的 OKR 究竟是什么？ OKR 是一款目标管理工具，它由 Objectives（目标）和 Key Results（关键结果）两部分构成。同时，OKR 也被称为“目标与关键结果工作法”，简称为“OKR 工作法”。OKR 是融合了一系列框架、方法和哲学后的产物，它起源于 Intel，发展于 Google。
+可以把 OKR 中的 O 想象成一个你想要去的最终目的地，它时刻为你指明前进的方向，此外，可以把 KR 想象成一个带有距离标记的路标，它时刻告诉你距离目的地还有多远。
+OKR 是一种融入了人性的科学管理框架。OKR 绝不是一款简单的目标管理工具，它充满了人性和智慧。
+你为什么需要 OKR？ OKR 使方向更加聚焦 OKR 恰恰能够解决短期目标的实现问题，让目标更加聚焦，让行动脚踏实地，通过完成 KR 从而实现 O，这也正是 OKR 的基本原理。
+为了让目标更加聚焦，因此在制定 O 的时候就需要考虑“做减法”，不要贪多求广，在资源有限的前提下，我们只有集中优势“兵力”，才能逐个歼灭“敌人”。
+OKR 使沟通更加透明 《孙子兵法》云“上下同欲者胜”。
+CEO 首先制定“公司 OKR”，即组织目标，并将组织目标与部门负责人沟通。
+部门负责人再去制定“部门 OKR”，即团队目标，并将团队目标与组织目标对齐，与 CEO 确认后再与员工沟通。
+各个员工充分理解了团队目标后，再去制定自己的“员工 OKR”，即个人目标，并将个人目标与团队目标对齐，并与团队负责人确认。
+OKR 使激励更加有效 除了金钱等物质激励以外，最有效的激励方式莫过于“成长”和“认可”，而且精神激励往往比物质激励产生的激励效果更持久。</description></item></channel></rss>
