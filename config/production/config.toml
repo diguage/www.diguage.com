@@ -35,7 +35,7 @@ googleAnalytics = "UA-32893826-1" # Enable Google Analytics by entering your tra
   list = "right"   # Configure layout for list pages
   single = "right" # Configure layout for single pages
   # Enable widgets in given order
-  widgets = ["search", "recent", "categories", "taglist", "social"]
+  widgets = ["search", "wechat", "recent", "categories", "taglist", "social"]
 
 [Params.widgets]
   recent_num = 20 # Set the number of articles in the "Recent articles" widget
