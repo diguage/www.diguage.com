@@ -4,7 +4,7 @@ date: 2020-01-31T12:23:28+08:00
 draft: false
 tags: ["读书","笔记","基金","投资理财","股票","债券"]
 categories: ["方法论","经济金融"]
-thumbnail: "images/jie-du-ji-jin.jpg"
+thumbnail: "images/books/jie-du-ji-jin.jpg"
 
 weight: 1
 // toc: true

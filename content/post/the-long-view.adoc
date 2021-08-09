@@ -4,7 +4,7 @@ date: 2020-08-14T20:58:23+08:00
 draft: false
 tags: ["读书","笔记"]
 categories: ["方法论","个人成长"]
-thumbnail: "images/books-on-book-day/the-long-view.jpg"
+thumbnail: "images/books/the-long-view.jpg"
 weight: 1
 ---
 

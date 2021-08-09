@@ -4,7 +4,7 @@ date: 2020-01-08T22:23:51+08:00
 draft: false
 categories: ["阅读摘要"]
 tags: ["书籍", "方法论"]
-thumbnail: "images/books-on-book-day/how-to-read-a-book.jpg"
+thumbnail: "images/books/how-to-read-a-book.jpg"
 
 weight: 1
 ---

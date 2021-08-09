@@ -4,7 +4,7 @@ date: 2020-04-18T12:39:22+08:00
 draft: false
 tags: ["个人提升","工作方法","读书"]
 categories: ["个人成长","方法论"]
-thumbnail: "images/books-on-book-day/the-pragmatic-programmer.jpg"
+thumbnail: "images/books/the-pragmatic-programmer.jpg"
 
 weight: 1
 // toc: true
