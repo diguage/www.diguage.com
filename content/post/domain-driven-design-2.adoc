@@ -2,7 +2,7 @@
 title: "《领域驱动设计》读书笔记（二）：模型驱动设计的构造块"
 date: 2021-07-11T23:44:22+08:00
 draft: false
-keywords: ["程序设计","软件工程","阅读摘要","领域驱动设计","书籍","面向对象"]
+keywords: ["DDD","程序设计","软件工程","阅读摘要","领域驱动设计","书籍","面向对象"]
 categories: ["程序设计","软件工程","阅读摘要"]
 tags: ["领域驱动设计","书籍","面向对象","设计模式"]
 thumbnail: "images/domain-driver-design/domain-driver-design.jpg"

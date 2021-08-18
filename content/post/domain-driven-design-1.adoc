@@ -2,7 +2,7 @@
 title: "《领域驱动设计》读书笔记（一）：运用领域模型"
 date: 2021-07-08T20:40:05+08:00
 draft: false
-keywords: ["程序设计","软件工程","阅读摘要","领域驱动设计","书籍","面向对象"]
+keywords: ["DDD","程序设计","软件工程","阅读摘要","领域驱动设计","书籍","面向对象"]
 categories: ["程序设计","软件工程","阅读摘要"]
 tags: ["领域驱动设计","书籍","面向对象"]
 thumbnail: "images/domain-driver-design/domain-driver-design.jpg"
