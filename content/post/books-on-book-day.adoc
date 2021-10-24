@@ -81,6 +81,8 @@ image::/images/books/factfulness.jpg[align=center,width=60%]
 
 想知道答案，就快点去读这本书吧。
 
+最近更新：D瓜哥终于把这本书读完了：https://www.diguage.com/post/factfulness/[《事实》之读书笔记^]。
+
 
 == https://book.douban.com/subject/26953606/[人类简史^]
 
