@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout 🛎️
-        uses: actions/checkout@v2.3.4
+        uses: actions/checkout@v2.4.0
         with:
           submodules: recursive
           fetch-depth: 0
@@ -16,11 +16,11 @@ jobs:
       - name: Setup Hugo 🐯
         uses: peaceiris/actions-hugo@v2.4.13
         with:
-          hugo-version: 'latest'
+          hugo-version: '0.89.4'
           extended: true
 
       - name: Setup Ruby 💎
-        uses: ruby/setup-ruby@v1.76.0
+        uses: ruby/setup-ruby@v1.89.0
         with:
           ruby-version: 3.0
 
@@ -37,7 +37,7 @@ jobs:
           hugo --minify
       
       - name: Setup Node.js 🕸
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v2.5.0
         with:
           node-version: '16'
 
@@ -51,7 +51,7 @@ jobs:
 
       - name: Deploy 🚀
         continue-on-error: true
-        uses: JamesIves/github-pages-deploy-action@4.1.4
+        uses: JamesIves/github-pages-deploy-action@4.1.8
         with:
           branch: gh-pages # The branch the action should deploy to.
           folder: public # The folder the action should deploy.
