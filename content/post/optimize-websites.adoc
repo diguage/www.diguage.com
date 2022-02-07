@@ -1,0 +1,339 @@
+---
+title: "优化网站"
+date: 2022-02-07T11:44:17+08:00
+draft: false
+keywords: ["Ubuntu","博客","Nginx","TLS","Brotli","HTTP2","Linux","TLS", ""]
+categories: ["开发工具","操作系统"]
+tags: ["产品"]
+thumbnail: "images/website/optimize.jpg"
+
+weight: 1
+---
+
+:source-highlighter: pygments
+:pygments-style: monokai
+:pygments-linenums-mode: table
+:source_attr: indent=0,subs="attributes,verbatim,quotes"
+:image_attr: align=center
+
+前几年应大势所趋，使用 Let’s Encrypt 给所有网站都上了 HTTPS。因为去年年中把博客托管到 GitHub 上了，导致一起申请 HTTPS 证书的站点无法按时更新证书。所以，所有证书都过期了。前几天有朋友发消息问我，Byte Buddy 的中文文档是不是我搞的？正好借机把证书更新了一下。
+
+此后不久，无意间查看了一下网站服务器的操作系统和 Nginx 版本，发现竟然是 Ubuntu 16.04 + Nginx 1.12。Ubuntu 16.04 都”过期“了，正好得空升级一下。
+
+== 升级操作系统
+
+以前没有升级过操作系统大版本，正好借此机会练手：
+
+[source,bash,{source_attr}]
+----
+# 升级操作系统版本执行，先做一下常规升级
+sudo apt-get update
+sudo apt-get upgrade
+sudo reboot
+
+# 检查可以升级的版本
+sudo do-release-upgrade -c
+
+# 开始升级
+sudo do-release-upgrade
+----
+
+升级完成后，检查操作系统版本：
+
+[source,bash,{source_attr}]
+----
+$ cat /etc/os-release
+NAME="Ubuntu"
+VERSION="20.04.3 LTS (Focal Fossa)"
+ID=ubuntu
+ID_LIKE=debian
+PRETTY_NAME="Ubuntu 20.04.3 LTS"
+VERSION_ID="20.04"
+HOME_URL="https://www.ubuntu.com/"
+SUPPORT_URL="https://help.ubuntu.com/"
+BUG_REPORT_URL="https://bugs.launchpad.net/ubuntu/"
+PRIVACY_POLICY_URL="https://www.ubuntu.com/legal/terms-and-policies/privacy-policy"
+VERSION_CODENAME=focal
+UBUNTU_CODENAME=focal
+----
+
+有几点需要注意：
+
+. LTS 版本升级，只能一步一步升级，从 16.04 升级到 18.04，再从 18.04 升级到 20.04。不能跳级。
+. 升级过程不能中断，需要逐步确认。
+
+如果升级中断，系统就会处在一个中间阶段，不能升级，不能重启（我遇到的情况）。需要人工介入处理，继续升级完成才行：
+
+
+[source,bash,{source_attr}]
+----
+sudo dpkg --configure -a
+
+# 执行上述命令失败是，删除两个锁文件，再次执行即可
+sudo rm -rf /var/lib/dpkg/lock
+sudo rm /var/lib/dpkg/lock-frontend
+
+sudo dpkg --configure -a
+
+sudo apt-get update
+sudo apt-get dist-upgrade
+
+sudo do-release-upgrade
+
+sudo reboot
+----
+
+== 升级 Nginx
+
+Ubuntu 官方支持的 Nginx 还是 1.18。Nginx 都推出 1.21 了，果断升级一下：
+
+[source,bash,{source_attr}]
+----
+sudo add-apt-repository ppa:ondrej/nginx -y
+
+sudo apt update
+
+sudo apt upgrade
+----
+
+这里推荐 `ppa:ondrej/nginx`，还找到其他的 PPA，但是支持版本比较低。
+
+搜资料时，在 Stack Overflow 上看到这样一个问题：
+https://stackoverflow.com/a/67631812/951836[php - What's the purpose of ppa:ondrej/nginx?^] 在第一个回答中，该 PPA 还提到包含 Brotli 模块，并且解释了 Brotli 模块：Brotli 可以提供比 Gzip 更好的压缩效果，现在大多数浏览器也都支持 Brotli。
+
+
+== 启用 HTTP2
+
+HTTP2 协议是在 2015年05月发布的： https://datatracker.ietf.org/doc/html/rfc7540[RFC 7540 - Hypertext Transfer Protocol Version 2 (HTTP/2)^]。Nginx 从 1.9.5 开始支持 HTTP2。不过，由于 HTTP2 只支持 HTTPS。所以，这算是使用 HTTP2 的先决条件。好在 Let’s Encrypt 可以免费获得 HTTPS 证书，这个已经提前配置完成了。
+
+启用 HTTP2 比较简单，只需要修改 Nginx 的配置文件，增加 `http2` 即可：
+
+[source,bash,{source_attr}]
+----
+listen 443 ssl **http2**;
+----
+
+重启 Nginx，然后检查是否生效：
+
+[source,bash,{source_attr}]
+----
+$ curl -I https://notes.diguage.com
+HTTP/2 200
+server: nginx/1.20.1
+date: Mon, 07 Feb 2022 06:52:32 GMT
+content-type: text/html
+content-length: 1561
+last-modified: Wed, 14 Nov 2018 06:04:51 GMT
+vary: Accept-Encoding
+etag: "5bebbb03-619"
+expires: Mon, 14 Feb 2022 06:52:32 GMT
+cache-control: max-age=604800
+strict-transport-security: max-age=63072000
+accept-ranges: bytes
+----
+
+看到 `HTTP/2` 就表示 HTTP2 启用成功了。
+
+== 启用 TLS 1.3
+
+感谢 https://letsencrypt.org/[Let's Encrypt^] 和 https://certbot.eff.org/[Certbot^] 可以让广大开发者免费试用 HTTPS 证书。
+
+`certbot` 自动生成的配置，考虑了兼容性问题。所以，默认只支持到 TLS 1.2，不支持最新的 TLS 1.3。不过，可以通过修改配置来启用 TLS 1.3。
+
+先来查看一下相关工具的版本号：
+
+[source,bash,{source_attr}]
+----
+# 检查一下 OpenSSL 的版本
+$ openssl version
+OpenSSL 1.1.1f  31 Mar 2020
+
+# 检查一下 Nginx 的版本
+$ nginx -v
+nginx version: nginx/1.20.1
+----
+
+然后，将上述信息填写到 https://ssl-config.mozilla.org/[Mozilla SSL Configuration Generator^] 中，在网页中选择 *Modern* 选项，就生成了对应的配置文件：
+
+[source,bash,{source_attr}]
+----
+# generated 2022-02-07, Mozilla Guideline v5.6, nginx 1.20.1, OpenSSL 1.1.1f, modern configuration
+# https://ssl-config.mozilla.org/#server=nginx&version=1.20.1&config=modern&openssl=1.1.1f&guideline=5.6
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+
+    ssl_certificate /path/to/signed_cert_plus_intermediates;
+    ssl_certificate_key /path/to/private_key;
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:MozSSL:10m;  # about 40000 sessions
+    ssl_session_tickets off;
+
+    # modern configuration
+    ssl_protocols TLSv1.3;
+    ssl_prefer_server_ciphers off;
+
+    # HSTS (ngx_http_headers_module is required) (63072000 seconds)
+    add_header Strict-Transport-Security "max-age=63072000" always;
+
+    # OCSP stapling
+    ssl_stapling on;
+    ssl_stapling_verify on;
+
+    # verify chain of trust of OCSP response using Root CA and Intermediate certs
+    ssl_trusted_certificate /path/to/root_CA_cert_plus_intermediates;
+
+    # replace with the IP address of your resolver
+    resolver 127.0.0.1;
+}
+----
+
+其中，需要关注的配置如下：
+
+[source,bash,{source_attr}]
+----
+ssl_session_timeout 1d;
+ssl_session_cache shared:MozSSL:10m;  # about 40000 sessions
+ssl_session_tickets off;
+
+# modern configuration
+ssl_protocols TLSv1.3;
+ssl_prefer_server_ciphers off;
+
+# HSTS (ngx_http_headers_module is required) (63072000 seconds)
+add_header Strict-Transport-Security "max-age=63072000" always;
+
+# OCSP stapling
+ssl_stapling on;
+ssl_stapling_verify on;
+
+# verify chain of trust of OCSP response using Root CA and Intermediate certs
+ssl_trusted_certificate /path/to/root_CA_cert_plus_intermediates; #<1>
+----
+<1> 注意修改这里的路径，Let's Encrypt 证书的路径是 `/etc/letsencrypt/live/<YourDomain>/chain.pem`。
+
+打开 `/etc/letsencrypt/options-ssl-nginx.conf`，将里面的配置直接修改为上述配置即可。
+
+最后，使用验证是否生效：
+
+[source,bash,{source_attr}]
+----
+# 验证 TLS v1.0
+$ curl -v -s --tlsv1.0 --tls-max 1.0 https://notes.diguage.com
+*   Trying 120.92.74.139...
+* TCP_NODELAY set
+* Connected to notes.diguage.com (120.92.74.139) port 443 (#0)
+* ALPN, offering h2
+* ALPN, offering http/1.1
+* successfully set certificate verify locations:
+*   CAfile: /etc/ssl/cert.pem
+  CApath: none
+* TLSv1.0 (OUT), TLS handshake, Client hello (1):
+* TLSv1.0 (IN), TLS alert, protocol version (582):
+* error:1400442E:SSL routines:CONNECT_CR_SRVR_HELLO:tlsv1 alert protocol version
+* Closing connection 0
+
+# 验证 TLS v1.1
+$ curl -v -s --tlsv1.1 --tls-max 1.1 https://notes.diguage.com
+*   Trying 120.92.74.139...
+* TCP_NODELAY set
+* Connected to notes.diguage.com (120.92.74.139) port 443 (#0)
+* ALPN, offering h2
+* ALPN, offering http/1.1
+* successfully set certificate verify locations:
+*   CAfile: /etc/ssl/cert.pem
+  CApath: none
+* TLSv1.1 (OUT), TLS handshake, Client hello (1):
+* TLSv1.1 (IN), TLS alert, protocol version (582):
+* error:1400442E:SSL routines:CONNECT_CR_SRVR_HELLO:tlsv1 alert protocol version
+* Closing connection 0
+
+# 验证 TLS v1.2
+$ curl -v -s --tlsv1.2 --tls-max 1.2 https://notes.diguage.com
+*   Trying 120.92.74.139...
+* TCP_NODELAY set
+* Connected to notes.diguage.com (120.92.74.139) port 443 (#0)
+* ALPN, offering h2
+* ALPN, offering http/1.1
+* successfully set certificate verify locations:
+*   CAfile: /etc/ssl/cert.pem
+  CApath: none
+* TLSv1.2 (OUT), TLS handshake, Client hello (1):
+* TLSv1.2 (IN), TLS alert, protocol version (582):
+* error:1400442E:SSL routines:CONNECT_CR_SRVR_HELLO:tlsv1 alert protocol version
+* Closing connection 0
+
+# 验证 TLS v1.3
+$ curl -v -s --tlsv1.3 --tls-max 1.3 https://notes.diguage.com
+*   Trying 120.92.74.139...
+* TCP_NODELAY set
+* Connected to notes.diguage.com (120.92.74.139) port 443 (#0)
+* LibreSSL was built without TLS 1.3 support
+* Closing connection 0
+----
+
+从上面的测试来看，只有 TLS 1.3 是 OK 的。因为只配置了 TLS 1.3，这和预期是基本一致的。
+
+另外，还可以使用通过在线工具来检查： https://www.ssllabs.com/ssltest/index.html[SSL Server Test (Powered by Qualys SSL Labs)^] 和 https://myssl.com/[SSL/TLS安全评估报告^] 是两个不错的 TLS 评估工具。感兴趣可以自行探索。
+
+
+== 启用 Brotli 压缩
+
+升级完 Nginx 后，就顺手搞了一下 Brotli。上 https://github.com/google/ngx_brotli[google/ngx_brotli: NGINX module for Brotli compression^] 看文档说明，跟着配置就好：
+
+[source,bash,{source_attr}]
+----
+brotli on;
+brotli_comp_level 6;
+brotli_static on;
+brotli_types application/atom+xml application/javascript application/json application/rss+xml
+             application/vnd.ms-fontobject application/x-font-opentype application/x-font-truetype
+             application/x-font-ttf application/x-javascript application/xhtml+xml application/xml
+             font/eot font/opentype font/otf font/truetype image/svg+xml image/vnd.microsoft.icon
+             image/x-icon image/x-win-bitmap text/css text/javascript text/plain text/xml;
+----
+
+配置完成后，重启 Nginx，然后检查是否生效：
+
+[source,bash,{source_attr}]
+----
+$ curl -IL https://notes.diguage.com -H "Accept-Encoding: br"
+HTTP/2 200
+server: nginx/1.20.1
+date: Mon, 07 Feb 2022 03:25:02 GMT
+content-type: text/html
+last-modified: Wed, 14 Nov 2018 06:04:51 GMT
+vary: Accept-Encoding
+etag: W/"5bebbb03-619"
+expires: Mon, 14 Feb 2022 03:25:02 GMT
+cache-control: max-age=604800
+strict-transport-security: max-age=63072000
+content-encoding: br
+----
+
+看到返回结果中有 `content-encoding: br` 就表示 Brotli 生效了。
+
+这里需要提一点：如果执行的时候报错，可以尝试增加参数 `--tlsv1.3`，再次执行时，也许会提示不支持 TLS 1.3，此时就需要升级 `curl` 了。
+
+== 参考资料
+
+. https://www.how2shout.com/linux/upgrade-ubuntu-16-04-lts-to-20-04-lts-using-command-terminal/[How to Upgrade Ubuntu 16.04 LTS to 20.04 LTS using command terminal^]
+. https://www.linuxcapable.com/how-to-install-upgrade-latest-nginx-mainline-stable-on-ubuntu-20-04/#option-2-ondrej-sury-ppa-nginx-installation[Install/Update/Upgrade Nginx Mainline/Stable on Ubuntu 20.04 LTS^]
+. https://www.atlantic.net/dedicated-server-hosting/how-to-install-brotli-module-for-nginx-on-ubuntu-20-04/[How to install Brotli Module for Nginx on Ubuntu 20.04 | Atlantic.Net^]
+. https://github.com/google/ngx_brotli[google/ngx_brotli: NGINX module for Brotli compression^]
+. https://quixdb.github.io/squash-benchmark/[Squash Compression Benchmark^] -- 一个很有意思的压缩对比汇总网站。
+. https://quixdb.github.io/squash-benchmark/unstable/[Squash Compression Benchmark^]
+. http://mattmahoney.net/dc/text.html[Large Text Compression Benchmark^] -- 另外一个非常详细的对比测试，看历史记录，应该是从 2006年一直做到现在。给这个持久性点赞！
+. https://sites.google.com/site/powturbo/home[lzturbo^] -- 一个貌似很吊的压缩库。但是，几乎没见在哪里用过。
+. https://serverspace.io/support/help/configure-http-2-in-nginx-ubuntu-20-04/[How to Configure HTTP/2 in Nginx on Ubuntu 20.04^]
+. https://www.nocentino.com/posts/2021-05-20-testing-for-specific-versions-of-tls-protocols-using-curl/[Testing for Specific Versions of TLS Protocols Using curl^]
+
