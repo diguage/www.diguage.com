@@ -104,7 +104,9 @@ https://stackoverflow.com/a/67631812/951836[php - What's the purpose of ppa:ondr
 
 == 启用 HTTP2
 
-HTTP2 协议是在 2015年05月发布的： https://datatracker.ietf.org/doc/html/rfc7540[RFC 7540 - Hypertext Transfer Protocol Version 2 (HTTP/2)^]。Nginx 从 1.9.5 开始支持 HTTP2。不过，由于 HTTP2 只支持 HTTPS。所以，这算是使用 HTTP2 的先决条件。好在 Let’s Encrypt 可以免费获得 HTTPS 证书，这个已经提前配置完成了。
+HTTP2 协议是在 2015年05月发布的： https://datatracker.ietf.org/doc/html/rfc7540[RFC 7540 - Hypertext Transfer Protocol Version 2 (HTTP/2)^]。Nginx 从 1.9.5 开始支持 HTTP2。关于 HTTP2 的效果，可以查看世界知名 CDN 厂商推出的在线演示： https://http2.akamai.com/demo[HTTP/2: the Future of the Internet^]。
+
+有一点需要说明一下，由于 HTTP2 只支持 HTTPS。所以，这算是使用 HTTP2 的先决条件。好在 Let’s Encrypt 可以免费获得 HTTPS 证书，这个已经提前配置完成了。
 
 启用 HTTP2 比较简单，只需要修改 Nginx 的配置文件，增加 `http2` 即可：
 
@@ -133,6 +135,8 @@ accept-ranges: bytes
 ----
 
 看到 `HTTP/2` 就表示 HTTP2 启用成功了。
+
+另外，还可以通过在线工具： https://http2.pro/[HTTP2.Pro - Check server & client HTTP/2, ALPN, and NPN support online.^] 和 https://gf.dev/http2-test[HTTP/2 Test Tool^] 来检查，感兴趣的小伙伴，自行玩耍。
 
 == 启用 TLS 1.3
 
