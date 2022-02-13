@@ -21,3 +21,7 @@ $RECYCLE.BIN/
 
 *.pdf
 .idea
+
+.hugo_build.lock
+
+*.html

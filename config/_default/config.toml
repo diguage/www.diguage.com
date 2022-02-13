@@ -65,3 +65,7 @@ pygmentsUseClasses = true
   weight = 40
   identifier = "categories"
   url = "/categories/"
+
+[security]
+  [security.exec]
+    allow = ['^dart-sass-embedded$', '^go$', '^npx$', '^postcss$', '^asciidoctor']

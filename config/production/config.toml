@@ -61,3 +61,7 @@ googleAnalytics = "UA-32893826-1" # Enable Google Analytics by entering your tra
   weight = 40
   identifier = "categories"
   url = "/categories/"
+
+[security]
+  [security.exec]
+    allow = ['^dart-sass-embedded$', '^go$', '^npx$', '^postcss$', '^asciidoctor']
