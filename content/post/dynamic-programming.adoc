@@ -9,6 +9,14 @@ tags: ["算法","动态规划","分治","递归","书籍"]
 weight: 1
 ---
 
+:source-highlighter: pygments
+:pygments-style: monokai
+:pygments-linenums-mode: table
+:source_attr: indent=0,subs="attributes,verbatim,quotes,macros"
+:image_attr: align=center,width=100%
+:icons: font
+
+
 [TIP]
 ====
 本篇文章是 D瓜哥 读《算法导论》的读书笔记。记录下来是为了方便整理思路，以便啃下“动态规划”这块骨头。

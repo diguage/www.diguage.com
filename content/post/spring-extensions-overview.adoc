@@ -19,6 +19,8 @@ weight: 1
 :pygments-style: monokai
 :pygments-linenums-mode: table
 :source_attr: indent=0,subs="attributes,verbatim,quotes,macros"
+:image_attr: align=center,width=100%
+:icons: font
 
 学习 Spring 代码，最重要的是掌握 Spring 有哪些扩展点，可以利用这些扩展点对 Spring 做什么扩展操作。说得更具体一点，如果自己开发一个框架，如何与 Spring 进行整合，如果对 Spring 的扩展点有一个比较清晰的认识，势必会事半功倍。
 

@@ -13,8 +13,10 @@ weight: 1
 :source-highlighter: pygments
 :pygments-style: monokai
 :pygments-linenums-mode: table
-:source_attr: indent=0,subs="attributes,verbatim,quotes"
-:image_attr: align=center
+:source_attr: indent=0,subs="attributes,verbatim,quotes,macros"
+:image_attr: align=center,width=100%
+:icons: font
+
 
 对分布式锁耳熟能详。不过，一直关注的是基于 Redis 实现的分布式锁。知道 ZooKeeper 也可以实现分布式锁。但是，原来的想法是把 Redis 那个思路切换到 ZooKeeper 上来实现就好。今天了解到 Apache Curator 内置了分布式锁的实现： `InterProcessMutex`。查看了一下源码实现，发现跟基于 Redis 实现的源码相比，在思路上还是有很大不同的。所以，特别作文记录一下。
 

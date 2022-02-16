@@ -19,7 +19,8 @@ weight: 1
 :pygments-style: monokai
 :pygments-linenums-mode: table
 :source_attr: indent=0,subs="attributes,verbatim,quotes,macros"
-:image_attr: align=center
+:image_attr: align=center,width=100%
+:icons: font
 
 循环依赖在编程中是一个常见问题（当然，这并不是最佳实践）。并且，Spring 如何解决循环依赖这个问题在面试中也经常见。下面，D瓜哥就从源码的层面深入剖析一下这个问题。
 

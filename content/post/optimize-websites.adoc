@@ -13,8 +13,9 @@ weight: 1
 :source-highlighter: pygments
 :pygments-style: monokai
 :pygments-linenums-mode: table
-:source_attr: indent=0,subs="attributes,verbatim,quotes"
-:image_attr: align=center
+:source_attr: indent=0,subs="attributes,verbatim,quotes,macros"
+:image_attr: align=center,width=100%
+:icons: font
 
 前几年应大势所趋，使用 Let’s Encrypt 给所有网站都上了 HTTPS。因为去年年中把博客托管到 GitHub 上了，导致一起申请 HTTPS 证书的站点无法按时更新证书。所以，所有证书都过期了。前几天有朋友发消息问我，Byte Buddy 的中文文档是不是我搞的？正好借机把证书更新了一下。
 

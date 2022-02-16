@@ -15,6 +15,7 @@ weight: 1
 :pygments-linenums-mode: table
 :source_attr: indent=0,subs="attributes,verbatim,quotes,macros"
 :image_attr: align=center,width=100%
+:icons: font
 
 
 在一个项目开量验证过程中，发现 createDate 字段不正确，比正确时间晚了十四个小时。调研发现，这是一个非常典型的问题。现在把定位问题的思路和解决办法给大家做个分享。

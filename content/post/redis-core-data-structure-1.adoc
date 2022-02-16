@@ -18,7 +18,9 @@ weight: 1
 :source-highlighter: pygments
 :pygments-style: monokai
 :pygments-linenums-mode: table
-:source_attr: indent=0,subs="attributes,verbatim"
+:source_attr: indent=0,subs="attributes,verbatim,quotes,macros"
+:image_attr: align=center,width=100%
+:icons: font
 
 Redis 目前是使用最广泛的缓存中间件。其突出特点就是支持多种常见的数据结构。对比 JDK 集合类的实现，Redis 的实现表现出很多独到之处，很多地方设计得别具匠心。下面就来简要介绍一下。
 

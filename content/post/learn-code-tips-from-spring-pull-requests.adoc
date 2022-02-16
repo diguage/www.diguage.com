@@ -13,6 +13,9 @@ weight: 1
 :source-highlighter: pygments
 :pygments-style: monokai
 :pygments-linenums-mode: table
+:source_attr: indent=0,subs="attributes,verbatim,quotes,macros"
+:image_attr: align=center,width=100%
+:icons: font
 
 D瓜哥经常关注 Spring 的 PR 与 Issue。在众多 Contributor 中，除了 Spring 团队成员之外，我对 https://github.com/stsypanov[stsypanov (Сергей Цыпанов)^] 印象很深刻。这哥们给 Spring 提了非常多的 PR，请看列表 https://github.com/spring-projects/spring-framework/pulls?page=1&q=author%3Astsypanov+is%3Aclosed[Pull requests · spring-projects/spring-framework^]，而且这个哥们的 PR 都非常有特点，绝大部分是性能提升方面的 PR，而且还会给出 JMH 的测试结果。不愧是毛熊人，做事细致严谨。
 

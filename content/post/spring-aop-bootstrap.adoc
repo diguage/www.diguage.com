@@ -18,6 +18,9 @@ weight: 1
 :source-highlighter: pygments
 :pygments-style: monokai
 :pygments-linenums-mode: table
+:source_attr: indent=0,subs="attributes,verbatim,quotes,macros"
+:image_attr: align=center,width=100%
+:icons: font
 
 在上一篇文章 https://www.diguage.com/post/spring-aop-process-overview/[Spring AOP 处理流程概述^] 中，对 Spring AOP 有了一个整体认识。这篇文章就带大家做一个细致的源码分析。
 

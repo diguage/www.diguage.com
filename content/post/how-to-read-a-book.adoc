@@ -9,6 +9,11 @@ thumbnail: "images/books/how-to-read-a-book.jpg"
 weight: 1
 ---
 
+:source-highlighter: pygments
+:pygments-style: monokai
+:pygments-linenums-mode: table
+:source_attr: indent=0,subs="attributes,verbatim,quotes,macros"
+:image_attr: align=center,width=100%
 :icons: font
 
 D瓜哥在 https://www.diguage.com/post/goodbye-2019-hello-2020/#how-to-read-a-book[“告别 2019，迎接 2020”^] 中已经提过，今年的一个重要改进就是把书读透，学以致用，不求速度但求质量。并且，还提到要重读《如何阅读一本书》和《如何有效阅读一本书》，以求提高读书技能，把书读透。

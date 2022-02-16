@@ -13,6 +13,10 @@ weight: 1
 :source-highlighter: pygments
 :pygments-style: monokai
 :pygments-linenums-mode: table
+:source_attr: indent=0,subs="attributes,verbatim,quotes,macros"
+:image_attr: align=center,width=100%
+:icons: font
+
 
 在 https://www.diguage.com/post/dive-into-spring-core-data-structure-bean-definition/[深入剖析 Spring 核心数据结构：BeanDefinition^] 中，介绍了 `BeanDefinition`。网上很多文章介绍 `BeanDefinition` 的 API，D瓜哥却要反其道而行之，从内部属性来分析一下。下面我们开始。
 

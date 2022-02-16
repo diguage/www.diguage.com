@@ -13,8 +13,10 @@ weight: 1
 :source-highlighter: pygments
 :pygments-style: monokai
 :pygments-linenums-mode: table
-:source_attr: indent=0,subs="attributes,verbatim,quotes"
-:image_attr: align=center
+:source_attr: indent=0,subs="attributes,verbatim,quotes,macros"
+:image_attr: align=center,width=100%
+:icons: font
+
 
 在上一篇文章 https://www.diguage.com/post/distributed-lock-apache-curator-interprocessmutex/[分布式锁之 Apache Curator InterProcessMutex] 中介绍了基于 ZooKeeper 实现的互斥锁。除此之外，还可以实现读写锁。这篇文章就来简要介绍一下 `InterProcessReadWriteLock` 的实现原理。
 

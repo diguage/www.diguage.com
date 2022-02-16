@@ -19,6 +19,9 @@ weight: 1
 :source-highlighter: pygments
 :pygments-style: monokai
 :pygments-linenums-mode: table
+:source_attr: indent=0,subs="attributes,verbatim,quotes,macros"
+:image_attr: align=center,width=100%
+:icons: font
 
 在 https://www.diguage.com/post/spring-startup-process-overview/[Spring 启动流程概述^] 中，分析了 Spring 的启动流程。本文就来说明一下 Spring Bean 整个生命周期。如果有不清楚的地方，可以参考上文的“附录：启动日志”。
 

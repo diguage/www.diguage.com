@@ -19,6 +19,8 @@ weight: 1
 :pygments-style: monokai
 :pygments-linenums-mode: table
 :source_attr: indent=0,subs="attributes,verbatim,quotes,macros"
+:image_attr: align=center,width=100%
+:icons: font
 
 
 在上一篇文章 https://www.diguage.com/post/spring-extensions-overview/[Spring 扩展点概览及实践^] 中介绍了 Spring 内部存在的扩展点。学以致用，现在来分析一下 Spring 与 MyBATIS 的整合流程。
