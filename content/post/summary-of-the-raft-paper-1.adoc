@@ -81,7 +81,7 @@ ____
 Replicated state machines are used to solve a variety of fault tolerance problems in distributed systems.
 
 [quote]
-Ex-amples of replicated state machines include <<chubby>> and <<zookeeper>>.
+Examples of replicated state machines include <<chubby>> and <<zookeeper>>.
 
 [quote]
 Replicated state machines are typically implementedusing a replicated log, as shown in Figure 1. Each serverstores a log containing a series of commands, which itsstate machine executes in order. Each log contains thesame commands in the same order, so each state ma-chine processes the same sequence of commands.
@@ -100,7 +100,7 @@ Consensus algorithms for practical systems typicallyhave the following propertie
 * They ensure **safety**(never returning an incorrect result) under all non-Byzantine conditions, includingnetwork delays, partitions, and packet loss, duplication, and reordering.
 * They are fully functional (**available**) as long as anymajority of the servers are operational and can communicate with each other and with clients.
 * They do not depend on timing to ensure the consistency of the logs: faulty clocks and extreme messagedelays can, at worst, cause availability problems.
-* In the common case, a command can complete assoon as a majority of the cluster has responded to asingle round of remote procedure calls; a minority ofslow servers need not impact overall system perfor-mance.
+* In the common case, a command can complete assoon as a majority of the cluster has responded to asingle round of remote procedure calls; a minority ofslow servers need not impact overall system performance.
 ____
 
 最后一点到时没有想到。推敲一下，确实如此，响应快的多数派机器已经达成共识，返回客户端结果了。效应慢的机器，只要跟在后面跑就好。
@@ -137,7 +137,7 @@ Each implementation begins with Paxos, discovers the difficulties in implementin
 
 [quote, The Chubby lock service for loosely-coupled distributed systems]
 ____
-There are significant gaps between the description ofthe Paxos algorithm and the needs of a real-worldsystem. . . . the final system will be based on an un-proven protocol.
+There are significant gaps between the description ofthe Paxos algorithm and the needs of a real-world system. . . . the final system will be based on an unproven protocol.
 ____
 
 有机会把 <<chubby>> 的论文也读一下。
