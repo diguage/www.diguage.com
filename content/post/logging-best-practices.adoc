@@ -5,7 +5,7 @@ draft: false
 keywords: ["软件工程","系统架构","开发工具",]
 categories: ["软件工程","系统架构","开发工具"]
 tags: ["架构","源码分析","最佳实践"]
-thumbnail: "images/logging/java-logging-icon.svg"
+thumbnail: "images/logging/java-logging-icon.png"
 
 weight: 1
 ---
