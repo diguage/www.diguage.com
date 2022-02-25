@@ -13,6 +13,8 @@ weight: 1
 
 * https://www.diguage.com/post/the-simple-things-in-investment-1/[《投资中最简单的事》之读书笔记（一）：投资理念^]
 * https://www.diguage.com/post/the-simple-things-in-investment-2/[《投资中最简单的事》之读书笔记（二）：投资方法^]
+* https://www.diguage.com/post/the-simple-things-in-investment-3/[《投资中最简单的事》之读书笔记（三）：投资风险^]
+* https://www.diguage.com/post/the-simple-things-in-investment-4/[《投资中最简单的事》之读书笔记（四）：投资心理学^]
 
 == 第二部分　投资方法
 
@@ -100,7 +102,7 @@ weight: 1
 *如何在合适的时候加仓？*
 
 * 第一种办法是看估值。
-* 第二种办法，是根据各种指标之间的领先和滞后关系进行分析（具体请参读本书第 10章）。
+* 第二种办法，是根据各种指标之间的领先和滞后关系进行分析（具体请参读 https://www.diguage.com/post/the-simple-things-in-investment-3/#chapter-10[本书第 10章：四种周期、三种杠杆，行业轮动时机的把握^]）。 
 * 第三种办法，是根据对市场情绪的把握和逆向思考进行分析。
 
 “表弟指标”
