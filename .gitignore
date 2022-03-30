@@ -25,3 +25,5 @@ $RECYCLE.BIN/
 .hugo_build.lock
 
 *.html
+
+.vscode/
