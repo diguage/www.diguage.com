@@ -134,9 +134,9 @@ D瓜哥把上面的规则几乎全部试用了一遍，把发现的一些需要�
             <version>3.5.0</version>
           </requireMavenVersion>
           <requireJavaVersion>
-            <version>${java.version}</version>
+            <version>1.8</version>
             <message>
-              <![CDATA[You are running an older version of Java. This application requires at least JDK ${java.version}.]]>
+              <![CDATA[You are running an older version of Java. This application requires at least JDK 1.8.]]>
             </message>
           </requireJavaVersion>
         </rules>
