@@ -1,0 +1,302 @@
+---
+title: "Java 日志框架性能测试"
+date: 2022-04-01T11:17:10+08:00
+draft: true
+keywords: ["Java","logging","performance","JMH","log4j","logback","slf4j","log4j2","disruptor"]
+tags: [""]
+categories: ["Java","系统架构","软件工程","程序设计"]
+thumbnail: "images/logging/performancew-space.png"
+
+weight: 1
+---
+
+:source-highlighter: pygments
+:pygments-style: monokai
+:pygments-linenums-mode: table
+:source_attr: indent=0,subs="attributes,verbatim,quotes,macros"
+:image_attr: align=center
+
+// image::/images/[title="",alt="",{image_attr}]
+
+// [source%nowrap,java,{source_attr}]
+// ----
+// // code
+// ----
+
+== 站在巨人的肩膀上
+
+=== log4j 2 提供的性能测试
+
+. 筛选一个日志框架时，除功能要求之外，稳定性 reliability 和性能 performance 也是重要考虑指标。
+. 性能测试的标准有很多标准，或者说有很多指标需要衡量
+.. 峰值吞吐量 peak throughput，短时间，突然爆发的超大流量导致的超多日志输出。比如批处理，比如大促
+.. 最大持续吞吐量 maximum sustained throughput，这是很长一段时间的平均吞吐量。这是度量日志吞吐量上限的比较有用的指标。
+.. 在流量抖动下的响应时间 response time，相应时间包含服务时间 service time 和等待时间 wait time。通常，服务时间变化很小；但等待时间会随着负载的增加而增大。
+. 未完待续
+
+=== logback 提供的性能测试
+
+在被 log4j 2 追着打的情况下，logback 终于坐不住了，也推出了自己的性能测试报告： https://logback.qos.ch/performance.html[Logback Throughput Benchmark^]。
+
+这个 logback 的性能测试的讨论，有些点提的非常好：
+
+* 即使异步 Appender 也要考虑机器的物理极限，不能一味施压，超越极限也会是同步。
+* 从测试结果上来看，极限施压的情况下（JMH肯定是拼命转），异步日志并不比同步日志快。这里就有一个疑问：**在正常的场景下，异步比同步快吗？**
+* 从官方提供的测试数据上来看，logback 1.3.x 比 log4j 快很多。但从 log4j 2 的测试数据上来看，log4j 2 比 logback 1.2.3 快很多。这样就有如下几个问题：
+** 如果双方的数据都可靠，logback 1.3.x 比 1.2.x 做了哪些改进？才使得 1.3.x 的性能得到如此大的突飞猛进？
+** 如果双方不可靠，哪方的数据更值得信赖？双方又都有什么猫腻？
+** logback 说异步比同步慢；而 log4j 2 的测试数据显示，异步比同步快，这又是为什么？双方为何有如此大的数据差异？
+
+
+
+== 基于 FileAppender 的极限性能测试
+
+logback-perf 提供的 https://github.com/ceki/logback-perf/blob/master/src/main/java/ch/qos/logback/perf/FileAppenderBenchmark.java[logback-perf/FileAppenderBenchmark.java^] 性能测试代码，私以为写的很棒，直接拿来主义，做了一些微调，如下：
+
+[source%nowrap,java,{source_attr}]
+----
+package org.diguage.perf.logging;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.openjdk.jmh.annotations.*;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.util.concurrent.TimeUnit;
+
+/**
+ * 日志框架的 FileAppender 性能测试
+ * <p>
+ * D瓜哥 · https://www.diguage.com/ · 出品
+ */
+@State(Scope.Benchmark)
+public class FileAppenderBenchmark {
+    public static final String MESSAGE = "This is a debug message";
+    public static final String LOGBACK_FILE_PATH = "target/test-output/logback-perf.log";
+    public static final String LOG4J2_FILE_PATH = "target/test-output/log4j2-perf.log";
+    public static final String LOG4J_FILE_PATH = "target/test-output/log4j-perf.log";
+
+    Logger log4j2Logger;
+    org.slf4j.Logger slf4jLogger;
+    org.apache.log4j.Logger log4j1Logger;
+    java.util.logging.Logger julLogger;
+    String outFolder = "";
+
+
+    @Setup
+    public void setUp() throws Exception {
+        System.setProperty("log4j.configurationFile", "log4j2-perf.xml");
+        System.setProperty("logback.configurationFile", "logback-perf.xml");
+        System.setProperty("log4j.configuration", "log4j-perf.xml");
+
+        outFolder = System.getProperty("outFolder", "");
+
+        deleteLogFiles();
+
+        String loggerName = this.getClass().getName();
+
+        log4j2Logger = LogManager.getLogger(loggerName);
+        slf4jLogger = LoggerFactory.getLogger(loggerName);
+        log4j1Logger = org.apache.log4j.Logger.getLogger(loggerName);
+
+    }
+
+    @TearDown
+    public void tearDown() {
+        System.clearProperty("log4j.configurationFile");
+        System.clearProperty("log4j.configuration");
+        System.clearProperty("logback.configurationFile");
+
+        deleteLogFiles();
+    }
+
+    private void deleteLogFiles() {
+        final File logbackFile = new File(LOGBACK_FILE_PATH);
+        logbackFile.delete();
+
+        final File log4jFile = new File(LOG4J_FILE_PATH);
+        log4jFile.delete();
+
+        final File log4j2File = new File(LOG4J2_FILE_PATH);
+        log4j2File.delete();
+    }
+
+    @BenchmarkMode(Mode.Throughput)
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    @Benchmark
+    public void log4j2File() {
+        log4j2Logger.debug(MESSAGE);
+    }
+
+    @BenchmarkMode(Mode.Throughput)
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    @Benchmark
+    public void logbackFile() {
+        slf4jLogger.debug(MESSAGE);
+    }
+
+    @BenchmarkMode(Mode.Throughput)
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    @Benchmark
+    public void log4j1File() {
+        log4j1Logger.debug(MESSAGE);
+    }
+}
+----
+
+== log4j 2 日志配置调整
+
+由 Ceki Gülcü（log4j1、logback、slf4j 之父）提供的 log4j 2 的配置（ https://github.com/ceki/logback-perf/blob/master/src/main/resources/log4j2-perf.xml[logback-perf/log4j2-perf.xml^] ）如下：
+
+[source%nowrap,xml,{source_attr}]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Licensed to the Apache Software Foundation (ASF) under one or more contributor 
+  license agreements. See the NOTICE file distributed with this work for additional 
+  information regarding copyright ownership. The ASF licenses this file to 
+  You under the Apache License, Version 2.0 (the "License"); you may not use 
+  this file except in compliance with the License. You may obtain a copy of 
+  the License at http://www.apache.org/licenses/LICENSE-2.0 Unless required 
+  by applicable law or agreed to in writing, software distributed under the 
+  License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS 
+  OF ANY KIND, either express or implied. See the License for the specific 
+  language governing permissions and limitations under the License. -->
+<!-- D瓜哥 · https://www.diguage.com/ · 出品 -->
+<Configuration name="log4j2PerfTest" status="error">
+  <Appenders>
+    <!-- D瓜哥注：这个地方不知道为何使用 RandomAccessFile？ -->
+    <!-- 在 log4j 2 提供的配置中，使用了 <File> 的配置。 -->
+    <RandomAccessFile name="RandomAccessFile"
+      fileName="target/test-output/log4j2-perf.log" immediateFlush="false"
+      append="false">
+      <PatternLayout>
+        <Pattern>%d %p [%t] %logger - %m%n</Pattern>
+      </PatternLayout>
+    </RandomAccessFile>
+  </Appenders>
+  <Loggers>
+    <Root level="debug">
+      <AppenderRef ref="RandomAccessFile" />
+    </Root>
+  </Loggers>
+</Configuration>
+----
+
+对于这个配置文件，D瓜哥有一个疑问：在 `<Appenders>` 中为什么使用 `<RandomAccessFile>`？我检查了由 log4j 2 提供的性能测试的配置（ https://github.com/apache/logging-log4j2/blob/release-2.x/log4j-perf/src/main/resources/log4j2-perf2.xml[logging-log4j2/log4j2-perf2.xml^] ），它使用了 `<File>`，详情如下：
+
+[source%nowrap,xml,{source_attr}]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+
+-->
+<!-- D瓜哥 · https://www.diguage.com/ · 出品 -->
+<Configuration name="XMLPerfTest" status="OFF">
+  <Appenders>
+    <File name="TestLogfile" fileName="target/testlog4j2.log" immediateFlush="false">
+      <PatternLayout>
+        <Pattern>%d %5p [%t] %c{1} %X{transactionId} - %m%n</Pattern>
+      </PatternLayout>
+    </File>
+  </Appenders>
+  <Loggers>
+    <Root level="error">
+      <AppenderRef ref="TestLogfile"/>
+    </Root>
+  </Loggers>
+</Configuration>
+----
+
+个人觉得，使用 `<File>` 更为妥帖，毕竟 log4j 2 不会坑自己！另外，检查 logback-perf 提供的日志配置的 `<Pattern>` 会发现，它的各个日志框架的 Pattern 设置输出结果是更接近。所有，我将两者结合起来，使用 logback-perf 提供的 Pattern 配置 + 使用 log4j2-perf 提供的整体配置结构，最后的配置如下：
+
+[source%nowrap,xml,{source_attr}]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+<!-- D瓜哥 · https://www.diguage.com/ · 出品 -->
+<Configuration name="XMLPerfTest" status="OFF">
+  <Appenders>
+    <File name="TestLogfile" fileName="target/testlog4j2.log" immediateFlush="false">
+      <PatternLayout>
+        <Pattern>%d %p [%t] %logger - %m%n</Pattern>
+      </PatternLayout>
+    </File>
+  </Appenders>
+  <Loggers>
+    <Root level="debug">
+      <AppenderRef ref="TestLogfile"/>
+    </Root>
+  </Loggers>
+</Configuration>
+----
+
+== 所有日志配置的 `immediateFlush` 和 `append` 为 `true`
+
+检查了 logback-perf 给出的日志配置文件，发现 log4j、log4j2 和 logback 的 `immediateFlush` 和 `append` 的配置都是 `false`。但是，现实中，很少见到有人将这两个值设置为 `false`，甚至大家很少见到设置。查看了 logback 和 Log4j2 的文档，默认值都是 `true`。所以，将其改为 `true`，这样更符合大多数人的开发习惯。
+
+[source%nowrap,{source_attr}]
+----
+Benchmark                           Mode  Cnt    Score    Error   Units
+FileAppenderBenchmark.log4j1File   thrpt   25  224.621 ± 23.044  ops/ms
+FileAppenderBenchmark.log4j2File   thrpt   25  247.714 ±  7.226  ops/ms
+FileAppenderBenchmark.logbackFile  thrpt   25  246.425 ± 11.009  ops/ms
+----
+
+从这个测试结果来看，logback 和 log4j2 的性能差别不大，都比 log4j 要好一些，但也没有拉开明显的差距。
+
+== 所有日志配置的 `immediateFlush` 改为 `false`
+
+将 `immediateFlush` 的配置改为 `false`，测试结果如下：
+
+[source%nowrap,{source_attr}]
+----
+FileAppenderBenchmark.log4j1File   thrpt   25   996.354 ±  35.244  ops/ms
+FileAppenderBenchmark.log4j2File   thrpt   25  1201.551 ±  89.206  ops/ms
+FileAppenderBenchmark.logbackFile  thrpt   25  1308.199 ± 105.860  ops/ms
+----
+
+从测试结果来看，将 `immediateFlush` 的配置改为 `false` 后，各个日志框架的性能都得到了质的飞越，性能翻了很多倍！尤其是 logback，更是原来的 六倍。
+
+== 所有日志配置的 `immediateFlush` 和 `append` 为 `true`
+
+将 `immediateFlush` 和 `append` 都改为 `true`：
+
+[source%nowrap,{source_attr}]
+----
+Benchmark                           Mode  Cnt     Score     Error   Units
+FileAppenderBenchmark.log4j1File   thrpt   25   978.946 ±  74.856  ops/ms
+FileAppenderBenchmark.log4j2File   thrpt   25  1166.808 ±  90.929  ops/ms
+FileAppenderBenchmark.logbackFile  thrpt   25  1222.961 ± 102.764  ops/ms
+----
+
+== 启用
