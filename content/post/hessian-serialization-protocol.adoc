@@ -1,0 +1,822 @@
+---
+title: "Hessian 2.0 序列化协议"
+date: 2022-04-20T17:30:08+08:00
+draft: false
+keywords: ["Hessian"]
+tags: ["Java","微服务","架构","设计"]
+categories: ["系统架构","程序设计"]
+thumbnail: "images/common/coat-of-arms-of-hesse.svg"
+
+weight: 1
+---
+
+:icons: font
+:source-highlighter: pygments
+:pygments-style: monokai
+:pygments-linenums-mode: table
+:source_attr: indent=0,subs="attributes,verbatim,quotes,macros"
+:image_attr: align=center
+
+
+公司在微服务系统中，序列化协议大多数使用 https://msgpack.org/[MessagePack^]。但是，由于 MessagePack 设计限制，导致微服务接口在增减参数时，只能在最后操作。但是，由于个人操作，难免失误，结果造成因为增减字段导致的事故层出不穷。最近，一些条件成熟，准备推动部门将序列化协议切换到 Hessian。
+
+原以为，切换到 Hessian 就可以万事大吉。但是，在和同事的沟通中发现，同事反馈，Hessian 本身也有一些限制。为了对 Hessian 有一个更深入的了解，干脆就把 Hessian 序列化协议读一遍。看协议，文字不多，干脆就把协议完整翻译一遍。闲言少叙，正文开始。
+
+
+'''
+
+Hessian 2.0 序列化协议
+
+:sectnums:
+
+== 简介
+
+Hessian 是一种设计用于面向对象传输的，动态类型的，二进制序列化 Web 服务协议。
+
+== 设计目标
+
+Hessian 是动态类型的，紧凑，跨语言的。
+
+Hessian 协议有如下设计目标：
+
+* 它必须自我描述序列化类型，即不需要外部架构或接口定义。
+* 它必须是语言独立的，同时支持脚本语言。
+* 它必须一次性读取或者写入。
+* 它必须尽可能紧凑。
+* 它必须简单，以便可以有效地测试和实施。
+* 它必须尽可能快。
+* 它必须支持 Unicode 字符串。
+* 它必须支持8位二进制数据而不必转义或使用附件。
+* 它必须支持加密，压缩，签名和事务上下文信封。
+
+== Hessian 语法
+
+序列化语法
+
+[source%nowrap,{source_attr}]
+----
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+---------------------------------------------------------------------------
+
+           # 开始
+top        ::= value
+
+           # 8-bit 编码的二进制数据，分割为 64k 的 chunks
+binary     ::= x41 b1 b0 <binary-data> binary # 非结尾 chunk
+           ::= 'B' b1 b0 <binary-data>        # 结尾 chunk
+           ::= [x20-x2f] <binary-data>        # 长度为 0-15 的二进制数据
+           ::= [x34-x37] <binary-data>        # 长度为 0-1023 的二进制数据
+
+           # 布尔 true/false
+boolean    ::= 'T'
+           ::= 'F'
+
+           # 对象定义 (紧凑映射)
+class-def  ::= 'C' string int string*
+
+           # 自 epoch（1970-01-01 00:00:00 UTC）以来的毫秒数，用 64 bit 编码
+date       ::= x4a b7 b6 b5 b4 b3 b2 b1 b0
+           # 自 epoch（1970-01-01 00:00:00 UTC）以来的分钟数，用 32 bit 编码
+           ::= x4b b3 b2 b1 b0       
+
+           # 64-bit IEEE double 双精度浮点类型
+double     ::= 'D' b7 b6 b5 b4 b3 b2 b1 b0
+           ::= x5b                   # 0.0
+           ::= x5c                   # 1.0
+           ::= x5d b0                # byte 转化的 double (-128.0 to 127.0)
+           ::= x5e b1 b0             # short 转化的 double
+           ::= x5f b3 b2 b1 b0       # 32-bit float 单精度浮点数转化的 double
+
+           # 32-bit 有符合整数
+int        ::= 'I' b3 b2 b1 b0
+           ::= [x80-xbf]             # -x10 to x3f
+           ::= [xc0-xcf] b0          # -x800 to x7ff
+           ::= [xd0-xd7] b1 b0       # -x40000 to x3ffff
+
+           # list/vector
+list       ::= x55 type value* 'Z'   # 可变长度链表，类似 List
+	       ::= 'V' type int value*   # 固定长度链表，类似 数组
+           ::= x57 value* 'Z'        # 可变长度的无类型链表
+           ::= x58 int value*        # 固定长度的无类型链表
+	       ::= [x70-77] type value*  # 固定长度的有类型链表
+	       ::= [x78-7f] value*       # 固定长度的无类型链表 
+           // TODO 最后一种和倒数第三种有什么区别？
+
+           # 64-bit 有符号长整型
+long       ::= 'L' b7 b6 b5 b4 b3 b2 b1 b0
+           ::= [xd8-xef]             # -x08 to x0f
+           ::= [xf0-xff] b0          # -x800 to x7ff
+           ::= [x38-x3f] b1 b0       # -x40000 to x3ffff
+           ::= x59 b3 b2 b1 b0       # 32-bit integer cast to long
+
+           # map/object 哈希或对象
+map        ::= 'M' type (value value)* 'Z'  # key, value 哈希键值对
+	       ::= 'H' (value value)* 'Z'       # 无类型 key, value 键值对
+
+           # null 值
+null       ::= 'N'
+
+           # Object 实例
+object     ::= 'O' int value*
+	       ::= [x60-x6f] value*
+
+           # 值引用 (例如循环树或图)
+ref        ::= x51 int            # reference to nth map/list/object
+
+           # UTF-8 编码的字符串，分割为 64k 的 chunk
+string     ::= x52 b1 b0 <utf8-data> string  # non-final chunk
+           ::= 'S' b1 b0 <utf8-data>         # 长度为 0-65535 的字符串
+           ::= [x00-x1f] <utf8-data>         # 长度为 0-31   的字符串
+           ::= [x30-x34] <utf8-data>         # 长度为 0-1023 的字符串
+
+           # 用于面向对象语言的 map/list 类型
+type       ::= string                        # 类型名称
+           ::= int                           # 类型引用
+
+           # main production
+value      ::= null
+           ::= binary
+           ::= boolean
+           ::= class-def value
+           ::= date
+           ::= double
+           ::= int
+           ::= list
+           ::= long
+           ::= map
+           ::= object
+           ::= ref
+           ::= string
+
+---------------------------------------------------------------------------
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+----
+
+== 序列化协议
+
+Hessian 的对象序列化支持八种基本类型：
+
+. 原始二进制数据（`binary`）
+. 布尔型（`boolean`）
+. 64-bit 毫秒日期类型（`date`）
+. 64-bit 双精度浮点型（`double`） 
+. 32-bit 整型（`int`）
+. 64-bit 长整型（`long`）
+. `null`
+. UTF-8 编码的字符串（`string`）
+
+同时，还支持三种递归类型（`recursive type`）：
+
+. 支持链表（`list`）和数组（`array`）的 `list` 
+. 支持哈希（`map`）和字典（`dictionary`）的 `map`
+. 支持对象的 `object`
+
+最后，还支持一种特殊的构件：
+
+. 支持共享和循环引用的 `ref`
+
+Hessian 2.0 又增加了三种内部引用映射：
+
+. 一种 object/list 引用映射
+. 一种类定义引用映射
+. 一种类型（类名）引用映射
+
+
+=== 二进制数据
+
+二进制语法：
+
+[source%nowrap,{source_attr}]
+----
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+---------------------------------------------------------------------------
+
+binary ::= b b1 b0 <binary-data> binary
+       ::= B b1 b0 <binary-data>
+       ::= [x20-x2f] <binary-data>
+
+---------------------------------------------------------------------------
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+----
+
+二进制数据编码在 chunk 里面。字节 `x42`（`B`）表示结尾 chunk，字节 `x62`（`b`）表示任何非结尾 chunk。每个 chunk 有一个 16-bit 的长度值.
+
+len = 256 * b1 + b0 
+
+NOTE: 这里的说明不是很明确，以后有机会结合实例来研究一下。
+
+==== 压缩：简短二进制数据
+
+==== 二进制示例
+
+[source%nowrap,{source_attr}]
+----
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+---------------------------------------------------------------------------
+
+x20               # zero-length binary data
+
+x23 x01 x02 x03   # 3 octet data
+
+B x10 x00 ....    # 4k final chunk of data
+
+b x04 x00 ....    # 1k non-final chunk of data
+
+---------------------------------------------------------------------------
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+----
+
+=== 布尔型数据
+
+[source%nowrap,{source_attr}]
+----
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+---------------------------------------------------------------------------
+
+boolean ::= T
+        ::= F
+
+---------------------------------------------------------------------------
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+----
+
+==== 布尔型示例
+
+[source%nowrap,{source_attr}]
+----
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+---------------------------------------------------------------------------
+
+T   # true
+F   # false
+
+---------------------------------------------------------------------------
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+----
+
+=== 日期类型数据
+
+[source%nowrap,{source_attr}]
+----
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+---------------------------------------------------------------------------
+
+date ::= x4a b7 b6 b5 b4 b3 b2 b1 b0
+     ::= x4b b4 b3 b2 b1 b0
+
+---------------------------------------------------------------------------
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+----
+
+==== 日期示例
+
+[source%nowrap,{source_attr}]
+----
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+---------------------------------------------------------------------------
+
+x4a x00 x00 x00 xd0 x4b x92 x84 xb8   # 09:51:31 May 8, 1998 UTC
+
+x4b x4b x92 x0b xa0                   # 09:51:00 May 8, 1998 UTC
+
+---------------------------------------------------------------------------
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+----
+
+=== 浮点类型数据
+
+[source%nowrap,{source_attr}]
+----
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+---------------------------------------------------------------------------
+
+double ::= D b7 b6 b5 b4 b3 b2 b1 b0
+       ::= x5b
+       ::= x5c
+       ::= x5d b0
+       ::= x5e b1 b0
+       ::= x5f b3 b2 b1 b0
+
+---------------------------------------------------------------------------
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+----
+
+==== 浮点类型示例
+
+[source%nowrap,{source_attr}]
+----
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+---------------------------------------------------------------------------
+
+x5b          # 0.0
+x5c          # 1.0
+
+x5d x00      # 0.0
+x5d x80      # -128.0
+x5d x7f      # 127.0
+
+x5e x00 x00  # 0.0
+x5e x80 x00  # -32768.0
+x5e x7f xff  # 32767.0
+
+D x40 x28 x80 x00 x00 x00 x00 x00  # 12.25
+
+---------------------------------------------------------------------------
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+----
+
+=== 整数类型数据
+
+[source%nowrap,{source_attr}]
+----
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+---------------------------------------------------------------------------
+
+int ::= 'I' b3 b2 b1 b0
+    ::= [x80-xbf]
+    ::= [xc0-xcf] b0
+    ::= [xd0-xd7] b1 b0
+
+---------------------------------------------------------------------------
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+----
+
+==== 整数示例
+
+[source%nowrap,{source_attr}]
+----
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+---------------------------------------------------------------------------
+
+x90                # 0
+x80                # -16
+xbf                # 47
+
+xc8 x00            # 0
+xc0 x00            # -2048
+xc7 x00            # -256
+xcf xff            # 2047
+
+xd4 x00 x00        # 0
+xd0 x00 x00        # -262144
+xd7 xff xff        # 262143
+
+I x00 x00 x00 x00  # 0
+I x00 x00 x01 x2c  # 300
+
+---------------------------------------------------------------------------
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+----
+
+=== 链表数据
+
+[source%nowrap,{source_attr}]
+----
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+---------------------------------------------------------------------------
+
+list ::= x55 type value* 'Z'   # variable-length list
+     ::= 'V' type int value*   # fixed-length list
+     ::= x57 value* 'Z'        # variable-length untyped list
+     ::= x58 int value*        # fixed-length untyped list
+     ::= [x70-77] type value*  # fixed-length typed list
+     ::= [x78-7f] value*       # fixed-length untyped list
+
+---------------------------------------------------------------------------
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+----
+
+==== 链表示例
+
+[source%nowrap,{source_attr}]
+----
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+---------------------------------------------------------------------------
+
+V                    # fixed length, typed list
+  x04 [int           # encoding of int[] type
+  x92                # length = 2
+  x90                # integer 0
+  x91                # integer 1
+
+---------------------------------------------------------------------------
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+----
+
+
+[source%nowrap,{source_attr}]
+----
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+---------------------------------------------------------------------------
+
+x57                  # variable-length, untyped
+  x90                # integer 0
+  x91                # integer 1
+  Z
+
+---------------------------------------------------------------------------
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+----
+
+[source%nowrap,{source_attr}]
+----
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+---------------------------------------------------------------------------
+
+x72                # typed list length=2
+  x04 [int         # type for int[] (save as type #0)
+  x90              # integer 0
+  x91              # integer 1
+
+x73                # typed list length = 3
+  x90              # type reference to int[] (integer #0)
+  x92              # integer 2
+  x93              # integer 3
+  x94              # integer 4
+
+---------------------------------------------------------------------------
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+----
+
+=== 长整数类型数据
+
+[source%nowrap,{source_attr}]
+----
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+---------------------------------------------------------------------------
+
+long ::= L b7 b6 b5 b4 b3 b2 b1 b0
+     ::= [xd8-xef]
+     ::= [xf0-xff] b0
+     ::= [x38-x3f] b1 b0
+     ::= x4c b3 b2 b1 b0
+
+---------------------------------------------------------------------------
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+----
+
+==== 示例
+
+[source%nowrap,{source_attr}]
+----
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+---------------------------------------------------------------------------
+
+xe0                  # 0
+xd8                  # -8
+xef                  # 15
+
+xf8 x00              # 0
+xf0 x00              # -2048
+xf7 x00              # -256
+xff xff              # 2047
+
+x3c x00 x00          # 0
+x38 x00 x00          # -262144
+x3f xff xff          # 262143
+
+x4c x00 x00 x00 x00  # 0
+x4c x00 x00 x01 x2c  # 300
+
+L x00 x00 x00 x00 x00 x00 x01 x2c  # 300
+
+---------------------------------------------------------------------------
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+----
+
+=== 哈希
+
+[source%nowrap,{source_attr}]
+----
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+---------------------------------------------------------------------------
+
+map        ::= M type (value value)* Z
+
+---------------------------------------------------------------------------
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+----
+
+==== 哈希示例
+
+[source%nowrap,{source_attr}]
+----
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+---------------------------------------------------------------------------
+
+map = new HashMap();
+map.put(new Integer(1), "fee");
+map.put(new Integer(16), "fie");
+map.put(new Integer(256), "foe");
+
+---
+
+H           # untyped map (HashMap for Java)
+  x91       # 1
+  x03 fee   # "fee"
+
+  xa0       # 16
+  x03 fie   # "fie"
+
+  xc9 x00   # 256
+  x03 foe   # "foe"
+
+  Z
+
+---------------------------------------------------------------------------
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+----
+
+[source%nowrap,{source_attr}]
+----
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+---------------------------------------------------------------------------
+
+public class Car implements Serializable {
+  String color = "aquamarine";
+  String model = "Beetle";
+  int mileage = 65536;
+}
+
+---
+M
+  x13 com.caucho.test.Car  # type
+
+  x05 color                # color field
+  x0a aquamarine
+
+  x05 model                # model field
+  x06 Beetle
+
+  x07 mileage              # mileage field
+  I x00 x01 x00 x00
+  Z
+
+---------------------------------------------------------------------------
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+----
+
+=== `null`
+
+[source%nowrap,{source_attr}]
+----
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+---------------------------------------------------------------------------
+
+null ::= N
+
+---------------------------------------------------------------------------
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+----
+
+=== 对象
+
+[source%nowrap,{source_attr}]
+----
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+---------------------------------------------------------------------------
+
+class-def  ::= 'C' string int string*
+
+object     ::= 'O' int value*
+           ::= [x60-x6f] value*
+
+---------------------------------------------------------------------------
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+----
+
+==== 示例
+
+[source%nowrap,{source_attr}]
+----
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+---------------------------------------------------------------------------
+
+class Car {
+  String color;
+  String model;
+}
+
+out.writeObject(new Car("red", "corvette"));
+out.writeObject(new Car("green", "civic"));
+
+---
+
+C                        # object definition (#0)
+  x0b example.Car        # type is example.Car
+  x92                    # two fields
+  x05 color              # color field name
+  x05 model              # model field name
+
+O                        # object def (long form)
+  x90                    # object definition #0
+  x03 red                # color field value
+  x08 corvette           # model field value
+
+x60                      # object def #0 (short form)
+  x05 green              # color field value
+  x05 civic              # model field value
+
+---------------------------------------------------------------------------
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+----
+
+[source%nowrap,{source_attr}]
+----
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+---------------------------------------------------------------------------
+
+enum Color {
+  RED,
+  GREEN,
+  BLUE,
+}
+
+out.writeObject(Color.RED);
+out.writeObject(Color.GREEN);
+out.writeObject(Color.BLUE);
+out.writeObject(Color.GREEN);
+
+---
+
+C                         # class definition #0
+  x0b example.Color       # type is example.Color
+  x91                     # one field
+  x04 name                # enumeration field is "name"
+
+x60                       # object #0 (class def #0)
+  x03 RED                 # RED value
+
+x60                       # object #1 (class def #0)
+  x90                     # object definition ref #0
+  x05 GREEN               # GREEN value
+
+x60                       # object #2 (class def #0)
+  x04 BLUE                # BLUE value
+
+x51 x91                   # object ref #1, i.e. Color.GREEN
+
+---------------------------------------------------------------------------
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+----
+
+=== 引用
+
+[source%nowrap,{source_attr}]
+----
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+---------------------------------------------------------------------------
+
+ref ::= x51 int
+
+---------------------------------------------------------------------------
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+----
+
+==== 引用示例
+
+[source%nowrap,{source_attr}]
+----
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+---------------------------------------------------------------------------
+
+list = new LinkedList();
+list.data = 1;
+list.tail = list;
+
+---
+C
+  x0a LinkedList
+  x92
+  x04 head
+  x04 tail
+
+o x90      # object stores ref #0
+  x91      # data = 1
+  x51 x90  # next field refers to itself, i.e. ref #0
+
+---------------------------------------------------------------------------
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+----
+
+=== 字符串类型数据
+
+[source%nowrap,{source_attr}]
+----
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+---------------------------------------------------------------------------
+
+string ::= x52 b1 b0 <utf8-data> string
+       ::= S b1 b0 <utf8-data>
+       ::= [x00-x1f] <utf8-data>
+       ::= [x30-x33] b0 <utf8-data>
+
+---------------------------------------------------------------------------
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+----
+
+==== 字符串示例
+
+[source%nowrap,{source_attr}]
+----
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+---------------------------------------------------------------------------
+
+x00                 # "", empty string
+x05 hello           # "hello"
+x01 xc3 x83         # "\u00c3"
+
+S x00 x05 hello     # "hello" in long form
+
+x52 x00 x07 hello,  # "hello, world" split into two chunks
+  x05 world
+
+
+---------------------------------------------------------------------------
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+----
+
+=== 类型
+
+[source%nowrap,{source_attr}]
+----
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+---------------------------------------------------------------------------
+
+type ::= string
+     ::= int
+
+---------------------------------------------------------------------------
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+----
+
+=== 压缩：类型引用
+
+== 引用哈希
+
+== 字节码映射
+
+[source%nowrap,{source_attr}]
+----
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+---------------------------------------------------------------------------
+
+x00 - x1f    # utf-8 string length 0-32
+x20 - x2f    # binary data length 0-16
+x30 - x33    # utf-8 string length 0-1023
+x34 - x37    # binary data length 0-1023
+x38 - x3f    # three-octet compact long (-x40000 to x3ffff)
+x40          # reserved (expansion/escape)
+x41          # 8-bit binary data non-final chunk ('A')
+x42          # 8-bit binary data final chunk ('B')
+x43          # object type definition ('C')
+x44          # 64-bit IEEE encoded double ('D')
+x45          # reserved
+x46          # boolean false ('F')
+x47          # reserved
+x48          # untyped map ('H')
+x49          # 32-bit signed integer ('I')
+x4a          # 64-bit UTC millisecond date
+x4b          # 32-bit UTC minute date
+x4c          # 64-bit signed long integer ('L')
+x4d          # map with type ('M')
+x4e          # null ('N')
+x4f          # object instance ('O')
+x50          # reserved
+x51          # reference to map/list/object - integer ('Q')
+x52          # utf-8 string non-final chunk ('R')
+x53          # utf-8 string final chunk ('S')
+x54          # boolean true ('T')
+x55          # variable-length list/vector ('U')
+x56          # fixed-length list/vector ('V')
+x57          # variable-length untyped list/vector ('W')
+x58          # fixed-length untyped list/vector ('X')
+x59          # long encoded as 32-bit int ('Y')
+x5a          # list/map terminator ('Z')
+x5b          # double 0.0
+x5c          # double 1.0
+x5d          # double represented as byte (-128.0 to 127.0)
+x5e          # double represented as short (-32768.0 to 327676.0)
+x5f          # double represented as float
+x60 - x6f    # object with direct type
+x70 - x77    # fixed list with direct length
+x78 - x7f    # fixed untyped list with direct length
+x80 - xbf    # one-octet compact int (-x10 to x3f, x90 is 0)
+xc0 - xcf    # two-octet compact int (-x800 to x7ff)
+xd0 - xd7    # three-octet compact int (-x40000 to x3ffff)
+xd8 - xef    # one-octet compact long (-x8 to xf, xe0 is 0)
+xf0 - xff    # two-octet compact long (-x800 to x7ff, xf8 is 0)
+
+---------------------------------------------------------------------------
+//                  D瓜哥 · https://www.diguage.com/ · 出品               //
+----
+
+:!sectnums:
+
+== 趣闻
+
+在搜索 Hessian 时，维基百科直接有一个词条： https://en.wikipedia.org/wiki/Hessian[Hessian - Wikipedia^]，上面有一个解释是：Hessian 是黑森人的意思，表示生活在 https://en.wikipedia.org/wiki/Hesse[德国黑森州^] 的居民。在对应的维基百科词条 https://en.wikipedia.org/wiki/Hesse[Hesse - Wikipedia^] 上，看到了表示这个州的徽章，感觉很有意思，就那这张照片做头图了。
+
+== 参考资料
+
+. http://hessian.caucho.com/doc/hessian-serialization.html[Hessian 2.0 Serialization Protocol^]
