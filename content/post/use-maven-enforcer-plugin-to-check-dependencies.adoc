@@ -10,6 +10,7 @@ thumbnail: "images/java/maven-logo.svg"
 weight: 1
 ---
 
+:icons: font
 :source-highlighter: pygments
 :pygments-style: monokai
 :pygments-linenums-mode: table
