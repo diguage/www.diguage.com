@@ -25,7 +25,8 @@ weight: 1
 
 '''
 
-Hessian 2.0 序列化协议
+[.text-center]
+== [.big]##**Hessian 2.0 序列化协议**##
 
 :sectnums:
 
@@ -858,6 +859,8 @@ xf0 - xff    # two-octet compact long (-x800 to x7ff, xf8 is 0)
 ---------------------------------------------------------------------------
 //                  D瓜哥 · https://www.diguage.com/ · 出品               //
 ----
+
+'''
 
 :!sectnums:
 
