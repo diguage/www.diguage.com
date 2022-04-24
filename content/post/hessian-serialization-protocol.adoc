@@ -182,7 +182,7 @@ Hessian 2.0 又增加了三种内部引用映射：
 . 一种类定义引用映射
 . 一种类型（类名）引用映射
 
-
+[#binary]
 === 二进制数据
 
 二进制语法：
@@ -233,6 +233,7 @@ b x04 x00 ....    # 1k non-final chunk of data
 //                  D瓜哥 · https://www.diguage.com/ · 出品               //
 ----
 
+[#boolean]
 === 布尔型数据
 
 布尔型语法：
@@ -265,6 +266,7 @@ F   # false
 //                  D瓜哥 · https://www.diguage.com/ · 出品               //
 ----
 
+[#date]
 === 日期类型数据
 
 日期语法：
@@ -302,6 +304,7 @@ x4b x4b x92 x0b xa0                   # 09:51:00 May 8, 1998 UTC
 //                  D瓜哥 · https://www.diguage.com/ · 出品               //
 ----
 
+[#double]
 === 浮点类型数据
 
 浮点数语法：
@@ -372,6 +375,7 @@ D x40 x28 x80 x00 x00 x00 x00 x00  # 12.25
 //                  D瓜哥 · https://www.diguage.com/ · 出品               //
 ----
 
+[#int]
 === 整数类型数据
 
 整数语法：
@@ -389,6 +393,28 @@ int ::= 'I' b3 b2 b1 b0
 ---------------------------------------------------------------------------
 //                  D瓜哥 · https://www.diguage.com/ · 出品               //
 ----
+
+这是 32 位有符号整数。一个整数使用一个字节 `x49`（`I`），再跟 4 个字节且以大端法表示的数字。
+
+value = (b3 << 24) + (b2 << 16) + (b1 << 8) + b0;
+
+==== 紧凑：单字节整数
+
+-16 ~ 47 的整数，可以用一个字节编码，并且头字节编码是从 `x80` 到 `xBF`。
+
+value = code - 0x90
+
+==== 紧凑：双字节整数
+
+-2048 ~ 2047 的整数，可以用两个字节编码，并且头字节编码是从 `xC0` 到 `xCF`。
+
+value = ((code - 0xc8) << 8) + b0;
+
+==== 紧凑：三字节整数
+
+-262144 ~ 262143 的整数，可以用三个字节编码，并且头字节是从 `xD0` 到 `xD7`。
+
+value = ((code - 0xd4) << 16) + (b1 << 8) + b0;
 
 ==== 整数示例
 
@@ -417,7 +443,10 @@ I x00 x00 x01 x2c  # 300
 //                  D瓜哥 · https://www.diguage.com/ · 出品               //
 ----
 
+[#list]
 === 链表数据
+
+链表语法：
 
 [source%nowrap,{source_attr}]
 ----
@@ -434,6 +463,16 @@ list ::= x55 type value* 'Z'   # variable-length list
 ---------------------------------------------------------------------------
 //                  D瓜哥 · https://www.diguage.com/ · 出品               //
 ----
+
+一个有序链表，比如数组。两种链表分别是定长链表（注：比如数组）和变长链表（注：比如 `List`）。这两种链表都有一个类型。这个类型可以是一个能够被服务识别的 UTF-8 字符串。
+
+每个列表项都被添加到引用列表中，以处理共享和循环元素。参见 <<ref, ref>> 元素。
+
+任何需要列表的解析器还必须接受空引用或共享引用。
+
+类型的有效值没必要一定在本文档中指定，这取决于特定的应用程序。例如，使用带有静态类型的语言实现的公开 Hessian 服务，可以使用类型信息实例化特定的数组类型。另一方面，用动态类型语言编写的服务器可能会完全忽略类型的内容，而创建一个泛型数组。
+
+==== 紧凑：定长链表
 
 ==== 链表示例
 
@@ -487,6 +526,7 @@ x73                # typed list length = 3
 //                  D瓜哥 · https://www.diguage.com/ · 出品               //
 ----
 
+[#long]
 === 长整数类型数据
 
 [source%nowrap,{source_attr}]
@@ -533,6 +573,7 @@ L x00 x00 x00 x00 x00 x00 x01 x2c  # 300
 //                  D瓜哥 · https://www.diguage.com/ · 出品               //
 ----
 
+[#map]
 === 哈希
 
 [source%nowrap,{source_attr}]
@@ -605,6 +646,7 @@ M
 //                  D瓜哥 · https://www.diguage.com/ · 出品               //
 ----
 
+[#null]
 === `null`
 
 [source%nowrap,{source_attr}]
@@ -618,6 +660,7 @@ null ::= N
 //                  D瓜哥 · https://www.diguage.com/ · 出品               //
 ----
 
+[#object]
 === 对象
 
 [source%nowrap,{source_attr}]
@@ -709,6 +752,7 @@ x51 x91                   # object ref #1, i.e. Color.GREEN
 //                  D瓜哥 · https://www.diguage.com/ · 出品               //
 ----
 
+[#ref]
 === 引用
 
 [source%nowrap,{source_attr}]
@@ -748,7 +792,9 @@ o x90      # object stores ref #0
 //                  D瓜哥 · https://www.diguage.com/ · 出品               //
 ----
 
+[#string]
 === 字符串类型数据
+
 
 [source%nowrap,{source_attr}]
 ----
@@ -763,6 +809,10 @@ string ::= x52 b1 b0 <utf8-data> string
 ---------------------------------------------------------------------------
 //                  D瓜哥 · https://www.diguage.com/ · 出品               //
 ----
+
+字符串 chunk 可能不会拆分替代对。
+
+NOTE: 这里的说明不是很明确，以后有机会结合实例来研究一下。
 
 ==== 字符串示例
 
@@ -785,6 +835,7 @@ x52 x00 x07 hello,  # "hello, world" split into two chunks
 //                  D瓜哥 · https://www.diguage.com/ · 出品               //
 ----
 
+[#type]
 === 类型
 
 [source%nowrap,{source_attr}]
@@ -799,6 +850,7 @@ type ::= string
 //                  D瓜哥 · https://www.diguage.com/ · 出品               //
 ----
 
+[#type-ref]
 === 压缩：类型引用
 
 == 引用哈希
