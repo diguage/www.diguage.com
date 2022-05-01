@@ -157,30 +157,30 @@ value      ::= null
 
 Hessian 的对象序列化支持八种基本类型：
 
-. 原始二进制数据（`binary`）
-. 布尔型（`boolean`）
-. 64-bit 毫秒日期类型（`date`）
-. 64-bit 双精度浮点型（`double`） 
-. 32-bit 整型（`int`）
-. 64-bit 长整型（`long`）
-. `null`
-. UTF-8 编码的字符串（`string`）
+. 原始 <<binary>>（`binary`）
+. <<boolean>>（`boolean`）
+. 64位 毫秒 <<date>>（`date`）
+. 64位 双精度 <<double>>（`double`） 
+. 32位 <<int>>（`int`）
+. 64位 <<long>>（`long`）
+. <<null>>（`null`）
+. UTF-8 编码的 <<string>>（`string`）
 
 同时，还支持三种递归类型（`recursive type`）：
 
-. 支持链表（`list`）和数组（`array`）的 `list` 
-. 支持哈希（`map`）和字典（`dictionary`）的 `map`
-. 支持对象的 `object`
+. 支持链表（`list`）和数组（`array`）的 <<list>> （`list`）
+. 支持哈希（`map`）和字典（`dictionary`）的 <<map>>（ `map`）
+. 支持对象的 <<object>>（`object`）。
 
 最后，还支持一种特殊的构件：
 
-. 支持共享和循环引用的 `ref`
+. 支持共享和循环引用的 <<ref>>（`ref`）。
 
 Hessian 2.0 又增加了三种内部引用映射：
 
-. 一种 object/list 引用映射
-. 一种类定义引用映射
-. 一种类型（类名）引用映射
+. <<ref-map, 一种 object/list 引用映射>>
+. <<class-map, 一种类定义引用映射>>
+. <<type-map, 一种类型（类名）引用映射>>
 
 [#binary]
 === 二进制数据
@@ -881,6 +881,7 @@ o x90      # object stores ref #0
 [#string]
 === 字符串类型数据
 
+字符串语法：
 
 [source%nowrap,{source_attr}]
 ----
@@ -896,9 +897,20 @@ string ::= x52 b1 b0 <utf8-data> string
 //                  D瓜哥 · https://www.diguage.com/ · 出品               //
 ----
 
+以 UTF-8 编码的16位 Unicode 字符串。字符串被编码成块。`x53`（`S`）表示最终块，`x52`（`R`）表示任何非最终块。每个块有一个 16 位无符号整型长度值。
+
+长度为 16 位字符的个数，可能与字节数不同。
+
 字符串 chunk 可能不会拆分替代对。
 
 NOTE: 这里的说明不是很明确，以后有机会结合实例来研究一下。
+
+==== 紧凑：短字符串
+
+长度小于 32 的字符串可以用一个字节长度编码 `[x00-x1f]`。
+
+value = code
+
 
 ==== 字符串示例
 
@@ -913,9 +925,10 @@ x01 xc3 x83         # "\u00c3"
 
 S x00 x05 hello     # "hello" in long form
 
-x52 x00 x07 hello,  # "hello, world" split into two chunks
-  x05 world
+x52 x00 x07 hello,  # "hello, world" split into two chunks 
+    x05 world       # 注：这里是最终块，为啥没有用 S 开头呢？
 
+# 上面的示例中，使用 S 开头，而这里却用 x52 开头，格式上非常不统一。感觉很奇怪！
 
 ---------------------------------------------------------------------------
 //                  D瓜哥 · https://www.diguage.com/ · 出品               //
@@ -923,6 +936,8 @@ x52 x00 x07 hello,  # "hello, world" split into two chunks
 
 [#type]
 === 类型
+
+类型语法：
 
 [source%nowrap,{source_attr}]
 ----
@@ -936,12 +951,54 @@ type ::= string
 //                  D瓜哥 · https://www.diguage.com/ · 出品               //
 ----
 
+<<map> 和 <<list>> 包含一个“类型”属性，用于为面向对象语言，指明哈希和链表的类型名称。
+
+任何一个类型都会被加入到 <<type-map>> 中，以便将来引用。
+
 [#type-ref]
 === 压缩：类型引用
 
-== 引用哈希
+重复的类型字符串可以使用 <<type-map>> 来引用以前使用的类型。解析期间，对于所有的类型，类型引用都是从零开始的。
+
+[#ref-maps]
+== 引用映射
+
+Hessian 2.0 有三个内置的引用映射：
+
+. 一个 哈希/对象/链表 引用映射。
+. 一个类定义映射。
+. 一个类型（类名）映射。
+
+值引用映射允许 Hessian 支持任意图，递归和循环数据结构。
+
+类和类型映射通过避免常见字符串数据的重复来提高 Hessian 效率。
+
+[#ref-map]
+=== 值引用
+
+当 Hessian 在字节码流中遇到任意图形时，它通过添加 <<list>>、 <<object>> 和 <<map>> 来支持这些图形。
+
+解析器必须在遇到每个列表、对象和映射时，必须将它们存储在引用映射中。
+
+存储的对象可以与 <<ref>> 字节码一起使用。
+
+[#class-map]
+=== 类引用
+
+每个 <<object, 对象定义>> 都会自动添加到类映射中。解析器必须在遇到类定义时向类映射添加类定义。后面的对象实例将引用已被定义的类。
+
+[#type-map]
+=== 类型引用
+
+<<map>> 和 <<list>> 值的类型字符串存储在类型映射中以供参考。
+
+解析器必须在遇到类型字符串时向类型映射添加类型字符串。
 
 == 字节码映射
+
+Hessian 被组织为字节码协议。Hessian 反序列化本质上是对其实字节的 `switch` 语句。
+
+字节码编码：
 
 [source%nowrap,{source_attr}]
 ----
@@ -1005,6 +1062,14 @@ xf0 - xff    # two-octet compact long (-x800 to x7ff, xf8 is 0)
 == 趣闻
 
 在搜索 Hessian 时，维基百科直接有一个词条： https://en.wikipedia.org/wiki/Hessian[Hessian - Wikipedia^]，上面有一个解释是：Hessian 是黑森人的意思，表示生活在 https://en.wikipedia.org/wiki/Hesse[德国黑森州^] 的居民。在对应的维基百科词条 https://en.wikipedia.org/wiki/Hesse[Hesse - Wikipedia^] 上，看到了表示这个州的徽章，感觉很有意思，就那这张照片做头图了。
+
+== 后记
+
+经过多天断断续续的尝试，终于在“无疫节”当天，把这篇协议给翻译完了。坦白讲，我觉得有些稀里糊涂。一方便是D瓜哥自身英语水平所限；另外一方面，Hessian 协议有很多言语不详之处，有很多不做实验，根本搞不清楚它说的是啥意思。如有问题，欢迎反馈。
+
+为了便于理解 Hessian 协议，在网上找了找 Hessian 的源码库，似乎源码没有开源。在 http://hessian.caucho.com/#Java[Hessian Binary Web Service Protocol^] 中，提供了 Java 各个版本的源码包，为了方便调试，D瓜哥将其源码下载下来，然后推送到了 GitHub 上： https://github.com/diguage/hessian[diguage/hessian^]，由于是解压的源码包，所以这里没有提交记录，只有各个已经发布版本对应的源代码。感兴趣，也欢迎 Fork。
+
+后续，D瓜哥还会做一些实验，来帮助理解这个协议，敬请期待。
 
 == 参考资料
 
