@@ -2,8 +2,8 @@
 title: "Hessian 2.0 序列化协议（中文版）"
 date: 2022-04-20T17:30:08+08:00
 draft: false
-keywords: ["Hessian"]
-tags: ["Java","微服务","架构","设计"]
+keywords: ["Hessian","序列化","协议","Java","微服务","架构","程序设计"]
+tags: ["Java","微服务","架构","设计","序列化"]
 categories: ["系统架构","程序设计"]
 thumbnail: "images/common/coat-of-arms-of-hesse.svg"
 
@@ -266,6 +266,10 @@ F   # false
 //                  D瓜哥 · https://www.diguage.com/ · 出品               //
 ----
 
+==== 附录：解释与实践
+
+更详细的解释与实践，请移步 https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/#boolean[Hessian 协议解释与实战（一）：布尔型数据^]。
+
 [#date]
 === 日期类型数据
 
@@ -303,6 +307,10 @@ x4b x4b x92 x0b xa0                   # 09:51:00 May 8, 1998 UTC
 ---------------------------------------------------------------------------
 //                  D瓜哥 · https://www.diguage.com/ · 出品               //
 ----
+
+==== 附录：解释与实践
+
+更详细的解释与实践，请移步 https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/#date[Hessian 协议解释与实战（一）：日期类型数据^]。
 
 [#double]
 === 浮点类型数据
@@ -351,6 +359,10 @@ value = (double) (256 * b1 + b0)
 
 与 32位浮点数等价的双精度浮点数，可以用四个字节来表示；通过类型转换，将 `float` 值转化为浮点数。
 
+****
+注：这里的说明非常不严谨。更具体的说明请移步： https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/#double[Hessian 协议解释与实战（一）：浮点类型数据^]。
+****
+
 ==== 浮点类型示例
 
 [source%nowrap,{source_attr}]
@@ -374,6 +386,10 @@ D x40 x28 x80 x00 x00 x00 x00 x00  # 12.25
 ---------------------------------------------------------------------------
 //                  D瓜哥 · https://www.diguage.com/ · 出品               //
 ----
+
+==== 附录：解释与实践
+
+更详细的解释与实践，请移步 https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/#double[Hessian 协议解释与实战（一）：浮点类型数据^]。
 
 [#int]
 === 整数类型数据
@@ -400,19 +416,19 @@ value = (b3 << 24) + (b2 << 16) + (b1 << 8) + b0;
 
 ==== 紧凑：单字节整数
 
--16 ~ 47 的整数，可以用一个字节编码，并且头字节编码是从 `x80` 到 `xBF`。
+-16 ~ 47 的整数，可以用一个字节编码，编码范围是从 `x80` 到 `xBF`。
 
 value = code - 0x90
 
 ==== 紧凑：双字节整数
 
--2048 ~ 2047 的整数，可以用两个字节编码，并且头字节编码是从 `xC0` 到 `xCF`。
+-2048 ~ 2047 的整数，可以用两个字节编码，并且首字节编码是从 `xC0` 到 `xCF`。
 
 value = ((code - 0xc8) << 8) + b0;
 
 ==== 紧凑：三字节整数
 
--262144 ~ 262143 的整数，可以用三个字节编码，并且头字节是从 `xD0` 到 `xD7`。
+-262144 ~ 262143 的整数，可以用三个字节编码，并且首字节是从 `xD0` 到 `xD7`。
 
 value = ((code - 0xd4) << 16) + (b1 << 8) + b0;
 
@@ -442,6 +458,10 @@ I x00 x00 x01 x2c  # 300
 ---------------------------------------------------------------------------
 //                  D瓜哥 · https://www.diguage.com/ · 出品               //
 ----
+
+==== 附录：解释与实践
+
+更详细的解释与实践，请移步 https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/#int[Hessian 协议解释与实战（一）：整数类型数据^]。
 
 [#list]
 === 链表数据
