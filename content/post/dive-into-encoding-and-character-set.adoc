@@ -1,0 +1,210 @@
+---
+title: "细说编码与字符集"
+date: 2022-05-05T09:09:12+08:00
+draft: true
+keywords: ["Unicode","UTF-8","UTF-16","UTF-32","UTF-16BE","UTF-16LE"]
+tags: [""]
+categories: [""]
+thumbnail: "images/encoding/unicode-logo.svg"
+
+weight: 1
+---
+
+:icons: font
+:source-highlighter: pygments
+:pygments-style: monokai
+:pygments-linenums-mode: table
+// :source_attr: indent=0,subs="attributes,verbatim,quotes,macros"
+:source_attr: indent=0,subs="verbatim,macros"
+:image_attr: align=center
+
+image::/images/encoding/utf8-encoding-scheme.svg[title="Unicode 与 UTF-8 的转换",alt="Unicode 与 UTF-8 的转换",{image_attr}]
+
+
+image::/images/encoding/utf16-surrogate-decoder.png[title="UTF-16 surrogate decoder",alt="UTF-16 surrogate decoder",{image_attr}]
+
+
+==  常见字符集之间的转换方法（Unicode、UTF-8、UTF-16、UTF-32 和 GB18030 等）
+
+=== Unicode ↔ / ⇌ UTF-16
+
+https://juejin.cn/post/6844903590155272199[Unicode中UTF-8与UTF-16编码详解 - 掘金^]
+
+
+|===
+|Unicode |UTF-16
+
+| `U+000` ~ `U+FFFF`
+| 2 Byte存储，编码后等于 Unicode 值。
+
+| `U+10000` ~ `U+10FFFF`
+| 4 Byte存储，现将 Unicode 值减去 `0x10000`，得到 20bit 长的值。再将 Unicode 分为高 10 位和低 10 位。UTF-16 编码的高位是 2 Byte，高 10 位 Unicode 范围为 `0` - `0x3FF`，将 Unicode 值加上 `0XD800`，得到高位代理（或称为前导代理，存储高位）；低位也是 2 Byte，低十位 Unicode 范围一样为 `0` ~ `0x3FF`，将 Unicode 值加上 `0xDC00`，得到低位代理（或称为后尾代理，存储低位）。 
+|===
+
+TODO: 
+
+. 为啥要这样处理？
+. 从 Unicode 向 UTF-16 转换时，需要减去 `0x10000`。那么，反向转换时，怎么判断要不要加回去 `0x10000`? 是遇到 `U+Fxxxx` 的情况就加 `0x10000` 吗？ https://en.wikipedia.org/wiki/UTF-16[UTF-16 - Wikipedia^] 有解释，其实不需要判断，只要确定是是两个字符就需要加 `0x10000`？
+. 怎么区分是一个字符？还是两个字符？
+
+[source%nowrap,sql,{source_attr}]
+----
+😂 = U+1f602
+U+1f602 - 0x10000 = 0x0f602
+0x0f602 = 00 0011 1101, 10 0000 0010
+00 0011 1101 + 0XD800 = 00 0011 1101 + 11011000 0000 0000 = 11011000 0011 1101 = d83d
+10 0000 0010 + 0xDC00 = 10 0000 0010 + 11011100 0000 0000 = 11011110 0000 0010 = de02
+
+0010 FFFF - 0x10000 = 0xF FFFF
+----
+
+
+== 常见术语的解释说明
+== 常见乱码及解释
+== vim 编码设置
+== Java的内部表示
+
+Java originally used UCS-2, and added UTF-16 supplementary character support in J2SE 5.0.
+
+https://en.wikipedia.org/wiki/UTF-16[UTF-16 - Wikipedia^] -- 这里说明这个问题了！
+
+== Java Properties 文件的编码
+
+== MySQL 编码问题
+
+http://cenalulu.github.io/linux/character-encoding/[十分钟搞清字符集和字符编码^] -- 这篇文章介绍使用 SQL 来对字体做转码。
+
+[source%nowrap,sql,{source_attr}]
+----
+-- D瓜哥 · https://www.diguage.com · 出品
+-- 查询字符对应的编码
+> select hex(convert('寰堝睂' using gbk));
++-------------------------------------+
+| hex(convert('寰堝睂' using gbk))    |
++-------------------------------------+
+| E5BE88E5B18C                        |
++-------------------------------------+
+
+-- 查询编码在指定字符集下对应的文字。
+> select convert(0xE5BE88E5B18C using utf8);
++------------------------------------+
+| convert(0xE5BE88E5B18C using utf8) |
++------------------------------------+
+| 很屌                               |
++------------------------------------+
+
+-- 尝试了一下，对 Emoji 的支持也可以
+mysql> select hex(convert('D瓜哥' using utf8mb4));
+╔═══════════════════════════════════════╗
+║ hex(convert('D瓜哥' using utf8mb4))   ║
+╟───────────────────────────────────────╢
+║ 44E7939CE593A5                        ║
+╚═══════════════════════════════════════╝
+1 row in set (0.00 sec)
+
+mysql> select convert(0x44E7939CE593A5 using utf8mb4);
+╔═════════════════════════════════════════╗
+║ convert(0x44E7939CE593A5 using utf8mb4) ║
+╟─────────────────────────────────────────╢
+║ D瓜哥                                   ║
+╚═════════════════════════════════════════╝
+1 row in set (0.00 sec)
+
+
+mysql> select CAST('D瓜哥' AS BINARY);
+╔══════════════════════════════════════════════════════╗
+║ CAST('D瓜哥' AS BINARY)                              ║
+╟──────────────────────────────────────────────────────╢
+║ 0x44E7939CE593A5                                     ║
+╚══════════════════════════════════════════════════════╝
+1 row in set (0.00 sec)
+----
+
+TODO: 怎样把字符转成二进制形式？
+
+在 MySQL 中存入 Emoji 表情。
+
+== JavaScript 编码
+
+https://juejin.cn/post/6844903590155272199[Unicode中UTF-8与UTF-16编码详解 - 掘金^]
+
+在JavaScript中，所有的string类型（或者被称为DOMString）都是使用UTF-16编码的。
+
+== 字体的渲染方法（待选）
+
+== 字体相关信息
+. https://juejin.cn/post/6857776757271003150[浅谈计算机字体 - 掘金^]
+. https://www.fontshop.com/glossary[Glossary | FontShop^] -- 字体各种参数说明。
+. https://www.thetype.com/2016/09/10968/[参数化设计与字体战争：从 OpenType 1.8 说起^] -- 写了各种字体技术的发展历史，读起来酣畅淋漓！
+
+
+根据实验以及看到的一些资料，有一个感觉：UTF-8、UTF-16 以及 UTF-32 相互转换时，需要将字符集编码转化成 code point，然后再根据范围转换为对应的编码。
+
+这块的知识还需要用实验来验证！
+
+== Little endian 和 Big endian
+
+这两个古怪的名称来自英国作家斯威夫特的《格列佛游记》。在该书中，小人国里爆发了内战，战争起因是人们争论，吃鸡蛋时究竟是从大头(Big-endian)敲开还是从小头(Little-endian)敲开。为了这件事情，前后爆发了六次战争，一个皇帝送了命，另一个皇帝丢了王位。
+
+第一个字节在前，就是"大头方式"（Big endian），第二个字节在前就是"小头方式"（Little endian）。
+
+那么很自然的，就会出现一个问题：计算机怎么知道某一个文件到底采用哪一种方式编码？
+
+Unicode 规范定义，每一个文件的最前面分别加入一个表示编码顺序的字符，这个字符的名字叫做"零宽度非换行空格"（zero width no-break space），用FEFF表示。这正好是两个字节，而且FF比FE大1。
+
+如果一个文本文件的头两个字节是FE FF，就表示该文件采用大头方式；如果头两个字节是FF FE，就表示该文件采用小头方式。
+
+在 Java 中，使用 `byte[] utf16Bytes = string.getBytes(StandardCharsets.UTF_16);` 获得的字节数组，头两位都是 `FEFF`，这和 Java 的采用大头方式的规范是吻合的。
+
+== BOM
+
+BOM全称Byte Order Mark，字节序标记，除了utf-16之外，utf-8也可以添加bom，它的bom固定为0xEFBBBF，选择编码方式为utf-8 with bom时，生成的文件流中就会出现这个bom。为什么utf-8可以不需要bom呢，因为utf8是变长的，它根据第一个字节信息判断每个字符的长度，不存在正反顺序的问题，我们日常使用的utf-8都是不带bom的。
+
+
+== Java
+Java 中的 char对应的是Unicode的基本平面BMP。Java里的char是编译器里定死了的，它对应的就是BMP，也可以认为是utf-16的2字节部分。
+
+== 如何渲染字体？
+
+首先字体内部是有一个自己的编码号的，用于索引图元（Glyph），但是外界不会知道它。字体内部的各种数据比如 GSUB 和 GPOS 都是用这个索引号编的。
+
+将图元和文字关联起来的东西是 cmap 表，这表的格式十分多，用来支持不同的外部编码：最常用的 UCS-2 外部编码（FontForge 里面称 UnicodeBMP）使用 Format 4，UCS-4 外部编码（FontForge 称 UnicodeFull）使用 Format 8、Format 12 等。
+
+然后是绘图的时候，WINAPI 或者其他的 API 会对文字编码进行转换。我记得 Windows 是默认把其他编码转换成 UTF16LE 的。
+
+Windows 里分为两种类型的编码系统，其实就是两个系统编码函数，用于转换字符串为unicode，一个是 codepage，这个是可以在系统中切换语言选项中进行切换的，代表当前的位于unicode表中的第几页，另一个是UTF-16的小端序，这个是自windows 2000 之后就开始内核(Window NT)内置的一个编码，因为当时没有utf-8，所以选择这个编码作为了内核的内置编码。
+
+对于上层软件来说，需要通过utf 或者 iso 等等上层复合编码转换成系统支持的编码 然后根据charcode 去字体系统里取字形, 每一个字体都提供一个charMap，然后系统中用charcode去里边筛选，找出glyph图元，然后再交给软件渲染
+
+https://www.zhihu.com/question/29924586[字符编码与字体的关系是什么？ - 知乎^]
+
+
+== 参考资料
+
+. https://www.joelonsoftware.com/2003/10/08/the-absolute-minimum-every-software-developer-absolutely-positively-must-know-about-unicode-and-character-sets-no-excuses/[The Absolute Minimum Every Software Developer Absolutely, Positively Must Know About Unicode and Character Sets (No Excuses!) – Joel on Software^]
+. 
+. https://en.wikipedia.org/wiki/Unicode[Unicode - Wikipedia^]
+. https://en.wikipedia.org/wiki/UTF-8[UTF-8 - Wikipedia^]
+. https://en.wikipedia.org/wiki/Code_point[Code point - Wikipedia^]
+. https://en.wikipedia.org/wiki/List_of_Unicode_characters[List of Unicode characters - Wikipedia^]
+. https://www.unicode.org/charts/unihangridindex.html[Unihan Database^]
+. https://www.unicode.org/versions/Unicode14.0.0/[Unicode 14.0.0^]
+. https://www.unicode.org/charts/index.html[Unicode 14.0 Character Code Charts^]
+. https://en.wikipedia.org/wiki/Latin-script_alphabet[Latin-script alphabet - Wikipedia^]
+. http://www.unicode.org/faq/utf_bom.html#gen7[FAQ - UTF-8, UTF-16, UTF-32 & BOM^]
+. https://docs.oracle.com/javase/specs/jls/se17/html/jls-3.html#jls-3.1[Java Language Specification: Chapter 3. Lexical Structure^]
+. http://www.unicode.org/notes/tn23/[UTN #23: To the BMP and Beyond^]
+. http://www.unicode.org/notes/tn23/Muller-Slides+Narr.pdf[To the BMP and beyond!-Eric Muller^]
+. https://stackoverflow.com/questions/2241348/what-are-unicode-utf-8-and-utf-16[encoding - What are Unicode, UTF-8, and UTF-16? - Stack Overflow^]
+. https://www.ssec.wisc.edu/~tomw/java/unicode.html[Unicode Chart^] -- 费了很大劲，找了一个比较全的 Unicode Code Point。美中不足的时，没有展示出来 UTF-8、UTF-16 等编码。
+. https://www.unicode.org/cgi-bin/GetUnihanData.pl?codepoint=%E7%93%9C[Unihan data for U+74DC^] -- 可以直接在这个页面上查找相关文字的编码信息。有一个地方有待改进，就是对 Emoji 表情支持的不好。尝试了一下查找 Emoji 表情，直接提示报错了。
+. https://unicode.org/emoji/charts/full-emoji-list.html[Full Emoji List, v14.0^] -- 这里有一个 Emoji 表情的完整列表。
+. https://blog.hackerpie.com/posts/text-processing/character-sets-and-encoding-formats/[Unicode？UTF-8？GBK？……聊聊字符集和字符编码格式^]
+. https://www.jianshu.com/p/eb5b568d9eea[一次性搞懂字符集，编码，Unicode，Utf-8/16，BOM... - 简书^]
+. https://www.ruanyifeng.com/blog/2007/10/ascii_unicode_and_utf-8.html[字符编码笔记：ASCII，Unicode 和 UTF-8 - 阮一峰的网络日志^]
+. https://pcedu.pconline.com.cn/empolder/gj/other/0505/616631_all.html#content_page_2[程序员趣味读物：谈谈Unicode编码-太平洋电脑网^]
+. https://blog.hackerpie.com/posts/text-processing/character-sets-and-encoding-formats/[Unicode？UTF-8？GBK？……聊聊字符集和字符编码格式^]
+. https://unicode.org/roadmaps/bmp/[Roadmap to the BMP^] -- 从这里也可以看出，除了 BMP，其余还有 https://www.unicode.org/roadmaps/smp/[SMP^]、 https://www.unicode.org/roadmaps/sip/[SIP^]、 https://www.unicode.org/roadmaps/tip/[TIP^]、 https://www.unicode.org/roadmaps/tip/[TIP^] 和 https://www.unicode.org/roadmaps/ssp/[SSP^]。不止部分文章描述的只有 BMP 和 SMP 两个平面。看样子，以后可能还会有其他的什么 Plane。（中间从 4 到 13 的序号是空着的。）
+. https://en.wikipedia.org/wiki/Plane_(Unicode)[Plane (Unicode) - Wikipedia^]
+. https://github.com/ww898/utf-cpp#utf-8-conversion-table[UTF-8/16/32 C++ library^]
+
