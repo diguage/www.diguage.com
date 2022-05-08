@@ -26,26 +26,42 @@ image::/images/encoding/utf16-surrogate-decoder.png[title="UTF-16 surrogate deco
 
 ==  常见字符集之间的转换方法（Unicode、UTF-8、UTF-16、UTF-32 和 GB18030 等）
 
+=== ASCII 码
+
+计算机起源于美国，他们对英语字符与二进制位之间的对应关系做了统一规定，并制定了一套字符编码规则，这套编码规则被称为 American Standard Code for Information Interchange，简称为 ASCII 编码
+
+ASCII 编码一共定义了128个字符的编码规则，用七位二进制表示（`0x00` - `0x7F`）, 这些字符组成的集合就叫做 ASCII 字符集。完整列表如下：
+
+image::/images/encoding/ascii-table.svg[alt="ASCII Table",{image_attr}]
+
+ASCII 码可以说是现在所有编码的鼻祖。
+
+ASCII 是 American Standard Code for Information Interchange 的简称，定义了128个字符的编码规则，其字符集合叫 ASCII 字符集。
+
 === Unicode ↔ / ⇌ UTF-16
 
 https://juejin.cn/post/6844903590155272199[Unicode中UTF-8与UTF-16编码详解 - 掘金^]
 
 
+[cols="1,2a"]
 |===
 |Unicode |UTF-16
 
-| `U+000` ~ `U+FFFF`
+| `U ∈ [U+0000, U+D7FF]` or `U ∈ [U+E000, U+FFFF]`
 | 2 Byte存储，编码后等于 Unicode 值。
 
 | `U+10000` ~ `U+10FFFF`
-| 4 Byte存储，现将 Unicode 值减去 `0x10000`，得到 20bit 长的值。再将 Unicode 分为高 10 位和低 10 位。UTF-16 编码的高位是 2 Byte，高 10 位 Unicode 范围为 `0` - `0x3FF`，将 Unicode 值加上 `0XD800`，得到高位代理（或称为前导代理，存储高位）；低位也是 2 Byte，低十位 Unicode 范围一样为 `0` ~ `0x3FF`，将 Unicode 值加上 `0xDC00`，得到低位代理（或称为后尾代理，存储低位）。 
+| 
+. 4 Byte存储，现将 Unicode 值减去 `0x10000`，得到 20bit 长的值。再将 Unicode 分为高 10 位和低 10 位。
+. UTF-16 编码的高位是 2 Byte，高 10 位 Unicode 范围为 `0` - `0x3FF`，将 Unicode 值加上 `0XD800`，得到高位代理（或称为前导代理，存储高位）；
+. 低位也是 2 Byte，低十位 Unicode 范围一样为 `0` ~ `0x3FF`，将 Unicode 值加上 `0xDC00`，得到低位代理（或称为后尾代理，存储低位）。 
 |===
 
 TODO: 
 
 . 为啥要这样处理？
 . 从 Unicode 向 UTF-16 转换时，需要减去 `0x10000`。那么，反向转换时，怎么判断要不要加回去 `0x10000`? 是遇到 `U+Fxxxx` 的情况就加 `0x10000` 吗？ https://en.wikipedia.org/wiki/UTF-16[UTF-16 - Wikipedia^] 有解释，其实不需要判断，只要确定是是两个字符就需要加 `0x10000`？
-. 怎么区分是一个字符？还是两个字符？
+. 怎么区分是一个字符？还是两个字符？:[U+D800, U+DFFF] 之间的编码没有分配，留给两个字符的编码做前缀使用：[0xD800, 0xDBFF] 用于标注 high surrogate；[0xDC00, 0xDFFF] 用于标注 low surrogate。参考 https://en.wikipedia.org/wiki/UTF-16#Code_points_from_U+010000_to_U+10FFFF[UTF-16: Code points from U+010000 to U+10FFFF - Wikipedia^]。
 
 [source%nowrap,sql,{source_attr}]
 ----
@@ -207,4 +223,5 @@ https://www.zhihu.com/question/29924586[字符编码与字体的关系是什么�
 . https://unicode.org/roadmaps/bmp/[Roadmap to the BMP^] -- 从这里也可以看出，除了 BMP，其余还有 https://www.unicode.org/roadmaps/smp/[SMP^]、 https://www.unicode.org/roadmaps/sip/[SIP^]、 https://www.unicode.org/roadmaps/tip/[TIP^]、 https://www.unicode.org/roadmaps/tip/[TIP^] 和 https://www.unicode.org/roadmaps/ssp/[SSP^]。不止部分文章描述的只有 BMP 和 SMP 两个平面。看样子，以后可能还会有其他的什么 Plane。（中间从 4 到 13 的序号是空着的。）
 . https://en.wikipedia.org/wiki/Plane_(Unicode)[Plane (Unicode) - Wikipedia^]
 . https://github.com/ww898/utf-cpp#utf-8-conversion-table[UTF-8/16/32 C++ library^]
+. https://openclipart.org/detail/324725/ascii-table[ASCII Table - Openclipart^] -- 感谢他们制作出来的精美 ASCII Table 图表。
 
