@@ -28,6 +28,13 @@ weight: 1
 [.text-center]
 == [.big]##**Hessian 2.0 序列化协议**##
 
+== 协议解释
+
+针对该协议有很多言语不详，甚至模糊不清之处，专门做了一些解释和实践，叙述系列文章，用于辅助消化理解。目录如下：
+
+. https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/[Hessian 协议解释与实战（一）^] -- 介绍布尔型数据、日期类型、浮点类型数据和整数类型数据等四种类型的数据的处理。
+. https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-2/[Hessian 协议解释与实战（二）^] -- 介绍长整数类型数据和字符串等两种类型的数据的处理。
+
 :sectnums:
 
 == 简介
@@ -963,6 +970,11 @@ x52 x00 x07 hello,  # "hello, world" split into two chunks
 ---------------------------------------------------------------------------
 //                  D瓜哥 · https://www.diguage.com/ · 出品               //
 ----
+
+==== 附录：解释与实践
+
+更详细的解释与实践，请移步 https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-2/#string[Hessian 协议解释与实战（二）：字符串类型数据^]。
+
 
 [#type]
 === 类型
