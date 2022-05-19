@@ -1,0 +1,38 @@
+---
+title: "Hessian 协议解释与实战（四）"
+date: 2022-05-16T18:54:58+08:00
+draft: true
+keywords: ["Hessian","序列化","协议","Java","微服务","架构","程序设计"]
+tags: ["Java","微服务","架构","设计","序列化"]
+categories: ["系统架构","程序设计"]
+thumbnail: "images/common/confused-target-vector.jpg"
+
+weight: 1
+---
+
+:icons: font
+:source-highlighter: pygments
+:pygments-style: monokai
+:pygments-linenums-mode: table
+:source_attr: indent=0
+:image_attr: align=center,width=100%
+
+前段时间，翻译了 Hessian 2.0 的序列化协议，发布在了 https://www.diguage.com/post/hessian-serialization-protocol/[Hessian 2.0 序列化协议（中文版）^]。但是，其中有很多言语不详之处。所以，接下来会用几篇文章来详细解释并实践一下 Hessian 序列化协议，以求做到知其然知其所以然。目录如下：
+
+. https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/[Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数^] -- 介绍布尔型数据、日期类型、浮点类型数据和整数类型数据等四种类型的数据的处理。
+. https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-2/[Hessian 协议解释与实战（二）：长整型、字节数组与 Null^] -- 介绍长整数类型数据、字节数组和 `null` 等三种类型的数据的处理。
+. https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-3/[Hessian 协议解释与实战（三）：字符串^] -- 专门介绍了关于字符串的处理。由于字符串需要铺垫的基础知识比较多，处理细节也有繁琐，所以单独成篇来介绍。
+
+在上一篇文章 https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/[Hessian 协议解释与实战（一）^] 中研究了布尔型数据、日期类型、浮点类型数据、整数类型数据等四种数据类型的处理方式。接下来，我们再来介绍长整数类型数据和字符串的处理情况。
+
+== 基础工具方法
+
+基础工具方法就不再赘述，请直接参考 https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/#helper-methods[Hessian 协议解释与实战（一）：基础工具方法^] 中提到的几个方法。
+
+
+
+[#list]
+== 链表数据
+
+
+
