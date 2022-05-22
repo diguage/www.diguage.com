@@ -5,7 +5,7 @@ draft: false
 keywords: ["Hessian","序列化","协议","Java","微服务","架构","程序设计","Dubbo"]
 tags: ["Java","微服务","架构","设计","序列化"]
 categories: ["系统架构","程序设计"]
-thumbnail: "images/landscapes/bosjes.jpg"
+thumbnail: "images/wireframes/best-architecture.png"
 
 weight: 1
 ---
