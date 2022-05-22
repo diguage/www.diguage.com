@@ -1,0 +1,66 @@
+---
+title: "Hessian 源码分析（Java）"
+date: 2022-05-21T09:39:44+08:00
+draft: true
+keywords: ["Hessian","序列化","协议","Java","微服务","架构","程序设计"]
+tags: ["Java","微服务","架构","设计","序列化"]
+categories: ["系统架构","程序设计"]
+thumbnail: "images/common/confused-target-vector.jpg"
+
+weight: 1
+---
+
+:icons: font
+:source-highlighter: pygments
+:pygments-style: monokai
+:pygments-linenums-mode: table
+:source_attr: indent=0
+:image_attr: align=center,width=100%
+
+前面通过几篇文章，解释并实践了一下 Hessian 的序列化协议。文章目录如下：
+
+. https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/[Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数^] -- 介绍布尔型数据、日期类型、浮点类型数据和整数类型数据等四种类型的数据的处理。
+. https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-2/[Hessian 协议解释与实战（二）：长整型、二进制数据与 Null^] -- 介绍长整数类型数据、二进制数据和 `null` 等三种类型的数据的处理。
+. https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-3/[Hessian 协议解释与实战（三）：字符串^] -- 专门介绍了关于字符串的处理。由于字符串需要铺垫的基础知识比较多，处理细节也有繁琐，所以单独成篇来介绍。
+. 未完待续，敬请继续关注 https://www.diguage.com/["地瓜哥"博客网^]。
+
+该系列第四篇文章准备详细介绍一下 Hessian 对对象、链表以及 `Map` 等处理。但是，越调试代码，越发觉得应该先对 Hessian 的实现做一个源码分析。于是，就有了本文。
+
+这里有几点需要声明一下：
+
+. 在上面“解释与实战”系列文章中提到的代码就不再重复说明。
+. 通过“解释与实战”系列文章，大家应该可以领略到，处理序列化有大量的细节。但是，本文并不打算涉及。本文重点是介绍 Hessian 的 Java 实现的架构蓝图。相当于给指明一条路，沿着这条路，大家就可以探索 Hessian 的各种细节。
+
+image::/images/marshal/hessian-architecture.svg[{image_attr}]
+
+== 序列化时序图
+
+image::/images/marshal/Hessian2Output-writeObject.svg[{image_attr}]
+
+image::/images/marshal/Hessian2Input-readObject.svg[{image_attr}]
+
+image::/images/marshal/hessian-AbstractSerializerFactory.svg[{image_attr}]
+
+image::/images/marshal/hessian-AbstractHessianOutput.svg[{image_attr}]
+
+image::/images/marshal/hessian-AbstractHessianInput.svg[{image_attr}]
+
+image::/images/marshal/hessian-Serializer.svg[{image_attr}]
+
+image::/images/marshal/hessian-Deserializer.svg[{image_attr}]
+
+
+== 一些新发现
+
+=== 对 `enum` 的支持
+
+
+
+=== 日志打印
+
+== 参考资料
+
+. https://developer.aliyun.com/article/14698[hessian序列化源码分析^]
+
+
+

@@ -1,0 +1,64 @@
+@startuml
+skinparam titleFontSize 30
+title **Hessian Serializer 类图**
+
+interface Serializer {
+  + void writeObject(Object obj, AbstractHessianOutput out);
+}
+
+interface ObjectSerializer {
+  public Serializer getObjectSerializer();
+}
+
+abstract class AbstractSerializer implements Serializer
+
+class AnnotationSerializer extends AbstractSerializer
+
+class ArraySerializer extends AbstractSerializer
+
+class BasicSerializer extends AbstractSerializer implements ObjectSerializer
+note bottom of BasicSerializer : 根据待序列化对象的类型，调用 AbstractHessianOutput 中的相\n应序列化方法，完成对基本类型及其数组和字符串等的序列化操作。
+
+class ByteArraySerializer extends AbstractSerializer implements ObjectSerializer
+
+class BeanSerializer extends AbstractSerializer
+
+'class CalendarSerializer extends AbstractSerializer
+
+class ClassSerializer extends AbstractSerializer
+
+class CollectionSerializer extends AbstractSerializer
+
+'class EnumerationSerializer extends AbstractSerializer
+
+class EnumSerializer extends AbstractSerializer
+
+'class InetAddressSerializer extends AbstractSerializer
+
+class InputStreamSerializer extends AbstractSerializer
+
+class IteratorSerializer extends AbstractSerializer
+
+class JavaSerializer extends AbstractSerializer
+
+class JavaUnsharedSerializer extends JavaSerializer
+
+'class LocaleSerializer extends AbstractSerializer
+
+class MapSerializer extends AbstractSerializer
+
+class ObjectHandleSerializer extends AbstractSerializer
+
+'class RemoteSerializer extends AbstractSerializer
+
+'class SqlDateSerializer extends AbstractSerializer
+
+class StringValueSerializer extends AbstractSerializer
+
+class UnsafeSerializer extends AbstractSerializer
+
+class UnsafeUnsharedSerializer extends UnsafeSerializer
+
+skinparam footerFontSize 20
+footer D瓜哥 · https://www.diguage.com · 出品
+@enduml

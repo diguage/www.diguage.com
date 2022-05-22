@@ -1,0 +1,25 @@
+@startuml
+skinparam titleFontSize 30
+title **Hessian AbstractSerializerFactory 类图**
+
+abstract class AbstractSerializerFactory {
+  + Serializer getSerializer(Class cl);
+
+  + Deserializer getDeserializer(Class cl);
+}
+
+class ExtSerializerFactory extends AbstractSerializerFactory
+
+note bottom of ExtSerializerFactory : 没有被引用！
+
+class SerializerFactory extends AbstractSerializerFactory
+
+class BeanSerializerFactory extends SerializerFactory
+
+class JMXSerializerFactory extends AbstractSerializerFactory
+
+note bottom of JMXSerializerFactory : 序列化 JMX 对象。\n没有被引用！
+
+skinparam footerFontSize 20
+footer D瓜哥 · https://www.diguage.com · 出品
+@enduml

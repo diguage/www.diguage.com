@@ -10,6 +10,8 @@ thumbnail: "images/common/confused-target-vector.jpg"
 weight: 1
 ---
 
+TODO
+
 :icons: font
 :source-highlighter: pygments
 :pygments-style: monokai
@@ -30,6 +32,91 @@ weight: 1
 
 基础工具方法就不再赘述，请直接参考 https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/#helper-methods[Hessian 协议解释与实战（一）：基础工具方法^] 中提到的几个方法。
 
+
+[#object]
+== 对象
+
+[plantuml, format=svg]
+....
+abstract class AbstractSerializerFactory {
+  + Serializer getSerializer(Class cl);
+
+  + Deserializer getDeserializer(Class cl);
+}
+
+class ExtSerializerFactory extends AbstractSerializerFactory
+
+note bottom of ExtSerializerFactory : 没有被引用！
+
+class SerializerFactory extends AbstractSerializerFactory
+
+class BeanSerializerFactory extends SerializerFactory
+
+class JMXSerializerFactory extends AbstractSerializerFactory
+
+note bottom of JMXSerializerFactory : 序列化 JMX 对象。\n没有被引用！
+....
+
+[plantuml, format=svg]
+....
+scale 600 width
+
+interface Serializer {
+  + void writeObject(Object obj, AbstractHessianOutput out);
+}
+
+interface ObjectSerializer {
+  public Serializer getObjectSerializer();
+}
+
+abstract class AbstractSerializer implements Serializer
+
+class AnnotationSerializer extends AbstractSerializer
+
+class ArraySerializer extends AbstractSerializer
+
+class BasicSerializer extends AbstractSerializer implements ObjectSerializer
+
+class ByteArraySerializer extends AbstractSerializer implements ObjectSerializer
+
+class BeanSerializer extends AbstractSerializer
+
+class CalendarSerializer extends AbstractSerializer
+
+class ClassSerializer extends AbstractSerializer
+
+class CollectionSerializer extends AbstractSerializer
+
+class EnumerationSerializer extends AbstractSerializer
+
+class EnumSerializer extends AbstractSerializer
+
+class InetAddressSerializer extends AbstractSerializer
+
+class InputStreamSerializer extends AbstractSerializer
+
+class IteratorSerializer extends AbstractSerializer
+
+class JavaSerializer extends AbstractSerializer
+
+class JavaUnsharedSerializer extends JavaSerializer
+
+class LocaleSerializer extends AbstractSerializer
+
+class MapSerializer extends AbstractSerializer
+
+class ObjectHandleSerializer extends AbstractSerializer
+
+class RemoteSerializer extends AbstractSerializer
+
+class SqlDateSerializer extends AbstractSerializer
+
+class StringValueSerializer extends AbstractSerializer
+
+class UnsafeSerializer extends AbstractSerializer
+
+class UnsafeUnsharedSerializer extends UnsafeSerializer
+....
 
 
 [#list]

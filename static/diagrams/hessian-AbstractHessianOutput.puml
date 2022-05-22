@@ -1,0 +1,52 @@
+@startuml
+skinparam titleFontSize 30
+title **Hessian AbstractHessianOutput 类图**
+
+abstract class AbstractHessianOutput {
+  -SerializerFactory _defaultSerializerFactory
+  #SerializerFactory _serializerFactory
+  
+  +void setSerializerFactory(SerializerFactory factory)
+  +SerializerFactory getSerializerFactory()
+  #SerializerFactory findSerializerFactory()
+  +boolean setUnshared(boolean isUnshared)
+  +{abstract} void writeBoolean(boolean value)
+  +{abstract} void writeInt(int value)
+  +{abstract} void writeLong(long value)
+  +{abstract} void writeDouble(double value)
+  +{abstract} void writeUTCDate(long time)
+  +{abstract} void writeNull()
+  +{abstract} void writeString(String value)
+  +{abstract} void writeString(char []buffer, int offset, int length)
+  +{abstract} void writeBytes(byte []buffer)
+  +{abstract} void writeBytes(byte []buffer, int offset, int length)
+  #{abstract} void writeRef(int value)
+  +boolean removeRef(Object obj)
+  +{abstract} boolean replaceRef(Object oldRef, Object newRef)
+  +{abstract} boolean addRef(Object object)
+  +{abstract} int getRef(Object obj)
+  +{abstract} void writeObject(Object object)
+  +{abstract} boolean writeListBegin(int length, String type)
+  +{abstract} void writeListEnd()
+  +{abstract} void writeMapBegin(String type)
+  +{abstract} void writeMapEnd()
+  +int writeObjectBegin(String type)
+  +void writeObjectEnd()
+  +void writeClassFieldLength(int len)
+  +void flush()
+  +void close()
+}
+note left of AbstractHessianOutput::writeObjectBegin
+  直接调用的
+  writeMapBegin(String type)
+end note
+
+class HessianOutput extends AbstractHessianOutput
+
+class Hessian2Output extends AbstractHessianOutput implements Hessian2Constants {
+  +int writeObjectBegin(String type)
+}
+
+skinparam footerFontSize 20
+footer D瓜哥 · https://www.diguage.com · 出品
+@enduml

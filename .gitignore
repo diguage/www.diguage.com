@@ -29,3 +29,5 @@ $RECYCLE.BIN/
 .vscode/
 
 *.drawio.bkp
+
+static/diagrams/*.svg

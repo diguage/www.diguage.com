@@ -1,0 +1,35 @@
+seqdiag {
+  edge_length = 150;
+
+  Acter => Hessian2Output[label="writeObject\n(Object object)"] {
+    Hessian2Output => AbstractHessianOutput[label="findSerializerFactory()", note=" \n查找 SerializerFactory\n_"] {
+      AbstractHessianOutput => SerializerFactory[label="createDefault()"];
+    }
+
+    Hessian2Output => SerializerFactory[label="getObjectSerializer(Class<?> cl)", note=" \n根据 Class 获得 Serializer\n_"] {
+      SerializerFactory => SerializerFactory[label="getSerializer\n(Class c)"] {
+        SerializerFactory => SerializerFactory[label="loadSerializer\n(Class cl)", note=" \n扩展点\n可以扫描出提前添加的 SerializerFactory\n_"] {
+          SerializerFactory => AbstractSerializerFactory[label="getSerializer(Class cl)"];
+
+          SerializerFactory => ContextSerializerFactory[label="getSerializer(String className)"];
+
+          SerializerFactory => ContextSerializerFactory[label="create(ClassLoader loader)"];
+
+          SerializerFactory => ContextSerializerFactory[label="getCustomSerializer(Class cl)", note=" \n扩展点\n根据 Class 获得自定义的 Serializer\n_"];
+
+          SerializerFactory => UnsafeSerializer[label="create(Class<?> cl)"];
+
+          SerializerFactory => JavaSerializer[label="create(Class<?> cl)"];
+
+          SerializerFactory => IteratorSerializer[label="create()"];
+
+          SerializerFactory => EnumerationSerializer[label="create()"];
+        }
+      }
+    }
+
+    Hessian2Output => Serializer[label="writeObject(Object obj, AbstractHessianOutput out)", leftnote=" \n将对象序列化\n_"];
+  }
+
+=== D瓜哥 · https://www.diguage.com · 出品 ===
+}
