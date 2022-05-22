@@ -5,7 +5,7 @@ draft: false
 keywords: ["Hessian","序列化","协议","Java","微服务","架构","程序设计"]
 tags: ["Java","微服务","架构","设计","序列化"]
 categories: ["系统架构","程序设计"]
-thumbnail: "images/common/coat-of-arms-of-hesse.svg"
+thumbnail: "images/marshal/serialization-and-deserialization.png"
 
 weight: 1
 ---
@@ -1121,9 +1121,8 @@ xf0 - xff    # two-octet compact long (-x800 to x7ff, xf8 is 0)
 
 :!sectnums:
 
-== 趣闻
-
-在搜索 Hessian 时，维基百科直接有一个词条： https://en.wikipedia.org/wiki/Hessian[Hessian - Wikipedia^]，上面有一个解释是：Hessian 是黑森人的意思，表示生活在 https://en.wikipedia.org/wiki/Hesse[德国黑森州^] 的居民。在对应的维基百科词条 https://en.wikipedia.org/wiki/Hesse[Hesse - Wikipedia^] 上，看到了表示这个州的徽章，感觉很有意思，就那这张照片做头图了。
+// == 趣闻
+// 在搜索 Hessian 时，维基百科直接有一个词条： https://en.wikipedia.org/wiki/Hessian[Hessian - Wikipedia^]，上面有一个解释是：Hessian 是黑森人的意思，表示生活在 https://en.wikipedia.org/wiki/Hesse[德国黑森州^] 的居民。在对应的维基百科词条 https://en.wikipedia.org/wiki/Hesse[Hesse - Wikipedia^] 上，看到了表示这个州的徽章，感觉很有意思，就那这张照片做头图了。
 
 == 后记
 
