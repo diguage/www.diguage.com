@@ -17,18 +17,12 @@ seqdiag {
 
           SerializerFactory => ContextSerializerFactory[label="getCustomSerializer(Class cl)", note=" \n扩展点\n根据 Class 获得自定义的 Serializer\n_"];
 
-          SerializerFactory => UnsafeSerializer[label="create(Class<?> cl)"];
-
-          SerializerFactory => JavaSerializer[label="create(Class<?> cl)"];
-
-          SerializerFactory => IteratorSerializer[label="create()"];
-
-          SerializerFactory => EnumerationSerializer[label="create()"];
+          SerializerFactory => JavaSerializer[label="create(Class<?> cl)", note=" \n这里通过 new 或者 create() 方法，\n创建了很多不同类型 Serializer 实现\n类，列表如下：\n01. RemoteSerializer\n02. InetAddressSerializer\n03. WriteReplaceSerializer\n04. MapSerializer\n05. CollectionSerializer\n06. ArraySerializer\n07. ThrowableSerializer\n08. InputStreamSerializer\n09. IteratorSerializer\n10. CalendarSerializer\n11. EnumerationSerializer\n12. EnumSerializer\n13. AnnotationSerializer\n_"];
         }
       }
     }
 
-    Hessian2Output => Serializer[label="writeObject(Object obj, AbstractHessianOutput out)", leftnote=" \n将对象序列化\n_"];
+    Hessian2Output => Serializer[label="writeObject(Object obj, AbstractHessianOutput out)", leftnote=" \n将对象序列化\n\n有一点特别说明一下：\n在针对“对象”序列化时，\n对于每个字段会递归\nwriteObject(Object object)\n来完成对字段的序列化\n_"];
   }
 
 === D瓜哥 · https://www.diguage.com · 出品 ===

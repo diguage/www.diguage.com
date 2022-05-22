@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
-<svg viewBox="0 0 1756 2676" xmlns="http://www.w3.org/2000/svg" xmlns:inkspace="http://www.inkscape.org/namespaces/inkscape" xmlns:xlink="http://www.w3.org/1999/xlink">
+<svg viewBox="0 0 1306 2479" xmlns="http://www.w3.org/2000/svg" xmlns:inkspace="http://www.inkscape.org/namespaces/inkscape" xmlns:xlink="http://www.w3.org/1999/xlink">
   <defs id="defs_block">
     <filter height="1.504" id="filter_blur" inkspace:collect="always" width="1.1575" x="-0.07875" y="-0.252">
       <feGaussianBlur id="feGaussianBlur3780" inkspace:collect="always" stdDeviation="4.2" />
@@ -26,43 +26,35 @@
 
           SerializerFactory =&gt; ContextSerializerFactory[label="getCustomSerializer(Class cl)", note=" \n扩展点\n根据 Class 获得自定义的 Serializer\n_"];
 
-          SerializerFactory =&gt; UnsafeSerializer[label="create(Class&lt;?&gt; cl)"];
-
-          SerializerFactory =&gt; JavaSerializer[label="create(Class&lt;?&gt; cl)"];
-
-          SerializerFactory =&gt; IteratorSerializer[label="create()"];
-
-          SerializerFactory =&gt; EnumerationSerializer[label="create()"];
+          SerializerFactory =&gt; JavaSerializer[label="create(Class&lt;?&gt; cl)", note=" \n这里通过 new 或者 create() 方法，\n创建了很多不同类型 Serializer 实现\n类，列表如下：\n01. RemoteSerializer\n02. InetAddressSerializer\n03. WriteReplaceSerializer\n04. MapSerializer\n05. CollectionSerializer\n06. ArraySerializer\n07. ThrowableSerializer\n08. InputStreamSerializer\n09. IteratorSerializer\n10. CalendarSerializer\n11. EnumerationSerializer\n12. EnumSerializer\n13. AnnotationSerializer\n_"];
         }
       }
     }
 
-    Hessian2Output =&gt; Serializer[label="writeObject(Object obj, AbstractHessianOutput out)", leftnote=" \n将对象序列化\n_"];
+    Hessian2Output =&gt; Serializer[label="writeObject(Object obj, AbstractHessianOutput out)", leftnote=" \n将对象序列化\n\n有一点特别说明一下：\n在针对“对象”序列化时，\n对于每个字段会递归\nwriteObject(Object object)\n来完成对字段的序列化\n_"];
   }
 
 === D瓜哥 · https://www.diguage.com · 出品 ===
 }</desc>
-  <rect fill="rgb(0,0,0)" height="2496" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="8" x="127" y="158" />
-  <rect fill="rgb(0,0,0)" height="2340" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="8" x="277" y="158" />
+  <rect fill="rgb(0,0,0)" height="2299" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="8" x="127" y="158" />
+  <rect fill="rgb(0,0,0)" height="2143" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="8" x="277" y="158" />
   <rect fill="rgb(0,0,0)" height="221" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="8" x="427" y="229" />
   <rect fill="rgb(0,0,0)" height="64" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="8" x="577" y="306" />
-  <rect fill="rgb(0,0,0)" height="1707" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="8" x="577" y="550" />
-  <rect fill="rgb(0,0,0)" height="1535" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="8" x="581" y="642" />
-  <rect fill="rgb(0,0,0)" height="1362" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="8" x="585" y="735" />
+  <rect fill="rgb(0,0,0)" height="1429" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="8" x="577" y="550" />
+  <rect fill="rgb(0,0,0)" height="1257" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="8" x="581" y="642" />
+  <rect fill="rgb(0,0,0)" height="1084" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="8" x="585" y="735" />
   <rect fill="rgb(0,0,0)" height="63" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="8" x="727" y="820" />
   <rect fill="rgb(0,0,0)" height="63" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="8" x="877" y="980" />
   <rect fill="rgb(0,0,0)" height="64" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="8" x="877" y="1139" />
   <rect fill="rgb(0,0,0)" height="67" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="8" x="877" y="1310" />
-  <rect fill="rgb(0,0,0)" height="64" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="8" x="1027" y="1473" />
-  <rect fill="rgb(0,0,0)" height="64" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="8" x="1177" y="1633" />
-  <rect fill="rgb(0,0,0)" height="64" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="8" x="1327" y="1793" />
-  <rect fill="rgb(0,0,0)" height="64" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="8" x="1477" y="1953" />
-  <rect fill="rgb(0,0,0)" height="61" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="8" x="1627" y="2357" />
+  <rect fill="rgb(0,0,0)" height="161" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="8" x="1027" y="1578" />
+  <rect fill="rgb(0,0,0)" height="101" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="8" x="1177" y="2120" />
   <polygon fill="rgb(0,0,0)" points="447,208 571,208 579,216 579,250 447,250 447,208" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" />
   <polygon fill="rgb(0,0,0)" points="597,530 738,530 746,538 746,571 597,571 597,530" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" />
   <polygon fill="rgb(0,0,0)" points="672,708 884,708 892,716 892,763 672,763 672,708" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" />
   <polygon fill="rgb(0,0,0)" points="897,1283 1082,1283 1090,1291 1090,1337 897,1337 897,1283" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" />
-  <polygon fill="rgb(0,0,0)" points="175,2337 257,2337 265,2345 265,2378 175,2378 175,2337" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" />
+  <polygon fill="rgb(0,0,0)" points="1047,1457 1240,1457 1248,1465 1248,1699 1047,1699 1047,1457" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" />
+  <polygon fill="rgb(0,0,0)" points="104,2059 257,2059 265,2067 265,2181 104,2181 104,2059" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" />
   <rect fill="rgb(0,0,0)" height="40" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="128" x="67" y="46" />
   <rect fill="rgb(0,0,0)" height="40" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="128" x="217" y="46" />
   <rect fill="rgb(0,0,0)" height="40" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="128" x="367" y="46" />
@@ -71,36 +63,27 @@
   <rect fill="rgb(0,0,0)" height="40" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="128" x="817" y="46" />
   <rect fill="rgb(0,0,0)" height="40" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="128" x="967" y="46" />
   <rect fill="rgb(0,0,0)" height="40" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="128" x="1117" y="46" />
-  <rect fill="rgb(0,0,0)" height="40" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="128" x="1267" y="46" />
-  <rect fill="rgb(0,0,0)" height="40" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="128" x="1417" y="46" />
-  <rect fill="rgb(0,0,0)" height="40" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="128" x="1567" y="46" />
-  <path d="M 128 80 L 128 2664" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="8 4" />
-  <rect fill="moccasin" height="2496" stroke="rgb(0,0,0)" width="8" x="124" y="152" />
-  <path d="M 278 80 L 278 2664" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="8 4" />
-  <rect fill="moccasin" height="2340" stroke="rgb(0,0,0)" width="8" x="274" y="152" />
-  <path d="M 428 80 L 428 2664" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="8 4" />
+  <path d="M 128 80 L 128 2467" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="8 4" />
+  <rect fill="moccasin" height="2299" stroke="rgb(0,0,0)" width="8" x="124" y="152" />
+  <path d="M 278 80 L 278 2467" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="8 4" />
+  <rect fill="moccasin" height="2143" stroke="rgb(0,0,0)" width="8" x="274" y="152" />
+  <path d="M 428 80 L 428 2467" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="8 4" />
   <rect fill="moccasin" height="221" stroke="rgb(0,0,0)" width="8" x="424" y="223" />
-  <path d="M 578 80 L 578 2664" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="8 4" />
+  <path d="M 578 80 L 578 2467" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="8 4" />
   <rect fill="moccasin" height="64" stroke="rgb(0,0,0)" width="8" x="574" y="300" />
-  <rect fill="moccasin" height="1707" stroke="rgb(0,0,0)" width="8" x="574" y="544" />
-  <rect fill="moccasin" height="1535" stroke="rgb(0,0,0)" width="8" x="578" y="636" />
-  <rect fill="moccasin" height="1362" stroke="rgb(0,0,0)" width="8" x="582" y="729" />
-  <path d="M 728 80 L 728 2664" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="8 4" />
+  <rect fill="moccasin" height="1429" stroke="rgb(0,0,0)" width="8" x="574" y="544" />
+  <rect fill="moccasin" height="1257" stroke="rgb(0,0,0)" width="8" x="578" y="636" />
+  <rect fill="moccasin" height="1084" stroke="rgb(0,0,0)" width="8" x="582" y="729" />
+  <path d="M 728 80 L 728 2467" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="8 4" />
   <rect fill="moccasin" height="63" stroke="rgb(0,0,0)" width="8" x="724" y="814" />
-  <path d="M 878 80 L 878 2664" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="8 4" />
+  <path d="M 878 80 L 878 2467" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="8 4" />
   <rect fill="moccasin" height="63" stroke="rgb(0,0,0)" width="8" x="874" y="974" />
   <rect fill="moccasin" height="64" stroke="rgb(0,0,0)" width="8" x="874" y="1133" />
   <rect fill="moccasin" height="67" stroke="rgb(0,0,0)" width="8" x="874" y="1304" />
-  <path d="M 1028 80 L 1028 2664" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="8 4" />
-  <rect fill="moccasin" height="64" stroke="rgb(0,0,0)" width="8" x="1024" y="1467" />
-  <path d="M 1178 80 L 1178 2664" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="8 4" />
-  <rect fill="moccasin" height="64" stroke="rgb(0,0,0)" width="8" x="1174" y="1627" />
-  <path d="M 1328 80 L 1328 2664" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="8 4" />
-  <rect fill="moccasin" height="64" stroke="rgb(0,0,0)" width="8" x="1324" y="1787" />
-  <path d="M 1478 80 L 1478 2664" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="8 4" />
-  <rect fill="moccasin" height="64" stroke="rgb(0,0,0)" width="8" x="1474" y="1947" />
-  <path d="M 1628 80 L 1628 2664" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="8 4" />
-  <rect fill="moccasin" height="61" stroke="rgb(0,0,0)" width="8" x="1624" y="2351" />
+  <path d="M 1028 80 L 1028 2467" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="8 4" />
+  <rect fill="moccasin" height="161" stroke="rgb(0,0,0)" width="8" x="1024" y="1572" />
+  <path d="M 1178 80 L 1178 2467" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="8 4" />
+  <rect fill="moccasin" height="101" stroke="rgb(0,0,0)" width="8" x="1174" y="2114" />
   <rect fill="rgb(255,255,255)" height="40" stroke="rgb(0,0,0)" width="128" x="64" y="40" />
   <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="27" x="128.5" y="66">Acter</text>
   <rect fill="rgb(255,255,255)" height="40" stroke="rgb(0,0,0)" width="128" x="214" y="40" />
@@ -114,15 +97,9 @@
   <rect fill="rgb(255,255,255)" height="40" stroke="rgb(0,0,0)" width="128" x="814" y="40" />
   <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="122" x="878.0" y="66">ContextSerializerFactory</text>
   <rect fill="rgb(255,255,255)" height="40" stroke="rgb(0,0,0)" width="128" x="964" y="40" />
-  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="80" x="1028.0" y="66">UnsafeSerializer</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="69" x="1028.5" y="66">JavaSerializer</text>
   <rect fill="rgb(255,255,255)" height="40" stroke="rgb(0,0,0)" width="128" x="1114" y="40" />
-  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="69" x="1178.5" y="66">JavaSerializer</text>
-  <rect fill="rgb(255,255,255)" height="40" stroke="rgb(0,0,0)" width="128" x="1264" y="40" />
-  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="81" x="1328.5" y="66">IteratorSerializer</text>
-  <rect fill="rgb(255,255,255)" height="40" stroke="rgb(0,0,0)" width="128" x="1414" y="40" />
-  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="107" x="1478.5" y="66">EnumerationSerializer</text>
-  <rect fill="rgb(255,255,255)" height="40" stroke="rgb(0,0,0)" width="128" x="1564" y="40" />
-  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="44" x="1628.0" y="66">Serializer</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="44" x="1178.0" y="66">Serializer</text>
   <path d="M 136 152 L 270 152" fill="none" stroke="rgb(0,0,0)" />
   <polygon fill="rgb(0,0,0)" points="262,148 270,152 262,156" stroke="rgb(0,0,0)" />
   <path d="M 286 223 L 420 223" fill="none" stroke="rgb(0,0,0)" />
@@ -185,44 +162,59 @@
   <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="6" x="905.0" y="1329">_</text>
   <path d="M 594 1371 L 870 1371" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
   <polygon fill="rgb(0,0,0)" points="602,1367 594,1371 602,1375" stroke="rgb(0,0,0)" />
-  <path d="M 594 1467 L 1020 1467" fill="none" stroke="rgb(0,0,0)" />
-  <polygon fill="rgb(0,0,0)" points="1012,1463 1020,1467 1012,1471" stroke="rgb(0,0,0)" />
-  <path d="M 594 1531 L 1020 1531" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
-  <polygon fill="rgb(0,0,0)" points="602,1527 594,1531 602,1535" stroke="rgb(0,0,0)" />
-  <path d="M 594 1627 L 1170 1627" fill="none" stroke="rgb(0,0,0)" />
-  <polygon fill="rgb(0,0,0)" points="1162,1623 1170,1627 1162,1631" stroke="rgb(0,0,0)" />
-  <path d="M 594 1691 L 1170 1691" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
-  <polygon fill="rgb(0,0,0)" points="602,1687 594,1691 602,1695" stroke="rgb(0,0,0)" />
-  <path d="M 594 1787 L 1320 1787" fill="none" stroke="rgb(0,0,0)" />
-  <polygon fill="rgb(0,0,0)" points="1312,1783 1320,1787 1312,1791" stroke="rgb(0,0,0)" />
-  <path d="M 594 1851 L 1320 1851" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
-  <polygon fill="rgb(0,0,0)" points="602,1847 594,1851 602,1855" stroke="rgb(0,0,0)" />
-  <path d="M 594 1947 L 1470 1947" fill="none" stroke="rgb(0,0,0)" />
-  <polygon fill="rgb(0,0,0)" points="1462,1943 1470,1947 1462,1951" stroke="rgb(0,0,0)" />
-  <path d="M 594 2011 L 1470 2011" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
-  <polygon fill="rgb(0,0,0)" points="602,2007 594,2011 602,2015" stroke="rgb(0,0,0)" />
-  <path d="M 590 2091 L 653 2091" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
-  <path d="M 653 2091 L 653 2107" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
-  <path d="M 653 2107 L 590 2107" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
-  <polygon fill="rgb(0,0,0)" points="598,2103 590,2107 598,2111" stroke="rgb(0,0,0)" />
-  <path d="M 586 2171 L 653 2171" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
-  <path d="M 653 2171 L 653 2187" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
-  <path d="M 653 2187 L 586 2187" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
-  <polygon fill="rgb(0,0,0)" points="594,2183 586,2187 594,2191" stroke="rgb(0,0,0)" />
-  <path d="M 286 2251 L 570 2251" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
-  <polygon fill="rgb(0,0,0)" points="294,2247 286,2251 294,2255" stroke="rgb(0,0,0)" />
-  <path d="M 286 2351 L 1620 2351" fill="none" stroke="rgb(0,0,0)" />
-  <polygon fill="rgb(0,0,0)" points="1612,2347 1620,2351 1612,2355" stroke="rgb(0,0,0)" />
-  <polygon fill="rgb(255,182,193)" points="172,2331 254,2331 262,2339 262,2372 172,2372 172,2331" stroke="rgb(0,0,0)" />
-  <path d="M 254 2331 L 254 2339" fill="none" stroke="rgb(0,0,0)" />
-  <path d="M 254 2339 L 262 2339" fill="none" stroke="rgb(0,0,0)" />
-  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="4" x="182.0" y="2343"> </text>
-  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="66" x="213.0" y="2356">将对象序列化</text>
-  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="6" x="183.0" y="2370">_</text>
-  <path d="M 286 2412 L 1620 2412" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
-  <polygon fill="rgb(0,0,0)" points="294,2408 286,2412 294,2416" stroke="rgb(0,0,0)" />
-  <path d="M 136 2492 L 270 2492" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
-  <polygon fill="rgb(0,0,0)" points="144,2488 136,2492 144,2496" stroke="rgb(0,0,0)" />
+  <path d="M 594 1572 L 1020 1572" fill="none" stroke="rgb(0,0,0)" />
+  <polygon fill="rgb(0,0,0)" points="1012,1568 1020,1572 1012,1576" stroke="rgb(0,0,0)" />
+  <polygon fill="rgb(255,182,193)" points="1044,1451 1237,1451 1245,1459 1245,1693 1044,1693 1044,1451" stroke="rgb(0,0,0)" />
+  <path d="M 1237 1451 L 1237 1459" fill="none" stroke="rgb(0,0,0)" />
+  <path d="M 1237 1459 L 1245 1459" fill="none" stroke="rgb(0,0,0)" />
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="4" x="1054.0" y="1463"> </text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="177" x="1140.5" y="1477">这里通过 new 或者 create() 方法，</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="172" x="1138.0" y="1490">创建了很多不同类型 Serializer 实现</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="77" x="1090.5" y="1504">类，列表如下：</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="106" x="1105.0" y="1517">01. RemoteSerializer</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="126" x="1115.0" y="1530">02. InetAddressSerializer</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="132" x="1118.0" y="1544">03. WriteReplaceSerializer</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="89" x="1096.5" y="1558">04. MapSerializer</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="114" x="1109.0" y="1571">05. CollectionSerializer</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="95" x="1099.5" y="1585">06. ArraySerializer</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="119" x="1111.5" y="1598">07. ThrowableSerializer</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="128" x="1116.0" y="1612">08. InputStreamSerializer</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="103" x="1103.5" y="1625">09. IteratorSerializer</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="110" x="1107.0" y="1638">10. CalendarSerializer</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="129" x="1116.5" y="1651">11. EnumerationSerializer</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="95" x="1099.5" y="1664">12. EnumSerializer</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="121" x="1112.5" y="1677">13. AnnotationSerializer</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="6" x="1055.0" y="1691">_</text>
+  <path d="M 594 1733 L 1020 1733" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
+  <polygon fill="rgb(0,0,0)" points="602,1729 594,1733 602,1737" stroke="rgb(0,0,0)" />
+  <path d="M 590 1813 L 653 1813" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
+  <path d="M 653 1813 L 653 1829" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
+  <path d="M 653 1829 L 590 1829" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
+  <polygon fill="rgb(0,0,0)" points="598,1825 590,1829 598,1833" stroke="rgb(0,0,0)" />
+  <path d="M 586 1893 L 653 1893" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
+  <path d="M 653 1893 L 653 1909" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
+  <path d="M 653 1909 L 586 1909" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
+  <polygon fill="rgb(0,0,0)" points="594,1905 586,1909 594,1913" stroke="rgb(0,0,0)" />
+  <path d="M 286 1973 L 570 1973" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
+  <polygon fill="rgb(0,0,0)" points="294,1969 286,1973 294,1977" stroke="rgb(0,0,0)" />
+  <path d="M 286 2114 L 1170 2114" fill="none" stroke="rgb(0,0,0)" />
+  <polygon fill="rgb(0,0,0)" points="1162,2110 1170,2114 1162,2118" stroke="rgb(0,0,0)" />
+  <polygon fill="rgb(255,182,193)" points="101,2053 254,2053 262,2061 262,2175 101,2175 101,2053" stroke="rgb(0,0,0)" />
+  <path d="M 254 2053 L 254 2061" fill="none" stroke="rgb(0,0,0)" />
+  <path d="M 254 2061 L 262 2061" fill="none" stroke="rgb(0,0,0)" />
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="4" x="111.0" y="2065"> </text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="66" x="142.0" y="2078">将对象序列化</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="4" x="111.0" y="2090"> </text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="110" x="164.0" y="2103">有一点特别说明一下：</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="118" x="168.0" y="2117">在针对“对象”序列化时，</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="99" x="158.5" y="2131">对于每个字段会递归</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="137" x="177.5" y="2146">writeObject(Object object)</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="110" x="164.0" y="2159">来完成对字段的序列化</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="6" x="112.0" y="2173">_</text>
+  <path d="M 286 2215 L 1170 2215" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
+  <polygon fill="rgb(0,0,0)" points="294,2211 286,2215 294,2219" stroke="rgb(0,0,0)" />
+  <path d="M 136 2295 L 270 2295" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
+  <polygon fill="rgb(0,0,0)" points="144,2291 136,2295 144,2299" stroke="rgb(0,0,0)" />
   <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="58" x="173.0" y="133">writeObject</text>
   <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="79" x="183.5" y="148">(Object object)</text>
   <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="111" x="349.5" y="219">findSerializerFactory()</text>
@@ -236,15 +228,12 @@
   <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="158" x="681.0" y="970">getSerializer(String className)</text>
   <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="138" x="671.0" y="1129">create(ClassLoader loader)</text>
   <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="148" x="676.0" y="1300">getCustomSerializer(Class cl)</text>
-  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="98" x="651.0" y="1463">create(Class&lt;?&gt; cl)</text>
-  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="98" x="651.0" y="1623">create(Class&lt;?&gt; cl)</text>
-  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="43" x="623.5" y="1783">create()</text>
-  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="43" x="623.5" y="1943">create()</text>
-  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="264" x="426.0" y="2347">writeObject(Object obj, AbstractHessianOutput out)</text>
-  <path d="M 40 2589 L 764 2589" fill="none" stroke="rgb(0,0,0)" />
-  <path d="M 40 2593 L 764 2593" fill="none" stroke="rgb(0,0,0)" />
-  <path d="M 991 2589 L 1716 2589" fill="none" stroke="rgb(0,0,0)" />
-  <path d="M 991 2593 L 1716 2593" fill="none" stroke="rgb(0,0,0)" />
-  <rect fill="rgb(208,208,208)" height="21" stroke="rgb(0,0,0)" width="227" x="764" y="2581" />
-  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="207" x="877.5" y="2598">D瓜哥 · https://www.diguage.com · 出品</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="98" x="651.0" y="1568">create(Class&lt;?&gt; cl)</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="264" x="426.0" y="2110">writeObject(Object obj, AbstractHessianOutput out)</text>
+  <path d="M 40 2392 L 539 2392" fill="none" stroke="rgb(0,0,0)" />
+  <path d="M 40 2396 L 539 2396" fill="none" stroke="rgb(0,0,0)" />
+  <path d="M 766 2392 L 1266 2392" fill="none" stroke="rgb(0,0,0)" />
+  <path d="M 766 2396 L 1266 2396" fill="none" stroke="rgb(0,0,0)" />
+  <rect fill="rgb(208,208,208)" height="21" stroke="rgb(0,0,0)" width="227" x="539" y="2384" />
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="207" x="652.5" y="2401">D瓜哥 · https://www.diguage.com · 出品</text>
 </svg>

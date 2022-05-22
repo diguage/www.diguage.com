@@ -26,7 +26,7 @@ seqdiag {
             SerializerFactory => ContextSerializerFactory[label="create(ClassLoader loader)"];
             SerializerFactory => ContextSerializerFactory[label="getDeserializer(String className)"];
             SerializerFactory => ContextSerializerFactory[label="getCustomDeserializer(Class cl)"];
-            SerializerFactory => SerializerFactory[label="new", note=" \n这里上下有很多根据类型直接\n new出来的Deserializer实例\n_"];
+            SerializerFactory => SerializerFactory[label="new", note=" \n这里通过 new 或者 create() 方法，\n创建了很多不同类型 Deserializer 实现\n类，列表如下：\n1. CollectionDeserializer\n2. MapDeserializer\n3. IteratorDeserializer\n4. AnnotationDeserializer\n5. ObjectDeserializer\n6. ArrayDeserializer\n7. EnumerationDeserializer\n8. EnumDeserializer\n9. ClassDeserializer\n_"];
           }
         }
       }

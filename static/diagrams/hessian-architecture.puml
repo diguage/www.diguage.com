@@ -45,6 +45,8 @@ class SerializerFactory extends AbstractSerializerFactory {
   -ConcurrentHashMap<Class, Serializer> _cachedSerializerMap
   -ConcurrentHashMap<Class, Deserializer> _cachedDeserializerMap
   -HashMap<String, Deserializer> _cachedTypeDeserializerMap
+  +void addFactory(AbstractSerializerFactory factory)
+  +{static}SerializerFactory createDefault()
 }
 
 interface Serializer {
@@ -89,8 +91,20 @@ class ContextSerializerFactory {
   -HashMap<String, Deserializer> _deserializerClassNameMap
   -ConcurrentHashMap<String, Deserializer> _customDeserializerMap
   -HashMap<Class<?>, Deserializer> _deserializerInterfaceMap
+  +Serializer getSerializer(String className)
+  +Serializer getCustomSerializer(Class cl)
+  +Deserializer getDeserializer(String className)
+  +Deserializer getCustomDeserializer(Class cl)
 }
-
+note right of ContextSerializerFactory::_staticSerializerMap
+  启动时，会将基本类型、字符串和对象的
+  Serializer 实现类添加到该字段中。
+end note
+note right of ContextSerializerFactory::_serializerClassMap
+  创建对象时，将 _staticSerializerMap
+  的数据，完整添加到该字段，后续查找
+  Serializer，也是从该字段中查找。
+end note
 
 ContextSerializerFactory "1" o-- "N" ContextSerializerFactory
 
