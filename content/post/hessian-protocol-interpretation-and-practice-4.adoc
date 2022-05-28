@@ -1,6 +1,6 @@
 ---
 title: "Hessian 协议解释与实战（四）"
-date: 2022-05-16T18:54:58+08:00
+date: 2022-05-26T18:01:43+08:00
 draft: true
 keywords: ["Hessian","序列化","协议","Java","微服务","架构","程序设计"]
 tags: ["Java","微服务","架构","设计","序列化"]
@@ -37,91 +37,25 @@ TODO
 [#object]
 == 对象
 
-[plantuml, format=svg]
-....
-abstract class AbstractSerializerFactory {
-  + Serializer getSerializer(Class cl);
-
-  + Deserializer getDeserializer(Class cl);
-}
-
-class ExtSerializerFactory extends AbstractSerializerFactory
-
-note bottom of ExtSerializerFactory : 没有被引用！
-
-class SerializerFactory extends AbstractSerializerFactory
-
-class BeanSerializerFactory extends SerializerFactory
-
-class JMXSerializerFactory extends AbstractSerializerFactory
-
-note bottom of JMXSerializerFactory : 序列化 JMX 对象。\n没有被引用！
-....
-
-[plantuml, format=svg]
-....
-scale 600 width
-
-interface Serializer {
-  + void writeObject(Object obj, AbstractHessianOutput out);
-}
-
-interface ObjectSerializer {
-  public Serializer getObjectSerializer();
-}
-
-abstract class AbstractSerializer implements Serializer
-
-class AnnotationSerializer extends AbstractSerializer
-
-class ArraySerializer extends AbstractSerializer
-
-class BasicSerializer extends AbstractSerializer implements ObjectSerializer
-
-class ByteArraySerializer extends AbstractSerializer implements ObjectSerializer
-
-class BeanSerializer extends AbstractSerializer
-
-class CalendarSerializer extends AbstractSerializer
-
-class ClassSerializer extends AbstractSerializer
-
-class CollectionSerializer extends AbstractSerializer
-
-class EnumerationSerializer extends AbstractSerializer
-
-class EnumSerializer extends AbstractSerializer
-
-class InetAddressSerializer extends AbstractSerializer
-
-class InputStreamSerializer extends AbstractSerializer
-
-class IteratorSerializer extends AbstractSerializer
-
-class JavaSerializer extends AbstractSerializer
-
-class JavaUnsharedSerializer extends JavaSerializer
-
-class LocaleSerializer extends AbstractSerializer
-
-class MapSerializer extends AbstractSerializer
-
-class ObjectHandleSerializer extends AbstractSerializer
-
-class RemoteSerializer extends AbstractSerializer
-
-class SqlDateSerializer extends AbstractSerializer
-
-class StringValueSerializer extends AbstractSerializer
-
-class UnsafeSerializer extends AbstractSerializer
-
-class UnsafeUnsharedSerializer extends UnsafeSerializer
-....
 
 
 [#list]
 == 链表数据
+
+做实验中发现，如果同一个对象被仿佛序列化（比如数组中的多个相同对象），那么只需要序列化第一个对象。后面的，都是直接引用 `0x51`（`Q`）已被序列化的对象。
+
+TODO: 如何定位对象？看序列化结果，在标志位 `0x51`（`Q`）后面，写入的是一个数字。但是，前面对象进行序列化时，也没有写数字。我猜测是在反序列化时，会根据字节数组重新构建起来对象和数字的对应关系。
+
+有几部分需要实验：
+
+. Array, len=1,7,8
+.. 基本类型、 `String` 和 `Object` 任选一种即可。
+.. 自定义对象
+. `ArrayList` -- 需要测试不同长度
+. `LinkedList`
+. `HashSet`
+. `Iterator` 或者 `Enumeration`
+
 
 
 

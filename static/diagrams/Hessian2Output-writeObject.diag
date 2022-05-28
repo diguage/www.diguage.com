@@ -22,7 +22,7 @@ seqdiag {
       }
     }
 
-    Hessian2Output => Serializer[label="writeObject(Object obj, AbstractHessianOutput out)", leftnote=" \n将对象序列化\n\n有一点特别说明一下：\n在针对“对象”序列化时，\n对于每个字段会递归\nwriteObject(Object object)\n来完成对字段的序列化\n_"];
+    Hessian2Output => Serializer[label="writeObject(Object obj, AbstractHessianOutput out)", leftnote=" \n将对象序列化\n\n有一点特别说明一下：\n在针对“对象”序列化时，\n对于每个字段会递归调用\nwriteObject(Object object)\n来完成对字段的序列化\n_"];
   }
 
 === D瓜哥 · https://www.diguage.com · 出品 ===
