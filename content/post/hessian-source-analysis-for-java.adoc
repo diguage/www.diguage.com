@@ -23,6 +23,7 @@ weight: 1
 . https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-2/[Hessian 协议解释与实战（二）：长整型、二进制数据与 Null^] -- 介绍长整数类型数据、二进制数据和 `null` 等三种类型的数据的处理。
 . https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-3/[Hessian 协议解释与实战（三）：字符串^] -- 专门介绍了关于字符串的处理。由于字符串需要铺垫的基础知识比较多，处理细节也有繁琐，所以单独成篇来介绍。
 . https://www.diguage.com/post/hessian-source-analysis-for-java/[Hessian 源码分析（Java）^] -- 开始第四篇分析之前，先来介绍一下 Hessian 的源码实现。方便后续展开说明。
+. https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-4/[Hessian 协议解释与实战（四）：数组与集合^] -- 铺垫了一些关于实例对象的处理，重点介绍关于数组和集合的相关处理。
 . 未完待续，敬请继续关注 https://www.diguage.com/["地瓜哥"博客网^]。
 
 该系列第四篇文章准备详细介绍一下 Hessian 对对象、链表以及 `Map` 等处理。但是，越调试代码，越发觉得应该先对 Hessian 的实现做一个源码分析。于是，就有了本文。
@@ -138,7 +139,7 @@ image::/images/marshal/hessian-AbstractSerializerFactory.svg[{image_attr}]
 . `AbstractSerializer`
 . `AnnotationSerializer`
 . `ArraySerializer`
-. `BasicSerializer` -- 基本类型等都是通过该类完成序列化。但，实际上它调用了 `Hessian2Output` 提供的相关方法。
+. `BasicSerializer` -- `null`、 八种基本类型、 `String`、`StringBuilder`、 `Date`、 `Number`、 `Object`、 八种类型数组、 `String` 数组、 `Object` 数组等都是通过该类完成序列化。实际上，关于 `null`、 八种基本类型、 `String`、`StringBuilder`、 `Date` 等类型的处理，它是通过调用 `Hessian2Output` 提供的相关方法来完成的。
 . `ByteArraySerializer`
 . `BeanSerializer`
 . `CalendarSerializer`

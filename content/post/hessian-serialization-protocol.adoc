@@ -36,6 +36,7 @@ weight: 1
 . https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-2/[Hessian 协议解释与实战（二）：长整型、二进制数据与 Null^] -- 介绍长整数类型数据、二进制数据和 `null` 等三种类型的数据的处理。
 . https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-3/[Hessian 协议解释与实战（三）：字符串^] -- 专门介绍了关于字符串的处理。由于字符串需要铺垫的基础知识比较多，处理细节也有繁琐，所以单独成篇来介绍。
 . https://www.diguage.com/post/hessian-source-analysis-for-java/[Hessian 源码分析（Java）^] -- 开始第四篇分析之前，先来介绍一下 Hessian 的源码实现。方便后续展开说明。
+. https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-4/[Hessian 协议解释与实战（四）：数组与集合^] -- 铺垫了一些关于实例对象的处理，重点介绍关于数组和集合的相关处理。
 . 未完待续，敬请继续关注 https://www.diguage.com/["地瓜哥"博客网^]。
 
 :sectnums:
@@ -107,7 +108,7 @@ int        ::= 'I' b3 b2 b1 b0
            ::= [xd0-xd7] b1 b0       # -x40000 to x3ffff
 
            # list/vector
-list       ::= x55 type value* 'Z'   # 可变长度链表，类似 List
+list       ::= x55 type value* 'Z'   # 可变长度链表，类似 List <2>
            ::= 'V' type int value*   # 固定长度链表，类似 数组
            ::= x57 value* 'Z'        # 可变长度的无类型链表
            ::= x58 int value*        # 固定长度的无类型链表
@@ -138,9 +139,9 @@ ref        ::= x51 int  # reference to nth map/list/object
 
            # UTF-8 编码的字符串，分割为 64k 的 chunk
 string     ::= x52 b1 b0 <utf8-data> string  # non-final chunk
-           ::= 'S' b1 b0 <utf8-data>  # 长度为 0-65535 的字符串 <2>
+           ::= 'S' b1 b0 <utf8-data>  # 长度为 0-65535 的字符串 <3>
            ::= [x00-x1f] <utf8-data>  # 长度为 0-31   的字符串
-           ::= [x30-x34] <utf8-data>  # 长度为 0-1023 的字符串 <3>
+           ::= [x30-x34] <utf8-data>  # 长度为 0-1023 的字符串 <4>
 
            # 用于面向对象语言的 map/list 类型
 type       ::= string                        # 类型名称
@@ -165,8 +166,9 @@ value      ::= null
 //               D瓜哥 · https://www.diguage.com/ · 出品            //
 ----
 <1> 这里错误！相关解释请看： https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-2/#binary[Hessian 协议解释与实战（二）：长整型、二进制数据与 Null：二进制数据^]。
-<2> 这里错误！应该是 1024 ~ 32767。代码中也明确写有 `length > 0x8000`。相关解释请看： https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-3/#string[Hessian 协议解释与实战（三）：字符串^]。
-<3> 这里地方错误！ `x34` 不会再这里出现！相关解释请看： https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-3/#string[Hessian 协议解释与实战（三）：字符串^]。
+<2> 没有发现这种场景，代码也不可达。相关解释请看： https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-4/[Hessian 协议解释与实战（四）：数组与集合^]。
+<3> 这里错误！应该是 1024 ~ 32767。代码中也明确写有 `length > 0x8000`。相关解释请看： https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-3/#string[Hessian 协议解释与实战（三）：字符串^]。
+<4> 这里地方错误！ `x34` 不会再这里出现！相关解释请看： https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-3/#string[Hessian 协议解释与实战（三）：字符串^]。
 
 == 序列化协议
 
@@ -496,7 +498,7 @@ I x00 x00 x01 x2c  # 300
 //               D瓜哥 · https://www.diguage.com/ · 出品            //
 ---------------------------------------------------------------------
 
-list ::= x55 type value* 'Z'   # variable-length list
+list ::= x55 type value* 'Z'   # variable-length list <1>
      ::= 'V' type int value*   # fixed-length list
      ::= x57 value* 'Z'        # variable-length untyped list
      ::= x58 int value*        # fixed-length untyped list
@@ -506,6 +508,7 @@ list ::= x55 type value* 'Z'   # variable-length list
 ---------------------------------------------------------------------
 //               D瓜哥 · https://www.diguage.com/ · 出品            //
 ----
+<1> 没有发现这种场景，代码也不可达。
 
 一个有序链表，比如数组。两种链表分别是定长链表（注：比如数组）和变长链表（注：比如 `List`）。这两种链表都有一个类型。这个类型可以是一个能够被服务识别的 UTF-8 字符串。
 
@@ -514,6 +517,11 @@ list ::= x55 type value* 'Z'   # variable-length list
 任何需要列表的解析器还必须接受空引用或共享引用。
 
 类型的有效值没必要一定在本文档中指定，这取决于特定的应用程序。例如，使用带有静态类型的语言实现的公开 Hessian 服务，可以使用类型信息实例化特定的数组类型。另一方面，用动态类型语言编写的服务器可能会完全忽略类型的内容，而创建一个泛型数组。
+
+.D瓜哥注
+****
+参考 https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-4/[Hessian 协议解释与实战（四）：数组与集合^] 会发现，在 Hessian 的协议中，虽然英文是 `list`，但这里的内涵更仿佛，还包括数组、 `Set` 和迭代器。感觉翻译成“集合”更合适。
+****
 
 ==== 紧凑：定长链表
 
@@ -575,6 +583,10 @@ x73                # typed list length = 3
 ---------------------------------------------------------------------
 //               D瓜哥 · https://www.diguage.com/ · 出品            //
 ----
+
+==== 附录：解释与实践
+
+更详细的解释与实践，请移步 https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-4/[Hessian 协议解释与实战（四）：数组与集合^]。
 
 [#long]
 === 长整数类型数据

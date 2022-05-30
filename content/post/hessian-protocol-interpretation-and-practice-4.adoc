@@ -1,7 +1,7 @@
 ---
-title: "Hessian 协议解释与实战（四）"
+title: "Hessian 协议解释与实战（四）：数组与集合"
 date: 2022-05-26T18:01:43+08:00
-draft: true
+draft: false
 keywords: ["Hessian","序列化","协议","Java","微服务","架构","程序设计"]
 tags: ["Java","微服务","架构","设计","序列化"]
 categories: ["系统架构","程序设计"]
@@ -9,8 +9,6 @@ thumbnail: "images/common/confused-target-vector.jpg"
 
 weight: 1
 ---
-
-TODO
 
 :icons: font
 :source-highlighter: pygments
@@ -25,6 +23,7 @@ TODO
 . https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-2/[Hessian 协议解释与实战（二）：长整型、二进制数据与 Null^] -- 介绍长整数类型数据、二进制数据和 `null` 等三种类型的数据的处理。
 . https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-3/[Hessian 协议解释与实战（三）：字符串^] -- 专门介绍了关于字符串的处理。由于字符串需要铺垫的基础知识比较多，处理细节也有繁琐，所以单独成篇来介绍。
 . https://www.diguage.com/post/hessian-source-analysis-for-java/[Hessian 源码分析（Java）^] -- 开始第四篇分析之前，先来介绍一下 Hessian 的源码实现。方便后续展开说明。
+. https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-4/[Hessian 协议解释与实战（四）：数组与集合^] -- 铺垫了一些关于实例对象的处理，重点介绍关于数组和集合的相关处理。
 . 未完待续，敬请继续关注 https://www.diguage.com/["地瓜哥"博客网^]。
 
 在上一篇文章 https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/[Hessian 协议解释与实战（一）^] 中研究了布尔型数据、日期类型、浮点类型数据、整数类型数据等四种数据类型的处理方式。接下来，我们再来介绍长整数类型数据和字符串的处理情况。
@@ -33,29 +32,1088 @@ TODO
 
 基础工具方法就不再赘述，请直接参考 https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/#helper-methods[Hessian 协议解释与实战（一）：基础工具方法^] 中提到的几个方法。
 
+对打印字符的工具做一下改造：
 
-[#object]
-== 对象
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 打印字节数组
+ *
+ * @author D瓜哥 · https://www.diguage.com/
+ */
+private void printBytes(byte[] result) {
+    if (Objects.isNull(result)) {
+        System.out.println(".... bytes is null ....");
+        return;
+    }
+    int chunk = 0x8000;
+    int byteChunk = 8 * 1024;
+    if (0 < result.length && chunk < result.length & result[0] == 'R') {
+        for (int i = 0; i < result.length; i += (chunk + 3)) {
+            int min = Math.max(i - 1, 0);
+            int max = Math.min(i + 4, result.length);
+            System.out.println(".... " + min + " ~ " + max + " ....");
+            for (; min < max; min++) {
+                printByte(result[min]);
+            }
+        }
+        System.out.println("...... " + result.length);
+    } else if (0 < result.length && byteChunk < result.length 
+               && result[0] == 'A') {
+        for (int i = 0; i < result.length; i += byteChunk) {
+            int min = Math.max(i - 1, 0);
+            int max = Math.min(i + 4, result.length);
+            System.out.println(".... " + min + " ~ " + max + " ....");
+            for (; min < max; min++) {
+                printByte(result[min]);
+            }
+        }
+        System.out.println("...... " + result.length);
+    } else if (result.length > 0 && (result[0] == 'C' // class def
+            // List
+            || result[0] == 0x55 || result[0] == 'V'
+            || result[0] == 0x57 || result[0] == 0x58
+            || (0x70 <= result[0] && result[0] <= ((byte) 0x7F))
+            // Map
+            || result[0] == 'M' || result[0] == 'H'
+            // object
+            || result[0] == 'O'
+            || (0x60 <= result[0] && result[0] <= ((byte) 0x6F)))) {
+        int min = 0;
+        int max = result.length;
+        System.out.println(".... " + min + " ~ " + max + " ....");
+        for (; min < result.length; min++) {
+            printByte(result[min]);
+        }
+    } else {
+        int min = 0;
+        int max = 10;
+        System.out.println(".... " + min + " ~ " + max + " ....");
+        for (; min < result.length && min < max; min++) {
+            printByte(result[min]);
+        }
+        if (result.length > max) {
+            System.out.println("...... " + result.length);
+        }
+    }
+}
+
+/**
+ * 打印单个字节
+ *
+ * @author D瓜哥 · https://www.diguage.com/
+ */
+private void printByte(byte b) {
+    String bitx = Integer.toBinaryString(Byte.toUnsignedInt(b));
+    String zbits = String.format("%8s", bitx).replace(' ', '0');
+    if (0 <= b) {
+        System.out.printf("%4d 0x%02X %8s %c %n", b, b, zbits, b);
+    } else {
+        System.out.printf("%4d 0x%02X %8s %n", b, b, zbits);
+    }
+}
+----
+
+无论是序列化实例对象，还是序列化集合类，其实都是调用 `writeObject(Object value)` 方法。所以，将其序列化过程提取成方法如下：
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 对象序列化
+ *
+ * @author D瓜哥 · https://www.diguage.com/
+ */
+public void objectTo(Object value) throws Throwable {
+    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+    Hessian2Output out = getHessian2Output(bos);
+
+    out.writeObject(value);
+    out.close();
+    byte[] result = bos.toByteArray();
+
+    System.out.println("\n== Object: " + value.getClass().getName() + "  ==");
+    if (value instanceof Collection<?> && !((Collection<?>) value).isEmpty()) {
+        Optional<?> ele = ((Collection<?>) value).stream().findFirst();
+        System.out.println("== Generic: " + ele.get().getClass().getName() + "  ==");
+    }
+    if (value instanceof Map && !((Map) value).isEmpty()) {
+        Optional<? extends Map.Entry<?, ?>> optional =
+                ((Map<?, ?>) value).entrySet().stream().findFirst();
+        Map.Entry<?, ?> entry = optional.get();
+        Object key = entry.getKey();
+        Object val = entry.getValue();
+        System.out.println("== Key Object: " + key.getClass().getName() + "  ==");
+        System.out.println("== Val Object: " + val.getClass().getName() + "  ==");
+    }
+    System.out.println(toJson(value));
+    System.out.println("== byte array: hessian result ==");
+    printBytes(result);
+}
+
+/**
+ * 打印单个字节
+ *
+ * @author D瓜哥 · https://www.diguage.com/
+ */
+private String toJson(Object value) {
+    // 需要添加 com.fasterxml.jackson.core:jackson-databind 依赖
+    ObjectMapper mapper = new ObjectMapper();
+    // 序列化字段
+    mapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+    try {
+        return mapper.writeValueAsString(value);
+    } catch (JsonProcessingException e) {
+        e.printStackTrace();
+        return null;
+    }
+}
+----
 
 
+[#object-1]
+== 首谈对象
+
+要集合和哈希，就必须先了解一下 Hessian 对实例对象的处理。由于，实例对象和哈希的处理有些相似。所以，想把两个放在一起来说明。这里对实例对象的处理先做个概要介绍。
+
+先看一下类定义：
+
+[source%nowrap,java,{source_attr}]
+----
+package com.diguage;
+
+/**
+ * @author D瓜哥 · https://www.diguage.com/
+ */
+public class Car {
+    private String name;
+    private int age;
+
+    public Car() {
+    }
+
+    public Car(String name, int age) {
+        this.name = name;
+        this.age = age;
+    }
+
+    @Override
+    public String toString() {
+        return "Car{" +
+                "name='" + name + '\'' +
+                ", age=" + age +
+                '}';
+    }
+}
+----
+
+接下来，我们看一下序列化操作：
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 对象序列化
+ *
+ * @author D瓜哥 · https://www.diguage.com/
+ */
+@Test
+public void testObject1() throws Throwable {
+    Car value = new Car("diguage", 47);
+
+    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+    Hessian2Output out = getHessian2Output(bos);
+
+    // 在序列化实例对象时，
+    // 首先，序列化实例对象对应的类定义：
+    // ①类型（字符串形式）②字段数量③各个属性名称
+    // 其次，序列化实例对象
+    // ①根据类型找到对应的类型编号②依次序列化实例属性
+    // 关于编号编码：
+    // 1、在 ref ∈ [0, 15] 时，编码为：BC_OBJECT_DIRECT（0x60）+ ref
+    // 2、在 ref ∈ [16, ] 时，编码为 ①O ②ref（以int编码）
+    // 类型编号没有前置存储，是根据类型在序列化出现顺序来编号，从 0 开始，依次递增。
+    out.writeObject(value);
+    // 序列化两次，查看差异
+    // 根据实验发现：重复对象会使用前置标志位 0x51（Q）+ 编号来处理，减少数据量。
+    // 引用编号没有前置存储，是根据实例在序列化出现的顺序来编号，从 0 开始，依次递增。
+    out.writeObject(value);
+    out.close();
+    byte[] result = bos.toByteArray();
+    String className = value.getClass().getName();
+    System.out.println("\n== Object: " + className + "  ==");
+    System.out.println(toJson(value));
+    System.out.println("== byte array: hessian result ==");
+    printBytes(result);
+}
+
+
+// -- 输出结果 ------------------------------------------------
+== Object: com.diguage.Car  ==
+{"name":"diguage","age":47}
+== byte array: hessian result ==
+.... 0 ~ 39 ....
+  67 0x43 01000011 C 
+  15 0x0F 00001111  
+  99 0x63 01100011 c 
+ 111 0x6F 01101111 o 
+ 109 0x6D 01101101 m 
+  46 0x2E 00101110 . 
+ 100 0x64 01100100 d 
+ 105 0x69 01101001 i 
+ 103 0x67 01100111 g 
+ 117 0x75 01110101 u 
+  97 0x61 01100001 a 
+ 103 0x67 01100111 g 
+ 101 0x65 01100101 e 
+  46 0x2E 00101110 . 
+  67 0x43 01000011 C 
+  97 0x61 01100001 a 
+ 114 0x72 01110010 r 
+-110 0x92 10010010 
+   4 0x04 00000100  
+ 110 0x6E 01101110 n 
+  97 0x61 01100001 a 
+ 109 0x6D 01101101 m 
+ 101 0x65 01100101 e 
+   3 0x03 00000011  
+  97 0x61 01100001 a 
+ 103 0x67 01100111 g 
+ 101 0x65 01100101 e 
+  96 0x60 01100000 ` 
+   7 0x07 00000111  
+ 100 0x64 01100100 d 
+ 105 0x69 01101001 i 
+ 103 0x67 01100111 g 
+ 117 0x75 01110101 u 
+  97 0x61 01100001 a 
+ 103 0x67 01100111 g 
+ 101 0x65 01100101 e 
+ -65 0xBF 10111111 
+  81 0x51 01010001 Q 
+-112 0x90 10010000
+----
+
+结合 https://www.diguage.com/post/hessian-serialization-protocol/#object[Hessian 2.0 序列化协议（中文版）：对象^] 中的规定来看，这个实验验证如下规则：
+
+在序列化实例对象时，
+
+. 首先，序列化实例对象对应的类定义。按照如下属性，序列化如下信息：
+.. 类型（字符串形式）
+.. 字段数量
+.. 各个属性名称
+. 其次，序列化实例对象
+.. 根据类型找到对应的类型编号
+.. 依次序列化实例属性
+
+关于类型编号编码需要特别说明一下：
+
+. 在 `ref ∈ [0, 15]` 时，编码为： `BC_OBJECT_DIRECT`（`0x60`）+ `ref`
+. 在 `ref ∈ [16, ]` 时，编码格式为：
+.. `O`
+.. `ref`（以 `int` 编码）
+
+类型编号没有前置存储，是根据类型在序列化时出现的顺序来编号，从 `0` 开始，依次递增。
+
+根据实验发现：重复对象会使用前置标志位 `0x51`（`Q`）+ 编号来处理，这样可以减少重复数据的重复编码，减少序列化后的字节长度。另外，引用编号没有前置存储，是根据实例在序列化时出现的顺序来编号，从 `0` 开始，依次递增。
+
+.如何定位对象？
+****
+看序列化结果，在标志位 `0x51`（`Q`）后面，写入的是一个数字。但是，前面对象进行序列化时，也没有写数字。我猜测是在反序列化时，会根据字节数组重新构建起来对象和数字的对应关系。
+****
+
+关于实例对象的序列化操作，这些信息已经足够我们展开下文。其他信息，后续再展开讨论。
 
 [#list]
 == 链表数据
 
-做实验中发现，如果同一个对象被仿佛序列化（比如数组中的多个相同对象），那么只需要序列化第一个对象。后面的，都是直接引用 `0x51`（`Q`）已被序列化的对象。
+在 https://www.diguage.com/post/hessian-source-analysis-for-java/[Hessian 源码分析（Java）^] 中，介绍了一些 Hessian 的架构以及序列化的流程。再结合代码，我们知道，涉及链表处理的 `Serializer` 有如下几个：
 
-TODO: 如何定位对象？看序列化结果，在标志位 `0x51`（`Q`）后面，写入的是一个数字。但是，前面对象进行序列化时，也没有写数字。我猜测是在反序列化时，会根据字节数组重新构建起来对象和数字的对应关系。
+. `ArraySerializer`
+. `BasicSerializer` --  八种类型数组、 `String` 数组、 `Object` 数组都是由它来进行处理。
+. `CollectionSerializer`
+. `EnumerationSerializer`
+. `IteratorSerializer`
 
-有几部分需要实验：
+查看相关代码，对于集合的处理，基本上就是三步走：
 
-. Array, len=1,7,8
-.. 基本类型、 `String` 和 `Object` 任选一种即可。
-.. 自定义对象
-. `ArrayList` -- 需要测试不同长度
-. `LinkedList`
-. `HashSet`
-. `Iterator` 或者 `Enumeration`
+. `AbstractHessianOutput.writeListBegin(int length, String type)`
+. `AbstractHessianOutput.writeObject/Int/Double/XXX(Object object)`
+. `AbstractHessianOutput.writeListEnd()` -- 不一定调用。是否调用，视情况而定。
+
+另外，在 https://www.diguage.com/post/hessian-source-analysis-for-java/[Hessian 源码分析（Java）^] 中，也提到在 `Hessian2Output` 中实现了 `AbstractHessianOutput` 的接口。所以，只需要关注 `Hessian2Output` 对上述三个方法的实现即可。
+
+根据以上分析，设计如下几种实验：
+
+. 序列化 `int[]` 以测试 `BasicSerializer` 的表现；
+. 序列化 `Car[]` 以测试 `ArraySerializer` 的表现；
+. 序列化 `ArrayList<Integer>`、 `LinkedList<Integer>` 和 `HashSet<Integer>` 以测试 `CollectionSerializer` 的表现；
+. 序列化 `Collection<Integer>.iterator` 以测试 `IteratorSerializer`。
+
+NOTE: 对比了 `IteratorSerializer` 和 `EnumerationSerializer` 的代码，两者几乎一模一样。就不再重复测试了。
+
+[#int-array]
+=== `int[]` 👉 `BasicSerializer`
+
+首先，使用 `int[]` 来测试一下 `BasicSerializer` 的处理情况。
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 数组序列化
+ *
+ * @author D瓜哥 · https://www.diguage.com/
+ */
+@Test
+public void testIntArray() throws Throwable {
+    // 在处理长度为 [0, 7] 的数组时，
+    // ①前置标志位： BC_LIST_DIRECT（0x70）+ length
+    //   范围：0x70(p) ~ 0x77(w)
+    // ②类型（字符串形式）
+    // ③逐个数组元素
+    // 注意：如果数组为空，则没有第③项
+    objectTo(new int[]{});
+    objectTo(new int[]{0});
+    objectTo(new int[]{0, 1, 2, 3, 4, 5, 6});
+    // 在处理长度为 [8, 0] 的数组时，
+    // ①使用前置标志位 V 表示
+    // ②类型（字符串形式）
+    // ③数组长度length
+    // ④逐个数组元素
+    objectTo(new int[]{0, 1, 2, 3, 4, 5, 6, 7});
+}
 
 
+// -- 输出结果 ------------------------------------------------
+== Object: [I  ==
+[]
+== byte array: hessian result ==
+.... 0 ~ 6 ....
+ 112 0x70 01110000 p 
+   4 0x04 00000100  
+  91 0x5B 01011011 [ 
+ 105 0x69 01101001 i 
+ 110 0x6E 01101110 n 
+ 116 0x74 01110100 t 
+
+== Object: [I  ==
+[0]
+== byte array: hessian result ==
+.... 0 ~ 7 ....
+ 113 0x71 01110001 q 
+   4 0x04 00000100  
+  91 0x5B 01011011 [ 
+ 105 0x69 01101001 i 
+ 110 0x6E 01101110 n 
+ 116 0x74 01110100 t 
+-112 0x90 10010000 
+
+== Object: [I  ==
+[0,1,2,3,4,5,6]
+== byte array: hessian result ==
+.... 0 ~ 13 ....
+ 119 0x77 01110111 w 
+   4 0x04 00000100  
+  91 0x5B 01011011 [ 
+ 105 0x69 01101001 i 
+ 110 0x6E 01101110 n 
+ 116 0x74 01110100 t 
+-112 0x90 10010000 
+-111 0x91 10010001 
+-110 0x92 10010010 
+-109 0x93 10010011 
+-108 0x94 10010100 
+-107 0x95 10010101 
+-106 0x96 10010110 
+
+== Object: [I  ==
+[0,1,2,3,4,5,6,7]
+== byte array: hessian result ==
+.... 0 ~ 15 ....
+  86 0x56 01010110 V 
+   4 0x04 00000100  
+  91 0x5B 01011011 [ 
+ 105 0x69 01101001 i 
+ 110 0x6E 01101110 n 
+ 116 0x74 01110100 t 
+-104 0x98 10011000 
+-112 0x90 10010000 
+-111 0x91 10010001 
+-110 0x92 10010010 
+-109 0x93 10010011 
+-108 0x94 10010100 
+-107 0x95 10010101 
+-106 0x96 10010110 
+-105 0x97 10010111
+----
+
+结合 https://www.diguage.com/post/hessian-serialization-protocol/#list[Hessian 2.0 序列化协议（中文版）：链表数据^] 中的规定来看，这个实验验证了两条规则：
+
+. 在处理长度为 `[0, 7]` 的数组时，处理流程如下：
+.. 前置标志位： `0x70`(`p`)+ length。标志位范围：`0x70`(`p`) ~ `0x77`(`w`)
+.. 类型（字符串形式）
+.. 逐个数组元素
++
+--
+NOTE: 如果数组为空，则没有第③项。
+--
+. 在处理长度为 `[8, ]` 的数组时，
+.. 使用前置标志位 `0x56`（`V`) 表示
+.. 类型（字符串形式）
+.. 数组长度 length
+.. 逐个数组元素
 
 
+=== `Car[]` 👉 `ArraySerializer`
+
+接着，使用 `Car[]` 来测试一下 `ArraySerializer` 的处理情况。
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 测试对象数组的序列化
+ *
+ * @author D瓜哥 · https://www.diguage.com/
+ */
+@Test
+public void testObjectArray() throws Throwable {
+    // 在处理长度为 [0, 7] 的数组时：
+    // ①前置标志位： BC_LIST_DIRECT（0x70）+ length
+    //   范围：0x70(p) ~ 0x77(w)
+    // ②类型（字符串形式）
+    // ③逐个数组元素
+    // 注意：如果数组为空，则没有第③项
+    Car c = new Car("diguage", 47);
+    objectTo(new Car[]{});
+    objectTo(new Car[]{c});
+    objectTo(new Car[]{c, c, c, c, c, c, c});
+    // 在处理长度为 [8, 0] 的数组时：
+    // ①使用前置标志位 V 表示
+    // ②类型（字符串形式）
+    // ③长度length
+    // ④逐个数组元素
+    // 由于我这里使用了相同的元素，所以，
+    // 除第一个元素外，其他元素都试用引用编号来编码。
+    objectTo(new Car[]{c, c, c, c, c, c, c, c});
+}
+
+
+// -- 输出结果 ------------------------------------------------
+
+== Object: [Lcom.diguage.Car;  ==
+[]
+== byte array: hessian result ==
+.... 0 ~ 18 ....
+ 112 0x70 01110000 p 
+  16 0x10 00010000  
+  91 0x5B 01011011 [ 
+  99 0x63 01100011 c 
+ 111 0x6F 01101111 o 
+ 109 0x6D 01101101 m 
+  46 0x2E 00101110 . 
+ 100 0x64 01100100 d 
+ 105 0x69 01101001 i 
+ 103 0x67 01100111 g 
+ 117 0x75 01110101 u 
+  97 0x61 01100001 a 
+ 103 0x67 01100111 g 
+ 101 0x65 01100101 e 
+  46 0x2E 00101110 . 
+  67 0x43 01000011 C 
+  97 0x61 01100001 a 
+ 114 0x72 01110010 r 
+
+== Object: [Lcom.diguage.Car;  ==
+[{"name":"diguage","age":47}]
+== byte array: hessian result ==
+.... 0 ~ 55 ....
+ 113 0x71 01110001 q 
+  16 0x10 00010000  
+  91 0x5B 01011011 [ 
+  99 0x63 01100011 c 
+ 111 0x6F 01101111 o 
+ 109 0x6D 01101101 m 
+  46 0x2E 00101110 . 
+ 100 0x64 01100100 d 
+ 105 0x69 01101001 i 
+ 103 0x67 01100111 g 
+ 117 0x75 01110101 u 
+  97 0x61 01100001 a 
+ 103 0x67 01100111 g 
+ 101 0x65 01100101 e 
+  46 0x2E 00101110 . 
+  67 0x43 01000011 C 
+  97 0x61 01100001 a 
+ 114 0x72 01110010 r 
+  67 0x43 01000011 C 
+  15 0x0F 00001111  
+  99 0x63 01100011 c 
+ 111 0x6F 01101111 o 
+ 109 0x6D 01101101 m 
+  46 0x2E 00101110 . 
+ 100 0x64 01100100 d 
+ 105 0x69 01101001 i 
+ 103 0x67 01100111 g 
+ 117 0x75 01110101 u 
+  97 0x61 01100001 a 
+ 103 0x67 01100111 g 
+ 101 0x65 01100101 e 
+  46 0x2E 00101110 . 
+  67 0x43 01000011 C 
+  97 0x61 01100001 a 
+ 114 0x72 01110010 r 
+-110 0x92 10010010 
+   4 0x04 00000100  
+ 110 0x6E 01101110 n 
+  97 0x61 01100001 a 
+ 109 0x6D 01101101 m 
+ 101 0x65 01100101 e 
+   3 0x03 00000011  
+  97 0x61 01100001 a 
+ 103 0x67 01100111 g 
+ 101 0x65 01100101 e 
+  96 0x60 01100000 ` 
+   7 0x07 00000111  
+ 100 0x64 01100100 d 
+ 105 0x69 01101001 i 
+ 103 0x67 01100111 g 
+ 117 0x75 01110101 u 
+  97 0x61 01100001 a 
+ 103 0x67 01100111 g 
+ 101 0x65 01100101 e 
+ -65 0xBF 10111111 
+
+== Object: [Lcom.diguage.Car;  ==
+[{"name":"diguage","age":47},
+ {"name":"diguage","age":47},
+ {"name":"diguage","age":47},
+ {"name":"diguage","age":47},
+ {"name":"diguage","age":47},
+ {"name":"diguage","age":47},
+ {"name":"diguage","age":47}]
+== byte array: hessian result ==
+.... 0 ~ 67 ....
+ 119 0x77 01110111 w 
+  16 0x10 00010000  
+  91 0x5B 01011011 [ 
+  99 0x63 01100011 c 
+ 111 0x6F 01101111 o 
+ 109 0x6D 01101101 m 
+  46 0x2E 00101110 . 
+ 100 0x64 01100100 d 
+ 105 0x69 01101001 i 
+ 103 0x67 01100111 g 
+ 117 0x75 01110101 u 
+  97 0x61 01100001 a 
+ 103 0x67 01100111 g 
+ 101 0x65 01100101 e 
+  46 0x2E 00101110 . 
+  67 0x43 01000011 C 
+  97 0x61 01100001 a 
+ 114 0x72 01110010 r 
+  67 0x43 01000011 C 
+  15 0x0F 00001111  
+  99 0x63 01100011 c 
+ 111 0x6F 01101111 o 
+ 109 0x6D 01101101 m 
+  46 0x2E 00101110 . 
+ 100 0x64 01100100 d 
+ 105 0x69 01101001 i 
+ 103 0x67 01100111 g 
+ 117 0x75 01110101 u 
+  97 0x61 01100001 a 
+ 103 0x67 01100111 g 
+ 101 0x65 01100101 e 
+  46 0x2E 00101110 . 
+  67 0x43 01000011 C 
+  97 0x61 01100001 a 
+ 114 0x72 01110010 r 
+-110 0x92 10010010 
+   4 0x04 00000100  
+ 110 0x6E 01101110 n 
+  97 0x61 01100001 a 
+ 109 0x6D 01101101 m 
+ 101 0x65 01100101 e 
+   3 0x03 00000011  
+  97 0x61 01100001 a 
+ 103 0x67 01100111 g 
+ 101 0x65 01100101 e 
+  96 0x60 01100000 ` 
+   7 0x07 00000111  
+ 100 0x64 01100100 d 
+ 105 0x69 01101001 i 
+ 103 0x67 01100111 g 
+ 117 0x75 01110101 u 
+  97 0x61 01100001 a 
+ 103 0x67 01100111 g 
+ 101 0x65 01100101 e 
+ -65 0xBF 10111111 
+  81 0x51 01010001 Q 
+-111 0x91 10010001 
+  81 0x51 01010001 Q 
+-111 0x91 10010001 
+  81 0x51 01010001 Q 
+-111 0x91 10010001 
+  81 0x51 01010001 Q 
+-111 0x91 10010001 
+  81 0x51 01010001 Q 
+-111 0x91 10010001 
+  81 0x51 01010001 Q 
+-111 0x91 10010001 
+
+== Object: [Lcom.diguage.Car;  ==
+[{"name":"diguage","age":47},
+ {"name":"diguage","age":47},
+ {"name":"diguage","age":47},
+ {"name":"diguage","age":47},
+ {"name":"diguage","age":47},
+ {"name":"diguage","age":47},
+ {"name":"diguage","age":47},
+ {"name":"diguage","age":47}]
+== byte array: hessian result ==
+.... 0 ~ 70 ....
+  86 0x56 01010110 V 
+  16 0x10 00010000  
+  91 0x5B 01011011 [ 
+  99 0x63 01100011 c 
+ 111 0x6F 01101111 o 
+ 109 0x6D 01101101 m 
+  46 0x2E 00101110 . 
+ 100 0x64 01100100 d 
+ 105 0x69 01101001 i 
+ 103 0x67 01100111 g 
+ 117 0x75 01110101 u 
+  97 0x61 01100001 a 
+ 103 0x67 01100111 g 
+ 101 0x65 01100101 e 
+  46 0x2E 00101110 . 
+  67 0x43 01000011 C 
+  97 0x61 01100001 a 
+ 114 0x72 01110010 r 
+-104 0x98 10011000 
+  67 0x43 01000011 C 
+  15 0x0F 00001111  
+  99 0x63 01100011 c 
+ 111 0x6F 01101111 o 
+ 109 0x6D 01101101 m 
+  46 0x2E 00101110 . 
+ 100 0x64 01100100 d 
+ 105 0x69 01101001 i 
+ 103 0x67 01100111 g 
+ 117 0x75 01110101 u 
+  97 0x61 01100001 a 
+ 103 0x67 01100111 g 
+ 101 0x65 01100101 e 
+  46 0x2E 00101110 . 
+  67 0x43 01000011 C 
+  97 0x61 01100001 a 
+ 114 0x72 01110010 r 
+-110 0x92 10010010 
+   4 0x04 00000100  
+ 110 0x6E 01101110 n 
+  97 0x61 01100001 a 
+ 109 0x6D 01101101 m 
+ 101 0x65 01100101 e 
+   3 0x03 00000011  
+  97 0x61 01100001 a 
+ 103 0x67 01100111 g 
+ 101 0x65 01100101 e 
+  96 0x60 01100000 ` 
+   7 0x07 00000111  
+ 100 0x64 01100100 d 
+ 105 0x69 01101001 i 
+ 103 0x67 01100111 g 
+ 117 0x75 01110101 u 
+  97 0x61 01100001 a 
+ 103 0x67 01100111 g 
+ 101 0x65 01100101 e 
+ -65 0xBF 10111111 
+  81 0x51 01010001 Q 
+-111 0x91 10010001 
+  81 0x51 01010001 Q 
+-111 0x91 10010001 
+  81 0x51 01010001 Q 
+-111 0x91 10010001 
+  81 0x51 01010001 Q 
+-111 0x91 10010001 
+  81 0x51 01010001 Q 
+-111 0x91 10010001 
+  81 0x51 01010001 Q 
+-111 0x91 10010001 
+  81 0x51 01010001 Q 
+-111 0x91 10010001 
+----
+
+实验结果与 <<int-array>> 中相同，这里就不再赘述。
+
+相同实例对象在多次序列化时，只会序列化第一个实例对象。后面的，都是引用标志位 `0x51`（`Q`） + “引用编号”，来指向第一个被序列化的实例对象。这一点和 <<object-1>> 中的描述一致。
+
+
+=== `ArrayList<Integer>` 👉 `CollectionSerializer`
+
+再接着，使用 `ArrayList<Integer>` 来测试一下 `CollectionSerializer` 的处理情况。
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 测试 ArrayList 的序列化
+ *
+ * @author D瓜哥 · https://www.diguage.com/
+ */
+@Test
+public void testIntArrayList() throws Throwable {
+    // 在处理长度为 [0, 7] 的 ArrayList 时：
+    // ①前置标志位： BC_LIST_DIRECT_UNTYPED（0x78）+ length
+    //   范围：0x78(x) ~ 0x7F
+    // ②逐个集合元素
+    // 注意：如果集合为空，则没有第②项
+    List<Integer> al0 = new ArrayList<>();
+    objectTo(al0);
+
+    List<Integer> ints1 = Arrays.asList(0);
+    List<Integer> al1 = new ArrayList<>(ints1);
+    objectTo(al1);
+
+    List<Integer> ints7 = Arrays.asList(0, 1, 2, 3, 4, 5, 6);
+    List<Integer> al7 = new ArrayList<>(ints7);
+    objectTo(al7);
+
+    // 在处理长度为 [8, 0] 的 ArrayList 时：
+    // ①使用前置标志位 0x58（X） 表示
+    // ②集合长度 length
+    // ③逐个集合元素
+    List<Integer> ints8 = Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7);
+    List<Integer> al8 = new ArrayList<>(ints8);
+    objectTo(al8);
+}
+
+
+// -- 输出结果 ------------------------------------------------
+== Object: java.util.ArrayList  ==
+[]
+== byte array: hessian result ==
+.... 0 ~ 1 ....
+ 120 0x78 01111000 x 
+
+== Object: java.util.ArrayList  ==
+== Generic: java.lang.Integer  ==
+[0]
+== byte array: hessian result ==
+.... 0 ~ 2 ....
+ 121 0x79 01111001 y 
+-112 0x90 10010000 
+
+== Object: java.util.ArrayList  ==
+== Generic: java.lang.Integer  ==
+[0,1,2,3,4,5,6]
+== byte array: hessian result ==
+.... 0 ~ 8 ....
+ 127 0x7F 01111111  
+-112 0x90 10010000 
+-111 0x91 10010001 
+-110 0x92 10010010 
+-109 0x93 10010011 
+-108 0x94 10010100 
+-107 0x95 10010101 
+-106 0x96 10010110 
+
+== Object: java.util.ArrayList  ==
+== Generic: java.lang.Integer  ==
+[0,1,2,3,4,5,6,7]
+== byte array: hessian result ==
+.... 0 ~ 10 ....
+  88 0x58 01011000 X 
+-104 0x98 10011000 
+-112 0x90 10010000 
+-111 0x91 10010001 
+-110 0x92 10010010 
+-109 0x93 10010011 
+-108 0x94 10010100 
+-107 0x95 10010101 
+-106 0x96 10010110 
+-105 0x97 10010111 
+----
+
+Hessian 在处理 `ArrayList` 对象时，与数组处理略有不同：
+
+. 在处理长度为 `[0, 7]` 的 `ArrayList` 时：
+.. 前置标志位： `0x78`(`x`)+ length。前置标志位的范围：`0x78`(`x`) ~ `0x7F`
+.. 逐个集合元素
++
+--
+注意：如果集合为空，则没有第②项
+--
++
+. 在处理长度为 `[8, 0]` 的 `ArrayList` 时：
+.. 使用前置标志位 `0x58`（`X`） 表示
+.. 集合长度 length
+.. 逐个集合元素
+
+Hessian 对 `ArrayList` 的处理有一定的照顾成分：它不需要序列化 `ArrayList` 的类型。我们看一下下面的处理就知道了。
+
+=== `LinkedList<Integer>` 👉 `CollectionSerializer`
+
+又接着，使用 `LinkedList<Integer>` 来测试一下 `CollectionSerializer` 的处理情况。
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 测试 LinkedList 的序列化
+ *
+ * @author D瓜哥 · https://www.diguage.com/
+ */
+@Test
+public void testIntLinkedList() throws Throwable {
+    // 在处理长度为 [0, 7] 的 LinkedList 时，
+    // ①前置标志位： BC_LIST_DIRECT（0x70）+ length
+    //   范围：0x70(p) ~ 0x77(w)
+    // ②类型（字符串形式）
+    // ③逐个数组元素
+    // 注意：如果数组为空，则没有第③项
+    List<Integer> al0 = new LinkedList<>();
+    objectTo(al0);
+
+    List<Integer> ints1 = Arrays.asList(0);
+    List<Integer> al1 = new LinkedList<>(ints1);
+    objectTo(al1);
+
+    List<Integer> ints7 = Arrays.asList(0, 1, 2, 3, 4, 5, 6);
+    List<Integer> al7 = new LinkedList<>(ints7);
+    objectTo(al7);
+
+    // 在处理长度为 [8, 0] 的 LinkedList 时，
+    // ①使用前置标志位 V 表示
+    // ②类型（字符串形式）
+    // ③数组长度length
+    // ④逐个数组元素
+    List<Integer> ints8 = Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7);
+    List<Integer> al8 = new LinkedList<>(ints8);
+    objectTo(al8);
+}
+
+
+// -- 输出结果 ------------------------------------------------
+
+== Object: java.util.LinkedList  ==
+[]
+== byte array: hessian result ==
+.... 0 ~ 22 ....
+ 112 0x70 01110000 p 
+  20 0x14 00010100  
+ 106 0x6A 01101010 j 
+  97 0x61 01100001 a 
+ 118 0x76 01110110 v 
+  97 0x61 01100001 a 
+  46 0x2E 00101110 . 
+ 117 0x75 01110101 u 
+ 116 0x74 01110100 t 
+ 105 0x69 01101001 i 
+ 108 0x6C 01101100 l 
+  46 0x2E 00101110 . 
+  76 0x4C 01001100 L 
+ 105 0x69 01101001 i 
+ 110 0x6E 01101110 n 
+ 107 0x6B 01101011 k 
+ 101 0x65 01100101 e 
+ 100 0x64 01100100 d 
+  76 0x4C 01001100 L 
+ 105 0x69 01101001 i 
+ 115 0x73 01110011 s 
+ 116 0x74 01110100 t 
+
+== Object: java.util.LinkedList  ==
+== Generic: java.lang.Integer  ==
+[0]
+== byte array: hessian result ==
+.... 0 ~ 23 ....
+ 113 0x71 01110001 q 
+  20 0x14 00010100  
+ 106 0x6A 01101010 j 
+  97 0x61 01100001 a 
+ 118 0x76 01110110 v 
+  97 0x61 01100001 a 
+  46 0x2E 00101110 . 
+ 117 0x75 01110101 u 
+ 116 0x74 01110100 t 
+ 105 0x69 01101001 i 
+ 108 0x6C 01101100 l 
+  46 0x2E 00101110 . 
+  76 0x4C 01001100 L 
+ 105 0x69 01101001 i 
+ 110 0x6E 01101110 n 
+ 107 0x6B 01101011 k 
+ 101 0x65 01100101 e 
+ 100 0x64 01100100 d 
+  76 0x4C 01001100 L 
+ 105 0x69 01101001 i 
+ 115 0x73 01110011 s 
+ 116 0x74 01110100 t 
+-112 0x90 10010000 
+
+== Object: java.util.LinkedList  ==
+== Generic: java.lang.Integer  ==
+[0,1,2,3,4,5,6]
+== byte array: hessian result ==
+.... 0 ~ 29 ....
+ 119 0x77 01110111 w 
+  20 0x14 00010100  
+ 106 0x6A 01101010 j 
+  97 0x61 01100001 a 
+ 118 0x76 01110110 v 
+  97 0x61 01100001 a 
+  46 0x2E 00101110 . 
+ 117 0x75 01110101 u 
+ 116 0x74 01110100 t 
+ 105 0x69 01101001 i 
+ 108 0x6C 01101100 l 
+  46 0x2E 00101110 . 
+  76 0x4C 01001100 L 
+ 105 0x69 01101001 i 
+ 110 0x6E 01101110 n 
+ 107 0x6B 01101011 k 
+ 101 0x65 01100101 e 
+ 100 0x64 01100100 d 
+  76 0x4C 01001100 L 
+ 105 0x69 01101001 i 
+ 115 0x73 01110011 s 
+ 116 0x74 01110100 t 
+-112 0x90 10010000 
+-111 0x91 10010001 
+-110 0x92 10010010 
+-109 0x93 10010011 
+-108 0x94 10010100 
+-107 0x95 10010101 
+-106 0x96 10010110 
+
+== Object: java.util.LinkedList  ==
+== Generic: java.lang.Integer  ==
+[0,1,2,3,4,5,6,7]
+== byte array: hessian result ==
+.... 0 ~ 31 ....
+  86 0x56 01010110 V 
+  20 0x14 00010100  
+ 106 0x6A 01101010 j 
+  97 0x61 01100001 a 
+ 118 0x76 01110110 v 
+  97 0x61 01100001 a 
+  46 0x2E 00101110 . 
+ 117 0x75 01110101 u 
+ 116 0x74 01110100 t 
+ 105 0x69 01101001 i 
+ 108 0x6C 01101100 l 
+  46 0x2E 00101110 . 
+  76 0x4C 01001100 L 
+ 105 0x69 01101001 i 
+ 110 0x6E 01101110 n 
+ 107 0x6B 01101011 k 
+ 101 0x65 01100101 e 
+ 100 0x64 01100100 d 
+  76 0x4C 01001100 L 
+ 105 0x69 01101001 i 
+ 115 0x73 01110011 s 
+ 116 0x74 01110100 t 
+-104 0x98 10011000 
+-112 0x90 10010000 
+-111 0x91 10010001 
+-110 0x92 10010010 
+-109 0x93 10010011 
+-108 0x94 10010100 
+-107 0x95 10010101 
+-106 0x96 10010110 
+-105 0x97 10010111 
+----
+
+对于 `LinkedList` 与 `ArrayList` 差距巨大，反倒是和前面的 <<int-array>> 相同。相比 `ArrayList`，处理 `LinkedList` 需要增加 `LinkedList` 的类型。所以，**微服务的参数与返回值，尽量选择 `ArrayList` 类型。**
+
+经过测试，其他 `Collection` 的实现都与此相同，比如 `HashSet`，再比如 `Arrays.asList(T... a)`，就不再赘述，留给大家自己做测试。
+
+=== `Collection<Integer>.iterator` 👉 `IteratorSerializer`
+
+最后，使用 `Collection<Integer>.iterator` 来测试一下 `IteratorSerializer` 的处理情况。
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 测试 Iterator 的序列化
+ *
+ * @author D瓜哥 · https://www.diguage.com/
+ */
+@Test
+public void testIntIterator() throws Throwable {
+    // 处理 Iterator 和 Enumeration 时，
+    // ①前置标志位 BC_LIST_VARIABLE_UNTYPED（0x57）
+    // ②遍历 Iterator，逐个写入元素。为空则不写入。
+    // ③写入结束标志位 BC_END（Z）
+    List<Integer> al0 = new ArrayList<>();
+    objectTo(al0.iterator());
+
+    List<Integer> ints1 = new ArrayList<>(Arrays.asList(0));
+    objectTo(ints1.iterator());
+
+    List<Integer> ints2 = Arrays.asList(0, 1);
+    objectTo(ints2.iterator());
+}
+
+// -- 输出结果 ------------------------------------------------
+== Object: java.util.ArrayList$Itr  ==
+[]
+== byte array: hessian result ==
+.... 0 ~ 2 ....
+  87 0x57 01010111 W 
+  90 0x5A 01011010 Z 
+
+== Object: java.util.ArrayList$Itr  ==
+[]
+== byte array: hessian result ==
+.... 0 ~ 3 ....
+  87 0x57 01010111 W 
+-112 0x90 10010000 
+  90 0x5A 01011010 Z 
+
+== Object: java.util.AbstractList$Itr  ==
+[]
+== byte array: hessian result ==
+.... 0 ~ 4 ....
+  87 0x57 01010111 W 
+-112 0x90 10010000 
+-111 0x91 10010001 
+  90 0x5A 01011010 Z 
+----
+
+处理 `Iterator` 和 `Enumeration` 时：
+
+. 首先，写入前置标志位 `0x57`（`W`）
+. 其次，遍历 `Iterator` 或 `Enumeration`，逐个写入元素。为空则不写入。
+. 最后，写入结束标志位 `0x5A`（`Z`）
+
+这里没有写入“长度”，想想这也正常，毕竟在 `Iterator` 或 `Enumeration` 实例中，拿不到“长度”属性。
+
+
+=== 小结
+
+结合上面的所有实验和 https://www.diguage.com/post/hessian-serialization-protocol/#list[Hessian 2.0 序列化协议（中文版）：链表数据^] 来做个总结：
+
+. 在处理数组以及除 `ArrayList` 以外其他 `Collection` 实现类时：
+.. 在处理长度为 `[0, 7]` 的数组时，处理流程如下：
+... 前置标志位： `0x70`(`p`)+ length。标志位范围：`0x70`(`p`) ~ `0x77`(`w`)
+... 类型（字符串形式）
+... 逐个数组元素
+.. 在处理长度为 `[8, ]` 的数组时，
+... 使用前置标志位 `0x56`（`V`) 表示
+... 类型（字符串形式）
+... 数组长度 length
+... 逐个数组元素
+. 在处理 `ArrayList` 时：
+.. 在处理长度为 `[0, 7]` 的 `ArrayList` 时：
+... 前置标志位： `0x78`(`x`) + length。前置标志位的范围：`0x78`(`x`) ~ `0x7F`
+... 逐个集合元素
+.. 在处理长度为 `[8, 0]` 的 `ArrayList` 时：
+... 使用前置标志位 `0x58`（`X`） 表示
+... 集合长度 length
+... 逐个集合元素
+. 处理 `Iterator` 和 `Enumeration` 时：
+.. 首先，写入前置标志位 `0x57`（`W`）
+.. 其次，遍历 `Iterator` 或 `Enumeration`，逐个写入元素。为空则不写入。
+.. 最后，写入结束标志位 `0x5A`（`Z`）
+
+对照协议定义，你会发现，关于 `list ::= x55 type value* 'Z'   # variable-length list` 的测试没有找到。翻看代码，发现这个分支不可达。有些奇怪，回头再研究研究。
+
+本想这一篇文章把 Hessian 序列化协议剩下的内容都解释完，但是随着测试的增加，发现关于“数组和集合”的内容太多了。篇幅已经很长，剩下内容再开其他新篇吧。
