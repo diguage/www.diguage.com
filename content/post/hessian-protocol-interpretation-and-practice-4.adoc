@@ -26,7 +26,7 @@ weight: 1
 . https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-4/[Hessian 协议解释与实战（四）：数组与集合^] -- 铺垫了一些关于实例对象的处理，重点介绍关于数组和集合的相关处理。
 . 未完待续，敬请继续关注 https://www.diguage.com/["地瓜哥"博客网^]。
 
-在上一篇文章 https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/[Hessian 协议解释与实战（一）^] 中研究了布尔型数据、日期类型、浮点类型数据、整数类型数据等四种数据类型的处理方式。接下来，我们再来介绍长整数类型数据和字符串的处理情况。
+在上一篇文章 https://www.diguage.com/post/hessian-source-analysis-for-java/[Hessian 源码分析（Java）^] 对 Hessian 的 Java 实现做了一个概要的分析，对处理流程以及整体架构做了一个简单的分析。接下来，回到主题，继续来解释 Hessian 序列化协议。这篇文章，我们来重点分析一下数组与集合相关的操作。
 
 == 基础工具方法
 
