@@ -37,6 +37,7 @@ weight: 1
 . https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-3/[Hessian 协议解释与实战（三）：字符串^] -- 专门介绍了关于字符串的处理。由于字符串需要铺垫的基础知识比较多，处理细节也有繁琐，所以单独成篇来介绍。
 . https://www.diguage.com/post/hessian-source-analysis-for-java/[Hessian 源码分析（Java）^] -- 开始第四篇分析之前，先来介绍一下 Hessian 的源码实现。方便后续展开说明。
 . https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-4/[Hessian 协议解释与实战（四）：数组与集合^] -- 铺垫了一些关于实例对象的处理，重点介绍关于数组和集合的相关处理。
+. https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-5/[Hessian 协议解释与实战（五）：对象与映射^] -- 重点介绍关于对象与映射的相关处理。
 . 未完待续，敬请继续关注 https://www.diguage.com/["地瓜哥"博客网^]。
 
 :sectnums:
@@ -123,8 +124,8 @@ long       ::= 'L' b7 b6 b5 b4 b3 b2 b1 b0
            ::= [x38-x3f] b1 b0       # -x40000 to x3ffff
            ::= x59 b3 b2 b1 b0       # 32-bit integer cast to long
 
-           # map/object 哈希或对象
-map        ::= 'M' type (value value)* 'Z'  # key, value 哈希键值对
+           # map/object 映射或对象
+map        ::= 'M' type (value value)* 'Z'  # key, value 映射键值对
            ::= 'H' (value value)* 'Z'  # 无类型 key, value 键值对
 
            # null 值
@@ -186,7 +187,7 @@ Hessian 的对象序列化支持八种基本类型：
 同时，还支持三种递归类型（`recursive type`）：
 
 . 支持链表（`list`）和数组（`array`）的 <<list>> （`list`）
-. 支持哈希（`map`）和字典（`dictionary`）的 <<map>>（ `map`）
+. 支持映射（`map`）和字典（`dictionary`）的 <<map>>（ `map`）
 . 支持对象的 <<object>>（`object`）。
 
 最后，还支持一种特殊的构件：
@@ -674,9 +675,9 @@ L x00 x00 x00 x00 x00 x00 x01 x2c  # 300
 更详细的解释与实践，请移步 https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-2/#long[Hessian 协议解释与实战（二）：长整型、二进制数据与 Null：长整数类型数据^]。
 
 [#map]
-=== 哈希
+=== 映射
 
-哈希语法：
+映射语法：
 
 [source%nowrap,{source_attr}]
 ----
@@ -689,15 +690,15 @@ map        ::= M type (value value)* Z
 //               D瓜哥 · https://www.diguage.com/ · 出品            //
 ----
 
-哈希的序列化模式同时也能够序列化对象。类型元素用于描述哈希的类型。
+映射的序列化模式同时也能够序列化对象。类型元素用于描述映射的类型。
 
 这个类型可以为空，长度为零。如果没有指定类型，那么解析器可以自己选择类型。对于对象类型来说，不被识别的字段则会被忽略。
 
-每个哈希都会被添加到引用列表中。无论何时，解析器在解析哈希时，必须能够兼容 `null` 或 <<ref>> 类型。
+每个映射都会被添加到引用列表中。无论何时，解析器在解析映射时，必须能够兼容 `null` 或 <<ref>> 类型。
 
 类型可以有服务自己选择。
 
-==== 哈希示例
+==== 映射示例
 
 一个稀疏数组：
 
@@ -729,7 +730,7 @@ H           # untyped map (HashMap for Java)
 //               D瓜哥 · https://www.diguage.com/ · 出品            //
 ----
 
-一个 Java 对象的哈希表示：
+一个 Java 对象的映射表示：
 
 [source%nowrap,{source_attr}]
 ----
@@ -759,6 +760,12 @@ M
 ---------------------------------------------------------------------
 //               D瓜哥 · https://www.diguage.com/ · 出品            //
 ----
+
+==== 附录：解释与实践
+
+TIP: 最初把 *map* 翻译为了 *哈希*。后来又觉得翻译成 *映射* 更合适，就将“哈希”改为了“映射”。所以，如果行文中，有不一致的地方，还请海涵。
+
+更详细的解释与实践，请移步 https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-5/#map[Hessian 协议解释与实战（五）：对象与映射：映射^]。
 
 [#null]
 === `null`
@@ -893,6 +900,11 @@ x51 x91                   # object ref #1, i.e. Color.GREEN
 //               D瓜哥 · https://www.diguage.com/ · 出品            //
 ----
 
+==== 附录：解释与实践
+
+更详细的解释与实践，请移步 https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-5/#object[Hessian 协议解释与实战（五）：对象与映射：再谈实例对象^]。
+
+
 [#ref]
 === 引用
 
@@ -909,13 +921,13 @@ ref ::= x51 int
 //               D瓜哥 · https://www.diguage.com/ · 出品            //
 ----
 
-在一次 Hessian 2.0 序列化过程中，已经被链表、哈希或者对象实例化过的类型，可以通过一个整数数值来进行引用。当从输入流读取每个列表、哈希或对象时，它被赋值为流中的整数位置，即第一个列表或哈希为 `0`，下一个为 `1`，等等。之后的引用可以使用之前的对象。生产者可以生成引用；解析器必须能够识别它们。
+在一次 Hessian 2.0 序列化过程中，已经被链表、映射或者对象实例化过的类型，可以通过一个整数数值来进行引用。当从输入流读取每个列表、映射或对象时，它被赋值为流中的整数位置，即第一个列表或映射为 `0`，下一个为 `1`，等等。之后的引用可以使用之前的对象。生产者可以生成引用；解析器必须能够识别它们。
 
 引用能够关联到非完全读取的条目。例如，循环链表将在整个链表被读取之前引用第一个链接。
 
-一种可能的实现是在读取数组时将每个哈希、列表和对象添加到数组中。引用将返回数组中相应的值。为了支持循环结构，该实现将在填充内容之前，首先存储映射、列表或对象。
+一种可能的实现是在读取数组时将每个映射、列表和对象添加到数组中。引用将返回数组中相应的值。为了支持循环结构，该实现将在填充内容之前，首先存储映射、列表或对象。
 
-每个哈希或列表在被解析时被存储到一个数组中。引用选择一个存储对象。第一个对象编号为 `0`。
+每个映射或列表在被解析时被存储到一个数组中。引用选择一个存储对象。第一个对象编号为 `0`。
 
 ==== 引用示例
 
@@ -945,7 +957,7 @@ o x90      # object stores ref #0
 //               D瓜哥 · https://www.diguage.com/ · 出品            //
 ----
 
-引用仅指向链表、哈希和对象元素。特别是对于字符串和二进制数据，只有当它们包装在列表或映射中时才会共享引用。
+引用仅指向链表、映射和对象元素。特别是对于字符串和二进制数据，只有当它们包装在列表或映射中时才会共享引用。
 
 [#string]
 === 字符串类型数据
@@ -1025,7 +1037,7 @@ type ::= string
 //               D瓜哥 · https://www.diguage.com/ · 出品            //
 ----
 
-<<map>> 和 <<list>> 包含一个“类型”属性，用于为面向对象语言，指明哈希和链表的类型名称。
+<<map>> 和 <<list>> 包含一个“类型”属性，用于为面向对象语言，指明映射和链表的类型名称。
 
 任何一个类型都会被加入到 <<type-map>> 中，以便将来引用。
 
@@ -1039,7 +1051,7 @@ type ::= string
 
 Hessian 2.0 有三个内置的引用映射：
 
-. 一个 哈希/对象/链表 引用映射。
+. 一个 映射/对象/链表 引用映射。
 . 一个类定义映射。
 . 一个类型（类名）映射。
 

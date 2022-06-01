@@ -139,7 +139,7 @@ image::/images/marshal/hessian-AbstractSerializerFactory.svg[{image_attr}]
 . `AbstractSerializer`
 . `AnnotationSerializer`
 . `ArraySerializer`
-. `BasicSerializer` -- `null`、 八种基本类型、 `String`、`StringBuilder`、 `Date`、 `Number`、 `Object`、 八种类型数组、 `String` 数组、 `Object` 数组等都是通过该类完成序列化。实际上，关于 `null`、 八种基本类型、 `String`、`StringBuilder`、 `Date` 等类型的处理，它是通过调用 `Hessian2Output` 提供的相关方法来完成的。
+. `BasicSerializer` -- `null`、 八种基本类型、 `String`、`StringBuilder`、 `Date`、 `Number`、 `Object`、 八种基本类型数组、 `String` 数组、 `Object` 数组等都是通过该类完成序列化。实际上，关于 `null`、 八种基本类型、 `String`、`StringBuilder`、 `Date` 等类型的处理，它是通过调用 `Hessian2Output` 提供的相关方法来完成的。
 . `ByteArraySerializer`
 . `BeanSerializer`
 . `CalendarSerializer`
@@ -169,7 +169,7 @@ image::/images/marshal/hessian-AbstractSerializerFactory.svg[{image_attr}]
 
 image::/images/marshal/hessian-Serializer.svg[{image_attr}]
 
-处理实例对象的序列化主要有 `JavaSerializer` 和 `BeanSerializer。这两者的区别如下：
+处理实例对象的序列化主要有 `JavaSerializer` 和 `BeanSerializer`。这两者的区别如下：
 
 * `JavaSerializer` 是通过反射获取实例对象的属性进行序列化。排除 `static` 和 `transient` 属性，对其他所有的属性进行递归序列化处理。
 * `BeanSerializer` 是遵循 POJI bean 的约定，扫描实例的所有方法，发现同时存在 Getter 和 Setter 方法的属性才进行序列化，它并不直接直接操作所有的属性。注意： [.red]#`BeanSerializer` 将会无法处理 Getter 方法是以 `is` 开头的 `boolean` 属性，因为 `BeanSerializer` 只认以 `get` 开头的方法。#

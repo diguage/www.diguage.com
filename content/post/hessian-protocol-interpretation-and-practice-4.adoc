@@ -24,6 +24,7 @@ weight: 1
 . https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-3/[Hessian 协议解释与实战（三）：字符串^] -- 专门介绍了关于字符串的处理。由于字符串需要铺垫的基础知识比较多，处理细节也有繁琐，所以单独成篇来介绍。
 . https://www.diguage.com/post/hessian-source-analysis-for-java/[Hessian 源码分析（Java）^] -- 开始第四篇分析之前，先来介绍一下 Hessian 的源码实现。方便后续展开说明。
 . https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-4/[Hessian 协议解释与实战（四）：数组与集合^] -- 铺垫了一些关于实例对象的处理，重点介绍关于数组和集合的相关处理。
+. https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-5/[Hessian 协议解释与实战（五）：对象与映射^] -- 重点介绍关于对象与映射的相关处理。
 . 未完待续，敬请继续关注 https://www.diguage.com/["地瓜哥"博客网^]。
 
 在上一篇文章 https://www.diguage.com/post/hessian-source-analysis-for-java/[Hessian 源码分析（Java）^] 对 Hessian 的 Java 实现做了一个概要的分析，对处理流程以及整体架构做了一个简单的分析。接下来，回到主题，继续来解释 Hessian 序列化协议。这篇文章，我们来重点分析一下数组与集合相关的操作。
@@ -170,8 +171,8 @@ private String toJson(Object value) {
 ----
 
 
-[#object-1]
-== 首谈对象
+[#object]
+== 首谈实例对象
 
 要集合和哈希，就必须先了解一下 Hessian 对实例对象的处理。由于，实例对象和哈希的处理有些相似。所以，想把两个放在一起来说明。这里对实例对象的处理先做个概要介绍。
 
@@ -297,16 +298,17 @@ public void testObject1() throws Throwable {
 在序列化实例对象时，
 
 . 首先，序列化实例对象对应的类定义。按照如下属性，序列化如下信息：
+.. 类型标志位 `0x43`（`C`）
 .. 类型（字符串形式）
 .. 字段数量
 .. 各个属性名称
 . 其次，序列化实例对象
-.. 根据类型找到对应的类型编号
+.. 根据类型出现的顺序，找到对应的类型编号（从 `0` 开始）
 .. 依次序列化实例属性
 
 关于类型编号编码需要特别说明一下：
 
-. 在 `ref ∈ [0, 15]` 时，编码为： `BC_OBJECT_DIRECT`（`0x60`）+ `ref`
+. 在 `ref ∈ [0, 15]` 时，编码为： `0x60`（```）+ `ref`
 . 在 `ref ∈ [16, ]` 时，编码格式为：
 .. `O`
 .. `ref`（以 `int` 编码）
@@ -1025,6 +1027,7 @@ public void testIntLinkedList() throws Throwable {
 
 经过测试，其他 `Collection` 的实现都与此相同，比如 `HashSet`，再比如 `Arrays.asList(T... a)`，就不再赘述，留给大家自己做测试。
 
+[#iterator]
 === `Collection<Integer>.iterator` 👉 `IteratorSerializer`
 
 最后，使用 `Collection<Integer>.iterator` 来测试一下 `IteratorSerializer` 的处理情况。
