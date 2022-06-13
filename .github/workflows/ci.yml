@@ -53,6 +53,8 @@ jobs:
         run: |
           cd public/archives/
           for i in {1..147} ; do echo "<meta http-equiv=\"refresh\" content=\"0;url=https://wordpress.diguage.com/archives/${i}.html\">" > ${i}.html; done
+          cd ..
+          sudo chmod -R 777 *
 
       - name: Rsync Deploy 🏹
         uses: burnett01/rsync-deployments@5.2
