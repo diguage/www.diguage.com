@@ -48,6 +48,11 @@ jobs:
           cssnano asciidoctor.css asciidoctor.min.css
           rm -rf asciidoctor.css
           mv asciidoctor.min.css asciidoctor.css
+      
+      - name: Generate Redirect HTML 🏓
+        run: |
+          cd public/archives/
+          for i in {1..147} ; do echo "<meta http-equiv=\"refresh\" content=\"0;url=https://wordpress.diguage.com/archives/${i}.html\">" > ${i}.html; done
 
       - name: Deploy 🚀
         continue-on-error: true
