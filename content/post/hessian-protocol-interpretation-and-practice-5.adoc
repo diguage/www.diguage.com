@@ -261,7 +261,7 @@ ____
 另外，启用 `UnsafeSerializer` 的先决条件是能否获得 `sun.misc.Unsafe` 实例。如果可以获得 `sun.misc.Unsafe` 实例，则就会启用 `UnsafeSerializer`。当然，也可以通过配置 `com.caucho.hessian.unsafe` 变量为 `false` 来禁用 `UnsafeSerializer`。这里，还有一个例外：如果待序列化的类包含了 `writeReplace()` 方法，则就会启用 `JavaSerializer`。
 
 
-TIP:未完待续……
+TIP: 未完待续……
 
 
 // [source%nowrap,java,{source_attr}]
