@@ -45,7 +45,6 @@ div.authorbox__description>ul>li {padding-left:0 !important;}
 .stretch{width:100%}
 .clearfix::before,.clearfix::after,.float-group::before,.float-group::after{content:" ";display:table}
 .clearfix::after,.float-group::after{clear:both}
-.content table {table-layout: fixed;}
 
 
 table{border-collapse:collapse;border-spacing:0}
@@ -80,6 +79,15 @@ table.tableblock #preamble>.sectionbody>[class="paragraph"]:first-of-type p{font
 .admonitionblock td.icon .icon-caution::before{content:"\f06d";color:#bf3400}
 .admonitionblock td.icon .icon-important::before{content:"\f06a";color:#bf0000}
 
+.admonitionblock table td, .admonitionblock table th {
+    border: none;
+}
+
+.admonitionblock.warning {
+    padding: 0;
+    text-align: left;
+    border: none;
+}
 
 table.linenotable{border-collapse:separate;border:0;margin-bottom:0;background:none}
 table.linenotable td[class]{color:inherit;vertical-align:top;padding:0;line-height:inherit;white-space:normal}
@@ -141,6 +149,15 @@ dt,th.tableblock,td.content,div.footnote{text-rendering:optimizeLegibility}
 
 .colist td:not([class]):last-child {
     padding: .25em 0
+}
+
+.colist table tr > td:nth-child(1) {
+    width: 3%;
+}
+
+.colist table td {
+    border: 0;
+    background: none
 }
 
 
