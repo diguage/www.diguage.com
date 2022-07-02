@@ -29,11 +29,12 @@ jobs:
           gem install asciidoctor
           gem install asciidoctor-diagram
           gem install pygments.rb
+          gem install asciidoctor-comment-links
           gem install rouge
 
       - name: Run Hugo 🔧
         run: |
-          alias asciidoctor="asciidoctor --attribute=experimental=true --attribute=icons=font --attribute=safe=safe"
+          alias asciidoctor="asciidoctor -r asciidoctor-comment-links --attribute=experimental=true --attribute=icons=font --attribute=safe=safe"
           hugo --minify
       
       - name: Setup Node.js 🕸

@@ -22,10 +22,9 @@ weight: 1
 // :sectnumlevels: 4
 
 :icons: font
-:source-highlighter: pygments
-:pygments-style: monokai
-:pygments-linenums-mode: table
-:source_attr: indent=0,subs="attributes,verbatim,quotes,macros"
+:source-highlighter: rouge
+:rouge-style: monokai
+:source_attr: indent=0,subs="attributes,verbatim,quotes"
 :image_attr: align=center,width=100%
 
 D瓜哥在前面的文章 https://www.diguage.com/post/building-blog-with-hugo/[使用 Hugo 搭建博客^] 中介绍了如何用 Hugo 搭建个人博客。部门准备系统地整理一下各个小组的文档。恰好 D瓜哥 对写文档非常感兴趣，正好写个材料分享一下血泪经验。

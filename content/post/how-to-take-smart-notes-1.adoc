@@ -9,10 +9,9 @@ thumbnail: "images/books/how-to-take-smart-notes.jpg"
 weight: 1
 ---
 
-:source-highlighter: pygments
-:pygments-style: monokai
-:pygments-linenums-mode: table
-:source_attr: indent=0,subs="attributes,verbatim,quotes,macros"
+:source-highlighter: rouge
+:rouge-style: monokai
+:source_attr: indent=0,subs="attributes,verbatim,quotes"
 :image_attr: align=center,width=100%
 :icons: font
 

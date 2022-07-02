@@ -10,10 +10,9 @@ thumbnail: "images/spring-framework/spring-logo.jpg"
 weight: 1
 ---
 
-:source-highlighter: pygments
-:pygments-style: monokai
-:pygments-linenums-mode: table
-:source_attr: indent=0,subs="attributes,verbatim,quotes,macros"
+:source-highlighter: rouge
+:rouge-style: monokai
+:source_attr: indent=0,subs="attributes,verbatim,quotes"
 :image_attr: align=center,width=100%
 :icons: font
 
@@ -30,8 +29,10 @@ protected Object createProxy(Class<?> beanClass, @Nullable String beanName,
     AutoProxyUtils.exposeTargetClass((ConfigurableListableBeanFactory) this.beanFactory, beanName, beanClass);
   }
 
+
   // 创建代理工厂对象
   ProxyFactory proxyFactory = new ProxyFactory();
+
   // 获取当前类的属性
   proxyFactory.copyFrom(this);
 

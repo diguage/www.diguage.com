@@ -11,10 +11,9 @@ weight: 1
 ---
 
 :icons: font
-:source-highlighter: pygments
-:pygments-style: monokai
-:pygments-linenums-mode: table
-:source_attr: indent=0,subs="attributes,verbatim,quotes,macros"
+:source-highlighter: rouge
+:rouge-style: monokai
+:source_attr: indent=0,subs="attributes,verbatim,quotes"
 :image_attr: align=center
 
 最近公司项目要对一些内部依赖做集中升级。为此，D瓜哥发布了一个 BOM（BOM stands for Bill Of Materials），用于规范项目依赖及版本。

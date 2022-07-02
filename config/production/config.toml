@@ -26,7 +26,7 @@ googleAnalytics = "UA-32893826-1" # Enable Google Analytics by entering your tra
   post_navigation = true
   post_meta = ["author","date", "categories"] # Order of post meta information
   dateformat = "2006-01-02"
-  customCSS = ["css/highlighter-pygments-monokai.css","css/asciidoctor.css"] # 
+  customCSS = ["css/asciidoctor.css", "css/rouge-monokai.css"] #
   changyanAppid = "cyuuTeBp3"        # Changyan app id             # 畅言
   changyanAppkey = "prod_2906c47c31e735e0ed518282fec489a6"       # Changyan app key
 
