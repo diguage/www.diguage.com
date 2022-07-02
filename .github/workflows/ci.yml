@@ -47,6 +47,12 @@ jobs:
           cssnano asciidoctor.css asciidoctor.min.css
           rm -rf asciidoctor.css
           mv asciidoctor.min.css asciidoctor.css
+          cssnano rouge-monokai.css rouge-monokai.min.css
+          rm -rf rouge-monokai.css
+          mv rouge-monokai.min.css rouge-monokai.css
+          cssnano rouge-github.css rouge-github.min.css
+          rm -rf rouge-github.css
+          mv rouge-github.min.css rouge-github.css
 
       - name: Add Watermark to Images 🎖
         run: |
