@@ -9,12 +9,6 @@ tags: ["算法","动态规划","分治","递归","书籍"]
 weight: 1
 ---
 
-:source-highlighter: rouge
-:rouge-style: monokai
-:source_attr: indent=0,subs="attributes,verbatim,quotes"
-:image_attr: align=center,width=100%
-:icons: font
-
 
 [TIP]
 ====

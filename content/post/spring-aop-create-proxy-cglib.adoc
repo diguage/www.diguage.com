@@ -10,14 +10,6 @@ thumbnail: "images/spring-framework/spring-logo.jpg"
 weight: 1
 ---
 
-:source-highlighter: rouge
-:rouge-style: monokai
-:source_attr: indent=0,subs="attributes,verbatim,quotes"
-:image_attr: align=center,width=100%
-:icons: font
-
-
-
 
 https://www.diguage.com/post/spring-aop-bootstrap/[Spring AOP 源码分析：入门] 中，梳理出来了 Spring AOP 的入口。 https://www.diguage.com/post/spring-aop-get-advices/[Spring AOP 源码分析：获得通知] 中着重介绍了如何获取通知。上一篇文章 https://www.diguage.com/post/spring-aop-create-proxy-jdk/[Spring AOP 源码分析：创建代理（一）] 重点介绍了一下切面链的组装和基于 JDK 动态代理的 AOP 的实现，这篇文章介绍一下基于 cglib 的代理类是生成。
 

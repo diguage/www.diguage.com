@@ -15,6 +15,7 @@ weight: 1
 
 ---
 
+
 == Talk和Code同等重要
 
 Talk is cheap，show me the code.

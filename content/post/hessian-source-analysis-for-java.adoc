@@ -10,11 +10,6 @@ thumbnail: "images/wireframes/best-architecture.png"
 weight: 1
 ---
 
-:icons: font
-:source-highlighter: rouge
-:rouge-style: monokai
-:source_attr: indent=0
-:image_attr: align=center,width=100%
 
 前面通过几篇文章，解释并实践了一下 Hessian 的序列化协议。文章目录如下：
 

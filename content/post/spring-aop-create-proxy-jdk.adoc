@@ -10,12 +10,6 @@ thumbnail: "images/spring-framework/spring-logo.jpg"
 weight: 1
 ---
 
-:source-highlighter: rouge
-:rouge-style: monokai
-:source_attr: indent=0,subs="attributes,verbatim,quotes"
-:image_attr: align=center,width=100%
-:icons: font
-
 
 https://www.diguage.com/post/spring-aop-bootstrap/[Spring AOP 源码分析：入门] 中，梳理出来了 Spring AOP 的入口。上一篇文章 https://www.diguage.com/post/spring-aop-get-advices/[Spring AOP 源码分析：获得通知] 中着重介绍了如何获取通知。接着上一篇文章，这篇文章介绍一下如何创建代理。
 

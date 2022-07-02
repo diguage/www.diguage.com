@@ -69,3 +69,19 @@ pygmentsUseClasses = true
 [security]
   [security.exec]
     allow = ['^dart-sass-embedded$', '^go$', '^npx$', '^postcss$', '^asciidoctor']
+
+# https://gohugo.io/content-management/formats/
+[markup]
+  [markup.asciidocExt]
+    backend = 'html5'
+    extensions = ["asciidoctor-comment-links"]
+    safeMode = 'unsafe'
+    sectionNumbers = false
+    trace = false
+    verbose = false
+    [markup.asciidocExt.attributes]
+      icons = "font"
+      source-highlighter = "rouge"
+      rouge-style = "monokai"
+      source_attr = "indent=0,subs=\"attributes,verbatim,quotes\""
+      image_attr = "align=center,width=100%"

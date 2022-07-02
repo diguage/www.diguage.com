@@ -10,11 +10,6 @@ thumbnail: "images/"
 weight: 1
 ---
 
-:icons: font
-:source-highlighter: rouge
-:rouge-style: monokai
-:source_attr: indent=0,subs="attributes,verbatim,quotes"
-:image_attr: align=center
 
 // image::/images/[title="",alt="",{image_attr}]
 

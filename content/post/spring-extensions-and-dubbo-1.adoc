@@ -17,12 +17,6 @@ weight: 1
 # toc: true
 ---
 
-:source-highlighter: rouge
-:rouge-style: monokai
-:source_attr: indent=0,subs="attributes,verbatim,quotes"
-:image_attr: align=center,width=100%
-:icons: font
-
 
 在上一篇文章 https://www.diguage.com/post/spring-extensions-overview/[Spring 扩展点概览及实践^] 中介绍了 Spring 内部存在的扩展点。 https://www.diguage.com/post/spring-extensions-and-mybatis/[Spring 扩展点实践：整合 MyBATIS^] 中，D瓜哥带大家了解了一下 MyBATIS 如何利用 Spring 的扩展点实现了与 Spring 的完美整合。现在，学以致用，我们继续来分析一下 Spring 与 Apache Dubbo 的整合流程。
 

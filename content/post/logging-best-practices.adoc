@@ -10,12 +10,6 @@ thumbnail: "images/logging/java-logging-icon.png"
 weight: 1
 ---
 
-:source-highlighter: rouge
-:rouge-style: monokai
-:source_attr: indent=0,subs="attributes,verbatim,quotes"
-:image_attr: align=center,width=100%
-:icons: font
-
 
 加入公司以来，参与了很多个项目的开发维护；也排查处理过很多线上问题；为了写 Mock 测试，也专门去日志系统上扒拉过不少日志等等。在整个过程中，对日志的认识有了不少更深刻的认识和体会。也发现不少问题。这里先从存在的问题展开论述。
 

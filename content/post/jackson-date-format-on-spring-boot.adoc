@@ -10,12 +10,6 @@ thumbnail: "images/common/tip.jpeg"
 weight: 1
 ---
 
-:icons: font
-:source-highlighter: rouge
-:rouge-style: monokai
-:source_attr: indent=0,subs="attributes,verbatim,quotes"
-:image_attr: align=center
-
 
 使用 Spring Boot 时，需要使用 Jackson 处理一些 Java Time API 类型的 JSON 序列化问题，在处理一些类的字段时，可以通过直接在属性上加注解的方式来指定其格式化样式。但是，昨天同事遇到一个格式化 `Map` 数据的问题，这样就不能通过加注解来解决格式化样式的问题了。
 

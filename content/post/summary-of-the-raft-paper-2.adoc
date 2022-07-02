@@ -9,13 +9,6 @@ thumbnail: "images/raft/solo.svg"
 weight: 1
 ---
 
-// :doctype: book
-:source-highlighter: rouge
-:rouge-style: monokai
-:source_attr: indent=0,subs="attributes,verbatim,quotes"
-:image_attr: align=center,width=100%
-:icons: font
-
 
 在上一篇文章中，通过阅读 https://raft.github.io/raft.pdf[《In Search of an Understandable Consensus Algorithm》] 前三节的内容，对论文的大致内容做了简介，简单说明了一下 Replicated state machines 的用途以及 Paxos 本身存在的问题。
 

@@ -9,9 +9,6 @@ thumbnail: "images/books/factfulness.jpg"
 weight: 1
 ---
 
-:icons: font
-:figure-caption!:
-:image_attr: align=center,width=100%
 
 在去年世界读书日时，D瓜哥在 https://www.diguage.com/post/books-on-book-day/[在世界读书日，推荐书单^] 中推荐了 https://book.douban.com/subject/33385402/[《事实》^] 这本书。这周五，上班路上在地铁上把这本书看完了。受益匪浅，获益良多。做个笔记，摘录学习一下。
 

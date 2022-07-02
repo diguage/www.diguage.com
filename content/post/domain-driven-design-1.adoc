@@ -10,12 +10,6 @@ thumbnail: "images/domain-driver-design/domain-driver-design.jpg"
 weight: 1
 ---
 
-:icons: font
-:source-highlighter: rouge
-:rouge-style: monokai
-:source_attr: indent=0,subs="attributes,verbatim,quotes"
-:image_attr: align=center,width=100%
-
 
 == 序
 

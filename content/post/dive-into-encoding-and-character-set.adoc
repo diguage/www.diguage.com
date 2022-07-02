@@ -12,13 +12,6 @@ weight: 1
 
 TODO
 
-:icons: font
-:source-highlighter: rouge
-:rouge-style: monokai
-// :source_attr: indent=0,subs="attributes,verbatim,quotes"
-:source_attr: indent=0,subs="verbatim"
-:image_attr: align=center
-
 image::/images/encoding/utf8-encoding-scheme.svg[title="Unicode 与 UTF-8 的转换",alt="Unicode 与 UTF-8 的转换",{image_attr}]
 
 

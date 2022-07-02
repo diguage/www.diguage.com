@@ -10,12 +10,6 @@ thumbnail: "images/marshal/serialization-and-deserialization.png"
 weight: 1
 ---
 
-:icons: font
-:source-highlighter: rouge
-:rouge-style: monokai
-:source_attr: indent=0,subs="attributes,verbatim,quotes"
-:image_attr: align=center
-
 
 公司在微服务系统中，序列化协议大多数使用 https://msgpack.org/[MessagePack^]。但是，由于 MessagePack 设计限制，导致微服务接口在增减参数时，只能在最后操作。但是，由于个人操作，难免失误，结果造成因为增减字段导致的事故层出不穷。最近，一些条件成熟，准备推动部门将序列化协议切换到 Hessian。
 

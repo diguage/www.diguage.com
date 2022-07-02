@@ -15,12 +15,6 @@ weight: 1
 # toc: true
 ---
 
-:source-highlighter: rouge
-:rouge-style: monokai
-:source_attr: indent=0,subs="attributes,verbatim,quotes"
-:image_attr: align=center,width=100%
-:icons: font
-
 
 在文章 https://www.diguage.com/post/spring-aop-process-overview/[Spring AOP 处理流程概述^] 中，对 Spring AOP 有了一个整体认识。在文章 https://www.diguage.com/post/spring-aop-bootstrap/[Spring AOP 源码分析：入门] 中，对 Spring AOP 的相关入口做了分析。这篇文章就带大家看一看，Spring AOP 是如何获取通知的？
 

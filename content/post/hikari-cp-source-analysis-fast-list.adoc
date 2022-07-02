@@ -10,12 +10,6 @@ thumbnail: "images/java/java-15.png"
 weight: 1
 ---
 
-:source-highlighter: rouge
-:rouge-style: monokai
-:source_attr: indent=0,subs="attributes,verbatim,quotes"
-:image_attr: align=center,width=100%
-:icons: font
-
 
 在前面的文章 https://www.diguage.com/post/hikari-cp-source-analysis-concurrent-bag/[HikariCP 源码分析 -- ConcurrentBag] 中，D瓜哥分析了一下 HikariCP 中一个非常重要的数据结构 `ConcurrentBag`。
 

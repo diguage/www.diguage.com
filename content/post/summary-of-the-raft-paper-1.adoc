@@ -9,13 +9,6 @@ thumbnail: "images/raft/solo.svg"
 weight: 1
 ---
 
-// :doctype: book
-:source-highlighter: rouge
-:rouge-style: monokai
-:source_attr: indent=0,subs="attributes,verbatim,quotes"
-:image_attr: align=center,width=100%
-:icons: font
-
 
 前一段时间，在一次开组会的时候，给小组成员简单介绍了一下 Raft 协议。大概四年前读过 Raft 的论文，这次分享的时候，好多好多细节都忘了。所以，再次把 https://raft.github.io/raft.pdf[《In Search of an Understandable Consensus Algorithm》] 这篇论文找出来，重读一遍，做个笔记和摘要，方便后续学习和复习。
 
