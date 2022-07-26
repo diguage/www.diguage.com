@@ -5,8 +5,10 @@ on:
       - master
 jobs:
   deploy:
-    runs-on: ubuntu-20.04
+    # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idruns-on
+    runs-on: ubuntu-latest
     steps:
+      # https://github.com/actions/checkout
       - name: Checkout 🛎️
         uses: actions/checkout@v3
         with:
@@ -24,35 +26,73 @@ jobs:
         with:
           ruby-version: 3.1
 
-      - name: Install AsciiDoctor 🐰
+      # https://github.com/actions/setup-node
+      - name: Setup Node.js 🕸
+        uses: actions/setup-node@v3
+        with:
+          # https://github.com/nvm-sh/nvm#long-term-support
+          node-version: 'lts/*'
+
+      - name: Install AsciiDoctor 🐶
         run: |
           gem install asciidoctor
           gem install asciidoctor-diagram
           gem install asciidoctor-comment-links
           gem install rouge
 
-      - name: Run Hugo 🔧
+      - name: Install Graphviz 🐰
+        run: |
+          sudo apt update -y -m
+          sudo apt install -y python3-pip
+          # https://graphviz.org/
+          sudo apt install -y graphviz
+          # http://blockdiag.com/en/seqdiag/index.html
+          pip3 install seqdiag
+          # http://blockdiag.com/en/blockdiag/index.html
+          pip3 install blockdiag
+          # http://blockdiag.com/en/actdiag/index.html
+          pip3 install actdiag
+          # http://blockdiag.com/en/nwdiag/index.html
+          pip3 install nwdiag
+          # https://github.com/Deep-Symmetry/bytefield-svg
+          npm install -g bytefield-svg
+          # https://github.com/gtudan/bpmn-js-cmd
+          npm install -g bpmn-js-cmd
+          sudo apt -y install plantuml
+
+      - name: Install font 🎃
+        run: |
+          mkdir $HOME/.fonts
+          cd $HOME/.fonts
+          wget https://github.com/diguage/open-fonts/releases/download/latest/SourceHanSerifSC-Regular.otf
+          wget https://github.com/diguage/open-fonts/releases/download/latest/SourceHanSansSC-Regular.otf
+          wget https://github.com/diguage/open-fonts/releases/download/latest/SourceCodePro-Regular.otf
+          wget https://github.com/diguage/open-fonts/releases/download/latest/SourceCodePro-It.otf
+          wget https://github.com/diguage/open-fonts/releases/download/latest/SourceCodePro-Bold.otf
+          wget https://github.com/diguage/open-fonts/releases/download/latest/SourceCodePro-BoldIt.otf
+          echo -e "[seqdiag]\nfontpath = $HOME/.fonts/SourceHanSerifSC-Regular.otf" > $HOME/.blockdiagrc
+          echo -e "\n[blockdiag]\nfontpath = $HOME/.fonts/SourceHanSerifSC-Regular.otf" >> $HOME/.blockdiagrc
+          echo -e "\n[actdiag]\nfontpath = $HOME/.fonts/SourceHanSerifSC-Regular.otf" >> $HOME/.blockdiagrc
+          echo -e "\n[nwdiag]\nfontpath = $HOME/.fonts/SourceHanSerifSC-Regular.otf" >> $HOME/.blockdiagrc
+          # Check result
+          ls -lh $HOME/.fonts 
+          cat $HOME/.blockdiagrc
+
+      - name: Run Hugo 🏗
         run: |
           hugo --minify
-      
-      - name: Setup Node.js 🕸
-        uses: actions/setup-node@v3
-        with:
-          node-version: '16'
 
       - name: Compress Style 🍭
         run: |
           npm install cssnano-cli --global
           cd public/css
-          cssnano asciidoctor.css asciidoctor.min.css
-          rm -rf asciidoctor.css
-          mv asciidoctor.min.css asciidoctor.css
-          cssnano rouge-monokai.css rouge-monokai.min.css
-          rm -rf rouge-monokai.css
-          mv rouge-monokai.min.css rouge-monokai.css
-          cssnano rouge-github.css rouge-github.min.css
-          rm -rf rouge-github.css
-          mv rouge-github.min.css rouge-github.css
+          for f in `ls *.css`;
+          do
+            fn="${f%.*}.min.css";
+            cssnano $f $fn;
+            rm -rf $f;
+            mv $fn $f
+          done
 
       - name: Add Watermark to Images 🎖
         run: |
@@ -103,7 +143,6 @@ jobs:
           script: |
             cd ${{ secrets.DEPLOY_PATH }}
             sudo chmod -R 777 *
-          
 
       - name: Deploy 🚀
         continue-on-error: true
