@@ -1,16 +1,20 @@
 ---
 title: "细说编码与字符集"
-date: 2022-05-05T09:09:12+08:00
-draft: true
+date: 2020-05-05T09:09:12+08:00
+draft: false
 keywords: ["Unicode","UTF-8","UTF-16","UTF-32","UTF-16BE","UTF-16LE"]
-tags: [""]
-categories: [""]
+tags: ["存储","序列化","编码"]
+categories: ["数据存储", "算法", "程序设计"]
 thumbnail: "images/encoding/unicode-logo.svg"
 
 weight: 1
 ---
 
-TODO
+*文章还没写完，提前放出防止出现 404。稍后慢慢更新，敬请期待： http://localhost:1313/post/dive-into-encoding-and-character-set/[细说编码与字符集 - "地瓜哥"博客网^]*
+
+*文章还没写完，提前放出防止出现 404。稍后慢慢更新，敬请期待： http://localhost:1313/post/dive-into-encoding-and-character-set/[细说编码与字符集 - "地瓜哥"博客网^]*
+
+*文章还没写完，提前放出防止出现 404。稍后慢慢更新，敬请期待： http://localhost:1313/post/dive-into-encoding-and-character-set/[细说编码与字符集 - "地瓜哥"博客网^]*
 
 image::/images/encoding/utf8-encoding-scheme.svg[title="Unicode 与 UTF-8 的转换",alt="Unicode 与 UTF-8 的转换",{image_attr}]
 
