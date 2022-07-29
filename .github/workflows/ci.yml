@@ -105,8 +105,8 @@ jobs:
           cd public/images
           wget https://github.com/diguage/open-fonts/releases/download/latest/SourceCodePro-Semibold.otf
           # JPG
-          find . -type f -name "*.jpg" | grep -v "goodbye-2019-hello-2020\|wx-jikerizhi-qrcode.jpg\|wx-jikerizhi.jpg" | sed "s/.jpg$//g" | xargs -I {} convert -compress JPEG2000 -strip -thumbnail 960 -quality 75 -font ./SourceCodePro-Semibold.otf -pointsize 30 -gravity southeast -fill "#DE282A" -draw 'text 15,18 "https://www.diguage.com"' {}.jpg {}-mark.jpg
-          find . -type f -name "*.jpg" | grep -v "goodbye-2019-hello-2020\|wx-jikerizhi-qrcode.jpg\|wx-jikerizhi.jpg" | grep -v "\-mark.jpg" | xargs -I {} rm -f {} \;
+          find . -type f -name "*.jpg" | grep -v "goodbye-2019-hello-2020\|wx-jikerizhi-qrcode.jpg\|wx-jikerizhi.jpg\|wxpay.jpg" | sed "s/.jpg$//g" | xargs -I {} convert -compress JPEG2000 -strip -thumbnail 960 -quality 75 -font ./SourceCodePro-Semibold.otf -pointsize 30 -gravity southeast -fill "#DE282A" -draw 'text 15,18 "https://www.diguage.com"' {}.jpg {}-mark.jpg
+          find . -type f -name "*.jpg" | grep -v "goodbye-2019-hello-2020\|wx-jikerizhi-qrcode.jpg\|wx-jikerizhi.jpg\|wxpay.jpg" | grep -v "\-mark.jpg" | xargs -I {} rm -f {} \;
           find . -type f -name "*-mark.jpg" | sed "s/-mark.jpg//g" | xargs -I {} mv {}-mark.jpg {}.jpg
           # JPEG
           find . -type f -name "*.jpeg" | sed "s/.jpeg$//g" | xargs -I {} convert -compress JPEG2000 -strip -thumbnail 960 -quality 75 -font ./SourceCodePro-Semibold.otf -pointsize 30 -gravity southeast -fill "#DE282A" -draw 'text 15,18 "https://www.diguage.com"' {}.jpeg {}-mark.jpeg
