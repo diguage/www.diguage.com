@@ -408,7 +408,9 @@ https://www.diguage.com
 这里对于 Unicode 值大于等于 `0x800` 的字符的处理过程做个总结：
 
 . 第一步，先将 Unicode 转换成 UTF-16 编码；对于超过 BMP 的字符，UTF-16 会将其拆分成两个字符来处理。由于 Java 内部， `char` 类型的数据就是使用 UTF-16 编码的，所以，这一步已经提前完成，无需再做处理。
-. 第二步，`char` 值大于等于 `0x800` 的 `char`，会将其“值”当做 Unicode 然后转换成“3个字节的UTF-8”。如果是需要两个 `char` 表示的字符，则当做两个“Unicode 值”处理，则 会转成两个“3个字节的UTF-8”，就是六个字节。
+. 第二步，`char` 值大于等于 `0x800` 的 `char`，会将其“值”当做 Unicode 然后转换成“3个字节的UTF-8”。如果是需要两个 `char` 表示的字符，则当做两个“Unicode 值”处理，则 会转成两个“3个字节的UTF-8”，就是六个字节。转换过程如下：
++
+image::/images/marshal/hessian-string-800.svg[alt="Hessian 字符串(string) 0x800+ 的处理",{image_attr}]
 
 === Hessian 对字符串的“切割”处理
 
