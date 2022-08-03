@@ -257,11 +257,9 @@ ____
 
 TIP: 未完待续……
 
+[#summary]
+== 总结
 
-// [source%nowrap,java,{source_attr}]
-// ----
+前面几篇文章介绍了各个前置标志位，这里做一个总结：
 
-
-// // -- 输出结果 ------------------------------------------------
-
-// ----
+image::/images/marshal/hessian-bytecode.svg[{image_attr}]

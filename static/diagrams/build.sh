@@ -35,3 +35,7 @@ cp -f ${baseDir}/hessian-Deserializer.svg ${baseDir}/../images/marshal/
 echo "start to convert ${baseDir}/hessian-architecture.puml"
 plantuml -tsvg ${baseDir}/hessian-architecture.puml
 cp -f ${baseDir}/hessian-architecture.svg ${baseDir}/../images/marshal/
+
+echo "start to convert ${baseDir}/hessian-bytecode.puml"
+plantuml -tsvg ${baseDir}/hessian-bytecode.puml
+cp -f ${baseDir}/hessian-bytecode.svg ${baseDir}/../images/marshal/
