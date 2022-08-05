@@ -1058,7 +1058,7 @@ public void testIntIterator() throws Throwable {
   90 0x5A 01011010 Z 
 
 == Object: java.util.ArrayList$Itr  ==
-[]
+[0]
 == byte array: hessian result ==
 .... 0 ~ 3 ....
   87 0x57 01010111 W 
@@ -1066,7 +1066,7 @@ public void testIntIterator() throws Throwable {
   90 0x5A 01011010 Z 
 
 == Object: java.util.AbstractList$Itr  ==
-[]
+[1,2]
 == byte array: hessian result ==
 .... 0 ~ 4 ....
   87 0x57 01010111 W 
