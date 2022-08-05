@@ -263,4 +263,5 @@ TIP: 未完待续……
 
 前面几篇文章介绍了各个前置标志位，这里做一个总结：
 
+[#hessian-bytecode]
 image::/images/marshal/hessian-bytecode.svg[{image_attr}]
