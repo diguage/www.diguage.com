@@ -255,8 +255,313 @@ ____
 
 另外，启用 `UnsafeSerializer` 的先决条件是能否获得 `sun.misc.Unsafe` 实例。如果可以获得 `sun.misc.Unsafe` 实例，则就会启用 `UnsafeSerializer`。当然，也可以通过配置 `com.caucho.hessian.unsafe` 变量为 `false` 来禁用 `UnsafeSerializer`。这里，还有一个例外：如果待序列化的类包含了 `writeReplace()` 方法，则就会启用 `JavaSerializer`。
 
+下面介绍一下继承对象的序列化情况：
 
-TIP: 未完待续……
+=== 继承对象
+
+.父类
+[source%nowrap,java,{source_attr}]
+----
+package com.diguage;
+
+import java.math.BigDecimal;
+import java.util.Date;
+
+/**
+ * 用户
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ */
+public class User {
+    private Integer id;
+    private String name;
+    private Date birthday;
+    private BigDecimal money;
+
+    public User() {
+    }
+
+    public User(Integer id, String name, Date birthday, BigDecimal money) {
+        this.id = id;
+        this.name = name;
+        this.birthday = birthday;
+        this.money = money;
+    }
+
+    // 各种 Setter 和 Getter 方法
+}
+----
+
+.子类
+[source%nowrap,java,{source_attr}]
+----
+package com.diguage;
+
+import java.math.BigDecimal;
+import java.util.Date;
+
+/**
+ * Web用户
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ */
+public class WebUser extends User {
+    private String site;
+
+    public WebUser() {
+    }
+
+    public WebUser(Integer id, String name, Date birthday, BigDecimal money, String site) {
+        super(id, name, birthday, money);
+        this.site = site;
+    }
+
+    // 各种 Setter 和 Getter 方法
+}
+----
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 测试父子类的序列化
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ */
+@Test
+public void testInheritance() throws Throwable {
+    BigDecimal money = new BigDecimal("1234.56789")
+            .setScale(2, BigDecimal.ROUND_HALF_UP);
+    int id = 4;
+    String name = "diguage";
+    Date date = new Date();
+    String site = "https://www.diguage.com";
+    WebUser webUser = new WebUser(id, name, date, money, site);
+    objectTo(webUser);
+}
+
+
+// -- 输出结果 ------------------------------------------------
+== Object: com.diguage.WebUser  ==
+== object: json length=107 ==
+{
+  "id": 4,
+  "name": "diguage",
+  "birthday": "2022-08-05 19:37:15",
+  "money": 1234.57,
+  "site": "https://www.diguage.com"
+}
+== object: hessian result ==
+.... 0 ~ 131 ....
+  67 0x43 01000011 C
+  19 0x13 00010011 
+  99 0x63 01100011 c
+ 111 0x6F 01101111 o
+ 109 0x6D 01101101 m
+  46 0x2E 00101110 .
+ 100 0x64 01100100 d
+ 105 0x69 01101001 i
+ 103 0x67 01100111 g
+ 117 0x75 01110101 u
+  97 0x61 01100001 a
+ 103 0x67 01100111 g
+ 101 0x65 01100101 e
+  46 0x2E 00101110 .
+  87 0x57 01010111 W
+ 101 0x65 01100101 e
+  98 0x62 01100010 b
+  85 0x55 01010101 U
+ 115 0x73 01110011 s
+ 101 0x65 01100101 e
+ 114 0x72 01110010 r
+-107 0x95 10010101
+   4 0x04 00000100 
+ 115 0x73 01110011 s
+ 105 0x69 01101001 i
+ 116 0x74 01110100 t
+ 101 0x65 01100101 e
+   2 0x02 00000010 
+ 105 0x69 01101001 i
+ 100 0x64 01100100 d
+   4 0x04 00000100 
+ 110 0x6E 01101110 n
+  97 0x61 01100001 a
+ 109 0x6D 01101101 m
+ 101 0x65 01100101 e
+   8 0x08 00001000
+  98 0x62 01100010 b
+ 105 0x69 01101001 i
+ 114 0x72 01110010 r
+ 116 0x74 01110100 t
+ 104 0x68 01101000 h
+ 100 0x64 01100100 d
+  97 0x61 01100001 a
+ 121 0x79 01111001 y
+   5 0x05 00000101 
+ 109 0x6D 01101101 m
+ 111 0x6F 01101111 o
+ 110 0x6E 01101110 n
+ 101 0x65 01100101 e
+ 121 0x79 01111001 y
+  96 0x60 01100000 `
+  23 0x17 00010111 
+ 104 0x68 01101000 h
+ 116 0x74 01110100 t
+ 116 0x74 01110100 t
+ 112 0x70 01110000 p
+ 115 0x73 01110011 s
+  58 0x3A 00111010 :
+  47 0x2F 00101111 /
+  47 0x2F 00101111 /
+ 119 0x77 01110111 w
+ 119 0x77 01110111 w
+ 119 0x77 01110111 w
+  46 0x2E 00101110 .
+ 100 0x64 01100100 d
+ 105 0x69 01101001 i
+ 103 0x67 01100111 g
+ 117 0x75 01110101 u
+  97 0x61 01100001 a
+ 103 0x67 01100111 g
+ 101 0x65 01100101 e
+  46 0x2E 00101110 .
+  99 0x63 01100011 c
+ 111 0x6F 01101111 o
+ 109 0x6D 01101101 m
+-108 0x94 10010100
+   7 0x07 00000111 
+ 100 0x64 01100100 d
+ 105 0x69 01101001 i
+ 103 0x67 01100111 g
+ 117 0x75 01110101 u
+  97 0x61 01100001 a
+ 103 0x67 01100111 g
+ 101 0x65 01100101 e
+  74 0x4A 01001010 J
+   0 0x00 00000000  
+   0 0x00 00000000  
+   1 0x01 00000001 
+-126 0x82 10000010
+ 109 0x6D 01101101 m
+ -53 0xCB 11001011
+-105 0x97 10010111
+  -9 0xF7 11110111
+  67 0x43 01000011 C
+  20 0x14 00010100 
+ 106 0x6A 01101010 j
+  97 0x61 01100001 a
+ 118 0x76 01110110 v
+  97 0x61 01100001 a
+  46 0x2E 00101110 .
+ 109 0x6D 01101101 m
+  97 0x61 01100001 a
+ 116 0x74 01110100 t
+ 104 0x68 01101000 h
+  46 0x2E 00101110 .
+  66 0x42 01000010 B
+ 105 0x69 01101001 i
+ 103 0x67 01100111 g
+  68 0x44 01000100 D
+ 101 0x65 01100101 e
+  99 0x63 01100011 c
+ 105 0x69 01101001 i
+ 109 0x6D 01101101 m
+  97 0x61 01100001 a
+ 108 0x6C 01101100 l
+-111 0x91 10010001
+   5 0x05 00000101 
+ 118 0x76 01110110 v
+  97 0x61 01100001 a
+ 108 0x6C 01101100 l
+ 117 0x75 01110101 u
+ 101 0x65 01100101 e
+  97 0x61 01100001 a
+   7 0x07 00000111 
+  49 0x31 00110001 1
+  50 0x32 00110010 2
+  51 0x33 00110011 3
+  52 0x34 00110100 4
+  46 0x2E 00101110 .
+  53 0x35 00110101 5
+  55 0x37 00110111 7
+----
+
+从序列化结果上来看，序列化有继承关系的实例对象时，会把对象按照子类一个类处理；但是，和没有继承关系又略有不同：**有父子关系的实例对象会先处理子类的属性，然后再处理父类的属性。**
+
+=== 重复字符串的处理
+
+在 https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-4/#object[Hessian 协议解释与实战（四）：数组与集合：首谈实例对象^] 中提到 “重复对象会使用前置标志位 `0x51`（`Q`）+ 编号来处理”。对于字符串会怎么处理呢？下面做测试来验证一下：
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 测试重复字符串的序列化
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ */
+@Test
+public void testDuplicateString() throws Throwable {
+    String string = "I'm D瓜哥，😁";
+    List<String> strings = Arrays.asList(string, string);
+    List<String> stringList = new ArrayList<>(strings);
+    objectTo(stringList);
+}
+
+
+// -- 输出结果 ------------------------------------------------
+== Object: java.util.ArrayList  ==
+== Generic: java.lang.String  ==
+== object: json length=27 ==
+["I'm D瓜哥，😁","I'm D瓜哥，😁"]
+== object: hessian result ==
+.... 0 ~ 43 ....
+ 122 0x7A 01111010 z
+  10 0x0A 00001010
+
+  73 0x49 01001001 I
+  39 0x27 00100111 '
+ 109 0x6D 01101101 m
+  32 0x20 00100000
+  68 0x44 01000100 D
+ -25 0xE7 11100111
+-109 0x93 10010011
+-100 0x9C 10011100
+ -27 0xE5 11100101
+-109 0x93 10010011
+ -91 0xA5 10100101
+ -17 0xEF 11101111
+ -68 0xBC 10111100
+-116 0x8C 10001100
+ -19 0xED 11101101
+ -96 0xA0 10100000
+ -67 0xBD 10111101
+ -19 0xED 11101101
+ -72 0xB8 10111000
+-127 0x81 10000001
+  10 0x0A 00001010
+
+  73 0x49 01001001 I
+  39 0x27 00100111 '
+ 109 0x6D 01101101 m
+  32 0x20 00100000
+  68 0x44 01000100 D
+ -25 0xE7 11100111
+-109 0x93 10010011
+-100 0x9C 10011100
+ -27 0xE5 11100101
+-109 0x93 10010011
+ -91 0xA5 10100101
+ -17 0xEF 11101111
+ -68 0xBC 10111100
+-116 0x8C 10001100
+ -19 0xED 11101101
+ -96 0xA0 10100000
+ -67 0xBD 10111101
+ -19 0xED 11101101
+ -72 0xB8 10111000
+-127 0x81 10000001
+----
+
+从实验结果上来看，**对于字符串来说， Hessian 并没有做特殊处理，遇到相同的字符串还是会反复序列化。**
 
 [#summary]
 == 总结
