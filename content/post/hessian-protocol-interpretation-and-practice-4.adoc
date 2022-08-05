@@ -191,13 +191,7 @@ public class Car {
         this.age = age;
     }
 
-    @Override
-    public String toString() {
-        return "Car{" +
-                "name='" + name + '\'' +
-                ", age=" + age +
-                '}';
-    }
+    // 各种 Setter 和 Getter 方法
 }
 ----
 
