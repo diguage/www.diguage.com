@@ -1,5 +1,4 @@
 @startuml
-skinparam titleFontSize 30
 title **Hessian Serializer 类图**
 
 interface Serializer {
@@ -59,6 +58,5 @@ class UnsafeSerializer extends AbstractSerializer
 
 class UnsafeUnsharedSerializer extends UnsafeSerializer
 
-skinparam footerFontSize 20
 footer D瓜哥 · https://www.diguage.com · 出品
 @enduml

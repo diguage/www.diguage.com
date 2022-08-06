@@ -1,5 +1,4 @@
 @startuml
-skinparam titleFontSize 30
 title **Hessian AbstractHessianOutput 类图**
 
 abstract class AbstractHessianOutput {
@@ -47,6 +46,5 @@ class Hessian2Output extends AbstractHessianOutput implements Hessian2Constants 
   +int writeObjectBegin(String type)
 }
 
-skinparam footerFontSize 20
 footer D瓜哥 · https://www.diguage.com · 出品
 @enduml

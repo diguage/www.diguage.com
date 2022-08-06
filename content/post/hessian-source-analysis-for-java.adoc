@@ -648,6 +648,15 @@ public class Hessian2Input
 
 一句话来阐述对 `BigDecimal` 的支持：就是把 `BigDecimal` 处理成字符串来进行序列化；反序列化时，读取字符串，再调用 `BigDecimal` 的 `public BigDecimal(String val)` 构造函数来创建实例。这样的处理方式还挺普遍，在 https://msgpack.org/index.html[MessagePack^] 的实现中，也是这样处理的。
 
+== 一些个人思考
+
+针对 Hessian 的设计，D瓜哥觉得有几个地方的设计值得商榷：
+
+. 在处理 Java 对象时，在 `UnsafeSerializer` 和 `JavaSerializer` 的实现类中，还分别有一个抽象类 `FieldSerializer`，其实现类用于处理实例对象的各个属性。私以为，这样的设计有些复杂并且不够统计了。不如直接使用全局的 `Serializer` 更统一和方便。
+. 在处理字符串长度时，对长度的编码并没有使用 Hessian 对 `int` 的处理，而是使用了 `int` 本身后十六位的编码。这里感觉也不够统一。私以为，直接使用 Hessian 的编码方式更统一一些。
+. 在对字符串进行编码时，又重新实现了一遍 UTF-8，感觉也有些繁琐，不如直接使用 UTF-8 编码更简单省事，而且编码效率应该也会更好。
+. `Set` 尤其是 `HashSet` 也是一种常用的数据结构，也应该分配一个前置标志符，来提高编码效率。
+
 == 未完待续
 
 在研究 Hessian 源码时，发现了 Dubbo 魔改版的 Hessian 开源在了 GitHub 上： https://github.com/apache/dubbo-hessian-lite[apache/dubbo-hessian-lite: Hessian Lite for Apache Dubbo^]。简单翻看了一下代码，结构和 Hessian 提供的源码几乎一模一样，只是修改了一下包名。看 PR 记录，有 30 多个。看来一些小细节应该有所改动。以后有机会对比一下两者的差异，看看从这些改动中能否发现一些值得学习或者注意的知识点。

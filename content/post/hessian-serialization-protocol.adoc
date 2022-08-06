@@ -1080,16 +1080,16 @@ Hessian 被组织为字节码协议。Hessian 反序列化本质上是对其实�
 
 字节码编码：
 
-[source%nowrap,{source_attr}]
+[source%nowrap,bash,{source_attr}]
 ----
 //               D瓜哥 · https://www.diguage.com/ · 出品            //
 ---------------------------------------------------------------------
 
-x00 - x1f    # utf-8 string length 0-32
-x20 - x2f    # binary data length 0-16
-x30 - x33    # utf-8 string length 0-1023
-x34 - x37    # binary data length 0-1023
-x38 - x3f    # three-octet compact long (-x40000 to x3ffff)
+x00 - x1f    # utf-8 string length 0-31 <1>
+x20 - x2f    # binary data length 0-15 <2>
+x30 - x33    # utf-8 string length 32-1023 <3> <5>
+x34 - x37    # binary data length 16-1023 <4> <5>
+x38 - x3f    # three-octet compact long (-x40000 to x3ffff) <5>
 x40          # reserved (expansion/escape)
 x41          # 8-bit binary data non-final chunk ('A')
 x42          # 8-bit binary data final chunk ('B')
@@ -1125,17 +1125,24 @@ x5f          # double represented as float
 x60 - x6f    # object with direct type
 x70 - x77    # fixed list with direct length
 x78 - x7f    # fixed untyped list with direct length
-x80 - xbf    # one-octet compact int (-x10 to x3f, x90 is 0)
-xc0 - xcf    # two-octet compact int (-x800 to x7ff)
-xd0 - xd7    # three-octet compact int (-x40000 to x3ffff)
+x80 - xbf    # one-octet compact int (-x10 to 47, x90 is 0) <6>
+xc0 - xcf    # two-octet compact int (-x800 to x7ff) <5>
+xd0 - xd7    # three-octet compact int (-x40000 to x3ffff) <5>
 xd8 - xef    # one-octet compact long (-x8 to xf, xe0 is 0)
-xf0 - xff    # two-octet compact long (-x800 to x7ff, xf8 is 0)
+xf0 - xff    # two-octet compact long (-x800 to x7ff, xf8 is 0) <5>
 
 ---------------------------------------------------------------------
 //               D瓜哥 · https://www.diguage.com/ · 出品            //
 ----
+<1> 由 `32` 改为 `31`；
+<2> 由 `16` 改为 `15`；
+<3> 由 `0` 改为 `32`；
+<4> 由 `0` 改为 `16`；
+<5> 具体范围划分，请看下面的图表；
+<6> 由 `x3f` 改为 `47`；
 
-'''
+
+image::/images/marshal/hessian-bytecode.svg[{image_attr}]
 
 :!sectnums:
 
