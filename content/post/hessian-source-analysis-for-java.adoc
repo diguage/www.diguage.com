@@ -223,6 +223,7 @@ image::/images/marshal/hessian-architecture.svg[{image_attr}]
 
 Hessian 的扩展机制中大致可以分为三种，下面依次介绍。
 
+[#hessian-serializers-and-deserializers]
 === `serializers` 与 `deserializers` 配置文件机制
 
 Hessian 的这种扩展机制与 Java 的 https://en.wikipedia.org/wiki/Service_provider_interface[Service Provider Interface^] 机制相似，都是通过配置文件来“注入”自定义扩展的。
@@ -359,6 +360,8 @@ public class GuageSerializerFactory extends AbstractSerializerFactory {
     }
 }
 ----
+
+WARNING: 注意：这里只是单纯地测试方便。实际这样写有很大问题！而且该方式并不能支持示例代码的反序列化操作！还请慎重！
 
 .模型自定义序列化测试
 [source%nowrap,java,{source_attr}]
@@ -638,6 +641,12 @@ public class Hessian2Input
 ----
 
 这样 JDK 日志框架打印的日志就会被输出到 `logback.xml` 配置的位置了。相关原理介绍，请看 https://www.slf4j.org/api/org/slf4j/bridge/SLF4JBridgeHandler.html[SLF4JBridgeHandler^]。
+
+=== 对 `BigDecimal` 的支持
+
+在做实验的时候，发现一个问题： `BigDecimal` 对象不能正常地进行序列化。搜了一下这个问题，网上有大量讨论，据说在最新版 Hessian 4.0.66 中已经解决了。经过反复折腾才发现，是因为我是直接使用 https://github.com/diguage/hessian[Hessian 源码^] 来测试，但是因为源码中没有在 <<hessian-serializers-and-deserializers>> 中描述的配置文件导致的。从 Maven 仓库中下载的最新依赖是有这两个配置文件的。
+
+一句话来阐述对 `BigDecimal` 的支持：就是把 `BigDecimal` 处理成字符串来进行序列化；反序列化时，读取字符串，再调用 `BigDecimal` 的 `public BigDecimal(String val)` 构造函数来创建实例。这样的处理方式还挺普遍，在 https://msgpack.org/index.html[MessagePack^] 的实现中，也是这样处理的。
 
 == 未完待续
 
