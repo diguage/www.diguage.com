@@ -4,7 +4,7 @@
 baseDir=$(cd $(dirname $BASH_SOURCE) && pwd)
 echo "baseDir=${baseDir}"
 
-params="-tsvg -SdefaultFontSize=20 -StitleFontSize=36 -SfooterFontSize=20 -SdefaultFontName='Source Han Serif SC' "
+params="-tsvg -SdefaultFontSize=18 -StitleFontSize=36 -SfooterFontSize=20 -StitleFontName='Source Han Sans SC' -SnoteFontName='Source Han Serif SC' -SfooterFontName='Source Han Serif SC' "
 echo ${params}
 
 echo "start to convert ${baseDir}/Hessian2Output-writeObject.diag"
