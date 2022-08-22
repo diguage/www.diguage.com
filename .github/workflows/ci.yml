@@ -101,7 +101,8 @@ jobs:
           sudo apt update -y
           sudo apt install -y libheif-dev
           sudo apt install -y libde265-dev
-          t=$(mktemp) && wget 'https://dist.1-2.dev/imei.sh' -qO "$t" && sudo bash "$t" && rm "$t"
+          sudo apt install imagemagick
+          # t=$(mktemp) && wget 'https://dist.1-2.dev/imei.sh' -qO "$t" && sudo bash "$t" && rm "$t"
           cd public/images
           wget https://github.com/diguage/open-fonts/releases/download/latest/SourceCodePro-Semibold.otf
           # JPG
