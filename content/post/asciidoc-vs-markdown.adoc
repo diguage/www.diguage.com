@@ -575,14 +575,13 @@ image::/images/website/markdown-vs-asciidoc-catalog.png[{image_attr}]
 
 === Antora
 
+image::/images/common/antora-logo.png[float="right"]
+
 ==== 简介
 
 https://antora.org/[Antora^]: The multi-repository documentation site generator for tech writers who  writing in AsciiDoc.
 
-image::/images/website/antora.png[{image_attr}]
-
-优点：
-
+优点::
 . 专门的技术文档解决方案
 . 支持多仓库
 . 基于 AsciiDoc，功能强大
