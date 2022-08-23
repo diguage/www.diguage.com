@@ -586,10 +586,12 @@ https://antora.org/[Antora^]: The multi-repository documentation site generator 
 . 支持多仓库
 . 基于 AsciiDoc，功能强大
 
-示例，docs.asciidoctor.org： 
+//
 
-* 文档： https://docs.asciidoctor.org/[Asciidoctor Documentation Site^]
-* 管理： https://github.com/asciidoctor/docs.asciidoctor.org[docs.asciidoctor.org^]
+示例， https://docs.asciidoctor.org/[Asciidoctor Documentation^]::
+
+* 文档展示： https://docs.asciidoctor.org/[Asciidoctor Documentation Site^]
+* 仓库管理： https://github.com/asciidoctor/docs.asciidoctor.org[docs.asciidoctor.org^]
 
 ==== Quickstart: Playbook
 
