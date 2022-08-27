@@ -20,7 +20,7 @@ weight: 1
 . https://www.diguage.com/post/hessian-source-analysis-for-java/[Hessian 源码分析（Java）^] -- 开始第四篇分析之前，先来介绍一下 Hessian 的源码实现。方便后续展开说明。
 . https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-4/[Hessian 协议解释与实战（四）：数组与集合^] -- 铺垫了一些关于实例对象的处理，重点介绍关于数组和集合的相关处理。
 . https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-5/[Hessian 协议解释与实战（五）：对象与映射^] -- 重点介绍关于对象与映射的相关处理。
-. 未完待续，敬请继续关注 https://www.diguage.com/["地瓜哥"博客网^]。
+. https://www.diguage.com/post/schema-evolution-in-avro-protobuf-thrift[Avro、ProtoBuf、Thrift 的模式演进之路^] -- 翻译的 Martin Kleppmann 的文章，重点对比了 Avro、ProtoBuf、Thrift 的序列化处理思路。
 
 在上一篇文章 https://www.diguage.com/post/hessian-source-analysis-for-java/[Hessian 源码分析（Java）^] 对 Hessian 的 Java 实现做了一个概要的分析，对处理流程以及整体架构做了一个简单的分析。接下来，回到主题，继续来解释 Hessian 序列化协议。这篇文章，我们来重点分析一下数组与集合相关的操作。
 

@@ -21,7 +21,7 @@ weight: 1
 . https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-4/[Hessian 协议解释与实战（四）：数组与集合^] -- 铺垫了一些关于实例对象的处理，重点介绍关于数组和集合的相关处理。
 . https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-5/[Hessian 协议解释与实战（五）：对象与映射^] -- 重点介绍关于对象与映射的相关处理。
 . https://www.diguage.com/post/hessian-vs-msgpack-vs-json/[Hessian、Msgpack 和 JSON 实例对比^] -- 用实例对比 JSON、Hessian 和 MessagePack 的区别。
-. 未完待续，敬请继续关注 https://www.diguage.com/["地瓜哥"博客网^]。
+. https://www.diguage.com/post/schema-evolution-in-avro-protobuf-thrift[Avro、ProtoBuf、Thrift 的模式演进之路^] -- 翻译的 Martin Kleppmann 的文章，重点对比了 Avro、ProtoBuf、Thrift 的序列化处理思路。
 
 在上一篇文章 https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-2/[Hessian 协议解释与实战（二）：长整型、二进制数据与 Null^] 中研究了长整型、二进制数据与 `null` 等三种数据类型的处理方式。接下来，我们再来介绍字符串的处理情况。
 
