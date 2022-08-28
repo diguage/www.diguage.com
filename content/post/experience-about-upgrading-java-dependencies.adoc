@@ -49,17 +49,13 @@ Spring Framework 从 3.2.6.RELEASE 开始提供 BOM。可以利用 BOM 简化 Sp
 [source%nowrap,xml,{source_attr}]
 ----
 <!-- D瓜哥 · https://www.diguage.com -->
-<dependencyManagement>
-    <dependencies>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-framework-bom</artifactId>
-            <version>4.3.30.RELEASE</version>
-            <type>pom</type>
-            <scope>import</scope>
-        </dependency>
-    </dependencies>
-</dependencyManagement>
+<dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-framework-bom</artifactId>
+    <version>4.3.30.RELEASE</version>
+    <type>pom</type>
+    <scope>import</scope>
+</dependency>
 ----
 --
 +
@@ -399,3 +395,91 @@ Javassist 从 3.12.1.GA 升级到 3.13.0-GA 时，将 `groupId` 从 `javassist` 
 ----
 
 如果项目中没有相关注解，也不依赖使用 RESTEasy 注解的外部接口，则这个依赖也不需要了。
+
+== 常用 BOM
+
+鉴于 BOM 可以有效地优化依赖声明，这里再介绍几个常用的 BOM。下面介绍的 BOM，在升级过程中，也都有使用。
+
+=== Netty
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- D瓜哥 · https://www.diguage.com -->
+<dependency>
+    <groupId>io.netty</groupId>
+    <artifactId>netty-bom</artifactId>
+    <version>4.1.80.Final</version>
+    <type>pom</type>
+    <scope>import</scope>
+</dependency>
+----
+
+=== Jackson
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- D瓜哥 · https://www.diguage.com -->
+<dependency>
+    <groupId>com.fasterxml.jackson</groupId>
+    <artifactId>jackson-bom</artifactId>
+    <version>2.12.7</version>
+    <type>pom</type>
+    <scope>import</scope>
+</dependency>
+----
+
+=== JUnit 5
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- D瓜哥 · https://www.diguage.com -->
+<dependency>
+    <groupId>org.junit</groupId>
+    <artifactId>junit-bom</artifactId>
+    <version>5.9.0</version>
+    <type>pom</type>
+    <scope>import</scope>
+</dependency>
+----
+
+=== OkHTTP
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- D瓜哥 · https://www.diguage.com -->
+<dependency>
+    <groupId>com.squareup.okhttp3</groupId>
+    <artifactId>okhttp-bom</artifactId>
+    <version>4.10.0</version>
+    <type>pom</type>
+    <scope>import</scope>
+</dependency>
+----
+
+=== Log4j 2
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- D瓜哥 · https://www.diguage.com -->
+<dependency>
+    <groupId>org.apache.logging.log4j</groupId>
+    <artifactId>log4j-bom</artifactId>
+    <version>2.18.0</version>
+    <type>pom</type>
+    <scope>import</scope>
+</dependency>
+----
+
+=== ASM
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- D瓜哥 · https://www.diguage.com -->
+<dependency>
+    <groupId>org.ow2.asm</groupId>
+    <artifactId>asm-bom</artifactId>
+    <version>9.3</version>
+    <type>pom</type>
+    <scope>import</scope>
+</dependency>
+----
