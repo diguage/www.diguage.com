@@ -515,3 +515,5 @@ Javassist 从 3.12.1.GA 升级到 3.13.0-GA 时，将 `groupId` 从 `javassist` 
     <version>1.8.14</version>
 </dependency>
 ----
+
+D瓜哥遇到过 AspectJ 1.6.X 在 Java 8 下，使用 Spring AOP 报错的情况。所以，还请务必升级该依赖。
