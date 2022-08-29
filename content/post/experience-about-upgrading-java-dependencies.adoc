@@ -492,8 +492,9 @@ Javassist 从 3.12.1.GA 升级到 3.13.0-GA 时，将 `groupId` 从 `javassist` 
 . https://www.eclipse.org/aspectj/doc/released/README-183.html[AspectJ 1.8.3 Readme^]
 . https://www.eclipse.org/aspectj/doc/released/README-1810.html[AspectJ 1.8.10 Readme^]
 . https://www.eclipse.org/aspectj/doc/released/README-1812.html[AspectJ 1.8.12 Readme^] -- 这个版本主要是性能优化，这里还给出了一个性能测试数据。
+. https://htmlpreview.github.io/?https://github.com/eclipse/org.aspectj/blob/master/docs/dist/doc/README-199.html[AspectJ 1.9.9 Readme^] -- 这里提到，“Since 1.9.7, the AspectJ compiler ajc (contained in the aspectjtools library) no longer works on JDKs 8 to 10.”，根据这个说明，1.9.7+ 不再支持 Java 8。
 
-根据以上的资料，最好选择 1.8.12+ 的版本。最新的依赖如下：
+根据以上的资料，最好选择 1.8.12+ 的版本。综合考虑，选择了 1.8.X 的最新版依赖如下：
 
 [source%nowrap,xml,{source_attr}]
 ----
@@ -501,16 +502,16 @@ Javassist 从 3.12.1.GA 升级到 3.13.0-GA 时，将 `groupId` 从 `javassist` 
 <dependency>
     <groupId>org.aspectj</groupId>
     <artifactId>aspectjrt</artifactId>
-    <version>1.9.9.1</version>
+    <version>1.8.14</version>
 </dependency>
 <dependency>
     <groupId>org.aspectj</groupId>
     <artifactId>aspectjweaver</artifactId>
-    <version>1.9.9.1</version>
+    <version>1.8.14</version>
 </dependency>
 <dependency>
     <groupId>org.aspectj</groupId>
     <artifactId>aspectjtools</artifactId>
-    <version>1.9.9.1</version>
+    <version>1.8.14</version>
 </dependency>
 ----
