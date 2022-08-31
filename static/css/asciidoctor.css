@@ -355,3 +355,88 @@ b.conum * {
 .left{float:left!important}
 .right{float:right!important}
 
+table.tableblock,td.tableblock,th.tableblock {
+    border: 0 solid #dedede
+}
+
+table.grid-all>*>tr>* {
+    border-width: 1px
+}
+
+table.grid-cols>*>tr>* {
+    border-width: 0 1px
+}
+
+table.grid-rows>*>tr>* {
+    border-width: 1px 0
+}
+
+table.frame-all {
+    border-width: 1px
+}
+
+table.frame-ends {
+    border-width: 1px 0
+}
+
+table.frame-sides {
+    border-width: 0 1px
+}
+
+table.frame-none>colgroup+*>:first-child>*,table.frame-sides>colgroup+*>:first-child>* {
+    border-top-width: 0
+}
+
+table.frame-none>:last-child>:last-child>*,table.frame-sides>:last-child>:last-child>* {
+    border-bottom-width: 0
+}
+
+table.frame-ends>*>tr>:first-child,table.frame-none>*>tr>:first-child {
+    border-left-width: 0
+}
+
+table.frame-ends>*>tr>:last-child,table.frame-none>*>tr>:last-child {
+    border-right-width: 0
+}
+
+table.stripes-all>*>tr,table.stripes-even>*>tr:nth-of-type(2n),table.stripes-hover>*>tr:hover,table.stripes-odd>*>tr:nth-of-type(odd) {
+    background: #f8f8f7
+}
+
+td.halign-left,th.halign-left {
+    text-align: left
+}
+
+td.halign-right,th.halign-right {
+    text-align: right
+}
+
+td.halign-center,th.halign-center {
+    text-align: center
+}
+
+td.valign-top,th.valign-top {
+    vertical-align: top
+}
+
+td.valign-bottom,th.valign-bottom {
+    vertical-align: bottom
+}
+
+td.valign-middle,th.valign-middle {
+    vertical-align: middle
+}
+
+table tfoot th,table thead th {
+    font-weight: 700
+}
+
+tbody tr th {
+    background: #f7f8f7
+}
+
+tbody tr th,tbody tr th p,tfoot tr th,tfoot tr th p {
+    color: rgba(0,0,0,.8);
+    font-weight: 700
+}
+
