@@ -1,0 +1,71 @@
+---
+title: "制定组织内 Maven BOM 的一些规范"
+date: 2022-09-03T09:19:59+08:00
+draft: false
+keywords: ["Java","Spring","依赖管理","Maven"]
+tags: ["Java","设计","Spring","最佳实践"]
+categories: ["Java","程序设计","软件工程"]
+thumbnail: "images/logo/apache-maven.svg"
+
+weight: 1
+---
+
+在 https://www.diguage.com/post/experience-about-upgrading-java-dependencies/[关于升级 Spring 等依赖的一些经验^] 中介绍了 D瓜哥在升级项目依赖时，遇到的一些问题以及一些需要注意的地方。但是，这里还存在一个问题：**各个依赖的版本依然散落在各个项目中；升级依赖，需要在所有项目中，把所有相关项目的依赖都巴拉一下，费时费力。**解决这个问题的一个比较好的办法是**制定一个组织内部的 Maven BOM，集中管理相关依赖的版本。**这样升级的时候，还需要修改 BOM 的版本号即可。
+
+== Maven BOM 介绍
+
+BOM（Bill of Materials）是由 Maven 提供的功能,它通过定义一整套相互兼容的 jar 包版本集合，使用时只需要依赖该BOM文件，即可放心的使用需要的依赖 jar 包，且无需再指定版本号。
+
+== 一些基本原则
+
+. Spring & Spring Boot 是 Java 生态中，全世界广泛使用的开发框架，在各种场景中都经受过考验。所以，Spring & Spring Boot 选择的 Jar 在稳定性和兼容性方面都有保证。另外，Spring Boot 本身就集成了非常非常多的依赖，并为此创建了一个网页 https://docs.spring.io/spring-boot/docs/current/reference/html/dependency-versions.html[Spring Boot Dependency versions^] 来说明它集成的依赖及版本。故而，可以选择以 Spring Boot 为底本，来制作自己的 BOM。
+.. 如果不需要 Spring 相关依赖，可以将 Spring 相关依赖删除掉，然后在其之上增加组织内部依赖而创建自己的 BOM。
+.. 如果需要 Spring 相关依赖，那么直接继承
+. 在稳定性方面，经过更多人检验的版本，则稳定性更有保障。所以，选择最近两年下载次数比较多的版本。
+. 更新的版本，更容易获得技术升级带来的红利。所以，在可能的情况下，优先选择高版本。
+. 优先考虑目标 JDK 的支持情况。例如，一些依赖的高版本或低版本不支持 Java 8，但是 Java 8 是生产环境部署的主要版本，那么太高的版本和低版本都不适合。
+
+== 外部 Jar 包选择标准
+
+. 尽量将外部中间件统一到同一种依赖的同一个版本上。例如：数据库连接池全部使用 HikariCP；JSON 处理统一使用 Jackson。
+. 选择最近两年发布的版本中，下载次数最多的版本为准。如果有发布的小版本升级，则在该版本基础上，该版本的最新修订版。例如，1.2.3 是最近两年下载最多的版本，但是 1.2.4 已经发布，则优先选择使用 1.2.4。
+. 如果有两个大版本，高版本符合条件的情况下，优先选择高版本。低版本大概率是先淘汰的，高版本相对来说维护时间更长，另外高版本的代码优化得更佳。例如，Ehcache 的选择。
+. 如果传递依赖造成依赖 Jar 包版本冲突，则尽可能选择高版本的 Jar。
+. 持续演进的项目的依赖优先级更高；相反，临近淘汰的项目优先级降低，甚至不予考虑。
+. 两年以上未更新的依赖，在 API 兼容的情况下，直接升级到最新版。
+. 没有显示使用而是间接引入的依赖，不再单独声明，由直接依赖来引入。如果需要解决冲突，则按照上面的原则来处理。
+
+== 内部 Jar 包选择标准
+
+组织内部情况比较简单，选择标准也比较简单。
+
+. 尽可能选择最新稳定版，享受技术升级带来的红利。
+. 只选取比较稳定而不是经常发布 Jar 包。
+. 需要经常改动的，比如一些服务 API，则不建议纳入 BOM 管理。经常更新的 BOM，就是去了使用 BOM 的意义。
+
+== 构建插件的声明
+
+在 https://www.diguage.com/post/use-maven-enforcer-plugin-to-check-dependencies/[使用 Maven Enforcer 插件检查依赖^] 中，D瓜哥介绍了使用 Maven Enforcer 插件检查依赖的办法。由于 Maven 的继承性，可以考虑在 BOM 中声明一些相关插件来统一管理一些构建行为。
+
+== 充分榨取 Spring Boot 的剩余价值
+
+Spring Boot 通过 https://docs.spring.io/spring-boot/docs/current/reference/html/dependency-versions.html[Spring Boot Dependency versions^] 来发布相关版本的外部依赖。如果不想依赖 Spring 系列，在 Spring Boot Dependency 中没有声明某个依赖，则从上述网页提到的 `spring-integration-*` 中查找相关依赖。以查找的依赖版本为准，然后顺藤摸瓜，查找对应的依赖版本。例如：ZooKeeper 版本的选择。
+
+== 更新机制
+
+. 有重要漏洞修复时，则立即更新并发布新版本，相关应用也需要强制及时升级。
+. 每半年升级一下相关依赖，发布新版本。发布新版本后，相关应用跟随需求进行升级。不做强制要求。
+. 其他项目使用该 BOM 后，后续升级该 BOM 声明的 Jar 包时，**只需要将该 BOM 的版本升级到最新版即可。**
+
+== 维护人员
+
+最好有一两个人专门负责维护该项目的更新。建议选有代码洁癖，痴迷技术，有版本控的人来更新项目；其他人员负责 Review 更新。
+
+== 一些注意事项
+
+由于 Oracle 抛弃了 JavaEE，转而由 Jakarta 社区来维护 JavaEE。双方关于版权的问题没有谈妥， Jakarta 社区不能再使用 `javax.` 作为发布标准的前缀了；同时，商标也没有谈好，相关标准只能改名为 Jakarta EE 再发布新版。由此导致很多依赖都做了修改。完整列表见： https://jakarta.ee/specifications/[Jakarta EE Specifications | The Eclipse Foundation^]。
+
+. Spring 5 支持 Java 8，也会继续支持旧版 JavaEE API，所以，可以保持不动。
+. 而从 Spring 6 开始，最低要求 Java 17，相关 API 也切换为 Jakarta EE。涉及项目众多，这里只列举几个常见的依赖如下：
+.. `javax.annotation:javax.annotation-api` 改为 `jakarta.annotation:jakarta.annotation-api`。经常使用的 `@Resource`、 `@PostConstruct` 和 `@PreDestroy` 都需要修改报名。原以为标准怎么会乱改呢？没想到…
+.. `javax.servlet:javax.servlet-api` 改为 `jakarta.servlet:jakarta.servlet-api`。这个影响也很大。原来 Servlet 相关的 `Filter` 等也都需要报名。
