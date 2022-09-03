@@ -1,18 +1,20 @@
 ---
-title: "Java 虚拟机指令集"
+title: "Java 虚拟机指令(操作码)集"
 date: 2022-08-31T13:00:44+08:00
 draft: false
 keywords: ["Java","虚拟机"]
 tags: ["Java","虚拟机"]
 categories: ["系统架构"]
-thumbnail: "images/logo/java.svg"
+thumbnail: "images/java/bytecode.svg"
 
 weight: 1
 ---
 
 最近在研究 Java 虚拟机字节码。在 https://book.douban.com/subject/26418340/[《Java虚拟机规范》^] 看到一个整理完整的 Java 虚拟机指令集（也叫操作码）列表。转载过来，方便查阅。
 
-现在只是单纯转载，后续有自己的理解时，再逐步丰富内容和解释。
+关于 Java 虚拟机指令(操作码)，准备写一个“探秘”系列：
+
+. https://www.diguage.com/post/jvm-bytecode-constant/[Java 虚拟机操作码探秘：常量指令^] -- 重点介绍一下关于“常量”指令。
 
 [%header,cols="^.^7,^.^7,7,12,67",stripes=even]
 |===
@@ -1068,6 +1070,8 @@ weight: 1
 == 参考资料
 
 . https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html[Chapter 6. The Java Virtual Machine Instruction Set^]
+. https://en.wikipedia.org/wiki/Java_bytecode[Java bytecode^]
+. https://en.wikipedia.org/wiki/List_of_Java_bytecode_instructions[List of Java bytecode instructions^]
 
 
 
