@@ -67,5 +67,5 @@ Spring Boot 通过 https://docs.spring.io/spring-boot/docs/current/reference/htm
 
 . Spring 5 支持 Java 8，也会继续支持旧版 JavaEE API，所以，可以保持不动。
 . 而从 Spring 6 开始，最低要求 Java 17，相关 API 也切换为 Jakarta EE。涉及项目众多，这里只列举几个常见的依赖如下：
-.. `javax.annotation:javax.annotation-api` 改为 `jakarta.annotation:jakarta.annotation-api`。经常使用的 `@Resource`、 `@PostConstruct` 和 `@PreDestroy` 都需要修改报名。原以为标准怎么会乱改呢？没想到…
-.. `javax.servlet:javax.servlet-api` 改为 `jakarta.servlet:jakarta.servlet-api`。这个影响也很大。原来 Servlet 相关的 `Filter` 等也都需要报名。
+.. `javax.annotation:javax.annotation-api` 改为 `jakarta.annotation:jakarta.annotation-api`。经常使用的 `@Resource`、 `@PostConstruct` 和 `@PreDestroy` 都需要修改包名。原以为标准怎么会乱改呢？没想到…
+.. `javax.servlet:javax.servlet-api` 改为 `jakarta.servlet:jakarta.servlet-api`。这个影响也很大。原来 Servlet 相关的 `Filter` 等也都需要更改包名。
