@@ -14,7 +14,14 @@ weight: 1
 
 从 https://www.diguage.com/post/jvm-instruction-set/[Java 虚拟机指令(操作码)集^] 列表上来看，一共 21 个指令；按照处理数据的类型，合并同类项后，剩下有 `nop`、 <<aconst_null>>、 <<iconst>>、 <<lconst>>、 <<fconst>>、 <<dconst>>、 <<bipush>>、 <<sipush>>、 <<ldc>> 和 <<ldc2_w>> 等几个指令。下面，按照顺序，对其进行一一讲解。
 
-NOTE: 操作码助记符的首字母一般是有特殊含义的，表示操作码所作用的数据类型：`i` 代表对 `int` 类型的数据操作； `l` 代表 `long`； `s` 代表 `short`； `b` 代表 `byte`；`c` 代表 `char`；`f` 代表 `float`， `d` 代表 `double`； `a` 代表 reference。
+[NOTE]
+====
+操作码助记符的首字母一般是有特殊含义的，表示操作码所作用的数据类型： `i` 代表对 `int` 类型的数据操作； `l` 代表 `long`； `s` 代表 `short`； `b` 代表 `byte`；`c` 代表 `char`；`f` 代表 `float`， `d` 代表 `double`； `a` 代表 reference。
+
+尖括号之间的字母指定了指令隐含操作数的数据类型，`<n>` 代表非负的整数； `<i>` 代表是 `int` 类型数据； `<l>` 代表 `long` 类型； `<f>` 代表 `float` 类型； `<d>` 代表 `double` 类型。
+
+另外还需要指出一点：这种指令表示法在整个 Java 虚拟机规范之中都是通用的。
+====
 
 == `nop`
 
