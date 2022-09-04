@@ -70,7 +70,7 @@ public class Example {
 
 在上述结果中，我们如愿看到了 `aconst_null` 操作码。从上面的 `testAconst` 方法的指令来看，是将 `null` 加载到栈顶，然后返回。与我们的代码是一致的。
 
-TIP: 对比了 Java 8 与 Java 17 的编译结果。从 `javap -c` 的输出上来看，两者没有差异。以后不再赘述。如有问题，再支出。
+TIP: 对比了 Java 8 与 Java 17 的编译结果。从 `javap -c` 的输出上来看，两者没有差异。以后不再赘述。如有不同，再另行说明。
 
 [#iconst]
 === `iconst_<i>`
@@ -580,9 +580,101 @@ SourceFile: "Example.java"
 
 将上面代码中的 `2L` 替换为 long 和 double 类型除上述内容提到的之外的值，也可以查看到相同的结果。
 
+[#bool-byte-char-short]
+== `boolean`、 `byte`、 `char` 与 `short`
+
+这些常量的加载指令中，没有关于 `boolean`、 `byte`、 `char` 与 `short` 类型的处理操作码。那么，这些类型的数据是怎么处理的呢？下面做个实验验证一下：
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 字节码示例代码
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ */
+public class Example {
+    /**
+     * 测试 boolean 型示例
+     */
+    public boolean testBoolean() {
+        return true;
+    }
+
+    /**
+     * 测试 byte 型示例
+     */
+    public byte testByte() {
+        // '0' == 0x30 == 48
+        return '0';
+    }
+
+    /**
+     * 测试 char 型示例
+     */
+    public char testChar() {
+        // '0' == 0x30 == 48
+        return '0';
+    }
+
+    /**
+     * 测试 short 型示例
+     */
+    public short testShort() {
+        // '0' == 0x30 == 48
+        return 32767;
+    }
+}
+----
+
+使用 `javac Example.java` 编译，然后使用 `javap` 来查看编译的结果：
+
+[source%nowrap,bash,highlight=12,{source_attr}]
+----
+$ javap -c Example
+Compiled from "Example.java"
+public class Example {
+  public Example();
+    Code:
+       0: aload_0
+       1: invokespecial #1          // Method java/lang/Object."<init>":()V
+       4: return
+
+  public boolean testBoolean();
+    Code:
+       0: iconst_1
+       1: ireturn
+
+  public byte testByte();
+    Code:
+       0: bipush        48
+       2: ireturn
+
+  public char testChar();
+    Code:
+       0: bipush        48
+       2: ireturn
+
+  public short testShort();
+    Code:
+       0: sipush        32767
+       3: ireturn
+}
+----
+
+`boolean` 型的 `true` 在字节码中却是使用 `int` 的 `iconst_1`来处理的。想必 `false` 会被“翻译”为 `iconst_0`；同样是 `'0'`，在 `byte` 和 `char` 不同类型的方法中，编译之后字节码确实一样的，全部是是 `bipush 48`；而 `short` 型的 `32767`，却使用的是是 `int` 的 `sipush 32767` 来处理的。另外，它们的返回操作码也都一样，全部是 `ireturn`，这也是 `int` 型的操作码。
+
+可见，在字节码层面， `boolean`、 `byte`、 `char` 与 `short` 全部是按照 `int` 来处理的。也有不同之处，后面遇到再专门说明。
+
 == 总结
 
-最后使用一张图来总结一下 `int` 的加载：
+为 `int` 分配这么多操作码，就是为了使字节码更加紧凑，`int` 型常量值根据值 `n` 的范围，使用的指令按照如下的规则。
+
+* 若 `n ∈ [-1, 5]` 范围内，使用 <<iconst>> 的方式，操作数和操作码加一起只占一个字节。比如 `iconst_2` 对应的十六进制为 `0x05`。`-1` 比较特殊，对应的指令是 `iconst_m1`(`0x02`)。
+* 若 `n ∈ [-128, -2] ∪ [6, 127]` 范围内，使用 <<bipush>> 的方式，操作数和操作码一起只占两个字节。比如 `n` 值为 `100`(`0x64`) 时，`bipush_100` 对应十六进制为 `0x1064`。
+* 若 `n ∈ [-32768, -129] ∪ [128, 32767]` 范围内，使用 <<sipush>> 的方式，操作数和操作码一起只占三个字节。比如 `n` 值为 `1024`(`0x0400`) 时，对应的字节码为 `sipush_1024`(`0x110400`)。
+* 若 `n` 在其他范围内，则使用 <<ldc>> 的方式，这个范围的整整数值被放在常量池中，比如 `n` 值为 `40000` 时， `40000` 被不存储到常量池中，加载的指令为 `ldc #i`(`i` 为常量池的索引值)。
+
+使用一张图来总结一下 `int` 的加载：
 
 image::/images/java/bytecode-int-load.png[alt="Java 字节码：int 加载",{image_attr}]
 
