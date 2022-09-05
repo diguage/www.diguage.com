@@ -1,0 +1,19 @@
+---
+title: "Java 虚拟机栈简介"
+date: 2022-09-04T19:17:06+08:00
+draft: true
+keywords: ["Java","虚拟机"]
+tags: ["Java","虚拟机","JVM"]
+categories: ["系统架构"]
+thumbnail: "images/it/program-call-stack.svg"
+
+weight: 1
+---
+
+
+// image::/images/[title="",alt="",{image_attr}]
+
+// [source%nowrap,java,{source_attr}]
+// ----
+// // code
+// ----

@@ -4,7 +4,7 @@ date: 2020-05-28T20:06:46+08:00
 draft: false
 keywords: ["Java","Spring"]
 tags: ["Java","设计","架构","数据库"]
-categories: ["Java","程序设计"]
+categories: ["程序设计"]
 thumbnail: "images/spring-framework/spring-and-mybatis.jpg"
 
 weight: 1

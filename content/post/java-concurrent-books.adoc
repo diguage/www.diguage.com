@@ -4,7 +4,7 @@ date: 2020-03-25T16:32:12+08:00
 draft: false
 keywords: ["Java","并发"]
 tags: ["Java","并发","设计","读书"]
-categories: ["Java"]
+categories: ["程序设计"]
 
 weight: 1
 

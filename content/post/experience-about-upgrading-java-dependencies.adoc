@@ -4,7 +4,7 @@ date: 2022-08-28T09:19:59+08:00
 draft: false
 keywords: ["Java","Spring","依赖管理","Maven","Spring Boot","ASM","MySQL","Javassist","RESTEasy","cglib","Bouncy Castle","ProtoBuf"]
 tags: ["Java","Spring","最佳实践","数据库"]
-categories: ["Java","开发工具","软件工程"]
+categories: ["开发工具","软件工程"]
 thumbnail: "images/java/spring-maven-java.png"
 
 weight: 1
