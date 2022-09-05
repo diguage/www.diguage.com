@@ -17,3 +17,48 @@ weight: 1
 // ----
 // // code
 // ----
+
+在 https://www.diguage.com/post/jvm-bytecode-constant/[Java 虚拟机操作码探秘：常量指令^] 中对 Java 虚拟机操作码中关于常量操作的指令(操作码)做了初步介绍。估计会有人疑问：文中的“栈”、“栈顶”等是什么？现在就来解答一下这些疑问。在这篇文章，D瓜哥就来介绍一下 Java 虚拟机，尤其侧重介绍一下虚拟机栈，这对帮助大家理解 Java 虚拟机操作码非常有帮助。
+
+== 代码块
+
+在介绍 Java 虚拟机相关内容之前，先来了解一下 Java 编译器对 Java 代码中的代码块是如何处理的？常见的代码块有普通代码块和静态代码块，下面对其做分别介绍。由于涉及到构造函数，所以，先对构造函数做一个介绍。
+
+=== 构造函数
+
+先来看看当没有声明构造函数时，编译结果是什么样的：
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 无构造函数示例
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ */
+public class Example {
+}
+----
+
+编译后，使用 `javap -c` 查看一下编译结果：
+
+[source%nowrap,java,{source_attr}]
+----
+javap -c Example
+Compiled from "Example.java"
+public class Example {
+  public Example();
+    Code:
+       0: aload_0
+       1: invokespecial #1          // Method java/lang/Object."<init>":()V
+       4: return
+}
+----
+
+从结果上来看：编译器自动给没有声明构造函数的类，生成了一个无参构造函数，并且在其中调用了父类（这里是 `Object`）的无参构造函数。这是大家都熟知的基础知识。
+
+==== 无构造函数
+
+
+=== 静态代码块
+
+=== 普通代码块
