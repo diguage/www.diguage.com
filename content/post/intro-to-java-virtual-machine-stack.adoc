@@ -1,0 +1,15 @@
+---
+title: "Java 虚拟机栈简介"
+date: 2022-09-06T23:45:17+08:00
+draft: true
+keywords: ["Java","虚拟机"]
+tags: ["Java","虚拟机","JVM"]
+categories: ["系统架构"]
+thumbnail: "images/it/program-call-stack.svg"
+
+weight: 1
+---
+
+
+为了解答在 https://www.diguage.com/post/jvm-bytecode-constant/[Java 虚拟机操作码探秘：常量指令^] 文中提到的“栈”、“栈顶”等是什么？在上一篇文章 https://www.diguage.com/post/intro-to-java-virtual-machine-stack/[深入理解 Java 代码块^] 对 Java 代码块做了铺垫性介绍。本文将正式开始对 Java 虚拟机，尤其是虚拟机栈做出介绍。
+
