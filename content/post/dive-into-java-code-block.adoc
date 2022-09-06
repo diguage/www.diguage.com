@@ -42,7 +42,7 @@ public class Example {
   public Example();
     Code:
        0: aload_0
-       1: invokespecial #1          // Method java/lang/Object."<init>":()V
+       1: invokespecial #1      // Method java/lang/Object."<init>":()V
        4: return
 }
 ----
@@ -76,7 +76,7 @@ public class Example {
   public Example(int); <1>
     Code:
        0: aload_0
-       1: invokespecial #1          // Method java/lang/Object."<init>":()V
+       1: invokespecial #1      // Method java/lang/Object."<init>":()V
        4: return
 }
 ----
@@ -116,8 +116,8 @@ public class Example {
   public Example();
     Code:
        0: aload_0
-       1: invokespecial #1                  // Method java/lang/Object."<init>":()V
-       4: ldc2_w        #2                  // long 5l
+       1: invokespecial #1      // Method java/lang/Object."<init>":()V
+       4: ldc2_w        #2      // long 5l
        7: lstore_1
        8: return
 }
@@ -171,16 +171,16 @@ public class Example {
   public Example();
     Code:
        0: aload_0
-       1: invokespecial #1                  // Method java/lang/Object."<init>":()V
-       4: ldc2_w        #2                  // long 5l
+       1: invokespecial #1      // Method java/lang/Object."<init>":()V
+       4: ldc2_w        #2      // long 5l
        7: lstore_1
        8: return
 
   public Example(int);
     Code:
        0: aload_0
-       1: invokespecial #1                  // Method java/lang/Object."<init>":()V
-       4: ldc2_w        #2                  // long 5l
+       1: invokespecial #1      // Method java/lang/Object."<init>":()V
+       4: ldc2_w        #2      // long 5l
        7: lstore_2
        8: return
 }
@@ -240,8 +240,8 @@ public class Example {
   public Example();
     Code:
        0: aload_0
-       1: invokespecial #1                  // Method java/lang/Object."<init>":()V
-       4: ldc2_w        #2                  // long 5l
+       1: invokespecial #1      // Method java/lang/Object."<init>":()V
+       4: ldc2_w        #2      // long 5l
        7: lstore_1
        8: fconst_2
        9: fstore_1
@@ -250,8 +250,8 @@ public class Example {
   public Example(int);
     Code:
        0: aload_0
-       1: invokespecial #1                  // Method java/lang/Object."<init>":()V
-       4: ldc2_w        #2                  // long 5l
+       1: invokespecial #1      // Method java/lang/Object."<init>":()V
+       4: ldc2_w        #2      // long 5l
        7: lstore_2
        8: dconst_1
        9: dstore_2
@@ -319,10 +319,10 @@ public class Example {
   public Example();
     Code:
        0: aload_0
-       1: invokespecial #1                  // Method java/lang/Object."<init>":()V
-       4: ldc2_w        #2                  // long 5l
+       1: invokespecial #1      // Method java/lang/Object."<init>":()V
+       4: ldc2_w        #2      // long 5l
        7: lstore_1
-       8: ldc           #4                  // int 131072
+       8: ldc           #4      // int 131072
       10: istore_1
       11: fconst_2
       12: fstore_1
@@ -331,10 +331,10 @@ public class Example {
   public Example(int);
     Code:
        0: aload_0
-       1: invokespecial #1                  // Method java/lang/Object."<init>":()V
-       4: ldc2_w        #2                  // long 5l
+       1: invokespecial #1      // Method java/lang/Object."<init>":()V
+       4: ldc2_w        #2      // long 5l
        7: lstore_2
-       8: ldc           #4                  // int 131072
+       8: ldc           #4      // int 131072
       10: istore_2
       11: dconst_1
       12: dstore_2
@@ -394,7 +394,7 @@ public class Example {
   public Example();
     Code:
        0: aload_0
-       1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+       1: invokespecial #1      // Method java/lang/Object."<init>":()V
        4: return
 
   static {};
