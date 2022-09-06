@@ -1,32 +1,23 @@
 ---
-title: "Java 虚拟机栈简介"
+title: "深入理解 Java 代码块"
 date: 2022-09-04T19:17:06+08:00
-draft: true
+draft: false
 keywords: ["Java","虚拟机"]
 tags: ["Java","虚拟机","JVM"]
-categories: ["系统架构"]
-thumbnail: "images/it/program-call-stack.svg"
+categories: ["程序设计"]
+thumbnail: "images/common/computer-and-bonsai.jpg"
 
 weight: 1
 ---
 
 
-// image::/images/[title="",alt="",{image_attr}]
+在 https://www.diguage.com/post/jvm-bytecode-constant/[Java 虚拟机操作码探秘：常量指令^] 中对 Java 虚拟机操作码中关于常量操作的指令(操作码)做了初步介绍。估计会有人疑问：文中的“栈”、“栈顶”等是什么？接下来就准备解答这些疑问。
 
-// [source%nowrap,java,{source_attr}]
-// ----
-// // code
-// ----
+在答疑解惑之前，先来了解一下 Java 编译器对 Java 代码中的代码块是如何处理的？常见的代码块有普通代码块和静态代码块，下面对其做分别介绍。由于涉及到构造函数，所以，先对构造函数做一个介绍。
 
-在 https://www.diguage.com/post/jvm-bytecode-constant/[Java 虚拟机操作码探秘：常量指令^] 中对 Java 虚拟机操作码中关于常量操作的指令(操作码)做了初步介绍。估计会有人疑问：文中的“栈”、“栈顶”等是什么？现在就来解答一下这些疑问。在这篇文章，D瓜哥就来介绍一下 Java 虚拟机，尤其侧重介绍一下虚拟机栈，这对帮助大家理解 Java 虚拟机操作码非常有帮助。
+== 构造函数
 
-== 代码块
-
-在介绍 Java 虚拟机相关内容之前，先来了解一下 Java 编译器对 Java 代码中的代码块是如何处理的？常见的代码块有普通代码块和静态代码块，下面对其做分别介绍。由于涉及到构造函数，所以，先对构造函数做一个介绍。
-
-=== 构造函数
-
-==== 无构造函数
+=== 无构造函数
 
 先来看看当没有声明构造函数时，编译结果是什么样的：
 
@@ -58,7 +49,7 @@ public class Example {
 
 从结果上来看：编译器自动给没有声明构造函数的类，生成了一个无参构造函数，并且在其中调用了父类（这里是 `Object`）的无参构造函数。这是大家都熟知的基础知识。
 
-==== 有参构造函数
+=== 有参构造函数
 
 再来看看当有声明参数的构造函数时，编译结果是什么样的：
 
@@ -95,9 +86,9 @@ public class Example {
 
 有了这些知识铺垫，我们就可以开始来说明代码块的处理了。
 
-=== 普通代码块
+== 普通代码块
 
-==== 没有构造函数时
+=== 没有构造函数时
 
 普通代码块是指在 Java 类中使用 `{}` 声明的代码块。示例代码如下：
 
@@ -146,7 +137,7 @@ public class Example {
 }
 ----
 
-==== 存在构造函数时
+=== 存在构造函数时
 
 再来看看当存在无参构造函数和有参构造函数时，编译器会如何处理。示例代码如下：
 
@@ -213,7 +204,7 @@ public class Example {
 }
 ----
 
-==== 构造函数包含代码时
+=== 构造函数包含代码时
 
 再来看看当构造函数包含代码时，编译器会如何处理。示例代码如下：
 
@@ -288,6 +279,197 @@ public class Example {
 }
 ----
 
-总结一下：普通代码块在编译时，由编译器将代码块代码整体嵌入到了构造函数里，并且放在了构造函数原有代码之上。从 Java 虚拟机的层面上来看，不存在普通代码块。
+=== 当存在多个普通代码块时
 
-=== 静态代码块
+再来看看当存在多个普通代码块时，编译器会如何处理。示例代码如下：
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 字节码示例代码
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ */
+public class Example {
+    {
+        long l = 1L + 4L;
+    }
+
+    public Example() {
+        float f = 0.0F + 2.0F;
+    }
+
+    public Example(int i) {
+        double d = 0.0 + 1.0;
+    }
+
+    {
+        int i = 1 << 17;
+    }
+}
+----
+
+编译后，使用 `javap -c` 查看一下编译结果：
+
+[source%nowrap,bash,{source_attr}]
+----
+$ javap -c Example
+Compiled from "Example.java"
+public class Example {
+  public Example();
+    Code:
+       0: aload_0
+       1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+       4: ldc2_w        #2                  // long 5l
+       7: lstore_1
+       8: ldc           #4                  // int 131072
+      10: istore_1
+      11: fconst_2
+      12: fstore_1
+      13: return
+
+  public Example(int);
+    Code:
+       0: aload_0
+       1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+       4: ldc2_w        #2                  // long 5l
+       7: lstore_2
+       8: ldc           #4                  // int 131072
+      10: istore_2
+      11: dconst_1
+      12: dstore_2
+      13: return
+}
+----
+
+从 `javap` 的结果来看，**编译器将代码块代码按照出现顺序依次嵌入到了构造函数里，并且放在了构造函数原有代码之上**。再看一下反编译结果：
+
+[source%nowrap,java,{source_attr}]
+----
+/*
+ * Decompiled with CFR 0.152.
+ */
+public class Example {
+    public Example() {
+        long l = 5L;
+        int n = 131072;
+        float f = 2.0f;
+    }
+
+    public Example(int n) {
+        long l = 5L;
+        int n2 = 131072;
+        double d = 1.0;
+    }
+}
+----
+
+总结一下：**普通代码块在编译时，由编译器将代码块代码整体嵌入到了构造函数里，并且放在了构造函数原有代码之上。如果存在多个普通代码块，则按照出现的顺序依次嵌入到构造函数里。**从 Java 虚拟机的层面上来看，不存在普通代码块。
+
+== 静态代码块
+
+静态代码块是指在 Java 类中使用 `static` 关键字和 `{}` 声明的代码块。示例如下：
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 字节码示例代码
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ */
+public class Example {
+    static {
+        double d = 0.0 + 1.0;
+    }
+}
+----
+
+编译后，使用 `javap -c` 查看一下编译结果：
+
+[source%nowrap,bash,{source_attr}]
+----
+$ javap -c Example
+Compiled from "Example.java"
+public class Example {
+  public Example();
+    Code:
+       0: aload_0
+       1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+       4: return
+
+  static {};
+    Code:
+       0: dconst_1
+       1: dstore_0
+       2: return
+}
+----
+
+从 `javap` 的结果来看，编译器对静态代码块别没有做什么处理，还是保持了原状。再看一下反编译结果：
+
+[source%nowrap,java,{source_attr}]
+----
+/*
+ * Decompiled with CFR 0.152.
+ */
+public class Example {
+    static {
+        double d = 1.0;
+    }
+}
+----
+
+加上代码块、构造函数，来执行一下，看看执行顺序。完整代码：
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 字节码示例代码
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ */
+public class Example {
+    static {
+        double d = 0.0 + 1.0;
+        System.out.println("static1 d=" + d);
+    }
+
+    static {
+        double d = 3.0 + 5.0;
+        System.out.println("static2 d=" + d);
+    }
+
+    {
+        long l = 1L + 4L;
+        System.out.println("block1 l=" + l);
+    }
+
+    public Example() {
+        float f = 0.0F + 2.0F;
+        System.out.println("constructor f=" + f);
+    }
+
+    {
+        int i = 1 << 17;
+        System.out.println("block2 i=" + i);
+    }
+}
+----
+
+编译执行，结果如下：
+
+[source%nowrap,bash,{source_attr}]
+----
+$ java Example
+static1 d=1.0
+static2 d=8.0
+start to new Example
+block1 l=5
+block2 i=131072
+constructor f=2.0
+finish creating Example
+----
+
+从结果上来看，**静态代码块在类被加载的时候就运行了，而且只运行一次，并且优先于各种代码块以及构造函数。如果一个类中有多个静态代码块，会按照书写顺序依次执行。**
+
+内容已经不少，本文先到这里。下一篇文章再来介绍 Java 虚拟机尤其是虚拟机栈相关知识。
