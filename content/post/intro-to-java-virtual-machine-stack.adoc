@@ -26,6 +26,8 @@ weight: 1
 
 === 构造函数
 
+==== 无构造函数
+
 先来看看当没有声明构造函数时，编译结果是什么样的：
 
 [source%nowrap,java,{source_attr}]
@@ -41,9 +43,9 @@ public class Example {
 
 编译后，使用 `javap -c` 查看一下编译结果：
 
-[source%nowrap,java,{source_attr}]
+[source%nowrap,bash,{source_attr}]
 ----
-javap -c Example
+$ javap -c Example
 Compiled from "Example.java"
 public class Example {
   public Example();
@@ -56,9 +58,236 @@ public class Example {
 
 从结果上来看：编译器自动给没有声明构造函数的类，生成了一个无参构造函数，并且在其中调用了父类（这里是 `Object`）的无参构造函数。这是大家都熟知的基础知识。
 
-==== 无构造函数
+==== 有参构造函数
 
+再来看看当有声明参数的构造函数时，编译结果是什么样的：
 
-=== 静态代码块
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 有参构造函数示例
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ */
+public class Example {
+    public Example(int i) {
+    }
+}
+----
+
+编译后，使用 `javap -c` 查看一下编译结果：
+
+[source%nowrap,bash,{source_attr}]
+----
+$ javap -c Example
+Compiled from "Example.java"
+public class Example {
+  public Example(int); <1>
+    Code:
+       0: aload_0
+       1: invokespecial #1          // Method java/lang/Object."<init>":()V
+       4: return
+}
+----
+<1> 只有在参数声明这个地方有差异。
+
+当声明有构造函数时，就不会再创建无参构造函数了。
+
+有了这些知识铺垫，我们就可以开始来说明代码块的处理了。
 
 === 普通代码块
+
+==== 没有构造函数时
+
+普通代码块是指在 Java 类中使用 `{}` 声明的代码块。示例代码如下：
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 字节码示例代码
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ */
+public class Example {
+    {
+        long l = 1L + 4L;
+    }
+}
+----
+
+编译后，使用 `javap -c` 查看一下编译结果：
+
+[source%nowrap,bash,{source_attr}]
+----
+$ javap -c Example
+Compiled from "Example.java"
+public class Example {
+  public Example();
+    Code:
+       0: aload_0
+       1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+       4: ldc2_w        #2                  // long 5l
+       7: lstore_1
+       8: return
+}
+----
+
+从 `javap` 的结果来看，普通代码块消失了，取而代之的是，**编译器将其代码嵌入到了由编译器生成的无参构造函数里**。还可以反编译看一下：
+
+[source%nowrap,java,{source_attr}]
+----
+/*
+ * Decompiled with CFR 0.152.
+ */
+public class Example {
+    public Example() {
+        long l = 5L;
+    }
+}
+----
+
+==== 存在构造函数时
+
+再来看看当存在无参构造函数和有参构造函数时，编译器会如何处理。示例代码如下：
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 字节码示例代码
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ */
+public class Example {
+    {
+        long l = 1L + 4L;
+    }
+
+    public Example() {
+    }
+
+    public Example(int i) {
+    }
+}
+----
+
+编译后，使用 `javap -c` 查看一下编译结果：
+
+[source%nowrap,bash,{source_attr}]
+----
+$ javap -c Example
+Compiled from "Example.java"
+public class Example {
+  public Example();
+    Code:
+       0: aload_0
+       1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+       4: ldc2_w        #2                  // long 5l
+       7: lstore_1
+       8: return
+
+  public Example(int);
+    Code:
+       0: aload_0
+       1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+       4: ldc2_w        #2                  // long 5l
+       7: lstore_2
+       8: return
+}
+----
+
+从 `javap` 的结果来看，**编译器将代码块代码整体嵌入到了构造函数里**。再看一下反编译结果：
+
+[source%nowrap,java,{source_attr}]
+----
+/*
+ * Decompiled with CFR 0.152.
+ */
+public class Example {
+    public Example() {
+        long l = 5L;
+    }
+
+    public Example(int n) {
+        long l = 5L;
+    }
+}
+----
+
+==== 构造函数包含代码时
+
+再来看看当构造函数包含代码时，编译器会如何处理。示例代码如下：
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 字节码示例代码
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ */
+public class Example {
+    {
+        long l = 1L + 4L;
+    }
+
+    public Example() {
+        float f = 0.0F + 2.0F;
+    }
+
+    public Example(int i) {
+        double d = 0.0 + 1.0;
+    }
+}
+----
+
+编译后，使用 `javap -c` 查看一下编译结果：
+
+[source%nowrap,bash,{source_attr}]
+----
+$ javap -c Example
+Compiled from "Example.java"
+public class Example {
+  public Example();
+    Code:
+       0: aload_0
+       1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+       4: ldc2_w        #2                  // long 5l
+       7: lstore_1
+       8: fconst_2
+       9: fstore_1
+      10: return
+
+  public Example(int);
+    Code:
+       0: aload_0
+       1: invokespecial #1                  // Method java/lang/Object."<init>":()V
+       4: ldc2_w        #2                  // long 5l
+       7: lstore_2
+       8: dconst_1
+       9: dstore_2
+      10: return
+}
+----
+
+从 `javap` 的结果来看，**编译器将代码块代码整体嵌入到了构造函数里，并且放在了构造函数原有代码之上**。再看一下反编译结果：
+
+[source%nowrap,java,{source_attr}]
+----
+/*
+ * Decompiled with CFR 0.152.
+ */
+public class Example {
+    public Example() {
+        long l = 5L;
+        float f = 2.0f;
+    }
+
+    public Example(int n) {
+        long l = 5L;
+        double d = 1.0;
+    }
+}
+----
+
+总结一下：普通代码块在编译时，由编译器将代码块代码整体嵌入到了构造函数里，并且放在了构造函数原有代码之上。从 Java 虚拟机的层面上来看，不存在普通代码块。
+
+=== 静态代码块

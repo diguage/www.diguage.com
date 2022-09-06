@@ -82,5 +82,6 @@ googleAnalytics = "UA-32893826-1" # Enable Google Analytics by entering your tra
       icons = "font"
       source-highlighter = "rouge"
       rouge-style = "monokai"
-      source_attr = "indent=0,subs=\"attributes,verbatim,quotes\""
+      # https://docs.asciidoctor.org/asciidoc/latest/subs/apply-subs-to-blocks/
+      source_attr = "indent=0"
       image_attr = "align=center,width=100%"
