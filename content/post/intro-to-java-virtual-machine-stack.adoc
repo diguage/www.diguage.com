@@ -11,5 +11,33 @@ weight: 1
 ---
 
 
-为了解答在 https://www.diguage.com/post/jvm-bytecode-constant/[Java 虚拟机操作码探秘：常量指令^] 文中提到的“栈”、“栈顶”等是什么？在上一篇文章 https://www.diguage.com/post/intro-to-java-virtual-machine-stack/[深入理解 Java 代码块^] 对 Java 代码块做了铺垫性介绍。本文将正式开始对 Java 虚拟机，尤其是虚拟机栈做出介绍。
+在 https://www.diguage.com/post/jvm-bytecode-constant/[Java 虚拟机操作码探秘：常量指令^] 中多次提到的“栈”、“栈顶”；在上一篇文章 https://www.diguage.com/post/intro-to-java-virtual-machine-stack/[深入理解 Java 代码块^] 对 Java 代码块做了铺垫性介绍，并且总结出一条结论：**除静态代码块外，所有的执行语句都会被编译到方法中（构造函数方法或者普通方法），最后通过 Java 虚拟机栈来执行（本地方法除外）。**那么，什么是 Java 虚拟机栈呢？本文将尝试回答这个问题。
+
+== Java 虚拟机栈
+
+在介绍 Java 虚拟机栈之前，先来看一下 Java 运行时数据区：
+
+image::/images/java/jvm-memory-structure.jpg[alt="Java 内存结构",{image_attr}]
+
+== 栈帧
+
+=== 局部变量表
+
+=== 操作数栈
+
+=== 指向常量池的引用
+
+=== 动态链接
+
+image::/images/java/jvm-memory-usage.gif[title="",alt="",{image_attr}]
+
+image::/images/java/jvm-architecture.png[title="",alt="",{image_attr}]
+
+
+== 参考资料
+
+. https://tech.meituan.com/2020/11/12/java-9-cms-gc.html[Java中9种常见的CMS GC问题分析与解决^]
+. https://medium.com/platform-engineer/understanding-jvm-architecture-22c0ddf09722[Understanding JVM Architecture^]
+
+
 
