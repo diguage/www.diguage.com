@@ -17,6 +17,7 @@ weight: 1
 
 == 构造函数
 
+[#no-constructor]
 === 无构造函数
 
 先来看看当没有声明构造函数时，编译结果是什么样的：
@@ -366,6 +367,7 @@ public class Example {
 
 总结一下：**普通代码块在编译时，由编译器将代码块代码整体嵌入到了构造函数里，并且放在了构造函数原有代码之上。如果存在多个普通代码块，则按照出现的顺序依次嵌入到构造函数里。**从 Java 虚拟机的层面上来看，不存在普通代码块。
 
+[#static-code-block]
 == 静态代码块
 
 静态代码块是指在 Java 类中使用 `static` 关键字和 `{}` 声明的代码块。示例如下：
@@ -472,4 +474,327 @@ finish creating Example
 
 从结果上来看，**静态代码块在类被加载的时候就运行了，而且只运行一次，并且优先于各种代码块以及构造函数。如果一个类中有多个静态代码块，会按照书写顺序依次执行。**
 
-内容已经不少，本文先到这里。下一篇文章再来介绍 Java 虚拟机尤其是虚拟机栈相关知识。
+== 初始化
+
+最后来看一下实例变量初始化和静态变量的初始化。
+
+=== 实例变量初始化
+
+先看一看当没有构造函数时的实例变量初始化。
+
+==== 无构造函数时
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 字节码示例代码
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ */
+public class Example {
+    private Object object = new Object();
+}
+----
+
+编译后，使用 `javap -c` 查看一下编译结果：
+
+[source%nowrap,bash,{source_attr}]
+----
+$ javap -c Example
+Compiled from "Example.java"
+public class Example {
+  public Example();
+    Code:
+       0: aload_0
+       1: invokespecial #1      // Method java/lang/Object."<init>":()V
+       4: aload_0
+       5: new           #2      // class java/lang/Object
+       8: dup
+       9: invokespecial #1      // Method java/lang/Object."<init>":()V
+      12: putfield      #3      // Field object:Ljava/lang/Object;
+      15: return
+}
+----
+
+从 `javap` 的结果来看，对比 <<no-constructor>> 中的示例，在声明时就进行的实例变量的初始化，在编译时，创建对象的操作被编译器“乾坤大挪移”到构造函数里面。
+
+==== 含有构造函数时
+
+为了验证上述结果，我们增加两个构造函数：
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 字节码示例代码
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ */
+public class Example {
+    private Object object = new Object();
+
+    public Example() {
+        float f = 0.0F + 2.0F;
+    }
+
+    public Example(int i) {
+        double d = 0.0 + 1.0;
+    }
+}
+----
+
+编译后，使用 `javap -c` 查看一下编译结果：
+
+[source%nowrap,bash,{source_attr}]
+----
+$ javap -c Example
+Compiled from "Example.java"
+public class Example {
+  public Example();
+    Code:
+       0: aload_0
+       1: invokespecial #1      // Method java/lang/Object."<init>":()V
+       4: aload_0
+       5: new           #2      // class java/lang/Object
+       8: dup
+       9: invokespecial #1      // Method java/lang/Object."<init>":()V
+      12: putfield      #3      // Field object:Ljava/lang/Object;
+      15: fconst_2
+      16: fstore_1
+      17: return
+
+  public Example(int);
+    Code:
+       0: aload_0
+       1: invokespecial #1      // Method java/lang/Object."<init>":()V
+       4: aload_0
+       5: new           #2      // class java/lang/Object
+       8: dup
+       9: invokespecial #1      // Method java/lang/Object."<init>":()V
+      12: putfield      #3      // Field object:Ljava/lang/Object;
+      15: dconst_1
+      16: dstore_2
+      17: return
+}
+----
+
+对比 <<no-constructor>> 示例与上述示例来看， `javap` 的输出结果验证了我们的猜测。并且，**初始化操作的代码被放在了构造函数已有代码的前面。**
+
+==== 普通代码块与实例变量初始化
+
+来看一下当同时存在普通代码块和实例变量初始化时，编译器如何处理：
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 字节码示例代码
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ */
+public class Example {
+    {
+        long l = 1L + 4L;
+    }
+
+    private Object object = new Object();
+
+    public Example() {
+        float f = 0.0F + 2.0F;
+    }
+
+    public Example(int i) {
+        double d = 0.0 + 1.0;
+    }
+
+    {
+        int i = 1 << 17;
+    }
+}
+----
+
+编译后，使用 `javap -c` 查看一下编译结果：
+
+[source%nowrap,bash,{source_attr}]
+----
+$ javap -c Example
+Compiled from "Example.java"
+public class Example {
+  public Example();
+    Code:
+       0: aload_0
+       1: invokespecial #1      // Method java/lang/Object."<init>":()V
+       4: ldc2_w        #2      // long 5l
+       7: lstore_1
+       8: aload_0
+       9: new           #4      // class java/lang/Object
+      12: dup
+      13: invokespecial #1      // Method java/lang/Object."<init>":()V
+      16: putfield      #5      // Field object:Ljava/lang/Object;
+      19: ldc           #6      // int 131072
+      21: istore_1
+      22: fconst_2
+      23: fstore_1
+      24: return
+
+  public Example(int);
+    Code:
+       0: aload_0
+       1: invokespecial #1      // Method java/lang/Object."<init>":()V
+       4: ldc2_w        #2      // long 5l
+       7: lstore_2
+       8: aload_0
+       9: new           #4      // class java/lang/Object
+      12: dup
+      13: invokespecial #1      // Method java/lang/Object."<init>":()V
+      16: putfield      #5      // Field object:Ljava/lang/Object;
+      19: ldc           #6      // int 131072
+      21: istore_2
+      22: dconst_1
+      23: dstore_2
+      24: return
+}
+----
+
+从 `javap` 的结果来看，**编译器将代码块代码和实例变量初始化动作按照出现顺序依次嵌入到了构造函数里，并且放在了构造函数原有代码之上**。再看一下反编译结果：
+
+[source%nowrap,java,{source_attr}]
+----
+/*
+ * Decompiled with CFR 0.152.
+ */
+public class Example {
+    private Object object;
+
+    public Example() {
+        long l = 5L;
+        this.object = new Object();
+        int n = 131072;
+        float f = 2.0f;
+    }
+
+    public Example(int n) {
+        long l = 5L;
+        this.object = new Object();
+        int n2 = 131072;
+        double d = 1.0;
+    }
+}
+----
+
+编译结果也验证了我们的结果。
+
+=== 静态变量初始化
+
+来看一下对静态变量初始化的操作。
+
+==== 只有静态变量
+
+先看看只有静态变量时的处理。
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 字节码示例代码
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ */
+public class Example {
+    private static Object object = new Object();
+}
+----
+
+编译后，使用 `javap -c` 查看一下编译结果：
+
+[source%nowrap,bash,{source_attr}]
+----
+$ javap -c Example
+Compiled from "Example.java"
+public class Example {
+  public Example();
+    Code:
+       0: aload_0
+       1: invokespecial #1      // Method java/lang/Object."<init>":()V
+       4: return
+
+  static {};
+    Code:
+       0: new           #2      // class java/lang/Object
+       3: dup
+       4: invokespecial #1      // Method java/lang/Object."<init>":()V
+       7: putstatic     #3      // Field object:Ljava/lang/Object;
+      10: return
+}
+----
+
+从 `javap` 的结果来看，在对比 <<static-code-block>> 来看，**静态变量的初始化操作变编译器“挪移”到了静态代码块中。在加载时，由虚拟机执行且执行一次。**
+
+==== 静态变量与静态代码块
+
+再来看看当同时存在静态变量初始化与静态代码块时，编译器会如何处理：
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 字节码示例代码
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ */
+public class Example {
+    static {
+        double d = 0.0 + 1.0;
+    }
+
+    private static Object object = new Object();
+
+    static {
+        double d = 3.0 + 5.0;
+    }
+}
+----
+
+编译后，使用 `javap -c` 查看一下编译结果：
+
+[source%nowrap,bash,{source_attr}]
+----
+$ javap -c Example
+Compiled from "Example.java"
+public class Example {
+  public Example();
+    Code:
+       0: aload_0
+       1: invokespecial #1      // Method java/lang/Object."<init>":()V
+       4: return
+
+  static {};
+    Code:
+       0: new           #2      // class java/lang/Object
+       3: dup
+       4: invokespecial #1      // Method java/lang/Object."<init>":()V
+       7: putstatic     #3      // Field object:Ljava/lang/Object;
+      10: dconst_1
+      11: dstore_0
+      12: ldc2_w        #4      // double 8.0d
+      15: dstore_0
+      16: return
+}
+----
+
+从 `javap` 的结果来看，**编译器将静态代码块代码和静态变量初始化动作先按照先静态变量初始化后代码块，后按照代码块出现顺序依次嵌入到一个静态代码块中**。再看一下反编译结果：
+
+[source%nowrap,java,{source_attr}]
+----
+/*
+ * Decompiled with CFR 0.152.
+ */
+public class Example {
+    private static Object object = new Object();
+
+    static {
+        double d = 1.0;
+        d = 8.0;
+    }
+}
+----
+
+反编译结果也部分证实了上述结果。
+
+本文的全部内容就到此结束。写这篇文章的主要证实D瓜哥的一个猜测：**除静态代码块外，所有的执行语句都会被编译到方法中（构造函数方法或者普通方法），最有通过栈来执行。**那么，什么是栈呢？这个问题，下一篇文章再来解答。
