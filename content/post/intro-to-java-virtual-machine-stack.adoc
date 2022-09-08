@@ -19,9 +19,35 @@ weight: 1
 
 image::/images/java/jvm-memory-structure.jpg[alt="Java 内存结构",{image_attr}]
 
+Java 虚拟机栈就是图中左下角 “VM Stack” 一小部分区域。方法是 Java 程序运行的最小单元，而 Java 虚拟机栈就是这个最小单元的载体。
+
+每一条 Java 虚拟机线程都有自己私有的 Java 虚拟机栈，这个栈与线程同时创建，用于存储栈帧。
+
 == 栈帧
 
+Java 虚拟机以方法作为最基本的执行单元，“栈帧”（Stack Frame）则是用于支持虚拟机进行方法调用和方法执行背后的数据结构，它也是虚拟机运行时数据区中的虚拟机栈（Virtual Machine Stack）的栈元素。
+
+栈帧是用来存储数据结构和部分过程结果的数据结构，同时也用来处理动态链接（dynamic linking）、方法返回值和异常分批（dispatch exception）。
+
+**每一个方法从调用开始至执行结束的过程，都对应着一个栈帧在虚拟机栈里面从入栈到出栈的过程。**这个过程如下图所示：
+
+image::/images/java/jvm-memory-usage.gif[alt="JVM 内存使用",{image_attr}]
+
+栈帧随着方法调用而创建，随着方法结束而销毁。所以，Java 虚拟机栈不需要垃圾回收。
+
+栈帧是线程本地私有的数据，不可能在一个栈帧之中引用另外一个线程的栈帧。
+
+学过数据结构的小伙伴应该都很清楚，栈的基本特性就是“后进先出”，也可以叫做“先进后出”。操作过程如图所示：
+
+image::/images/data-structure/stack-lifo.svg[alt="栈Stack-后进先出",{image_attr}]
+
+栈帧就是 Java 虚拟机栈（Virtual Machine Stack）的栈元素。在 Java 虚拟机中，所谓的压栈出栈就是栈帧的进与出。
+
+虚拟机栈描述的是 Java 方法执行的内存模型，每个方法执行都会创建一个栈帧，栈帧包含局部变量表、操作数栈、动态连接、方法出口等。下面来分别介绍这几部分内容。
+
 === 局部变量表
+
+每个栈帧内部都包含一组称为局部变量表的变量列表。局部变量表的长度由编译期决定。通过方法的 `code` 属性保存及提供给栈帧使用。
 
 === 操作数栈
 
@@ -29,15 +55,18 @@ image::/images/java/jvm-memory-structure.jpg[alt="Java 内存结构",{image_attr
 
 === 动态链接
 
-image::/images/java/jvm-memory-usage.gif[title="",alt="",{image_attr}]
+image::/images/java/jvm-architecture.png[alt="Java 虚拟机架构",{image_attr}]
 
-image::/images/java/jvm-architecture.png[title="",alt="",{image_attr}]
+=== 方法返回
+
+=== 附加信息
 
 
 == 参考资料
 
 . https://tech.meituan.com/2020/11/12/java-9-cms-gc.html[Java中9种常见的CMS GC问题分析与解决^]
 . https://medium.com/platform-engineer/understanding-jvm-architecture-22c0ddf09722[Understanding JVM Architecture^]
+. https://blog.csdn.net/Ethan_199402/article/details/111942061[JVM （十）Java虚拟机栈栈详解，一文透彻栈的那些事（方法调用，动态分派，栈上分配等）^] -- 这篇文章写的挺全面，有些图画的也挺棒
 
 
 
