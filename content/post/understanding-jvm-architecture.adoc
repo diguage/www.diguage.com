@@ -1,0 +1,84 @@
+---
+title: "理解 JVM 架构【翻译】"
+date: 2022-09-18T20:24:10+08:00
+draft: true
+keywords: ["Java","JVM","虚拟机","架构"]
+tags: ["Java","虚拟机","JVM"]
+categories: ["系统架构"]
+thumbnail: "images/logo/jvm.jpg"
+
+weight: 1
+---
+
+
+// image::/images/[title="",alt="",{image_attr}]
+
+// [source%nowrap,java,{source_attr}]
+// ----
+// // code
+// ----
+
+最近查资料时，在 Medium 中看到一篇文章： https://medium.com/platform-engineer/understanding-jvm-architecture-22c0ddf09722[Understanding JVM Architecture^]，介绍 JVM 架构的，感觉挺不错。翻译过来，自己学习一下，也分享给更多人。
+
+为了有效利用 Java 生态系统，了解 JVM 架构以及 Java 在底层的工作方式对于每个Java开发人员来说都是重要学习内容。本系列博客文章将为您呈现 Java 生态系统中 JVM 内部和技术的坚实基础。
+
+== 背景
+
+Java是由James Gosling于1995年为Sun Microsystems设计的一种多范式编程语言(即面向对象的基于类的、结构化的、命令式的、泛型的、反射式的、并发的)，受到数百万开发人员的喜爱。在任何给定的排名指标中，Java都是过去15年来最受欢迎的语言。在过去15年里开发的数以万计的企业应用程序大多是用Java编写的，这使得Java成为构建企业级生产软件系统的首选语言。
+
+Designed in 1995 by James Gosling for Sun Microsystems, Java is a multi-paradigm (i.e. object-oriented class-based, structural, imperative, generic, reflective, concurrent) programming language which is loved by millions of developers. On any given ranking index, Java becomes the most popular language for the past 15 years. Tens of thousands of enterprise applications developed in the last 15 years have been mostly written in Java, making it the language of choice for building enterprise-grade production software systems.
+
+Java于1995年由James Gosling为Sun Microsystems设计，是一种多范式（即基于对象的班级，结构，命令，通用，反思，并发）的编程语言，受到数百万开发人员的喜爱。在任何给定的排名指数上，Java成为过去15年中最受欢迎的语言。在过去15年中开发的成千上万企业应用程序主要是用Java编写的，使其成为构建企业级生产软件系统的首选语言。
+
+Designed in 1995 by James Gosling for Sun Microsystems, Java is a multi-paradigm (i.e. object-oriented class-based, structural, imperative, generic, reflective, concurrent) programming language which is loved by millions of developers. On any given ranking index, Java becomes the most popular language for the past 15 years. Tens of thousands of enterprise applications developed in the last 15 years have been mostly written in Java, making it the language of choice for building enterprise-grade production software systems.
+
+Java由James Gosling于1995年为Sun Microsystems设计，是一种多范式（即基于面向对象类、结构化、命令式、通用、反射、并发）编程语言，受到数百万开发人员的喜爱。在任何给定的排名指数上，Java成为过去15年中最流行的语言。在过去15年中开发的成千上万的企业应用程序大多是用Java编写的，这使得它成为构建企业级生产软件系统的首选语言。
+
+
+== Java 环境
+
+== Java 如何工作
+
+== JVM 架构
+
+== 1. 类加载子系统
+
+=== 1.1 加载
+
+=== 1.2 链接
+
+=== 1.3 初始化
+
+== 2. 运行时数据区
+
+=== 2.1 方法区(线程间共享)
+
+=== 2.2 堆(线程间共享)
+
+=== 2.3 栈(线程独占)
+
+=== 2.4 程序计数器(线程独占)
+
+=== 2.5 本地方法栈(线程独占)
+
+== 3. 执行引擎
+
+=== 3.1 解释器
+
+=== 3.2 即时(JIT)编译器
+
+=== 厂商提供的编译优化
+
+=== 3.3 GC
+
+== 4. Java本地接口(JNI)
+
+== 5. 本地方法库
+
+== JVM 线程
+
+== 要点
+
+== 下回分解
+
+== 参考资料

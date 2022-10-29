@@ -31,3 +31,5 @@ $RECYCLE.BIN/
 *.drawio.bkp
 
 static/diagrams/*.svg
+
+*.dtmp

@@ -1,0 +1,342 @@
+---
+title: "深入理解字节码（.class）文件中的常量池"
+date: 2022-10-18T08:38:35+08:00
+draft: true
+keywords: ["Java","虚拟机"]
+tags: ["Java","虚拟机"]
+categories: ["系统架构","程序设计"]
+thumbnail: "images/java/java-class-file-overview.png"
+
+weight: 1
+---
+
+最近在学习 Java 字节码的相关技术。字节码技术的基础就是字节码（.class）文件。整体结构如头图所示。这两天研究了一下其中的常量池（以下称常量池），略有收获，写出来，以备后用。
+
+在 https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-4.html#jvms-4.4[Java Virtual Machine Specification / Chapter 4. The class File Format / 4.4. The Constant Pool^] 中对常量池有了详细的描述。本文接下来的内容也主要是根据这个章节的内容而来。
+
+== 专用数据类型简介
+
+在 JVM 规范中，为了描述字节码文件内容，专门定义了一组专用的数据类型，包括 `u1`、 `u2`、 `u4`，分别表示 1、 2 和 4 个字节的无符号数。
+
+== 常量池简介
+
+在字节码文件中，和常量池相关的有两项：
+
+[source%nowrap,java,{source_attr}]
+----
+ClassFile {
+    ...
+    u2      constant_pool_count;
+    cp_info constant_pool[constant_pool_count-1];
+    ...
+}
+----
+
+其中， `u2 constant_pool_count;` 表示常量池中的元素个数。这里是 `u2` 是一个 2 字节的无符号数，2^16^ - 1 = 65535，所以，最多可以有 65535 个常量。
+
+`cp_info constant_pool[constant_pool_count-1];` 则是具体的常量池。常量池是一个表结构，包含字节码文件其他结构中使用的字符串常量，这里有类名、字段名、方法名和程序中的字符串字面量等等。
+
+常量池以 `1` ~ `constant_pool_count-1` 为索引，索引值 `0` 是无效索引。但是，在其他需要引用常量池的结构中，可以用 `0` 表示不用任何一个常量池项。
+
+综上，可以有 `65535 - 1 = 65534` 个索引。
+
+== 常量池项通用格式
+
+常量池中，所有的项都具有如下格式：
+
+[source%nowrap,java,{source_attr}]
+----
+cp_info {
+    u1 tag;
+    u1 info[];
+}
+----
+
+`u1 tag;` 表示常量池项的类型，每个常量项都必须有一个类型值。截止到 Java 17 为止，一共有如下 17 种类型：
+
+. `CONSTANT_Class_info`
+. `CONSTANT_Fieldref_info`
+. `CONSTANT_Methodref_info`
+. `CONSTANT_InterfaceMethodref_info`
+. `CONSTANT_String_info`
+. `CONSTANT_Integer_info`
+. `CONSTANT_Float_info`
+. `CONSTANT_Long_info`
+. `CONSTANT_Double_info`
+. `CONSTANT_NameAndType_info`
+. `CONSTANT_Utf8_info`
+. `CONSTANT_MethodHandle_info`
+. `CONSTANT_MethodType_info`
+. `CONSTANT_Dynamic_info`
+. `CONSTANT_InvokeDynamic_info`
+. `CONSTANT_Module_info`
+. `CONSTANT_Package_info`
+
+`u1 info[];` 是各个常量池项的内容，这里的内容由 `tag` 类型决定。
+
+== 十七种常量池项
+
+下面来依次介绍这 17 种常量池项。
+
+=== `CONSTANT_Class_info`
+=== `CONSTANT_Fieldref_info`
+=== `CONSTANT_Methodref_info`
+=== `CONSTANT_InterfaceMethodref_info`
+=== `CONSTANT_String_info`
+=== `CONSTANT_Integer_info`
+=== `CONSTANT_Float_info`
+=== `CONSTANT_Long_info`
+=== `CONSTANT_Double_info`
+=== `CONSTANT_NameAndType_info`
+=== `CONSTANT_Utf8_info`
+=== `CONSTANT_MethodHandle_info`
+=== `CONSTANT_MethodType_info`
+=== `CONSTANT_Dynamic_info`
+=== `CONSTANT_InvokeDynamic_info`
+=== `CONSTANT_Module_info`
+=== `CONSTANT_Package_info`
+
+== Utf8 编码详谈
+
+.OpenJDK17/src/jdk.compiler/share/classes/com/sun/tools/javac/util/Convert.java
+[source%nowrap,java,{source_attr}]
+----
+    /** Convert `len' bytes from utf8 to characters.
+     *  Parameters are as in System.arraycopy
+     *  Return first index in `dst' past the last copied char.
+     *  @param src        The array holding the bytes to convert.
+     *  @param sindex     The start index from which bytes are converted.
+     *  @param dst        The array holding the converted characters..
+     *  @param dindex     The start index from which converted characters
+     *                    are written.
+     *  @param len        The maximum number of bytes to convert.
+     */
+    public static int utf2chars(byte[] src, int sindex,
+                                char[] dst, int dindex,
+                                int len) {
+        int i = sindex;
+        int j = dindex;
+        int limit = sindex + len;
+        while (i < limit) {
+            int b = src[i++] & 0xFF;
+            if (b >= 0xE0) {
+                b = (b & 0x0F) << 12;
+                b = b | (src[i++] & 0x3F) << 6;
+                b = b | (src[i++] & 0x3F);
+            } else if (b >= 0xC0) {
+                b = (b & 0x1F) << 6;
+                b = b | (src[i++] & 0x3F);
+            }
+            dst[j++] = (char)b;
+        }
+        return j;
+    }
+
+    /** Return bytes in Utf8 representation as a string.
+     *  @param src        The array holding the bytes.
+     *  @param sindex     The start index from which bytes are converted.
+     *  @param len        The maximum number of bytes to convert.
+     */
+    public static String utf2string(byte[] src, int sindex, int len) {
+        char dst[] = new char[len];
+        int len1 = utf2chars(src, sindex, dst, 0, len);
+        return new String(dst, 0, len1);
+    }
+
+    /** Copy characters in source array to bytes in target array,
+     *  converting them to Utf8 representation.
+     *  The target array must be large enough to hold the result.
+     *  returns first index in `dst' past the last copied byte.
+     *  @param src        The array holding the characters to convert.
+     *  @param sindex     The start index from which characters are converted.
+     *  @param dst        The array holding the converted characters..
+     *  @param dindex     The start index from which converted bytes
+     *                    are written.
+     *  @param len        The maximum number of characters to convert.
+     */
+    public static int chars2utf(char[] src, int sindex,
+                                byte[] dst, int dindex,
+                                int len) {
+        int j = dindex;
+        int limit = sindex + len;
+        for (int i = sindex; i < limit; i++) {
+            char ch = src[i];
+            if (1 <= ch && ch <= 0x7F) {
+                dst[j++] = (byte)ch;
+            } else if (ch <= 0x7FF) {
+                dst[j++] = (byte)(0xC0 | (ch >> 6));
+                dst[j++] = (byte)(0x80 | (ch & 0x3F));
+            } else {
+                dst[j++] = (byte)(0xE0 | (ch >> 12));
+                dst[j++] = (byte)(0x80 | ((ch >> 6) & 0x3F));
+                dst[j++] = (byte)(0x80 | (ch & 0x3F));
+            }
+        }
+        return j;
+    }
+----
+
+
+* 第一步，先将 Unicode 转换成 UTF-16 编码；对于超过 BMP 的字符，UTF-16 会将其拆分成两个字符来处理。由于 Java 内部，`char` 类型的数据就是使用 UTF-16 编码的，所以，这一步已经提前完成，无需再做处理。
++
+--
+拿 😂 = `U+1f602` 举例，来演示一下从 Unicode 转 UTF-16 的过程：
+
+----
+U+1f602 - 0x10000 = 0x0f602
+0x0f602 = 00 0011 1101, 10 0000 0010
+
+第一个字符
+          00 0011 1101
+  +             0xD800
+----------------------
+  =       00 0011 1101
+  + 11011000 0000 0000
+----------------------
+  = 11011000 0011 1101
+  = d83d
+
+第二个字符
+          10 0000 0010
+  +             0xDC00
+----------------------
+  =       10 0000 0010
+  + 11011100 0000 0000
+----------------------
+  +  11011110 0000 0010
+  = de02
+----
+--
+* 第二步，`char` 值大于等于 `0x800` 的 `char`，会将其“值”当做 Unicode 然后转换成“3个字节的UTF-8”。如果是需要两个 `char` 表示的字符，则当做两个 “Unicode 值”处理，则 会转成两个“3 个字节的 UTF-8”，就是六个字节。
++
+--
+注：这里的“3个字节的UTF-8”，并不是通常说的 UTF-8 编码，
+    只是借用了“3个字节的UTF-8”的编码格式，徒有其表而已。
+
+11011000 0011 1101 → 11101101 10100000 10111101 +
+11011110 0000 0010 → 11101101 10111000 10000010
+
+转换算法见上面的“Unicode 与 UTF-8 的转换”图表。
+--
+
+`0x10000`~16~ ~ `0x10FFFF`~16~
+
+`0x10000`~16~ = 10000000000000000~2~ → 0xD800DC00~16~ = 11011000 00000000 11011100 00000000~2~
+
+`0x10FFFF`~16~ = 100001111111111111111~2~ → 0xDBFFDFFF~16~ = 11011011 11111111 11011111 11111111~2~
+
+.下限 `0x10000`
+----
+                  0x10000
+  -               0x10000
+-------------------------
+  =                     0
+  = 0000000000 0000000000
+
+第一个字符
+               0000000000
+  +                0xD800
+-------------------------
+  =          00 0000 0000
+  +    11011000 0000 0000
+-------------------------
+  =    11011000 0000 0000
+  =    0xD800
+
+第二个字符
+               0000000000
+  +                0xDC00
+-------------------------
+  =          00 0000 0000
+  +    11011100 0000 0000
+-------------------------
+  +    11011100 0000 0000
+  =    0xDC00
+----
+
+.上限 `0x10FFFF`
+----
+                 0x10FFFF
+  -               0x10000
+-------------------------
+  = 100001111111111111111
+  -     10000000000000000
+-------------------------
+  = 1111111111 1111111111
+
+第一个字符
+               1111111111
+  +                0xD800
+-------------------------
+  =          11 1111 1111
+  +    11011000 0000 0000
+-------------------------
+  =    11011011 1111 1111
+  =    0xDBFF
+
+第二个字符
+               1111111111
+  +                0xDC00
+-------------------------
+  =          11 1111 1111
+  +    11011100 0000 0000
+-------------------------
+  =    11011111 1111 1111
+  =    0xDFFF
+----
+
+
+
+
+
+.Hessian/src/main/java/com/caucho/hessian/io/Hessian2Output.java
+[source%nowrap,java,{source_attr}]
+----
+  /**
+   * Prints a string to the stream, encoded as UTF-8
+   *
+   * @param v the string to print.
+   */
+  public void printString(String v, int strOffset, int length)
+    throws IOException
+  {
+    int offset = _offset;
+    byte []buffer = _buffer;
+
+    for (int i = 0; i < length; i++) {
+      if (SIZE <= offset + 16) {
+        _offset = offset;
+        flushBuffer();
+        offset = _offset;
+      }
+
+      char ch = v.charAt(i + strOffset);
+
+      if (ch < 0x80)
+        buffer[offset++] = (byte) (ch);
+      else if (ch < 0x800) {
+        buffer[offset++] = (byte) (0xc0 + ((ch >> 6) & 0x1f));
+        buffer[offset++] = (byte) (0x80 + (ch & 0x3f));
+      }
+      else {
+        buffer[offset++] = (byte) (0xe0 + ((ch >> 12) & 0xf));
+        buffer[offset++] = (byte) (0x80 + ((ch >> 6) & 0x3f));
+        buffer[offset++] = (byte) (0x80 + (ch & 0x3f));
+      }
+    }
+
+    _offset = offset;
+  }
+----
+
+== 总结
+
+最后，使用一张图来总结常量池的关联关系：
+
+image::/images/java/jvm-constant-pool.svg[alt="字节码（.class）文件中的常量池解析",{image_attr}]
+
+
+== 参考资料
+
+. https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-4.html[Java Virtual Machine Specification / Chapter 4. The class File Format^]
+. https://blog.lse.epita.fr/2014/04/28/0xcafebabe-java-class-file-format-an-overview.html[0xCAFEBABE ? - java class file format, an overview^]
