@@ -1,6 +1,6 @@
 ---
 title: "细说编码与字符集"
-date: 2020-05-05T09:09:12+08:00
+date: 2022-10-29T09:09:12+08:00
 draft: false
 keywords: ["Unicode","UTF-8","UTF-16","UTF-32","UTF-16BE","UTF-16LE"]
 tags: ["存储","序列化","编码"]
@@ -16,6 +16,47 @@ weight: 1
 
 *文章还没写完，提前放出防止出现 404。稍后慢慢更新，敬请期待： https://www.diguage.com/post/dive-into-encoding-and-character-set/[细说编码与字符集 - "地瓜哥"博客网^]*
 
+前段时间要研究 Hessian 编码格式，为了搞清楚 Hessian 对字符串的编码，就顺路查了好多编码和字符集的工作，理清了很多以前模糊的知识点。下面整理一下笔记，也梳理一下自己的思路和理解。
+
+== ASCII 码
+
+计算机起源于美国，他们对英语字符与二进制位之间的对应关系做了统一规定，并制定了一套字符编码规则，这套编码规则被称为 American Standard Code for Information Interchange，简称为 ASCII 编码
+
+其实，ASCII 最早起源于电报码。最早的商业应用是贝尔公司的七位电传打字机。后来于 1963 年发布了该标准的第一版。在网络交换中使用的 ASCII 格式是在 1969 年发布的，该格式在 2015 年发展成为互联网标准。点击 https://www.rfc-editor.org/rfc/rfc20.pdf[RFC 20: ASCII format for network interchange^]，感受一下 1969 年的古香古色。
+
+ASCII 编码一共定义了128个字符的编码规则，用七位二进制表示（`0x00` - `0x7F`）, 这些字符组成的集合就叫做 ASCII 字符集。完整列表如下：
+
+image::/images/encoding/ascii-table.svg[alt="ASCII Table",{image_attr}]
+
+ASCII 码可以说是现在所有编码的鼻祖。
+
+== 编码乱战及 Unicode 应运而生
+
+ASCII 编码是为专门英语指定的编码标准，但是却不能编码英语外来词。比如 `résumé`，其中 `é` 就不在 ASCII 编码范围内。
+
+随着计算机的发展，各个国家或地区，甚至不同公司都推出了不同的编码标准，比如中国推出了 GB2312、GBK 以及 GB18030；微软推出了 Windows character sets 。
+
+由于不同编码标准是不兼容的，不同的国家有不同的字母，因此，哪怕它们都使用 256 个符号的编码方式，代表的字母却不一样。比如，130 在法语编码中代表了 `é`，在希伯来语编码中却代表了字母 `Gimel` (`ג`)，在俄语编码中又会代表另一个符号。
+
+同一个二进制数字可以被解释成不同的符号。因此，要想打开一个文本文件，就必须知道它的编码方式，否则用错误的编码方式解读，就会出现乱码。这些问题，如果只是在一个国家或地区内部使用还好。但是，随着互联网的发展，这种编码不兼容的问题将会严重阻碍信息的交流和互联网的发展。
+
+于是，ISO 组织与统一码联盟分别推出了 UCS(Universal Multiple-Octet Coded Character Set) 与 Unicode。后来，两者意识到没有必要用两套字符集，于是进行了一次整合。这样，所有的字符都可以采用同一个字符集，有着相同的编码，可以愉快的进行交流了。
+
+== Unicode
+
+Unicode (统一码、万国码、单一码、标准万国码)编码就是为了表达任意语言的任意字符而设计
+
+在这套系统中: 一个字符代表一个 code point，不存在二义性。Unicode 是一个标准，只规定了某个字符应该对应哪一个 code point，但是并没有规定这个字符应该用即为字节来存储。有些关键术语，在这里也做个说明。
+
+=== 码点(Code Point)
+
+码点(Code Point)是分配给每个 Unicode 字符的唯一编号。D瓜哥的理解是给每个字符分配了一个身份证号。
+
+通常会使用十六进制进行表示，表示格式： `U+xxxx` 或 `U+xxxxx`。例如， `瓜` 的码点是 `U+74DC`。
+
+=== 组合标记(Combining Mark)
+
+
 image::/images/encoding/utf8-encoding-scheme.svg[title="Unicode 与 UTF-8 的转换",alt="Unicode 与 UTF-8 的转换",{image_attr}]
 
 
@@ -23,16 +64,6 @@ image::/images/encoding/utf16-surrogate-decoder.png[title="UTF-16 surrogate deco
 
 
 ==  常见字符集之间的转换方法（Unicode、UTF-8、UTF-16、UTF-32 和 GB18030 等）
-
-=== ASCII 码
-
-计算机起源于美国，他们对英语字符与二进制位之间的对应关系做了统一规定，并制定了一套字符编码规则，这套编码规则被称为 American Standard Code for Information Interchange，简称为 ASCII 编码
-
-ASCII 编码一共定义了128个字符的编码规则，用七位二进制表示（`0x00` - `0x7F`）, 这些字符组成的集合就叫做 ASCII 字符集。完整列表如下：
-
-image::/images/encoding/ascii-table.svg[alt="ASCII Table",{image_attr}]
-
-ASCII 码可以说是现在所有编码的鼻祖。
 
 
 === Unicode ↔ / ⇌ UTF-16
@@ -208,6 +239,9 @@ https://www.zhihu.com/question/29924586[字符编码与字体的关系是什么�
 
 
 == 参考资料
+
+. https://en.wikipedia.org/wiki/ASCII[ASCII - Wikipedia^]
+
 
 . https://www.joelonsoftware.com/2003/10/08/the-absolute-minimum-every-software-developer-absolutely-positively-must-know-about-unicode-and-character-sets-no-excuses/[The Absolute Minimum Every Software Developer Absolutely, Positively Must Know About Unicode and Character Sets (No Excuses!) – Joel on Software^]
 . 
