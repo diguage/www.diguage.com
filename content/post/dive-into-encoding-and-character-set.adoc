@@ -54,7 +54,28 @@ Unicode (统一码、万国码、单一码、标准万国码)编码就是为了�
 
 通常会使用十六进制进行表示，表示格式： `U+xxxx` 或 `U+xxxxx`。例如， `瓜` 的码点是 `U+74DC`。
 
-=== 组合标记(Combining Mark)
+// === 组合标记(Combining Mark)
+
+=== 字符集（Charset）
+
+字符集(Charset)是一个系统支持的所有抽象字符的集合。字符是各种文字和符号的总称，包括各国家文字、标点符号、图形符号、数字等。
+
+Unicode 就是一个字符集。
+
+=== 字符编码(Character Encoding)
+
+字符编码（Character Encoding）：是一套法则，使用该法则能够对自然语言的字符的一个集合（如字母表或音节表），与其他东西的一个集合（如号码或电脉冲）进行配对。
+
+常见的 UTF-8、 UTF-16 等就是编码格式。
+
+对于一个字符集来说要正确编码转码一个字符需要三个关键元素：字库表(Character Repertoire)、编码字符集(Coded Character Set)、字符编码(Character Encoding Form)。其中，字库表是一个相当于所有可读或者可显示字符的数据库，字库表决定了整个字符集能够展现表示的所有字符的范围。编码字符集，即用一个码点(Code Point)来表示一个字符在字库中的位置，如果把字符比喻成人，那么码点(Code Point)就是这个字符的身份证号。字符编码，就是编码字符集和实际存储数值之间的转换关系。一般来说都会直接将码点(Code Point)的值经过编码后的值直接存储。
+
+很多读者都会有和瓜哥当初一样的疑问：**字库表**和**编码字符集**看来是必不可少的，那既然字库表中的每一个字符都有一个自己的序号，直接把序号作为存储内容就好了。为什么还要多此一举通过**字符编码**把序号转换成另外一种存储格式呢？
+
+这里有两个原因：
+
+. 汉字 `瓜` 的 Unicode 是十六进制数 `74DC`，转换成二进制数足足有15位（`111010011011100`），也就是说，这个符号的表示至少需要2个字节。表示其他的符号，可能需要3个字节或者4个字节，甚至更多，比如：😂，感兴趣可以查一下😂的 Unicode 的编码值。**如何才能区别 Unicode 和 ASCII ？计算机怎么知道三个字节表示一个符号，而不是分别表示三个符号呢？**所以，这就需要需要一个编码格式方便计算机正确地识别出编码方式，然后让计算机正确解析出其中的字符来。
+. 如果把每个字符都用字库表中的序号来存储的话，每个字符就需要 3 个字节（这里以 Unicode 中大部分常用中文编码长度为例），这样对于原本用仅占一个字符的 ASCII 编码的英语地区国家显然是一个额外成本（存储体积是原来的三倍）。算的直接一些，同样一块硬盘，用 ASCII 可以存 1500 篇文章，而用 3 字节 Unicode 序号存储只能存 500 篇。这是多么巨大的浪费。
 
 
 image::/images/encoding/utf8-encoding-scheme.svg[title="Unicode 与 UTF-8 的转换",alt="Unicode 与 UTF-8 的转换",{image_attr}]
@@ -241,7 +262,10 @@ https://www.zhihu.com/question/29924586[字符编码与字体的关系是什么�
 == 参考资料
 
 . https://en.wikipedia.org/wiki/ASCII[ASCII - Wikipedia^]
-
+. https://www.ruanyifeng.com/blog/2007/10/ascii_unicode_and_utf-8.html[字符编码笔记：ASCII，Unicode 和 UTF-8^]
+. http://cenalulu.github.io/linux/character-encoding/[十分钟搞清字符集和字符编码^]
+. https://util.unicode.org/UnicodeJsps/character.jsp?a=%E7%93%9C&B1=Show[Unicode Utilities: Character Properties^] -- 查找字符对应的 Unicode 编码。
+. https://tool.lu/hexconvert/[进制转换工具^]
 
 . https://www.joelonsoftware.com/2003/10/08/the-absolute-minimum-every-software-developer-absolutely-positively-must-know-about-unicode-and-character-sets-no-excuses/[The Absolute Minimum Every Software Developer Absolutely, Positively Must Know About Unicode and Character Sets (No Excuses!) – Joel on Software^]
 . 
