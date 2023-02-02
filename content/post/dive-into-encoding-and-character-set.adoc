@@ -58,7 +58,7 @@ Unicode (统一码、万国码、单一码、标准万国码)编码就是为了�
 
 === 字符集（Charset）
 
-字符集(Charset)是一个系统支持的所有抽象字符的集合。字符是各种文字和符号的总称，包括各国家文字、标点符号、图形符号、数字等。
+字符集(Character Set，又简称 Charset)是一个系统支持的所有抽象字符的集合。字符是各种文字和符号的总称，包括各国家文字、标点符号、图形符号、数字等。
 
 Unicode 就是一个字符集。
 
@@ -77,6 +77,37 @@ Unicode 就是一个字符集。
 . 汉字 `瓜` 的 Unicode 是十六进制数 `74DC`，转换成二进制数足足有15位（`111010011011100`），也就是说，这个符号的表示至少需要2个字节。表示其他的符号，可能需要3个字节或者4个字节，甚至更多，比如：😂，感兴趣可以查一下😂的 Unicode 的编码值。**如何才能区别 Unicode 和 ASCII ？计算机怎么知道三个字节表示一个符号，而不是分别表示三个符号呢？**所以，这就需要需要一个编码格式方便计算机正确地识别出编码方式，然后让计算机正确解析出其中的字符来。
 . 如果把每个字符都用字库表中的序号来存储的话，每个字符就需要 3 个字节（这里以 Unicode 中大部分常用中文编码长度为例），这样对于原本用仅占一个字符的 ASCII 编码的英语地区国家显然是一个额外成本（存储体积是原来的三倍）。算的直接一些，同样一块硬盘，用 ASCII 可以存 1500 篇文章，而用 3 字节 Unicode 序号存储只能存 500 篇。这是多么巨大的浪费。
 
+另外，在主流计算机中，一般是以 8 个比特进行编码的，上面两个问题可以汇总成一个问题：如何高效地对字符进行编码？何为“高效”呢？可以这样理解：在保证正确解析的前提下，充分利用每 1 个比特位，不浪费任意 1 个比特位。下面结合不同字符编码规则再来体会。
+
+== 字节序标记(Byte Order Mark，简称 BOM)
+
+字节序标记，即 Byte Order Mark，简称 BOM。它常被用来当做标识文件是以 UTF-8、UTF-16 或 UTF-32 编码的标记。
+
+
+在 Unicode 编码中有一个叫做 https://graphemica.com/FEFF[零宽度非换行空格(Zero Width No-Break Space) (U+FEFF) @ Graphemica^] 的字符, 用字符 `U+FEFF` 来表示。对于 UTF-16 ，如果接收到以 `FEFF` 开头的字节流， 就表明是大端字节序；如果接收到 `FFFE`，就表明字节流是小端字节序。
+
+除了 UTF-16 之外，UTF-8 也可以添加 BOM，它的 BOM 固定为 0xEFBBBF，选择编码方式为 UTF-8 with BOM 时，生成的文件流中就会出现这个 BOM。为什么 UTF-8 可以不需要bom呢，因为 UTF-8 是变长的，它根据第一个字节信息判断每个字符的长度，不存在正反顺序的问题，我们日常使用的 UTF-8 都是不带 BOM 的。但是，现在
+
+== Little endian 和 Big endian
+
+这两个古怪的名称来自英国作家斯威夫特的《格列佛游记》。在该书中，小人国里爆发了内战，战争起因是人们争论，吃鸡蛋时究竟是从大头(Big-endian)敲开还是从小头(Little-endian)敲开。为了这件事情，前后爆发了六次战争，一个皇帝送了命，另一个皇帝丢了王位。
+
+第一个字节在前，就是"大头方式"（Big endian），第二个字节在前就是"小头方式"（Little endian）。
+
+那么很自然的，就会出现一个问题：计算机怎么知道某一个文件到底采用哪一种方式编码？
+
+Unicode 规范定义，每一个文件的最前面分别加入一个表示编码顺序的字符，这个字符的名字叫做"零宽度非换行空格"（zero width no-break space），用FEFF表示。这正好是两个字节，而且FF比FE大1。
+
+如果一个文本文件的头两个字节是FE FF，就表示该文件采用大头方式；如果头两个字节是FF FE，就表示该文件采用小头方式。
+
+在 Java 中，使用 `byte[] utf16Bytes = string.getBytes(StandardCharsets.UTF_16);` 获得的字节数组，头两位都是 `FEFF`，这和 Java 的采用大头方式的规范是吻合的。
+
+
+U+0041 U+2262 U+0391 U+002E
+41 | E2 89 A2 | CE 91 | 2E
+
+U+D55C U+AD6D U+C5B4
+ED 95 9C | EA B5 AD | EC 96 B4
 
 image::/images/encoding/utf8-encoding-scheme.svg[title="Unicode 与 UTF-8 的转换",alt="Unicode 与 UTF-8 的转换",{image_attr}]
 
@@ -222,23 +253,6 @@ https://juejin.cn/post/6844903590155272199[Unicode中UTF-8与UTF-16编码详解 
 
 这块的知识还需要用实验来验证！
 
-== Little endian 和 Big endian
-
-这两个古怪的名称来自英国作家斯威夫特的《格列佛游记》。在该书中，小人国里爆发了内战，战争起因是人们争论，吃鸡蛋时究竟是从大头(Big-endian)敲开还是从小头(Little-endian)敲开。为了这件事情，前后爆发了六次战争，一个皇帝送了命，另一个皇帝丢了王位。
-
-第一个字节在前，就是"大头方式"（Big endian），第二个字节在前就是"小头方式"（Little endian）。
-
-那么很自然的，就会出现一个问题：计算机怎么知道某一个文件到底采用哪一种方式编码？
-
-Unicode 规范定义，每一个文件的最前面分别加入一个表示编码顺序的字符，这个字符的名字叫做"零宽度非换行空格"（zero width no-break space），用FEFF表示。这正好是两个字节，而且FF比FE大1。
-
-如果一个文本文件的头两个字节是FE FF，就表示该文件采用大头方式；如果头两个字节是FF FE，就表示该文件采用小头方式。
-
-在 Java 中，使用 `byte[] utf16Bytes = string.getBytes(StandardCharsets.UTF_16);` 获得的字节数组，头两位都是 `FEFF`，这和 Java 的采用大头方式的规范是吻合的。
-
-== BOM
-
-BOM全称Byte Order Mark，字节序标记，除了utf-16之外，utf-8也可以添加bom，它的bom固定为0xEFBBBF，选择编码方式为utf-8 with bom时，生成的文件流中就会出现这个bom。为什么utf-8可以不需要bom呢，因为utf8是变长的，它根据第一个字节信息判断每个字符的长度，不存在正反顺序的问题，我们日常使用的utf-8都是不带bom的。
 
 
 == Java
@@ -266,6 +280,10 @@ https://www.zhihu.com/question/29924586[字符编码与字体的关系是什么�
 . http://cenalulu.github.io/linux/character-encoding/[十分钟搞清字符集和字符编码^]
 . https://util.unicode.org/UnicodeJsps/character.jsp?a=%E7%93%9C&B1=Show[Unicode Utilities: Character Properties^] -- 查找字符对应的 Unicode 编码。
 . https://tool.lu/hexconvert/[进制转换工具^]
+. https://graphemica.com/%E7%93%9C[graphemica · l♥ve letters^] -- 可以查询 Unicode 字符的编码。
+. https://icu4c-demos.unicode.org/icu-bin/convexp?conv=gb18030&s=ALL[ICU Demonstration - Converter Explorer^] -- ICU 各种编码相互转换的工具。
+. https://www.unicode.org/glossary/index.html[Glossary^] -- Unicode 相关术语表。
+
 
 . https://www.joelonsoftware.com/2003/10/08/the-absolute-minimum-every-software-developer-absolutely-positively-must-know-about-unicode-and-character-sets-no-excuses/[The Absolute Minimum Every Software Developer Absolutely, Positively Must Know About Unicode and Character Sets (No Excuses!) – Joel on Software^]
 . 
