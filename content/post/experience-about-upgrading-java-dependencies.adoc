@@ -30,7 +30,7 @@ Spring Framework 从 3.2.6.RELEASE 开始提供 BOM。可以利用 BOM 简化 Sp
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-framework-bom</artifactId>
-            <version>5.3.22</version>
+            <version>5.3.25</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
@@ -69,21 +69,21 @@ Spring Framework 从 3.2.6.RELEASE 开始提供 BOM。可以利用 BOM 简化 Sp
 <dependency>
     <groupId>org.springframework.data</groupId>
     <artifactId>spring-data-bom</artifactId>
-    <version>2021.2.2</version>
+    <version>2021.2.7</version>
     <type>pom</type>
     <scope>import</scope>
 </dependency>
 <dependency>
     <groupId>org.springframework.integration</groupId>
     <artifactId>spring-integration-bom</artifactId>
-    <version>5.5.14</version>
+    <version>5.5.16</version>
     <type>pom</type>
     <scope>import</scope>
 </dependency>
 <dependency>
     <groupId>org.springframework.security</groupId>
     <artifactId>spring-security-bom</artifactId>
-    <version>5.7.3</version>
+    <version>5.7.6</version>
     <type>pom</type>
     <scope>import</scope>
 </dependency>
@@ -135,6 +135,20 @@ Spring 4+ 删除了内置的 iBATIS 支持。可以通过添加下面这两个�
 如果跟随 Spring Boot 的脚步，MySQL 依赖选择 `8+` 版。将MySQL 依赖的版本从 `5.x` 升级到 `8.x` 时，一定要检查数据库连接字符串是否包含时区配置。如果没有，请添加 `serverTimezone=Asia/Shanghai` 的配置项。上线后，建议检查一下新增数据的日期字符数据是否正确。
 
 具体原因请看： https://www.diguage.com/post/research-on-timezone-of-mysql-new-connection-driver/[关于 MySQL 新版连接驱动时区对齐问题的研究^]。
+
+另外，MySQL 的依赖坐标从 8.0.31 开始做了调整，目前最新版依赖如下：
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- D瓜哥 · https://www.diguage.com -->
+<dependency>
+    <groupId>com.mysql</groupId>
+    <artifactId>mysql-connector-j</artifactId>
+    <version>8.0.32</version>
+</dependency>
+----
+
+大家在升级的时候，也需要注意调整 MySQL 的依赖坐标。
 
 == Quartz
 
@@ -228,7 +242,7 @@ Validation API 最主流的实现，Hibernate Validator 的坐标也有调整，
 <dependency>
     <groupId>com.google.protobuf</groupId>
     <artifactId>protobuf-java</artifactId>
-    <version>3.21.5</version>
+    <version>3.21.12</version>
 </dependency>
 ----
 
@@ -240,7 +254,7 @@ https://www.bouncycastle.org/java.html[Bouncy Castle Java Cryptography APIs^] �
 ----
 <!-- D瓜哥 · https://www.diguage.com -->
 <!-- *-jdk1[1/2/3/4/5/6] 和 *-jdk15on 都用如下依赖升级 -->
-<bouncycastle.version>1.71</bouncycastle.version>
+<bouncycastle.version>1.72</bouncycastle.version>
 
 <dependency>
     <groupId>org.bouncycastle</groupId>
@@ -284,7 +298,7 @@ https://www.bouncycastle.org/java.html[Bouncy Castle Java Cryptography APIs^] �
 </dependency>
 ----
 
-TIP: 如果升级到这个版本，需要手动增加依赖。升级成本略大，还请斟酌处理。
+TIP: 如果升级到这个版本，需要手动增加依赖；同时，为了避免不同版本带来的意外问题，建议把旧版本都排除掉。所以，升级成本略大，还请斟酌处理。
 
 == 日志
 
@@ -292,43 +306,19 @@ TIP: 如果升级到这个版本，需要手动增加依赖。升级成本略大
 
 == ASM
 
-根据 https://asm.ow2.io/versions.html#5.0beta[ASM Versions^] 显示，从 ASM 5.0 开始，完整支持 Java 8。所以，ASM 的版本也要升级到 5+。最新版依赖如下：
+根据 https://asm.ow2.io/versions.html#5.0beta[ASM Versions^] 显示，从 ASM 5.0 开始，完整支持 Java 8。所以，ASM 的版本也要升级到 5+。ASM 从 9.3 版开始，提供 BOM，根据 Spring Boot 依赖显示，可以直接上最新版，依赖如下：
 
 [source%nowrap,xml,{source_attr}]
 ----
 <!-- D瓜哥 · https://www.diguage.com -->
-<asm.version>9.3</asm.version>
+<asm.version>9.4</asm.version>
 
 <dependency>
     <groupId>org.ow2.asm</groupId>
-    <artifactId>asm</artifactId>
+    <artifactId>asm-bom</artifactId>
     <version>${asm.version}</version>
-</dependency>
-<dependency>
-    <groupId>org.ow2.asm</groupId>
-    <artifactId>asm-commons</artifactId>
-    <version>${asm.version}</version>
-</dependency>
-<dependency>
-    <groupId>org.ow2.asm</groupId>
-    <artifactId>asm-util</artifactId>
-    <version>${asm.version}</version>
-</dependency>
-<dependency>
-    <groupId>org.ow2.asm</groupId>
-    <artifactId>asm-tree</artifactId>
-    <version>${asm.version}</version>
-</dependency>
-<dependency>
-    <groupId>org.ow2.asm</groupId>
-    <artifactId>asm-analysis</artifactId>
-    <version>${asm.version}</version>
-</dependency>
-<dependency>
-    <groupId>org.ow2.asm</groupId>
-    <artifactId>asm-test</artifactId>
-    <version>${asm.version}</version>
-    <scope>test</scope>
+    <type>pom</type>
+    <scope>import</scope>
 </dependency>
 ----
 
@@ -358,7 +348,7 @@ Javassist 从 3.12.1.GA 升级到 3.13.0-GA 时，将 `groupId` 从 `javassist` 
 <dependency>
     <groupId>org.javassist</groupId>
     <artifactId>javassist</artifactId>
-    <version>3.29.1-GA</version>
+    <version>3.29.2-GA</version>
 </dependency>
 ----
 
@@ -366,6 +356,7 @@ Javassist 从 3.12.1.GA 升级到 3.13.0-GA 时，将 `groupId` 从 `javassist` 
 
 . 由于 `groupId` 发生了变化，Maven 不能解决这类的“依赖冲突”，所以需要手动检查并排除低版本 Javassist；
 . 如果同时依赖了两个版本的 Javassist，就要看加载顺序了。如果先加载了低版本的 Javassist，那么就可能会出现运行时异常，提示不能识别高版本的字节码。
+. 据说 3.29.1-GA 版本存在安全问题，希望尽量升级到 3.29.2-GA 版。
 
 == RESTEasy
 
@@ -408,7 +399,7 @@ Javassist 从 3.12.1.GA 升级到 3.13.0-GA 时，将 `groupId` 从 `javassist` 
 <dependency>
     <groupId>io.netty</groupId>
     <artifactId>netty-bom</artifactId>
-    <version>4.1.80.Final</version>
+    <version>4.1.87.Final</version>
     <type>pom</type>
     <scope>import</scope>
 </dependency>
@@ -422,7 +413,7 @@ Javassist 从 3.12.1.GA 升级到 3.13.0-GA 时，将 `groupId` 从 `javassist` 
 <dependency>
     <groupId>com.fasterxml.jackson</groupId>
     <artifactId>jackson-bom</artifactId>
-    <version>2.12.7</version>
+    <version>2.13.5</version>
     <type>pom</type>
     <scope>import</scope>
 </dependency>
@@ -436,7 +427,7 @@ Javassist 从 3.12.1.GA 升级到 3.13.0-GA 时，将 `groupId` 从 `javassist` 
 <dependency>
     <groupId>org.junit</groupId>
     <artifactId>junit-bom</artifactId>
-    <version>5.9.0</version>
+    <version>5.9.2</version>
     <type>pom</type>
     <scope>import</scope>
 </dependency>
@@ -464,7 +455,7 @@ Javassist 从 3.12.1.GA 升级到 3.13.0-GA 时，将 `groupId` 从 `javassist` 
 <dependency>
     <groupId>org.apache.logging.log4j</groupId>
     <artifactId>log4j-bom</artifactId>
-    <version>2.18.0</version>
+    <version>2.19.0</version>
     <type>pom</type>
     <scope>import</scope>
 </dependency>
@@ -494,7 +485,7 @@ Javassist 从 3.12.1.GA 升级到 3.13.0-GA 时，将 `groupId` 从 `javassist` 
 . https://www.eclipse.org/aspectj/doc/released/README-1812.html[AspectJ 1.8.12 Readme^] -- 这个版本主要是性能优化，这里还给出了一个性能测试数据。
 . https://htmlpreview.github.io/?https://github.com/eclipse/org.aspectj/blob/master/docs/dist/doc/README-199.html[AspectJ 1.9.9 Readme^] -- 这里提到，“Since 1.9.7, the AspectJ compiler ajc (contained in the aspectjtools library) no longer works on JDKs 8 to 10.”，根据这个说明，1.9.7+ 不再支持 Java 8。
 
-根据以上的资料，最好选择 1.8.12+ 的版本。综合考虑，选择了 1.8.X 的最新版依赖如下：
+根据以上的资料，最好选择 1.8.12+ 的版本。查看 https://docs.spring.io/spring-boot/docs/2.7.7/reference/html/dependency-versions.html#appendix.dependency-versions[Spring Boot 2.7.7 的依赖^]，AspectJ 版本选择的版本是 1.9.7。相信 Spring Boot 的选择，选择了 1.8.X 的最新版依赖如下：
 
 [source%nowrap,xml,{source_attr}]
 ----
@@ -502,17 +493,17 @@ Javassist 从 3.12.1.GA 升级到 3.13.0-GA 时，将 `groupId` 从 `javassist` 
 <dependency>
     <groupId>org.aspectj</groupId>
     <artifactId>aspectjrt</artifactId>
-    <version>1.8.14</version>
+    <version>1.9.7</version>
 </dependency>
 <dependency>
     <groupId>org.aspectj</groupId>
     <artifactId>aspectjweaver</artifactId>
-    <version>1.8.14</version>
+    <version>1.9.7</version>
 </dependency>
 <dependency>
     <groupId>org.aspectj</groupId>
     <artifactId>aspectjtools</artifactId>
-    <version>1.8.14</version>
+    <version>1.9.7</version>
 </dependency>
 ----
 
