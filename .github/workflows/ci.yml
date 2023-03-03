@@ -58,7 +58,8 @@ jobs:
           npm install -g bytefield-svg
           # https://github.com/gtudan/bpmn-js-cmd
           npm install -g bpmn-js-cmd
-          sudo apt -y install plantuml
+          # 展示不需要 PlantUML，注释掉，加快构建速度
+          # sudo apt -y install plantuml
 
       - name: Install font 🎃
         run: |
