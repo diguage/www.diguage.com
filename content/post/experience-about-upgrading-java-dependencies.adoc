@@ -373,7 +373,41 @@ Javassist 从 3.12.1.GA 升级到 3.13.0-GA 时，将 `groupId` 从 `javassist` 
 </exclusions>
 ----
 
-需要注意的是，原来的 RESTEasy 的注解，还保留在代码中，所以，还需要加一个注解的依赖：
+删除 RESTEasy 依赖时，还需要把 RESTEasy 在 `web.xml` 中的相关配置删去。删除了加载配置，还需要必须确保 Spring 加载配置的相关配置存在：
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- D瓜哥 · https://www.diguage.com -->
+<web-app>
+
+    <listener>
+        <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+    </listener>
+
+    <context-param>
+        <param-name>contextConfigLocation</param-name>
+        <param-value>/WEB-INF/root-context.xml</param-value>
+    </context-param>
+
+    <!-- 如果使用 Spring MVC，则还需要增加如下配置 -->
+    <servlet>
+        <servlet-name>app</servlet-name>
+        <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+        <init-param>
+            <param-name>contextConfigLocation</param-name>
+            <param-value>/WEB-INF/web-context.xml</param-value>
+        </init-param>
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>app</servlet-name>
+        <url-pattern>/app/*</url-pattern>
+    </servlet-mapping>
+
+</web-app>
+----
+
+最后一点需要注意的是，原来的 RESTEasy 的注解，还保留在代码中，所以，还需要加一个注解的依赖：
 
 [source%nowrap,xml,{source_attr}]
 ----
@@ -455,7 +489,7 @@ Javassist 从 3.12.1.GA 升级到 3.13.0-GA 时，将 `groupId` 从 `javassist` 
 <dependency>
     <groupId>org.apache.logging.log4j</groupId>
     <artifactId>log4j-bom</artifactId>
-    <version>2.19.0</version>
+    <version>2.20.0</version>
     <type>pom</type>
     <scope>import</scope>
 </dependency>
