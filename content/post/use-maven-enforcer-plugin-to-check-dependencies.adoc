@@ -220,6 +220,7 @@ D瓜哥把上面的规则几乎全部试用了一遍，把发现的一些需要�
       </goals>
       <configuration>
         <rules>
+          <!-- groupId[:artifactId][:version][:type][:scope][:classifier] -->
           <!-- lombok -->
           <bannedDependencies>
             <searchTransitive>true</searchTransitive>
@@ -303,6 +304,7 @@ D瓜哥把上面的规则几乎全部试用了一遍，把发现的一些需要�
               <![CDATA[必须使用 jakarta.validation:jakarta.validation-api:2.0.1+ 和 Hibernate Validator 6.1.5.Final+（org.hibernate.validator:hibernate-validator:6.1.5.Final 和 org.hibernate.validator:hibernate-validator-annotation-processor:6.1.5.Final）。不能使用 javax.validation:validation-api 和 org.hibernate:hibernate-validator。]]>
             </message>
           </bannedDependencies>
+          <!-- groupId[:artifactId][:version][:type][:scope][:classifier] -->
         </rules>
         <fail>true</fail>
       </configuration>
