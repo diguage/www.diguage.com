@@ -42,6 +42,7 @@ Spring Framework 从 3.2.6.RELEASE 开始提供 BOM。可以利用 BOM 简化 Sp
 
 这里，关于 Spring 的升级，还有几点需要说明：
 
+. 从 Spring 3.X 升级到 Spring 4.X+ 后，原来的 `MappingJacksonHttpMessageConverter` 已经被删除了；直接使用 `MappingJackson2HttpMessageConverter` 即可。
 . 从 Spring 3.0.0.RELEASE 到 Spring 3.1.4.RELEASE，Spring 有一个 `spring-asm`，如果不再使用这个区间的 Spring，请把这个依赖删掉。
 . 如果使用了 Apache Velocity 1.X 作为前端模板，由于 Spring 5+ 将相关集成代码删除，所以，只能将 Spring 升级到 4.3.30.RELEASE。相关 BOM 如下：
 +
