@@ -5,7 +5,7 @@ draft: true
 keywords: ["Java","Spring","依赖管理","MySQL","iBATIS","MyBATIS","Spring JDBC"]
 tags: ["Java","Spring","最佳实践","数据库"]
 categories: ["开发工具","软件工程"]
-thumbnail: "images/upgrade-spring-mysql/spring-mysql-java.png"
+thumbnail: "images/upgrade-spring/spring-mysql-java.png"
 
 weight: 1
 ---
