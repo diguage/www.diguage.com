@@ -1,0 +1,156 @@
+---
+title: "升级 Spring 对处理 DuplicateKeyException 的影响"
+date: 2023-02-23T11:21:23+08:00
+draft: true
+keywords: ["Java","Spring","依赖管理","MySQL","iBATIS","MyBATIS","Spring JDBC"]
+tags: ["Java","Spring","最佳实践","数据库"]
+categories: ["开发工具","软件工程"]
+thumbnail: "images/upgrade-spring-mysql/spring-mysql-java.png"
+
+weight: 1
+---
+
+
+在 https://www.diguage.com/post/experience-about-upgrading-java-dependencies/[关于升级 Spring 等依赖的一些经验^] 中，分享了一些开源依赖的升级经验。部分小伙伴质疑升级 Spring 会影响对 `DuplicateKeyException` 异常的处理。这篇文章就从代码更新的就角度来分析一下升级相关依赖是否会对 `DuplicateKeyException` 异常的处理带来实质性的影响。
+
+由于主要的技术栈涉及 MySQL 驱动、iBATIS、MyBATIS、Spring周边等。所以，本文仅分析涉及的这些依赖。
+
+D瓜哥使用 https://dev.mysql.com/doc/employee/en/[MySQL: Employees Sample Database^] 搭建了一个 Spring + MyBATIS + MySQL Connector/J 的测试环境。连续插入两条一样的数据，单步调试，在 `com.mysql.jdbc.MysqlIO#sendCommand` 方法中，就可以观察到如下异常：
+
+image::/images/upgrade-spring/mysql-error1062.png[title="MySQL Error 1062",alt="MySQL Error 1062",{image_attr}]
+
+从这里可以明显看出，MySQL 驱动返回的异常中， `venderCode` 编码是 `1062`。
+
+顺着这个线，往上走，到 `org.apache.ibatis.session.defaults.DefaultSqlSession#update(java.lang.String, java.lang.Object)` 方法中，可以看到，
+
+image::/images/upgrade-spring/mybatis-wrap-exception.png[title="MyBATIS wrap Exception",alt="MyBATIS wrap Exception",{image_attr}]
+
+在这里，会将 `SQLException` 包装成 `PersistenceException`，这也是 MyBATIS 对外暴露的统一的异常类。
+
+继续往上走，就到了 `org.mybatis.spring.SqlSessionTemplate.SqlSessionInterceptor#invoke` 方法：
+
+image::/images/upgrade-spring/mybatis-translateException.png[title="MyBATIS translateException",alt="MyBATIS translateException",{image_attr}]
+
+在 `SqlSessionInterceptor#invoke` 方法的异常处理中，将 `PersistenceException` 异常通过 `org.springframework.dao.support.PersistenceExceptionTranslator#translateExceptionIfPossible` 方法，将异常转换成 `DataAccessException` 对象。 `DataAccessException` 类是 Spring 数据访问的异常类基类。
+
+image::/images/upgrade-spring/mybatis-translate-exception.png[title="MyBATIS translate Exception",alt="MyBATIS translate Exception",{image_attr}]
+
+这里还会牵扯到 `SQLExceptionTranslator` 类。代码一路跟踪下去，最后，会发现是在 `org.springframework.jdbc.support.SQLErrorCodeSQLExceptionTranslator#doTranslate` 中完成了转换工作：
+
+image::/images/upgrade-spring/error1062-to-DuplicateKeyException.png[title="MySQL 1062 to DuplicateKeyException",alt="MySQL 1062 to DuplicateKeyException",{image_attr}]
+
+请注意这里的类名： `SQLErrorCodeSQLExceptionTranslator`，见名知意，类名明确地说明，是通过错误编码来确定具体异常类的。
+
+这里再看一看异常信息的生成方法：
+
+.org.springframework.jdbc.support.AbstractFallbackSQLExceptionTranslator#buildMessage
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * Build a message {@code String} for the given {@link java.sql.SQLException}.
+ * <p>To be called by translator subclasses when creating an instance of a generic
+ * {@link org.springframework.dao.DataAccessException} class.
+ * @param task readable text describing the task being attempted
+ * @param sql the SQL statement that caused the problem
+ * @param ex the offending {@code SQLException}
+ * @return the message {@code String} to use
+ */
+protected String buildMessage(String task, @Nullable String sql, SQLException ex) {
+    return task + "; " + (sql != null ? ("SQL [" + sql + "]; ") : "") + ex.getMessage();
+}
+----
+
+这里一眼就可以看出，Spring 生成 `DataAccessException` 对象的错误信息时，是通过在 `SQLException` 错误信息基础上，在前面加上了 SQL 信息。
+
+可以在 `spring-jdbc.jar!/org/springframework/jdbc/support/sql-error-codes.xml` 中查看到 Spring 内置支持的所有数据库类型以及对应的错误编码。关于 MySQL 的配置如下：
+
+[source%nowrap,xml,{source_attr}]
+----
+<bean id="MySQL" class="org.springframework.jdbc.support.SQLErrorCodes">
+    <property name="databaseProductNames">
+        <list>
+            <value>MySQL</value>
+            <value>MariaDB</value>
+        </list>
+    </property>
+    <property name="badSqlGrammarCodes">
+        <value>1054,1064,1146</value>
+    </property>
+    <property name="duplicateKeyCodes">
+        <value>1062</value>
+    </property>
+    <property name="dataIntegrityViolationCodes">
+        <value>630,839,840,893,1169,1215,1216,1217,1364,1451,1452,1557</value>
+    </property>
+    <property name="dataAccessResourceFailureCodes">
+        <value>1</value>
+    </property>
+    <property name="cannotAcquireLockCodes">
+        <value>1205,3572</value>
+    </property>
+    <property name="deadlockLoserCodes">
+        <value>1213</value>
+    </property>
+</bean>
+----
+
+在 https://github.com/mysql/mysql-connector-j/tree/release/5.1[MySQL Connector/J release/5.1^] 中可以下载到 MySQL 驱动的代码。其中，在 `com.mysql.jdbc.MysqlErrorNumbers#ER_TRG_CORRUPTED_FILE` 可以查看到 `1602` 错误的定义。查看代码变更历史，这个编码从 2011 年增加到这个文件中的。
+
+再回过头来看 Spring 中 `sql-error-codes.xml` 的代码变更历史，其中可以看到 MySQL `1602` 是在 `2009-03-10` 加入到配置文件中的。而 Spring 3.x 版的第一个版本 `3.0.0.RELEASE` 是在 2009年12月17日发布的。所以，从 Spring 3.0.0.RELEASE 开始，Spring 对 MySQL 数据库异常的处理，几乎保持不变。
+
+最后，再看一下 iBATIS 的异常处理。 iBATIS 的异常处理比较简单，代码都集中在 `org.springframework.orm.ibatis.SqlMapClientTemplate`（该代码已经从 Spring 4 开始从 Spring 仓库中删除） 中：
+
+.org.springframework.jdbc.support.AbstractFallbackSQLExceptionTranslator#buildMessage
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * Execute the given data access action on a SqlMapExecutor.
+ * @param action callback object that specifies the data access action
+ * @return a result object returned by the action, or {@code null}
+ * @throws DataAccessException in case of SQL Maps errors
+ */
+public <T> T execute(SqlMapClientCallback<T> action) throws DataAccessException {
+    // 删除无用代码
+    try {
+        // 删除无用代码
+
+        // Execute given callback...
+        try {
+            return action.doInSqlMapClient(session);
+        }
+        catch (SQLException ex) {
+            // 这里是异常处理逻辑
+            throw getExceptionTranslator().translate("SqlMapClient operation", null, ex);
+        }
+        finally {
+            try {
+                if (springCon != null) {
+                    if (transactionAware) {
+                        springCon.close();
+                    }
+                    else {
+                        DataSourceUtils.doReleaseConnection(springCon, dataSource);
+                    }
+                }
+            }
+            catch (Throwable ex) {
+                logger.debug("Could not close JDBC Connection", ex);
+            }
+        }
+
+        // Processing finished - potentially session still to be closed.
+    }
+    finally {
+        // Only close SqlMapSession if we know we've actually opened it
+        // at the present level.
+        if (ibatisCon == null) {
+            session.close();
+        }
+    }
+}
+----
+
+这里也是通过基类 `org.springframework.jdbc.support.JdbcAccessor` 的 `getExceptionTranslator` 方法，获取 `SQLExceptionTranslator` 对象，然后调用其 `translate` 方法来完成异常转换，和上面 MyBATIS 中的处理逻辑是一样的。
+
+综上，升级 Spring 不会对 `DuplicateKeyException` 异常的处理，可以放心升级。
+
