@@ -122,6 +122,8 @@ Spring 4+ 删除了内置的 iBATIS 支持。可以通过添加下面这两个�
 * 其次， `mybatis-2-spring` 就是将 Spring 删除的那部分代码重新打包了一下，和 MyBATIS 集成原理完全不同，也无须担心存在冲突问题。
 * 最后，`org.springframework:spring-orm` 这个依赖是为了集成实现 JPA 标准的 ORM 框架准备的。所以，无论使用 MyBATIS，还是使用 iBATIS，都不需要这个依赖。
 
+有些小伙伴反馈，Spring 不同版本对 `DuplicateKeyException` 异常的处理有变化。针对这个问题，D瓜哥专门研究了一下，详情请看 https://www.diguage.com/post/upgrade-spring-about-duplicate-key-exception/[升级 Spring 对处理 DuplicateKeyException 的影响^]。
+
 == Spring Boot
 
 没有搞过 Spring Boot 1.X 到 2.X 的升级过程，所以，没有经验可以分享。
