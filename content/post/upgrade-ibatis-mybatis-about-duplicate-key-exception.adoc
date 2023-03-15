@@ -1,5 +1,5 @@
 ---
-title: "升级 Spring 对处理 DuplicateKeyException 的影响"
+title: "升级 iBATIS/MyBATIS 对处理 DuplicateKeyException 的影响"
 date: 2023-02-23T11:21:23+08:00
 draft: false
 keywords: ["Java","Spring","依赖管理","MySQL","iBATIS","MyBATIS","Spring JDBC"]
@@ -11,9 +11,9 @@ weight: 1
 ---
 
 
-在 https://www.diguage.com/post/experience-about-upgrading-java-dependencies/[关于升级 Spring 等依赖的一些经验^] 中，分享了一些开源依赖的升级经验。部分小伙伴质疑升级 Spring 会影响对 `DuplicateKeyException` 异常的处理。这篇文章就从代码更新的就角度来分析一下升级相关依赖是否会对 `DuplicateKeyException` 异常的处理带来实质性的影响。
+在 https://www.diguage.com/post/experience-about-upgrading-java-dependencies/[关于升级 Spring 等依赖的一些经验^] 中，分享了一些开源依赖的升级经验。部分小伙伴质疑升级 iBATIS/MyBATIS 会影响对 `DuplicateKeyException` 异常的处理。这篇文章就从源码分析/代码更新的就角度来分析一下升级相关依赖是否会对 `DuplicateKeyException` 异常的处理带来实质性的影响。
 
-由于主要的技术栈涉及 MySQL 驱动、iBATIS、MyBATIS、Spring周边等。所以，本文仅分析涉及的这些依赖。
+由于主要的技术栈涉及 MySQL 驱动、iBATIS、MyBATIS、Spring 周边等。所以，本文仅分析涉及的这些依赖。
 
 D瓜哥使用 https://dev.mysql.com/doc/employee/en/[MySQL: Employees Sample Database^] 搭建了一个 Spring + MyBATIS + MySQL Connector/J 的测试环境。连续插入两条一样的数据，单步调试，在 `com.mysql.jdbc.MysqlIO#sendCommand` 方法中，就可以观察到如下异常：
 
@@ -152,5 +152,5 @@ public <T> T execute(SqlMapClientCallback<T> action) throws DataAccessException 
 
 这里也是通过基类 `org.springframework.jdbc.support.JdbcAccessor` 的 `getExceptionTranslator` 方法，获取 `SQLExceptionTranslator` 对象，然后调用其 `translate` 方法来完成异常转换，和上面 MyBATIS 中的处理逻辑是一样的。
 
-综上，升级 Spring 不会对 `DuplicateKeyException` 异常的处理有任何影响，可以放心升级。
+综上，升级 iBATIS/MyBATIS 不会对 `DuplicateKeyException` 异常的处理有任何影响，可以放心升级。
 
