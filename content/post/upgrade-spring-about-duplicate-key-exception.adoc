@@ -152,5 +152,5 @@ public <T> T execute(SqlMapClientCallback<T> action) throws DataAccessException 
 
 这里也是通过基类 `org.springframework.jdbc.support.JdbcAccessor` 的 `getExceptionTranslator` 方法，获取 `SQLExceptionTranslator` 对象，然后调用其 `translate` 方法来完成异常转换，和上面 MyBATIS 中的处理逻辑是一样的。
 
-综上，升级 Spring 不会对 `DuplicateKeyException` 异常的处理，可以放心升级。
+综上，升级 Spring 不会对 `DuplicateKeyException` 异常的处理有任何影响，可以放心升级。
 
