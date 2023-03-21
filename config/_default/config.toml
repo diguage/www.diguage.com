@@ -8,7 +8,7 @@ buildFuture = true
 paginate = "10" # Number of posts per page
 theme = "mainroad"
 disqusShortname = "" # Enable comments by entering your Disqus shortname
-googleAnalytics = "UA-32893826-1" # Enable Google Analytics by entering your tracking id
+googleAnalytics = "G-1MMT2NLEL4" # Enable Google Analytics by entering your tracking id
 
 [Author]
   name = "D瓜哥"
