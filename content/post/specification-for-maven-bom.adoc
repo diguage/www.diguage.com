@@ -5,7 +5,7 @@ draft: false
 keywords: ["Java","Spring","依赖管理","Maven"]
 tags: ["Java","设计","Spring","最佳实践"]
 categories: ["程序设计","软件工程"]
-thumbnail: "images/logo/apache-maven.svg"
+thumbnail: "images/logos/maven.svg"
 
 weight: 1
 ---

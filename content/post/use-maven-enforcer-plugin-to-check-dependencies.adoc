@@ -5,7 +5,7 @@ draft: false
 keywords: ["Java","Maven","Enforcer","插件","依赖"]
 tags: ["Java","最佳实践"]
 categories: ["软件工程","开发工具"]
-thumbnail: "images/logo/apache-maven.svg"
+thumbnail: "images/logos/maven.svg"
 
 weight: 1
 ---

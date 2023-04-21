@@ -5,7 +5,7 @@ draft: false
 keywords: ["Java","Spring","依赖管理","JUnit","Maven","Plugin","插件"]
 tags: ["Java","Spring","最佳实践"]
 categories: ["开发工具","软件工程"]
-thumbnail: "images/logo/apache-maven.svg"
+thumbnail: "images/logos/maven.svg"
 
 weight: 1
 ---
