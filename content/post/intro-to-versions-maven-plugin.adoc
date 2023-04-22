@@ -45,6 +45,92 @@ Versions Maven Plugin 支持两种配置方式：
                     <version>.+-(alpha|beta)</version>
                 </ignoreVersion>
             </ignoreVersions>
+        </ruleSet>
+    </configuration>
+</plugin>
+----
+
+NOTE: 这里给大家提个醒，外置配置文件的配置语法与 POM 文件中的 `<configuration>` 中的配置语法不同，不可混用。D瓜哥混用了一下，就一直报错。后来，在 GitHub 上给项目提 Issue 才解决这个问题。
+
+设置好这些配置后，后续如果想检查版本升级情况，只需要执行如下命令即可：
+
+[source%nowrap,bash,{source_attr}]
+----
+# 检查依赖升级情况
+$ mvn versions:display-dependency-updates
+----
+
+第一次执行，时间较长，后续再执行就很快。（根据D瓜哥的执行情况来看，这个缓存的有效期是一天，第二天第一次执行也会比较慢。也可能是由于修改了 `<ruleSet>` 配置，导致执行变慢的。）执行结果如下：
+
+[source%nowrap,bash,{source_attr}]
+----
+# 检查依赖升级情况
+$ mvn versions:display-dependency-updates
+
+# 此处省略一万个字
+
+[INFO]   ch.qos.logback:logback-access ........................ 1.2.11 -> 1.4.7
+[INFO]   ch.qos.logback:logback-classic ....................... 1.2.11 -> 1.4.7
+[INFO]   ch.qos.logback:logback-core .......................... 1.2.11 -> 1.4.7
+[INFO]   com.mysql:mysql-connector-j ......................... 8.0.32 -> 8.0.33
+[INFO]   com.zaxxer:HikariCP ................................... 4.0.3 -> 5.0.1
+[INFO]   jakarta.validation:jakarta.validation-api ............. 2.0.2 -> 3.0.2
+[INFO]   mysql:mysql-connector-java .......................... 8.0.32 -> 8.0.33
+[INFO]   org.aspectj:aspectjrt ................................ 1.9.7 -> 1.9.19
+[INFO]   org.aspectj:aspectjtools ............................. 1.9.7 -> 1.9.19
+[INFO]   org.aspectj:aspectjweaver ............................ 1.9.7 -> 1.9.19
+[INFO]   org.bouncycastle:bcjmail-jdk18on ........................ 1.72 -> 1.73
+[INFO]   org.bouncycastle:bcmail-jdk18on ......................... 1.72 -> 1.73
+[INFO]   org.bouncycastle:bcpg-jdk18on ........................... 1.72 -> 1.73
+[INFO]   org.bouncycastle:bcpkix-jdk18on ......................... 1.72 -> 1.73
+[INFO]   org.bouncycastle:bcprov-ext-jdk18on ..................... 1.72 -> 1.73
+[INFO]   org.bouncycastle:bcprov-jdk18on ......................... 1.72 -> 1.73
+[INFO]   org.bouncycastle:bctls-jdk18on .......................... 1.72 -> 1.73
+[INFO]   org.bouncycastle:bcutil-jdk18on ......................... 1.72 -> 1.73
+[INFO]   org.hibernate.validator:hibernate-validator ...
+[INFO]                                               6.1.7.Final -> 8.0.0.Final
+[INFO]   org.hibernate.validator:hibernate-validator-annotation-processor ...
+[INFO]                                               6.1.7.Final -> 8.0.0.Final
+[INFO]   org.mockito:mockito-core ............................. 4.11.0 -> 5.3.0
+[INFO]   org.mockito:mockito-inline ........................... 4.11.0 -> 5.2.0
+[INFO]   org.mockito:mockito-junit-jupiter .................... 4.11.0 -> 5.3.0
+[INFO]   org.mybatis:mybatis-spring ............................ 2.1.0 -> 3.0.1
+[INFO]   org.slf4j:jcl-over-slf4j ............................. 1.7.36 -> 2.0.7
+[INFO]   org.slf4j:jul-to-slf4j ............................... 1.7.36 -> 2.0.7
+[INFO]   org.slf4j:log4j-over-slf4j ........................... 1.7.36 -> 2.0.7
+[INFO]   org.slf4j:slf4j-api .................................. 1.7.36 -> 2.0.7
+[INFO]   org.slf4j:slf4j-ext .................................. 1.7.36 -> 2.0.7
+# 疑问：
+# 因为 Spring 6+ 要求 Java 17，所以，对于 Java 8 的项目，则需要忽略 6+ 的版本。该怎么办？
+[INFO]   org.springframework:spring-aop ....................... 5.3.27 -> 6.0.8
+[INFO]   org.springframework:spring-aspects ................... 5.3.27 -> 6.0.8
+[INFO]   org.springframework:spring-beans ..................... 5.3.27 -> 6.0.8
+[INFO]   org.springframework:spring-context ................... 5.3.27 -> 6.0.8
+[INFO]   org.springframework:spring-context-indexer ........... 5.3.27 -> 6.0.8
+[INFO]   org.springframework:spring-context-support ........... 5.3.27 -> 6.0.8
+[INFO]   org.springframework:spring-core ...................... 5.3.27 -> 6.0.8
+[INFO]   org.springframework:spring-expression ................ 5.3.27 -> 6.0.8
+[INFO]   org.springframework:spring-instrument ................ 5.3.27 -> 6.0.8
+[INFO]   org.springframework:spring-jcl ....................... 5.3.27 -> 6.0.8
+[INFO]   org.springframework:spring-jdbc ...................... 5.3.27 -> 6.0.8
+[INFO]   org.springframework:spring-test ...................... 5.3.27 -> 6.0.8
+[INFO]   org.springframework:spring-tx ........................ 5.3.27 -> 6.0.8
+[INFO]   org.springframework:spring-web ....................... 5.3.27 -> 6.0.8
+[INFO]   org.springframework:spring-webmvc .................... 5.3.27 -> 6.0.8
+----
+
+因为 Spring 6+ 要求 Java 17，所以，对于 Java 8 的项目，则需要忽略 6+ 的版本，减少不必要的干扰。那么只需要增加如下配置即可：
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- @author: D瓜哥 · https://www.diguage.com -->
+<plugin>
+    <groupId>org.codehaus.mojo</groupId>
+    <artifactId>versions-maven-plugin</artifactId>
+    <version>2.15.0</version>
+    <configuration>
+        <ruleSet>
+            <!-- <ignoreVersions> 的相关配置，请看上文。 -->
             <rules>
                 <!-- 可以使用 rule 指定忽略的具体依赖及相关版本 -->
                 <!-- 例如：如果面向 Java 8 的应用，就不能升级到 Spring 6+。 -->
@@ -55,49 +141,30 @@ Versions Maven Plugin 支持两种配置方式：
                         <version>[6-9].*</version>
                     </ignoreVersion>
                 </rule>
-                <rule>
-                    <groupId>org.springframework.boot</groupId>
-                    <ignoreVersion>
-                        <type>regex</type>
-                        <version>[3-9].*</version>
-                    </ignoreVersion>
-                </rule>
-                <rule>
-                    <groupId>org.slf4j</groupId>
-                    <ignoreVersion>
-                        <type>regex</type>
-                        <version>[2-9].*</version>
-                    </ignoreVersion>
-                </rule>
-                <rule>
-                    <groupId>ch.qos.logback</groupId>
-                    <ignoreVersion>
-                        <type>regex</type>
-                        <version>1.[4-9].*</version>
-                    </ignoreVersion>
-                </rule>
-                <rule>
-                    <groupId>com.zaxxer</groupId>
-                    <ignoreVersion>
-                        <type>regex</type>
-                        <version>[5-9].*</version>
-                    </ignoreVersion>
-                </rule>
-                <rule>
-                    <groupId>org.mybatis</groupId>
-                    <artifactId>mybatis-spring</artifactId>
-                    <ignoreVersion>
-                        <type>regex</type>
-                        <version>[3-9].*</version>
-                    </ignoreVersion>
-                </rule>
             </rules>
         </ruleSet>
     </configuration>
 </plugin>
 ----
 
-NOTE: 这里给大家提个醒，外置配置文件的配置语法与 POM 文件中的 `<configuration>` 中的配置语法不同，不可混用。D瓜哥混用了一下，就一直报错。后来，在 GitHub 上给项目提 Issue 才解决这个问题。
+不仅仅 Spring 有此问题，Spring Boot 3+ 也要求 Java 17+； HikariCP 5+ 要求 Java 11+；mybatis-spring 3+ 要求 Spring 6+，间接要求 Java 17+ 等等。关于这些依赖，应该如何配置？这个问题就当给小伙伴留个作业啦。
+
+除了展示依赖可以升级的版本，还可以使用命令行进行升级。具体命令行如下：
+
+[source%nowrap,bash,{source_attr}]
+----
+# 将 SNAPSHOT 升级为正式版
+$ mvn versions:use-releases
+
+# 升级到下一个正式版
+$ mvn versions:use-next-releases
+
+# 使用最新的正式版
+$ mvn versions:use-latest-releases
+----
+
+但是，这些命令都是针对全局依赖的。所以，使用的时候一定要慎重。建议还是手动升级指定依赖。
+
 
 == 升级项目版本
 
@@ -133,6 +200,27 @@ $ mvn versions:commit
 $ mvn versions:set -DgenerateBackupPoms=false -DnewVersion=1.0.0
 ----
 
+D瓜哥觉得这个回滚机制有点设计过度。专业的事情应该交给专业的人干。如果需要回滚，可以使用版本管理直接回滚，也可以重新执行版本设置，设置回原来的版本即可。
+
+可以增加如下配置，来避免手动在命令行设置该参数：
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- @author: D瓜哥 · https://www.diguage.com -->
+<plugin>
+    <groupId>org.codehaus.mojo</groupId>
+    <artifactId>versions-maven-plugin</artifactId>
+    <version>2.15.0</version>
+    <configuration>
+        <generateBackupPoms>false</generateBackupPoms>
+        <!-- 其他配置同上 -->
+    </configuration>
+</plugin>
+----
+
+这样在升级版本的时候，就不会创建回滚文件了。
+
+
 Versions Maven Plugin 还有升级插件等其他功能，感兴趣可以自行去探索。这里就不再赘述。
 
 == 参考资料
@@ -140,4 +228,5 @@ Versions Maven Plugin 还有升级插件等其他功能，感兴趣可以自行�
 . https://www.mojohaus.org/versions/versions-maven-plugin/index.html[Versions Maven Plugin – Introduction^]
 . https://www.mojohaus.org/versions/versions-maven-plugin/version-rules.html[Versions Maven Plugin – Version Rules^]
 . https://www.mojohaus.org/versions/versions-maven-plugin/set-mojo.html[Versions Maven Plugin – versions:set^]
+. https://www.baeldung.com/maven-dependency-latest-version[Use the Latest Version of a Dependency in Maven^]
 . https://www.cnblogs.com/LQBlog/p/16227930.html[maven versions-maven-plugin插件^]
