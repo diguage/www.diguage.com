@@ -134,6 +134,7 @@ D瓜哥在 https://www.diguage.com/post/experience-about-upgrading-java-dependen
 * https://maven.apache.org/plugins/maven-assembly-plugin/usage.html[Apache Maven Assembly Plugin – Usage^]
 
 
+[#src-to-repo]
 == 将源码发布到私服仓库
 
 一些对外发布的依赖，建议将源码也发布到私服仓库，方便外部人排查跟进问题。
