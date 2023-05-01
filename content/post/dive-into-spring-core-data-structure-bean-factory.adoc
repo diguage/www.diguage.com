@@ -5,7 +5,7 @@ draft: false
 keywords: ["Java","Spring","程序设计","源码分析", "数据结构"]
 categories: ["程序设计"]
 tags: ["Java","源码分析","Spring", "数据结构"]
-thumbnail: "images/spring-framework/spring-logo.jpg"
+thumbnail: "images/logo/spring.svg"
 
 weight: 1
 ---

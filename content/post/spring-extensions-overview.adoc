@@ -5,7 +5,7 @@ draft: false
 keywords: ["Java","Spring"]
 tags: ["Java","设计","架构"]
 categories: ["程序设计"]
-thumbnail: "images/spring-framework/spring-logo.jpg"
+thumbnail: "images/logo/spring.svg"
 
 weight: 1
 
