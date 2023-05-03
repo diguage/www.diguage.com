@@ -3,7 +3,7 @@ title: "Spring 扩展点实践：整合 Apache Dubbo（二）"
 date: 2020-07-11T16:20:00+08:00
 draft: false
 keywords: ["Java","Spring"]
-tags: ["Java","设计","架构","微服务","分布式"]
+tags: ["Java","设计","架构","微服务","分布式","Spring"]
 categories: ["程序设计"]
 thumbnail: "images/spring-framework/dubbo-logo.jpg"
 

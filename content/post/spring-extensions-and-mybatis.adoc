@@ -3,7 +3,7 @@ title: "Spring 扩展点实践：整合 MyBATIS"
 date: 2020-05-28T20:06:46+08:00
 draft: false
 keywords: ["Java","Spring"]
-tags: ["Java","设计","架构","数据库"]
+tags: ["Java","设计","架构","数据库","Spring"]
 categories: ["程序设计"]
 thumbnail: "images/spring-framework/spring-and-mybatis.jpg"
 

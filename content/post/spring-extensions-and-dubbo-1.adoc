@@ -3,7 +3,7 @@ title: "Spring 扩展点实践：整合 Apache Dubbo（一）"
 date: 2020-07-09T16:28:35+08:00
 draft: false
 keywords: ["Java","Spring"]
-tags: ["Java","设计","架构","微服务","分布式"]
+tags: ["Java","设计","架构","微服务","分布式","Spring"]
 categories: ["程序设计"]
 thumbnail: "images/spring-framework/dubbo-logo.jpg"
 # https://gohugo.io/content-management/urls/#aliases
@@ -42,6 +42,7 @@ docker run --rm --name zookeeper -d -p 2181:2181 zookeeper:3.4.14
 
 在开始正餐之前，D瓜哥先给大家来个开胃菜。
 
+[#spring-plugin]
 == Spring 插件机制简介
 
 不知道大家有没有想过一个问题：Spring 框架是如何支持越来越多的功能的？
@@ -58,7 +59,6 @@ docker run --rm --name zookeeper -d -p 2181:2181 zookeeper:3.4.14
        xmlns:aop="http://www.springframework.org/schema/aop"
        xmlns:context="http://www.springframework.org/schema/context"
        xmlns:tx="http://www.springframework.org/schema/tx"
-       xmlns:dubbo="http://dubbo.apache.org/schema/dubbo"
        xsi:schemaLocation="http://www.springframework.org/schema/beans
                            https://www.springframework.org/schema/beans/spring-beans.xsd
                            http://www.springframework.org/schema/aop
@@ -66,9 +66,7 @@ docker run --rm --name zookeeper -d -p 2181:2181 zookeeper:3.4.14
                            http://www.springframework.org/schema/context
                            https://www.springframework.org/schema/context/spring-context.xsd
                            http://www.springframework.org/schema/tx
-                           https://www.springframework.org/schema/tx/spring-tx.xsd
-                           http://dubbo.apache.org/schema/dubbo 
-                           http://dubbo.apache.org/schema/dubbo/dubbo.xsd">
+                           https://www.springframework.org/schema/tx/spring-tx.xsd">
 
 	<context:annotation-config/>
 
@@ -87,9 +85,11 @@ docker run --rm --name zookeeper -d -p 2181:2181 zookeeper:3.4.14
 	</tx:advice>
 
 
-	<bean id="transactionManager" class="org.springframework.transaction.testfixture.CallCountingTransactionManager"/>
+	<bean id="transactionManager"
+          class="org.springframework.transaction.testfixture.CallCountingTransactionManager"/>
 
-	<bean id="testBean" class="org.springframework.beans.testfixture.beans.TestBean"/>
+	<bean id="testBean"
+          class="org.springframework.beans.testfixture.beans.TestBean"/>
 
 </beans>
 ----

@@ -3,7 +3,7 @@ title: "Spring Bean 生命周期概述"
 date: 2020-06-20T17:33:07+08:00
 draft: false
 keywords: ["Java","Spring"]
-tags: ["Java","设计","架构"]
+tags: ["Java","设计","架构","Spring"]
 categories: ["程序设计"]
 thumbnail: "images/logo/spring.svg"
 

@@ -3,7 +3,7 @@ title: "源码剖析 Spring 循环依赖"
 date: 2020-07-31T18:33:30+08:00
 draft: false
 keywords: ["Java","Spring"]
-tags: ["Java","设计","架构"]
+tags: ["Java","设计","架构","Spring"]
 categories: ["程序设计"]
 thumbnail: "images/logo/spring.svg"
 
