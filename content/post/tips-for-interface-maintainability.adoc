@@ -1,5 +1,5 @@
 ---
-title: "关于接口可维护性的一点建议"
+title: "关于接口可维护性的一些建议"
 date: 2023-04-28T17:16:24+08:00
 draft: false
 keywords: ["Java","RPC","可维护性","微服务","Maven","Plugin","插件"]

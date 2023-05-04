@@ -179,7 +179,7 @@ protected void doParse(Element element, ParserContext parserContext,
 
 image::/images/spring-framework/PropertySourcesPlaceholderConfigurer.svg[title="PropertySourcesPlaceholderConfigurer 继承体系",alt="PropertySourcesPlaceholderConfigurer 继承体系",{image_attr}]
 
-从该继承关系图上来看， `PropertySourcesPlaceholderConfigurer` 是一个 `BeanFactoryPostProcessor`。D瓜哥在 https://www.diguage.com/post/spring-startup-process-overview/[Spring 启动流程概述^] 介绍了 Spring 的启动流程，根据该文章内容可知， `BeanFactoryPostProcessor` 的特性可知，它会在 Spring 容器初始化时、Bean 创建之前，完成对占位符的处理。
+从该继承关系图上来看， `PropertySourcesPlaceholderConfigurer` 是一个 `BeanFactoryPostProcessor`。D瓜哥在 https://www.diguage.com/post/spring-startup-process-overview/[Spring 启动流程概述^] 介绍了 Spring 的启动流程，根据该文章内容可知， `BeanFactoryPostProcessor` 的特性可知，它会在 Spring 容器初始化时、Bean 创建之前，完成对部分占位符的处理。
 
 来看一下 `PropertySourcesPlaceholderConfigurer` 对 `postProcessBeanFactory` 的实现：
 
@@ -355,7 +355,7 @@ protected void doProcessProperties(ConfigurableListableBeanFactory beanFactoryTo
 }
 ----
 
-在这个方法中，可以看到有三处对占位符的处理：①、使用 `BeanDefinitionVisitor.visitBeanDefinition` 方法处理 `BeanDefinition` 的各种属性；②、解析别名 alias 中使用的占位符；③、解析嵌入值中的占位符。
+在这个方法中，可以看到有三处对占位符的处理：①、使用 `BeanDefinitionVisitor.visitBeanDefinition` 方法处理 `BeanDefinition` 的各种属性；②、解析别名 alias 中使用的占位符；③、解析嵌入值中的占位符，同时将配置信息加入到容器中，以备后用。
 
 通过单步调试可以发现，在第 ① 种方法里， `visitBeanDefinition` 方法中，由于 `BeanDefinition` 还没有属性信息，导致没有处理占位符。又不涉及别名 `alias`，第 ② 种情况可以直接跳过。只剩下第 ③ 种情况了。
 
@@ -788,5 +788,13 @@ protected <T> T getProperty(String key, Class<T> targetValueType, boolean resolv
 }
 ----
 
-到这里所有的占位符处理已经解释清楚了。
+到这里所有的占位符处理已经解释清楚了。下面做一个总结来收尾。
+
+== 总结
+
+Spring 对占位符的处理，总共可以分为下面三步：
+
+. 通过对 `<context:property-placeholder>` 标签的解析，来获取配置文件路径，同时构建出 `PropertySourcesPlaceholderConfigurer` 对应的 `BeanDefinition`；
+. 由于 `PropertySourcesPlaceholderConfigurer` 是一个 `BeanFactoryPostProcessor`，会在 Spring 容器初始化时、Bean 创建之前，执行它实现的 `postProcessBeanFactory`，来完成对配置文件的解析，以及对 Bean 定义相关的属性（不包含使用 `@Value` 注解给 Bean 字段添加的占位符）中的占位符的处理。
+. 在 Bean 初始化的过程中，使用第 2 步获取的解析后的配置信息，完成对使用 `@Value` 注解给 Bean 字段添加的占位符的处理工作。
 
