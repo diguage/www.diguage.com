@@ -106,12 +106,12 @@ jobs:
           # sudo apt install -y libheif-dev
           # sudo apt install -y libde265-dev
           
-          sudo apt update -y
+          # sudo apt update -y # 不再重复执行
           sudo apt install imagemagick
           # t=$(mktemp) && wget 'https://dist.1-2.dev/imei.sh' -qO "$t" && sudo bash "$t" && rm "$t"
           
           cd public/images
-          wget https://github.com/diguage/open-fonts/releases/download/latest/SourceCodePro-Semibold.otf
+          wget https://github.com/diguage/open-fonts/releases/download/latest/SourceCodePro-Semibold.otf 1>/dev/null 2>&1 &
           
           # 异步加水印
           # JPG
