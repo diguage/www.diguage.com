@@ -53,6 +53,8 @@ D瓜哥最近尝试了一个实践，就是在接口调用的地方，把接口�
 
 这里只说明一下 Java 的相关处理办法。如果使用 Maven 作为构建工具的话，默认是不会将源代码发布到私服仓库中的。关于如何将源代码发布到，在 https://www.diguage.com/post/upgrade-maven-plugins/#src-to-repo[升级 Maven 插件：将源码发布到私服仓库^] 中已经做过相关介绍，这里就不再赘述。
 
+除了将源码发布到私服仓库，另外，还建议编译构建时，保持方法的原始参数命名。这个也可以通过配置 Maven 插件来完成，具体配置见： https://www.diguage.com/post/upgrade-maven-plugins/#compile-with-parameters[升级 Maven 插件：字节码文件包含原始参数名称^]。
+
 
 [#constant-definition]
 == 对于状态值常量，优先在接口参数类或者返回值类中定义

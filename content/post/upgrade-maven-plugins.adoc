@@ -41,9 +41,10 @@ D瓜哥在 https://www.diguage.com/post/experience-about-upgrading-java-dependen
 详细介绍请参考： https://www.diguage.com/post/use-maven-enforcer-plugin-to-check-dependencies/[使用 Maven Enforcer 插件检查依赖^]
 
 
-== 编译文件包含原始参数名称
+[#compile-with-parameters]
+== 字节码文件包含原始参数名称
 
-一些对外发布的依赖，建议将原始参数名编译到构建结果里。可以通过指定构建参数来完成。
+一些对外发布的依赖，建议将原始参数名称编译到构建结果里。可以通过指定构建参数来完成。
 
 [source%nowrap,xml,{source_attr}]
 ----
