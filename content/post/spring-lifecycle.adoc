@@ -1,0 +1,48 @@
+---
+title: "Spring 生命周期"
+date: 2022-07-05T21:05:37+08:00
+draft: true
+keywords: ["Java","Spring"]
+tags: ["Java","设计","架构","Spring"]
+categories: ["Java","程序设计"]
+thumbnail: "images/logo/spring.svg"
+
+weight: 1
+---
+
+
+// image::/images/[title="",alt="",{image_attr}]
+
+// [source%nowrap,java,{source_attr}]
+// ----
+// // code
+// ----
+
+[graphviz, format=svg]
+....
+digraph G {
+node [shape=box];
+
+start -> AnnotationConfigApplicationContext;
+AnnotationConfigApplicationContext -> register;
+register -> postProcessBeanDefinitionRegistry;
+postProcessBeanDefinitionRegistry -> postProcessBeanFactory;
+postProcessBeanDefinitionRegistry -left-> "这是什么？";
+postProcessBeanFactory -> end;
+
+
+
+start[shape=circle];
+
+AnnotationConfigApplicationContext[label="new AnnotationConfigApplicationContext"];
+
+register[label="AnnotationConfigApplicationContext\n.\nregister(Class)"];
+
+postProcessBeanDefinitionRegistry[label="BeanDefinitionRegistryPostProcessor\n.\npostProcessBeanDefinitionRegistry(BeanDefinitionRegistry)"];
+
+postProcessBeanFactory[label="BeanFactoryPostProcessor\n.\npostProcessBeanFactory(ConfigurableListableBeanFactory)"];
+
+end[shape=doublecircle,style=filled,color=black];
+
+}
+....
