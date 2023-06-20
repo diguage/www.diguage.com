@@ -1,0 +1,742 @@
+---
+title: "Spring 对占位符的处理（三）：XML 中的 Bean"
+date: 2023-06-28T20:30:15+08:00
+draft: true
+keywords: ["Java", "Spring", "占位符"]
+tags: ["Java","设计","架构", "Spring"]
+categories: ["程序设计"]
+thumbnail: "images/logo/spring.svg"
+aliases: "/post/placeholder-in-spring/"
+
+weight: 1
+---
+
+
+最近有小伙伴在开发时，遇到了一个 Spring 占位符，例如 `${token}`， 在不同环境下处理不一致的问题，正好对 Spring 对占位符的处理也有一些不清楚的地方，趁此机会，把 Spring 对占位符的处理机制深入了解一下，方便后续排查问题。
+
+经常阅读D瓜哥博客的朋友可能知道，D瓜哥在 https://www.diguage.com/post/spring-extensions-and-dubbo-1/#spring-plugin[Spring 扩展点实践：整合 Apache Dubbo（一）： Spring 插件机制简介^] 中已经介绍了 Spring 的插件机制。在阅读以下内容之前，建议大家先去阅读一下这篇文章中“Spring 插件机制简介”章节的内容，以便于无缝衔接。
+
+在分析的过程中发现， Spring 对占位符有两种截然不同的出来阶段：① XML 配置文件中的占位符；② Java 源代码中 `@Value` 注解中的占位符。由于内容较多，一篇讲解完有些过长，所以分为上下两篇文章来分别介绍这两种处理过程。
+
+本篇首先来介绍一下对 XML 配置文件中的占位符的处理。
+
+== 示例代码
+
+在正式开始之前，先来看一下示例代码：
+
+.`UserRpc.java`
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * @author D瓜哥 · https://www.diguage.com
+ * @since 2023-05-02 10:23:49
+ */
+public static class UserRpc {
+
+  @Value("${user.appId}")
+  private String appId;
+
+  // 这里不使用注解，而是使用 XML 配置
+  // @Value("${user.token}")
+  private String token;
+}
+----
+
+.`token.properties`
+[source%nowrap,bash,{source_attr}]
+----
+user.appId=dummyAppId
+user.token=dummyToken
+----
+
+
+.`spring.xml`
+[source%nowrap,xml,{source_attr}]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+          http://www.springframework.org/schema/beans/spring-beans.xsd
+          http://www.springframework.org/schema/context
+          https://www.springframework.org/schema/context/spring-context.xsd">
+
+  <!-- @author D瓜哥 · https://www.diguage.com -->
+
+  <context:annotation-config/>
+
+  <bean id="userRpc"
+        class="com.diguage.truman.context.PlaceholderTest.UserRpc">
+    <!-- XML 配置的占位符实例在此 -->
+    <property name="token" value="${user.token}"/>
+  </bean>
+
+  <context:property-placeholder
+      location="classpath:com/diguage/truman/context/token.properties"/>
+
+</beans>
+----
+
+== `<bean>` 标签处理
+
+在 https://www.diguage.com/post/spring-startup-process-overview/[Spring 启动流程概述^] 中，已经介绍过，Spring 的启动过程几乎都被封装在 `AbstractApplicationContext#refresh` 方法中。在 `refresh` 方法中调用了 `refreshBeanFactory` 方法；在 `refreshBeanFactory` 方法执行过程中，调用了 `loadBeanDefinitions` 方法。而 `BeanDefinition` 的加载是由 `org.springframework.context.support.AbstractRefreshableApplicationContext#loadBeanDefinitions` 来完成的。通过 XML 文件配置的 Bean 是由 `org.springframework.context.support.AbstractXmlApplicationContext#loadBeanDefinitions(org.springframework.beans.factory.support.DefaultListableBeanFactory)` （`AbstractRefreshableApplicationContext` 的子类）处理完成的。处理过程的时序图如下：
+
+image::/images/spring-framework/AbstractApplicationContext-obtainFreshBeanFactory.svg[title="AbstractApplicationContext.obtainFreshBeanFactory -- XML 配置文件解析",alt="PropertyPlaceholderBeanDefinitionParser 继承体系",{image_attr}]
+
+我们来看一下 `XmlBeanDefinitionReader#loadBeanDefinitions` 的代码：
+
+.`XmlBeanDefinitionReader.java`
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * Load bean definitions from the specified XML file.
+ * @param encodedResource the resource descriptor for the XML file,
+ * allowing to specify an encoding to use for parsing the file
+ * @return the number of bean definitions found
+ * @throws BeanDefinitionStoreException in case of loading or parsing errors
+ */
+public int loadBeanDefinitions(EncodedResource encodedResource) throws BeanDefinitionStoreException {
+    Assert.notNull(encodedResource, "EncodedResource must not be null");
+    if (logger.isTraceEnabled()) {
+        logger.trace("Loading XML bean definitions from " + encodedResource);
+    }
+
+    // 通过属性来记录已经加载过的资源
+    Set<EncodedResource> currentResources = this.resourcesCurrentlyBeingLoaded.get();
+
+    if (!currentResources.add(encodedResource)) {
+        throw new BeanDefinitionStoreException(
+                "Detected cyclic loading of " + encodedResource + " - check your import definitions!");
+    }
+
+    // 从 EncodedResource 中获取已经封装的 Resource 对象并再次从 Resource 中获取其中的 InputStream
+    // 将资源文件转为 InputStream 的 IO 流
+    try (InputStream inputStream = encodedResource.getResource().getInputStream()) {
+        // 从 InputStream 中得到 XML 的解析源
+        InputSource inputSource = new InputSource(inputStream);
+        if (encodedResource.getEncoding() != null) {
+            inputSource.setEncoding(encodedResource.getEncoding());
+        }
+        // 这里是具体的读取过程
+        // 真正开始读取的方法（读取 BeanDefinitions 的核心） TODO dgg XML 配置文件解析重点
+        return doLoadBeanDefinitions(inputSource, encodedResource.getResource());
+    }
+    catch (IOException ex) {
+        throw new BeanDefinitionStoreException(
+                "IOException parsing XML document from " + encodedResource.getResource(), ex);
+    }
+    finally {
+        currentResources.remove(encodedResource);
+        if (currentResources.isEmpty()) {
+            this.resourcesCurrentlyBeingLoaded.remove();
+        }
+    }
+}
+----
+
+在 `XmlBeanDefinitionReader#loadBeanDefinitions` 中，将 XML 文件读取出来，转化成 `InputSource` 对象，然后通过 `doLoadBeanDefinitions` 开始解析。
+
+从上面的时序图可以看成，XML 各个标签的解析是在 `DefaultBeanDefinitionDocumentReader#parseBeanDefinitions` 方法中完成的。跳过“中间商”，直接来看看 `DefaultBeanDefinitionDocumentReader#parseBeanDefinitions` 方法的实现：
+
+.`DefaultBeanDefinitionDocumentReader.java`
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 使用 Spring 的 Bean 规则从 Document 的根元素开始进行 Bean 定义的 Document 对象。<p/>
+ * doRegisterBeanDefinitions ->  parseBeanDefinitions -> parseDefaultElement<p/>
+ *
+ * Parse the elements at the root level in the document:
+ * "import", "alias", "bean".
+ * @param root the DOM root element of the document
+ */
+protected void parseBeanDefinitions(Element root, BeanDefinitionParserDelegate delegate) {
+    // Bean 定义的 Document 对象使用了 Spring 默认的 XML 命名空间
+    if (delegate.isDefaultNamespace(root)) {
+        // 获取 Bean 定义的 Document 镀锌根元素的所有子节点
+        NodeList nl = root.getChildNodes();
+        for (int i = 0; i < nl.getLength(); i++) {
+            Node node = nl.item(i);
+            // 获取 Document 节点是 XML 元素节点
+            if (node instanceof Element ele) {
+                // Bean 定义的 Document 对象使用了 Spring 默认的 XML 命名空间
+                if (delegate.isDefaultNamespace(ele)) {
+                    // 使用 Spring 的 Bean 规则解析元素节点
+                    // 解析默认元素
+                    parseDefaultElement(ele, delegate);
+                }
+                else {
+                    // 没有使用 Spring 默认的 XML 命名空间，则使用用户自定义的解析规则解析元素节点
+                    delegate.parseCustomElement(ele);
+                }
+            }
+        }
+    }
+    else {
+        // Document 的根节点没有使用 Spring 默认的命名空间，则使用用户自定义的解析规则解析元素节点
+        delegate.parseCustomElement(root);
+    }
+}
+----
+
+在 `DefaultBeanDefinitionDocumentReader#parseBeanDefinitions` 方法中，将 XML 标签区分为默认命名空间 `beans` 和其他自定义命名空间。 `<bean>` 在默认命名空间下，接下来看一下 `DefaultBeanDefinitionDocumentReader#parseDefaultElement` 方法：
+
+
+.`DefaultBeanDefinitionDocumentReader.java`
+[source%nowrap,java,{source_attr}]
+----
+// 使用 Spring 的 Bean 规则解析 Document 元素节点
+private void parseDefaultElement(Element ele, BeanDefinitionParserDelegate delegate) {
+    // 如果元素节点是 <import> 导入元素，进行导入解析
+    if (delegate.nodeNameEquals(ele, IMPORT_ELEMENT)) {
+        importBeanDefinitionResource(ele);
+    }
+    // 如果元素节点是 <alias> 别名元素，进行别名解析
+    else if (delegate.nodeNameEquals(ele, ALIAS_ELEMENT)) {
+        processAliasRegistration(ele);
+    }
+    // 如果元素节点是 <bean> 元素，进行 Bean 解析
+    else if (delegate.nodeNameEquals(ele, BEAN_ELEMENT)) {
+        processBeanDefinition(ele, delegate);
+    }
+    // 如果是 <beans> 元素，则递归调用 `doRegisterBeanDefinitions` 方法进行处理
+    else if (delegate.nodeNameEquals(ele, NESTED_BEANS_ELEMENT)) {
+        // recurse
+        doRegisterBeanDefinitions(ele);
+    }
+}
+----
+
+在 `DefaultBeanDefinitionDocumentReader#parseDefaultElement` 中，终于找到了处理 `<bean>` 标签的方法： `processBeanDefinition`。但是，从上面的时序图可以看出，实际的脏活累活都是由 `BeanDefinitionParserDelegate#parseBeanDefinitionElement` 干的，我们直接看这个方法的代码：
+
+
+.`BeanDefinitionParserDelegate.java`
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 解析 Bean 配置信息中的 <bean> 元素。这个方法中主要处理 <bean> 元素的 id、name 和 别名属性。</p>
+ *
+ * Parses the supplied {@code <bean>} element. May return {@code null}
+ * if there were errors during parse. Errors are reported to the
+ * {@link org.springframework.beans.factory.parsing.ProblemReporter}.
+ */
+@Nullable
+public BeanDefinitionHolder parseBeanDefinitionElement(Element ele, @Nullable BeanDefinition containingBean) {
+    // 获取 <bean> 元素中的 id 属性值
+    String id = ele.getAttribute(ID_ATTRIBUTE);
+    // 获取 <bean> 元素中的 name 属性值
+    String nameAttr = ele.getAttribute(NAME_ATTRIBUTE);
+
+    // 获取 <bean> 元素中的 alias 属性值
+    List<String> aliases = new ArrayList<>();
+    // 将 <bean> 元素中的 name 属性值存放到别名中
+    // 如果 bean 有别名的话，那么就将别名分割解析
+    if (StringUtils.hasLength(nameAttr)) {
+        String[] nameArr = StringUtils.tokenizeToStringArray(nameAttr, MULTI_VALUE_ATTRIBUTE_DELIMITERS);
+        aliases.addAll(Arrays.asList(nameArr));
+    }
+
+    String beanName = id;
+    // 如果 <bean> 元素中没有配置 id 属性值，将别名中的第一个值赋值给 beanName
+    if (!StringUtils.hasText(beanName) && !aliases.isEmpty()) {
+        beanName = aliases.remove(0);
+        if (logger.isTraceEnabled()) {
+            logger.trace("No XML 'id' specified - using '" + beanName +
+                    "' as bean name and " + aliases + " as aliases");
+        }
+    }
+
+    // 检查 <bean> 元素配置的 id 或者 name 的唯一性。
+    // containingBean 标识 <bean> 元素中是否包含子 <bean> 元素
+    if (containingBean == null) {
+        checkNameUniqueness(beanName, aliases, ele);
+    }
+
+    // 详细对 <bean> 元素中配置的 bean 定义进行解析的地方
+    AbstractBeanDefinition beanDefinition = parseBeanDefinitionElement(ele, beanName, containingBean);
+    if (beanDefinition != null) {
+        if (!StringUtils.hasText(beanName)) {
+            try {
+                // 如果不存在 beanName，那么根据 Spring 中提供的命名规则为当前 bean 生成对应的 beanName
+                if (containingBean != null) {
+                    // 如果 <bean> 元素总没有配置 id、alias 或者 name，且没有包含子元素
+                    // <bean> 元素为解析的 Bean 生成一个唯一 beanName 并注册
+                    beanName = BeanDefinitionReaderUtils.generateBeanName(
+                            beanDefinition, this.readerContext.getRegistry(), true);
+                }
+                else {
+                    // 如果 <bean> 元素总没有配置 id、alias 或者 name，且包含子元素
+                    // <bean> 元素，为解析的 Bean 使用别名向 IoC 容器注册
+                    beanName = this.readerContext.generateBeanName(beanDefinition);
+                    // Register an alias for the plain bean class name, if still possible,
+                    // if the generator returned the class name plus a suffix.
+                    // This is expected for Spring 1.2/2.0 backwards compatibility.
+                    // 为解析的 Bean 使用别名注册时，为了向后兼容 Spring 1.2/2.0，给别名添加类名后缀
+                    String beanClassName = beanDefinition.getBeanClassName();
+                    if (beanClassName != null &&
+                            beanName.startsWith(beanClassName) && beanName.length() > beanClassName.length() &&
+                            !this.readerContext.getRegistry().isBeanNameInUse(beanClassName)) {
+                        aliases.add(beanClassName);
+                    }
+                }
+                if (logger.isTraceEnabled()) {
+                    logger.trace("Neither XML 'id' nor 'name' specified - " +
+                            "using generated bean name [" + beanName + "]");
+                }
+            }
+            catch (Exception ex) {
+                error(ex.getMessage(), ele);
+                return null;
+            }
+        }
+        String[] aliasesArray = StringUtils.toStringArray(aliases);
+        return new BeanDefinitionHolder(beanDefinition, beanName, aliasesArray);
+    }
+    // 当解析出错时，返回 null
+    return null;
+}
+----
+
+`BeanDefinitionParserDelegate#parseBeanDefinitionElement` 只是对 `<bean>` 标签的定义做了解析，对于定义 Bean 属性的 `<property>` 标签的解析，则是放在 `parseBeanDefinitionElement` 方法中，我们来看一下这个方法：
+
+.`BeanDefinitionParserDelegate.java`
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 详细对 <bean> 元素中配置的 bean 定义其他属性进行解析。<br/>
+ * 由于上面的方法中已经对 bean 的 id、name 和 alias 等属性进行了处理，
+ * 该方法中主要处理除了这三个以外的其他属性。
+ *
+ * Parse the bean definition itself, without regard to name or aliases. May return
+ * {@code null} if problems occurred during the parsing of the bean definition.
+ */
+@Nullable
+public AbstractBeanDefinition parseBeanDefinitionElement(
+        Element ele, String beanName, @Nullable BeanDefinition containingBean) {
+    // 记录解析的 <bean>
+    this.parseState.push(new BeanEntry(beanName));
+
+    // 这里只读取 <bean> 元素中配置的 class 名字，然后载入到 BeanDefinition 中区。
+    // 只记录配置的 class 名字，不做实例化。对象的实例化在依赖注入时完成。
+    String className = null;
+    if (ele.hasAttribute(CLASS_ATTRIBUTE)) {
+        className = ele.getAttribute(CLASS_ATTRIBUTE).trim();
+    }
+    // 解析parent属性
+    String parent = null;
+    // 如果 <bean> 元素中配置了 parent 属性，则获取 parent 属性值
+    if (ele.hasAttribute(PARENT_ATTRIBUTE)) {
+        parent = ele.getAttribute(PARENT_ATTRIBUTE);
+    }
+
+    try {
+        // 根据 <bean> 元素配置的 class 名称和 parent 属性值创建 BeanDefinition。
+        // 为载入 Bean 定义信息做准备
+        // 创建装在 bean 信息的 AbstractBeanDefinition 对象，实际的实现是 GenericBeanDefinition
+        AbstractBeanDefinition bd = createBeanDefinition(className, parent);
+
+        // 对当前的 <bean> 元素中配置的一些属性进行解析和设置，如配置的单例(singleton)属性等
+        parseBeanDefinitionAttributes(ele, beanName, containingBean, bd);
+        // 为 <bean> 元素解析的 bean 设置 description 信息
+        bd.setDescription(DomUtils.getChildElementValueByTagName(ele, DESCRIPTION_ELEMENT));
+        // 对 <bean> 元素的 meta(元信息)属性解析
+        parseMetaElements(ele, bd);
+        // 为 <bean> 元素的 lookup-method 属性解析
+        parseLookupOverrideSubElements(ele, bd.getMethodOverrides());
+        // 为 <bean> 元素的 replaced-method 属性解析
+        parseReplacedMethodSubElements(ele, bd.getMethodOverrides());
+
+        // 解析 <bean> 元素的构造方法设置
+        parseConstructorArgElements(ele, bd);
+        // 解析 <bean> 元素的 <property> 值
+        parsePropertyElements(ele, bd);
+        // 解析 <bean> 元素的 qualifier 属性
+        parseQualifierElements(ele, bd);
+
+        // 为当前解析的 bean 设置所需的资源和依赖对象
+        bd.setResource(this.readerContext.getResource());
+        bd.setSource(extractSource(ele));
+
+        return bd;
+    }
+    catch (ClassNotFoundException ex) {
+        error("Bean class [" + className + "] not found", ele, ex);
+    }
+    catch (NoClassDefFoundError err) {
+        error("Class that bean class [" + className + "] depends on not found", ele, err);
+    }
+    catch (Throwable ex) {
+        error("Unexpected failure during bean definition parsing", ele, ex);
+    }
+    finally {
+        this.parseState.pop();
+    }
+
+    return null;
+}
+----
+
+由于，可能存在多个 `<property>`，所以 `BeanDefinitionParserDelegate#parsePropertyElements` 是通过遍历来解析多个 `<property>`。单个 `<property>` 是通过 `BeanDefinitionParserDelegate#parsePropertyElement` 来解析的，来看一下这个方法：
+
+.`BeanDefinitionParserDelegate.java`
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 解析 <property> 子元素。
+ * Parse a property element.
+ */
+public void parsePropertyElement(Element ele, BeanDefinition bd) {
+    // 获取解析 <property> 子元素的名字
+    String propertyName = ele.getAttribute(NAME_ATTRIBUTE);
+    if (!StringUtils.hasLength(propertyName)) {
+        error("Tag 'property' must have a 'name' attribute", ele);
+        return;
+    }
+    this.parseState.push(new PropertyEntry(propertyName));
+    try {
+        // 如果一个 Bean 中已经有同名的 property 存在，则不进行解析，直接返回。
+        // 即如果在同一个 Bean 中配置同名的 property，则只有第一个起作用。
+        if (bd.getPropertyValues().contains(propertyName)) {
+            error("Multiple 'property' definitions for property '" + propertyName + "'", ele);
+            return;
+        }
+        // 解析获取 property 的值
+        Object val = parsePropertyValue(ele, bd, propertyName);
+        // 根据 property 的名字和值创建 property 实例
+        PropertyValue pv = new PropertyValue(propertyName, val);
+        // 解析 <property> 子元素中的属性
+        parseMetaElements(ele, pv);
+        pv.setSource(extractSource(ele));
+        bd.getPropertyValues().addPropertyValue(pv);
+    }
+    finally {
+        this.parseState.pop();
+    }
+}
+----
+
+从此方法可以看出：每个 `<property>` 都转化成了 `PropertyValue` 对象。这样，后续就可以处理这里的占位符了。
+
+
+
+
+
+
+
+.`.java`
+[source%nowrap,java,{source_attr}]
+----
+
+----
+
+.`.java`
+[source%nowrap,java,{source_attr}]
+----
+
+----
+
+.`.java`
+[source%nowrap,java,{source_attr}]
+----
+
+----
+
+== `<context:property-placeholder>` 标签处理
+
+根据 https://www.diguage.com/post/spring-extensions-and-dubbo-1/#spring-plugin[Spring 扩展点实践：整合 Apache Dubbo（一）： Spring 插件机制简介^] 的内容可知，看到 `<context:property-placeholder>` 标签就可以知道，应该存在一个 `ContextNamespaceHandler`，并且在里面注册了一个对 `<context:property-placeholder>` 标签做处理的 `BeanDefinitionParser` 实现类。
+
+用上述类名或者关键字在 Spring 源码中搜索，确实可以找到 `org.springframework.context.config.ContextNamespaceHandler`，里面也确实存在一个 `BeanDefinitionParser` 实现类来处理 `<context:property-placeholder>` 标签。代码如下：
+
+.`ContextNamespaceHandler.java`
+[source%nowrap,java,{source_attr}]
+----
+public class ContextNamespaceHandler extends NamespaceHandlerSupport {
+
+  @Override
+  public void init() {
+    registerBeanDefinitionParser("property-placeholder",
+                                 new PropertyPlaceholderBeanDefinitionParser());
+    // ...此处省略一万行代码...
+  }
+
+}
+----
+
+下面来看一下 `PropertyPlaceholderBeanDefinitionParser` 的继承结构：
+
+image::/images/spring-framework/PropertyPlaceholderBeanDefinitionParser.svg[title="PropertyPlaceholderBeanDefinitionParser 继承体系",alt="PropertyPlaceholderBeanDefinitionParser 继承体系",{image_attr}]
+
+从该继承关系图上来看， `PropertyPlaceholderBeanDefinitionParser` 是一个 `BeanDefinitionParser`，将 `<property-placeholder>` 标签处理成一个 `BeanDefinition`，然后后续交给 Spring 来处理。
+
+找到 `org.springframework.beans.factory.xml.AbstractBeanDefinitionParser#parse` 方法，在方法体的代码上打个断点，运行程序，进行单步调试，来了解一下它的内部实现。
+
+单步调试下来，整体的流程图如下：
+
+image::/images/spring-framework/PropertyPlaceholderBeanDefinitionParser-parse.svg[title="PropertyPlaceholderBeanDefinitionParser - parse 时序图",alt="PropertyPlaceholderBeanDefinitionParser - parse 时序图",{image_attr}]
+
+这里选择两个关键点来解释说明一下。
+
+先来说明一下 `getBeanClass` 方法。上文中已经介绍 `BeanDefinitionParser` 的功能就是将 XML 转化成一个 `BeanDefinition`。而 `BeanDefinition` 中最重要的一个属性就是 `beanClass`，这直接决定了该 Bean 的行为。 `PropertyPlaceholderBeanDefinitionParser` 通过重载 `getBeanClass` 方法来返回了该属性： `PropertySourcesPlaceholderConfigurer.class`。 `PropertySourcesPlaceholderConfigurer.class` 能起到什么作用？我们后面再做更详细的介绍。
+
+.`PropertyPlaceholderBeanDefinitionParser`
+[source%nowrap,java,{source_attr}]
+----
+@Override
+@SuppressWarnings("deprecation")
+protected Class<?> getBeanClass(Element element) {
+  // The default value of system-properties-mode is 'ENVIRONMENT'. This value
+  // indicates that resolution of placeholders against system properties is a
+  // function of the Environment and its current set of PropertySources.
+  if (SYSTEM_PROPERTIES_MODE_DEFAULT.equals(element.getAttribute(SYSTEM_PROPERTIES_MODE_ATTRIBUTE))) {
+    return PropertySourcesPlaceholderConfigurer.class;
+  }
+
+  // The user has explicitly specified a value for system-properties-mode: revert to
+  // PropertyPlaceholderConfigurer to ensure backward compatibility with 3.0 and earlier.
+  // This is deprecated; to be removed along with PropertyPlaceholderConfigurer itself.
+  return org.springframework.beans.factory.config.PropertyPlaceholderConfigurer.class;
+}
+----
+
+下面来看看关于 `location` 属性的处理。这块处理是在 `AbstractPropertyLoadingBeanDefinitionParser` 的 `doParse` 方法中完成的，具体代码如下：
+
+.`AbstractPropertyLoadingBeanDefinitionParser`
+[source%nowrap,java,{source_attr}]
+----
+@Override
+protected void doParse(Element element, ParserContext parserContext,
+                       BeanDefinitionBuilder builder) {
+  // 读取 location 属性
+  String location = element.getAttribute("location");
+  if (StringUtils.hasLength(location)) {
+    location = parserContext.getReaderContext().getEnvironment().resolvePlaceholders(location);
+    String[] locations = StringUtils.commaDelimitedListToStringArray(location);
+    builder.addPropertyValue("locations", locations);
+  }
+
+  String propertiesRef = element.getAttribute("properties-ref");
+  if (StringUtils.hasLength(propertiesRef)) {
+    builder.addPropertyReference("properties", propertiesRef);
+  }
+
+  String fileEncoding = element.getAttribute("file-encoding");
+  if (StringUtils.hasLength(fileEncoding)) {
+    builder.addPropertyValue("fileEncoding", fileEncoding);
+  }
+
+  String order = element.getAttribute("order");
+  if (StringUtils.hasLength(order)) {
+    builder.addPropertyValue("order", Integer.valueOf(order));
+  }
+
+  builder.addPropertyValue("ignoreResourceNotFound",
+      Boolean.valueOf(element.getAttribute("ignore-resource-not-found")));
+
+  builder.addPropertyValue("localOverride",
+      Boolean.valueOf(element.getAttribute("local-override")));
+
+  builder.setRole(BeanDefinition.ROLE_INFRASTRUCTURE);
+}
+----
+
+该方法将读取了 `<context:property-placeholder>` 中配置的 `location` 属性，经过处理后，设置到了 `BeanDefinition` 的属性中，最后由 `PropertySourcesPlaceholderConfigurer` 类的 `locations` 属性承接。从实现上来看， `location` 属性可以配置多个配置文件，中间只需要使用逗号 `,` 分割即可。
+
+这里插一句，在获取 `location` 属性后，后续还执行了一行 `.getEnvironment().resolvePlaceholders(location)`，我们来查看一下 `resolvePlaceholders(location)` 做了什么？
+
+== `location` 属性解析
+
+// TODO 这里需要补充
+
+*`location` 可以使用环境变量信息来做占位符替换。也就是说， `location` 属性也支持使用占位符，在解析时，会从环境变量中查询占位符对应的信息。*
+
+下面来看看 `PropertySourcesPlaceholderConfigurer` 的实现原理。
+
+== 配置文件解析
+
+先来看看 `PropertySourcesPlaceholderConfigurer` 的继承结构：
+
+image::/images/spring-framework/PropertySourcesPlaceholderConfigurer.svg[title="PropertySourcesPlaceholderConfigurer 继承体系",alt="PropertySourcesPlaceholderConfigurer 继承体系",{image_attr}]
+
+从该继承关系图上来看， `PropertySourcesPlaceholderConfigurer` 是一个 `BeanFactoryPostProcessor`。D瓜哥在 https://www.diguage.com/post/spring-startup-process-overview/[Spring 启动流程概述^] 介绍了 Spring 的启动流程，根据该文章内容可知， `BeanFactoryPostProcessor` 的特性可知，它会在 Spring 容器初始化时、Bean 创建之前，完成对部分占位符的处理。
+
+来看一下 `PropertySourcesPlaceholderConfigurer` 对 `postProcessBeanFactory` 的实现：
+
+[#PropertySourcesPlaceholderConfigurer-postProcessBeanFactory]
+.`PropertySourcesPlaceholderConfigurer`
+[source%nowrap,java,{source_attr}]
+----
+@Override
+public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
+  if (this.propertySources == null) {
+    this.propertySources = new MutablePropertySources();
+    if (this.environment != null) {
+      PropertyResolver propertyResolver = this.environment;
+      // If the ignoreUnresolvablePlaceholders flag is set to true, we have to create a
+      // local PropertyResolver to enforce that setting, since the Environment is most
+      // likely not configured with ignoreUnresolvablePlaceholders set to true.
+      // See https://github.com/spring-projects/spring-framework/issues/27947
+      if (this.ignoreUnresolvablePlaceholders &&
+          (this.environment instanceof ConfigurableEnvironment configurableEnvironment)) {
+        PropertySourcesPropertyResolver resolver =
+            new PropertySourcesPropertyResolver(configurableEnvironment.getPropertySources());
+        resolver.setIgnoreUnresolvableNestedPlaceholders(true);
+        propertyResolver = resolver;
+      }
+      PropertyResolver propertyResolverToUse = propertyResolver;
+      // 1、先把环境变量中的信息加入到来属性源列表中
+      this.propertySources.addLast(
+        new PropertySource<>(ENVIRONMENT_PROPERTIES_PROPERTY_SOURCE_NAME, this.environment) {
+          @Override
+          @Nullable
+          public String getProperty(String key) {
+            return propertyResolverToUse.getProperty(key);
+          }
+        }
+      );
+    }
+    try {
+      // 2、将配置的多个属性文件合并到一个 PropertySource 对象中，再添加到属性来源列表中
+      PropertySource<?> localPropertySource =
+          new PropertiesPropertySource(LOCAL_PROPERTIES_PROPERTY_SOURCE_NAME, mergeProperties());
+      if (this.localOverride) {
+        this.propertySources.addFirst(localPropertySource);
+      }
+      else {
+        this.propertySources.addLast(localPropertySource);
+      }
+    }
+    catch (IOException ex) {
+      throw new BeanInitializationException("Could not load properties", ex);
+    }
+  }
+
+  // 3、处理属性配置
+  processProperties(beanFactory, new PropertySourcesPropertyResolver(this.propertySources));
+  this.appliedPropertySources = this.propertySources;
+}
+----
+
+这个方法里，首先，把环境变量中的信息加入到属性来源列表中；然后，将配置的多个属性文件合并到一个 `PropertySource` 对象中，再添加到属性来源列表中；最后，再去处理属性配置。从这个代码可以，环境变量中配置的信息，也是可以作为占位符的数据来源的。
+
+下面来看一下合并属性文件的实现：
+
+.`PropertiesLoaderSupport`
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * Return a merged Properties instance containing both the
+ * loaded properties and properties set on this FactoryBean.
+ */
+protected Properties mergeProperties() throws IOException {
+  Properties result = new Properties();
+
+  if (this.localOverride) {
+    // Load properties from file upfront, to let local properties override.
+    // 将 location 中配置的配置文件内容，加载到 result 里
+    loadProperties(result);
+  }
+
+  if (this.localProperties != null) {
+    for (Properties localProp : this.localProperties) {
+      CollectionUtils.mergePropertiesIntoMap(localProp, result);
+    }
+  }
+
+  if (!this.localOverride) {
+    // Load properties from file afterwards, to let those properties override.
+    // 将 location 中配置的配置文件内容，加载到 result 里
+    loadProperties(result);
+  }
+
+  return result;
+}
+----
+
+这个方法里，主要就是把配置文件加载到程序中，然后合并到一个 `Properties` 对象中，最后返回该对象。
+
+
+接下来，通过 `processProperties` 方法看一下属性的处理过程：
+
+[#PropertySourcesPlaceholderConfigurer-processProperties]
+.`PropertySourcesPlaceholderConfigurer.processProperties`
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * Visit each bean definition in the given bean factory and attempt to replace ${...} property
+ * placeholders with values from the given properties.
+ */
+protected void processProperties(ConfigurableListableBeanFactory beanFactoryToProcess,
+    final ConfigurablePropertyResolver propertyResolver) throws BeansException {
+  // 设置占位符前缀，默认是 ${
+  propertyResolver.setPlaceholderPrefix(this.placeholderPrefix);
+  // 设置占位符后缀，默认是 }
+  propertyResolver.setPlaceholderSuffix(this.placeholderSuffix);
+  // 设置占位符默认值分割符，默认是:
+  propertyResolver.setValueSeparator(this.valueSeparator);
+
+  // 构建字符串解析器，底层还是使用上面传过来的 PropertySourcesPropertyResolver 对象
+  StringValueResolver valueResolver = strVal -> {
+    String resolved = (this.ignoreUnresolvablePlaceholders ?
+        propertyResolver.resolvePlaceholders(strVal) :
+        propertyResolver.resolveRequiredPlaceholders(strVal));
+    if (this.trimValues) {
+      resolved = resolved.trim();
+    }
+    return (resolved.equals(this.nullValue) ? null : resolved);
+  };
+
+  // 真正执行处理属性解析
+  doProcessProperties(beanFactoryToProcess, valueResolver);
+}
+----
+
+在这个方法里并没有真正处理属性，而是委托给了 `PlaceholderConfigurerSupport` 类的 `doProcessProperties` 方法。接着往下看：
+
+.`PlaceholderConfigurerSupport`
+[source%nowrap,java,{source_attr}]
+----
+protected void doProcessProperties(ConfigurableListableBeanFactory beanFactoryToProcess,
+    StringValueResolver valueResolver) {
+
+  // 注意：这里使用上面传过来的 StringValueResolver 对象创建了 BeanDefinitionVisitor 对象
+  // 后续调用 visitor.visitBeanDefinition(bd) 时，就会使用 StringValueResolver 对象来解析其属性。
+  BeanDefinitionVisitor visitor = new BeanDefinitionVisitor(valueResolver);
+
+  String[] beanNames = beanFactoryToProcess.getBeanDefinitionNames();
+  for (String curName : beanNames) {
+    // Check that we're not parsing our own bean definition,
+    // to avoid failing on unresolvable placeholders in properties file locations.
+    if (!(curName.equals(this.beanName) && beanFactoryToProcess.equals(this.beanFactory))) {
+      BeanDefinition bd = beanFactoryToProcess.getBeanDefinition(curName);
+      try {
+        // 使用 Visitor 模式处理 BeanDefinition 的各种属性
+        visitor.visitBeanDefinition(bd);
+      }
+      catch (Exception ex) {
+        throw new BeanDefinitionStoreException(bd.getResourceDescription(), curName, ex.getMessage(), ex);
+      }
+    }
+  }
+
+  // Resolve placeholders in alias target names and aliases as well.
+  // 解析别名 alias 中使用的占位符
+  beanFactoryToProcess.resolveAliases(valueResolver);
+
+  // Resolve placeholders in embedded values such as annotation attributes.
+  // 解析嵌入值中的占位符，例如注释属性。
+  // 其实，@Value 等注解中的占位符是并不是在这里解析的。这里仅仅是把 valueResolver
+  // 对象加入到 AbstractBeanFactory.embeddedValueResolvers 中，后续通过调用
+  // AbstractBeanFactory.resolveEmbeddedValue 方法来解析注解中的占位符
+  // 跟踪 resolveEmbeddedValue 方法的调用，就可以发现，占位符的处理是
+  // 在 AutowiredAnnotationBeanPostProcessor.postProcessProperties 中完成处理的
+  beanFactoryToProcess.addEmbeddedValueResolver(valueResolver);
+}
+----
+
+在这个方法中，可以看到有三处对占位符的处理：①、使用 `BeanDefinitionVisitor.visitBeanDefinition` 方法处理 `BeanDefinition` 的各种属性；②、解析别名 alias 中使用的占位符；③、解析嵌入值中的占位符，同时将配置信息加入到容器中，以备后用。
+
+通过单步调试可以发现，在第 ① 种方法里， `visitBeanDefinition` 方法中，由于 `BeanDefinition` 还没有属性信息，导致没有处理占位符。又不涉及别名 `alias`，第 ② 种情况可以直接跳过。只剩下第 ③ 种情况了。
+
+其实， `@Value` 等注解中的占位符是并不是在这里解析的。这里仅仅是把 `valueResolver` 对象加入到 `AbstractBeanFactory.embeddedValueResolvers` 中，后续通过调用 `AbstractBeanFactory.resolveEmbeddedValue` 方法来解析注解中的占位符跟踪 `resolveEmbeddedValue` 方法的调用，就可以发现，占位符的处理是在 `AutowiredAnnotationBeanPostProcessor.postProcessProperties` 中，通过调用 `AbstractBeanFactory.resolveEmbeddedValue` 方法来完成处理的。
+
+下面，我们看一下 `@Value("${user.appId}")` 占位符的处理过程。
