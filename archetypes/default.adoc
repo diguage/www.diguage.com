@@ -6,6 +6,7 @@ keywords: [""]
 tags: [""]
 categories: [""]
 thumbnail: "images/"
+# aliases: "/old/path/"
 
 weight: 1
 ---
