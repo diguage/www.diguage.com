@@ -81,7 +81,7 @@ user.token=dummyToken
 
 在 https://www.diguage.com/post/spring-startup-process-overview/[Spring 启动流程概述^] 中，已经介绍过，Spring 的启动过程几乎都被封装在 `AbstractApplicationContext#refresh` 方法中。在 `refresh` 方法中调用了 `refreshBeanFactory` 方法；在 `refreshBeanFactory` 方法执行过程中，调用了 `loadBeanDefinitions` 方法。而 `BeanDefinition` 的加载是由 `org.springframework.context.support.AbstractRefreshableApplicationContext#loadBeanDefinitions` 来完成的。通过 XML 文件配置的 Bean 是由 `org.springframework.context.support.AbstractXmlApplicationContext#loadBeanDefinitions(org.springframework.beans.factory.support.DefaultListableBeanFactory)` （`AbstractRefreshableApplicationContext` 的子类）处理完成的。处理过程的时序图如下：
 
-image::/images/spring-framework/AbstractApplicationContext-obtainFreshBeanFactory.svg[title="AbstractApplicationContext.obtainFreshBeanFactory -- XML 配置文件解析",alt="PropertyPlaceholderBeanDefinitionParser 继承体系",{image_attr}]
+image::/images/spring-framework/AbstractApplicationContext-obtainFreshBeanFactory.svg[title="AbstractApplicationContext.obtainFreshBeanFactory -- XML 配置文件解析",alt="AbstractApplicationContext.obtainFreshBeanFactory -- XML 配置文件解析",{image_attr}]
 
 我们来看一下 `XmlBeanDefinitionReader#loadBeanDefinitions` 的代码：
 

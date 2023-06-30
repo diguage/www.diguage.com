@@ -36,6 +36,12 @@ weight: 1
 . 注册 `ApplicationListener`
 . 预加载以及注册所有非懒加载的 Bean
 
+== 启动时序图
+
+Spring 启动流程的时序图如下：
+
+image::/images/spring-framework/AbstractApplicationContext-refresh.svg[title="AbstractApplicationContext.refresh -- 重塑容器",alt="AbstractApplicationContext.refresh -- 重塑容器",{image_attr}]
+
 
 == 完整启动流程
 
