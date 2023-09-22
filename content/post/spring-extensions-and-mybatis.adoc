@@ -239,7 +239,7 @@ do {
 
       //...此处省去 N 行代码
         else if (candidate.isAssignable(ImportBeanDefinitionRegistrar.class)) {
-                      // 很明显，会进入到这个分支
+          // 很明显，会进入到这个分支
           // Candidate class is an ImportBeanDefinitionRegistrar ->
           // delegate to it to register additional bean definitions
           Class<?> candidateClass = candidate.loadClass();
