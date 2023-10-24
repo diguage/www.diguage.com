@@ -84,5 +84,5 @@ ignoreFiles = ['\.crdownload']
       rouge-style = "monokai"
       # https://docs.asciidoctor.org/asciidoc/latest/subs/apply-subs-to-blocks/
       source_attr = "indent=0"
-      image_attr = "align=center,width=100%"
+      image_attr = "align=center,width=95%"
       # diagram_attr = "align=center,width=100%,format=svg"

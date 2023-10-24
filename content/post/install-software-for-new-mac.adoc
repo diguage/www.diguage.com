@@ -1,0 +1,259 @@
+---
+title: "新 Mac 安装软件脚本"
+date: 2023-10-24T16:39:37+08:00
+draft: false
+keywords: ["Mac"]
+tags: ["Java", "Linux"]
+categories: ["开发工具"]
+thumbnail: "images/logos/macbook.jpg"
+# aliases: "images/logos/macbook.jpg"
+
+weight: 1
+---
+
+最近公司可以申请零净值 MacBook 笔记本，就随手申请了一个。由于有很多软件需要安装，就搜集了一下以前安装软件的命令，整理成一个安装脚本，分享出来，方便后续再次装机。
+
+:sectnums:
+
+== `xcode-select`
+
+作为开发人员，这是基础工具包，必须安装：
+
+[source%nowrap,bash,{source_attr}]
+----
+xcode-select --install
+----
+
+== 安装脚本
+
+安装脚本主要构成如下：
+
+=== oh my zsh
+
+安装脚本先安装了 oh-my-zsh。最近帮同事搞 MacBook，没有 oh-my-zsh 的加持，写命令行浑身难受。
+
+image::/images/logos/oh-my-zsh.png[title="oh-my-zsh",alt="oh-my-zsh",{image_attr}]
+
+=== Homebrew
+
+脚本里面主要使用了 Homebrew 来安装软件。
+
+image::/images/logos/homebrew.svg[title="Homebrew",alt="Homebrew",{image_attr}, width=50%]
+
+=== sdkman
+
+Java JDK + Maven 等相关安装，主要使用了 Sdkman，方便多个版本相互切换。
+
+image::/images/logos/sdkman.png[title="sdkman",alt="sdkman",{image_attr}]
+
+=== 感谢 jsDelivr
+
+为了解决安装 oh-my-zsh 和 Homebrew 时，GitHub 访问不畅，使用 jsDelivr 将它们的安装链接进行改写，可以利用 CDN 加速，让安装过程更加顺利。
+
+
+image::/images/logos/jsdelivr.svg[title="jsDelivr",alt="jsDelivr",{image_attr}]
+
+闲言少叙，直接上脚本啦。
+
+=== 脚本内容
+
+TIP: 将下面代码拷贝下来，保存成一个 `install.sh` 文件，然后执行 `chmod +x install.sh`，最后 `./install.sh` 即可。
+
+[source%nowrap,bash,{source_attr}]
+----
+#!/usr/bin/env bash
+#
+# Author: D瓜哥 · https://www.diguage.com
+#
+
+# 安装 oh-my-zsh
+sh -c "$(curl -fsSL https://cdn.jsdelivr.net/gh/ohmyzsh/ohmyzsh/tools/install.sh)"
+
+# 安装 sdkman
+curl -s "https://get.sdkman.io" | bash
+
+source ~/.sdkman/bin/sdkman-init.sh
+
+# 安装 Amazon OpenJDK 21
+sdk offline disable & sdk install java 21-amzn
+
+# 安装 Amazon OpenJDK 21
+sdk offline disable & sdk install java 8.0.392-amzn
+
+# 设置默认 JDK
+sdk default java 8.0.392-amzn
+
+# 安装 Maven，尽量和正式环境保持一致
+sdk install maven 3.9.5
+
+# 安装 Homebrew
+/bin/bash -c "$(curl -fsSL https://cdn.jsdelivr.net/gh/Homebrew/install/install.sh)"
+
+echo 'eval "$(/usr/local/bin/brew shellenv)"' >> ~/.zprofile
+source ~/.zprofile
+
+# 安装 curl
+until brew install curl
+do
+  echo "Try again..."
+done
+
+# 安装 git
+until brew install git
+do
+  echo "Try again..."
+done
+
+# 安装 autojump，谁用谁知道
+brew install autojump
+
+# 安装 Caddy，方便随时将本地目录映射为 HTTP 服务器目录
+brew install caddy
+
+# 安装 freetype
+brew install freetype
+
+# 安装 GNU sed
+brew install gnu-sed
+
+# 安装 GNU awk
+brew install gawk
+
+# 安装 Hugo，静态网站利器
+brew install hugo
+
+# 安装 httpie，HTTP 调试利器
+brew install httpie
+
+# 安装 MySQL
+brew install mysql
+
+# 安装 pandoc，文档格式转换工具
+brew install pandoc
+
+# 安装 unar，解压缩利器
+brew install unar
+
+# 安装 tree，查看树形目录结构
+brew install tree
+
+# 安装 GraphViz，文字转图片工具
+brew install graphviz
+
+# 安装 JetBrains-Toolbox， JetBrains 全家桶用户必备
+brew install  --cask jetbrains-toolbox
+
+# 安装 Intellij Idea，如果只需要 Java 开发工具，就使用这个命令。
+# 该命令和上述命令二选一即可
+# nohup brew install  --cask intellij-idea 1>/dev/null 2>&1 &
+
+
+#
+# Author: D瓜哥 · https://www.diguage.com
+#
+#
+# 特别提醒：后续软件使用后台进程进行安装，同时安装很多软件可能会拖慢系统
+#         另外，存在可能安装失败的情况，如没安装成功，请单独执行安装命令
+#
+
+
+
+# 安装 Alfred，Mac 必备
+nohup brew install --cask alfred 1>/dev/null 2>&1 &
+
+# 安装 XMind，思维导图必备
+nohup brew install --cask xmind 1>/dev/null 2>&1 &
+
+# 安装 OmniDiskSweeper，磁盘紧张用户必备
+nohup brew install --cask omnidisksweeper 1>/dev/null 2>&1 &
+
+# 安装 微信
+nohup brew install --cask wechat 1>/dev/null 2>&1 &
+
+# 安装 QQ
+nohup brew install --cask qq 1>/dev/null 2>&1 &
+
+# 安装 QQ音乐
+nohup brew install --cask qqmusic 1>/dev/null 2>&1 &
+
+# 安装 iTerm，Mac 用户必备
+nohup brew install --cask iterm2 1>/dev/null 2>&1 &
+
+# 安装 VS Code，可以说是必备软件
+nohup brew install --cask visual-studio-code 1>/dev/null 2>&1 &
+
+# 安装 draw.io，画图利器
+nohup brew install --cask drawio 1>/dev/null 2>&1 &
+
+# 安装 SourceTree，开发利器
+nohup brew install --cask sourcetree 1>/dev/null 2>&1 &
+
+# 安装 IINA，播放电影利器
+nohup brew install --cask iina 1>/dev/null 2>&1 &
+
+# 安装 迅雷
+nohup brew install --cask thunder 1>/dev/null 2>&1 &
+
+
+
+# 安装 Docker，开发利器
+nohup brew install --cask docker 1>/dev/null 2>&1 &
+
+# 安装 Shottr，截图利器
+nohup brew install --cask shottr 1>/dev/null 2>&1 &
+
+# 安装 Shiftit，窗口大小控制软件，非常易用
+nohup brew install --cask shiftit 1>/dev/null 2>&1 &
+
+# 安装 AppCleaner，删除软件利器，洁癖、强迫症患者的福音
+nohup brew install --cask appcleaner 1>/dev/null 2>&1 &
+
+
+
+# 安装 GC Viewer
+nohup brew install --cask gcviewer 1>/dev/null 2>&1 &
+
+# 安装 JD GUI，Java 反编译利器
+nohup brew install --cask jd-gui 1>/dev/null 2>&1 &
+
+# 安装 DevToys，一个开发工具，可以本地格式化
+nohup brew install --cask devtoys 1>/dev/null 2>&1 &
+
+# 安装 Hammerspoon，Mac 定制工具，可能大多数人用不上
+nohup brew install --cask hammerspoon 1>/dev/null 2>&1 &
+
+# 安装 Karabiner Elements，改键利器，大多数人可能用不到
+nohup brew install --cask karabiner-elements 1>/dev/null 2>&1 &
+
+# 安装 ImageOptim，图片压缩利器，大多数人用不上
+nohup brew install --cask imageoptim 1>/dev/null 2>&1 &
+
+# 安装 logseq，新型笔记软件，大多数用不上
+nohup brew install --cask logseq 1>/dev/null 2>&1 &
+
+# 安装 欧路词典
+nohup brew install --cask eudic 1>/dev/null 2>&1 &
+
+# 安装 Hex Fiend，十六进制文件查看利器，大多数人用不上
+nohup brew install --cask hex-fiend 1>/dev/null 2>&1 &
+
+# 安装 Zotero，大多数人用不上
+nohup brew install --cask zotero 1>/dev/null 2>&1 &
+
+# 安装 wkhtmltopdf，将 html 转化成 PDF 文档，大多数人用不上
+nohup brew install --cask wkhtmltopdf 1>/dev/null 2>&1 &
+
+# 安装 Eclipse Memory Analyzer，用时再装也行
+# nohup brew install --cask mat 1>/dev/null 2>&1 &
+
+# 安装 腾讯柠檬清理，清理内存等
+# nohup brew install --cask tencent-lemon 1>/dev/null 2>&1 &
+
+#
+# Author: D瓜哥 · https://www.diguage.com
+#
+----
+
+
+
+
