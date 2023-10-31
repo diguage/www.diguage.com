@@ -254,6 +254,14 @@ nohup brew install --cask wkhtmltopdf 1>/dev/null 2>&1 &
 #
 ----
 
+== 配置 vim
 
+spf13-vim 是一个非常好的 vim 配置。可以一键配置好 vim 的很多设置。
 
+TIP: 为了解决网络不稳定问题，再次使用 jsDelivr 加速安装脚本的下载。
+
+[source%nowrap,bash,{source_attr}]
+----
+curl https://cdn.jsdelivr.net/gh/spf13/spf13-vim/bootstrap.sh  -L > spf13-vim.sh && sh spf13-vim.sh
+----
 
