@@ -22,25 +22,191 @@ weight: 1
 ----
 /**
  * @author D瓜哥 · https://www.diguage.com
- * @since 2023-05-02 10:23:49
+ * @since 2023-06-20 21:50:08
  */
-public static class UserRpc {
+public class UserRpc {
 
   @Value("${user.appId}")
   private String appId;
 
-  // 这里不使用注解，而是使用 XML 配置
-  // @Value("${user.token}")
+  @Value("${user.token}")
   private String token;
+}
+----
+
+.`Config.java`
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * @author D瓜哥 · https://www.diguage.com
+ * @since 2023-06-20 21:50:08
+ */
+@Configuration
+// 这里使用 @Import 来加载 Bean
+@Import(UserRpc.class)
+@PropertySource("classpath:token.properties")
+public static class Config {
+}
+----
+
+.`PlaceholderAnnoTest.java`
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * @author D瓜哥 · https://www.diguage.com
+ * @since 2023-06-20 21:50:08
+ */
+public class PlaceholderAnnoTest {
+  @Test
+  public void test() {
+    AnnotationConfigApplicationContext context
+        = new AnnotationConfigApplicationContext();
+    context.register(Config.class);
+    context.refresh();
+    UserRpc userRpc = context.getBean(UserRpc.class);
+    System.out.println(userRpc.appId);
+    System.out.println(userRpc.token);
+  }
 }
 ----
 
 .`token.properties`
 [source%nowrap,bash,{source_attr}]
 ----
+# @author D瓜哥 · https://www.diguage.com
+
 user.appId=dummyAppId
 user.token=dummyToken
 ----
+
+== 注解 Bean 加载
+
+在上述示例中，为了方便起见，使用了 `@Import` 注解引入 Bean。关于在 `@Import` 的使用，在 https://www.diguage.com/post/spring-extensions-and-mybatis/[Spring 扩展点实践：整合 MyBATIS^] 中已经做了介绍，这里就不再赘述。
+
+// include::{context_src_dir}/context/annotation/ConfigurationClassBeanDefinitionReader.java[tag=loadBeanDefinitionsForConfigurationClass]
+
+在上述文章中，主要介绍了 `@Import` + `ImportBeanDefinitionRegistrar` 的引入方式。本示例直接使用的方式是通过 `@Import` 直接引入。看一下获取原始信息的过程，通过解析就可以拿到 `@Import` 注解中的 `value` 值，然后就可以通过如下方式将类引入：
+
+
+.`ConfigurationClassParser.SourceClass.java`
+[source%nowrap,java,{source_attr}]
+----
+private SourceClass getRelated(String className) throws IOException {
+    if (this.source instanceof Class<?> sourceClass) {
+        try {
+            Class<?> clazz = ClassUtils.forName(className, sourceClass.getClassLoader());
+            return asSourceClass(clazz, DEFAULT_EXCLUSION_FILTER);
+        }
+        catch (ClassNotFoundException ex) {
+            // Ignore -> fall back to ASM next, except for core java types.
+            if (className.startsWith("java")) {
+                throw new IOException("Failed to load class [" + className + "]", ex);
+            }
+            return new SourceClass(metadataReaderFactory.getMetadataReader(className));
+        }
+    }
+    return asSourceClass(className, DEFAULT_EXCLUSION_FILTER);
+}
+----
+
+接着看一下 `asSourceClass` 方法的处理：
+
+.`ConfigurationClassParser.java`
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * Factory method to obtain a {@link SourceClass} from a {@link Class}.
+ */
+SourceClass asSourceClass(@Nullable Class<?> classType, Predicate<String> filter) throws IOException {
+    if (classType == null || filter.test(classType.getName())) {
+        return this.objectSourceClass;
+    }
+    try {
+        // Sanity test that we can reflectively read annotations,
+        // including Class attributes; if not -> fall back to ASM
+        for (Annotation ann : classType.getDeclaredAnnotations()) {
+            AnnotationUtils.validateAnnotation(ann);
+        }
+        return new SourceClass(classType);
+    }
+    catch (Throwable ex) {
+        // Enforce ASM via class name resolution
+        return asSourceClass(classType.getName(), filter);
+    }
+}
+----
+
+接着，看一下 `new SourceClass` 会有什么操作：
+
+.`ConfigurationClassParser.java`
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * Simple wrapper that allows annotated source classes to be dealt with
+ * in a uniform manner, regardless of how they are loaded.
+ */
+private class SourceClass implements Ordered {
+
+    private final Object source;  // Class or MetadataReader
+
+    private final AnnotationMetadata metadata;
+
+    public SourceClass(Object source) {
+        this.source = source;
+        if (source instanceof Class<?> sourceClass) {
+            this.metadata = AnnotationMetadata.introspect(sourceClass);
+        }
+        else {
+            this.metadata = ((MetadataReader) source).getAnnotationMetadata();
+        }
+    }
+    // 此处省略一万行代码
+}
+----
+
+从这里就可以提取到原始信息，后续会被 `ConfigurationClassBeanDefinitionReader#registerBeanDefinitionForImportedConfigurationClass` 方法来注册到容器中。来看一下代码：
+
+.`ConfigurationClassBeanDefinitionReader.java`
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * Register the {@link Configuration} class itself as a bean definition.
+ */
+private void registerBeanDefinitionForImportedConfigurationClass(ConfigurationClass configClass) {
+    AnnotationMetadata metadata = configClass.getMetadata();
+    AnnotatedGenericBeanDefinition configBeanDef = new AnnotatedGenericBeanDefinition(metadata);
+
+    ScopeMetadata scopeMetadata = scopeMetadataResolver.resolveScopeMetadata(configBeanDef);
+    configBeanDef.setScope(scopeMetadata.getScopeName());
+    String configBeanName = this.importBeanNameGenerator.generateBeanName(configBeanDef, this.registry);
+    AnnotationConfigUtils.processCommonDefinitionAnnotations(configBeanDef, metadata);
+
+    BeanDefinitionHolder definitionHolder = new BeanDefinitionHolder(configBeanDef, configBeanName);
+    definitionHolder = AnnotationConfigUtils.applyScopedProxyMode(scopeMetadata, definitionHolder, this.registry);
+    this.registry.registerBeanDefinition(definitionHolder.getBeanName(), definitionHolder.getBeanDefinition());
+    configClass.setBeanName(configBeanName);
+
+    if (logger.isTraceEnabled()) {
+        logger.trace("Registered bean definition for imported class '" + configBeanName + "'");
+    }
+}
+----
+
+.`.java`
+[source%nowrap,java,{source_attr}]
+----
+
+----
+
+.`.java`
+[source%nowrap,java,{source_attr}]
+----
+
+----
+
+在这个方法的最开始的两行代码可知： 使用注解 Bean 对应的 `BeanDefinition` 的类型是 `AnnotatedGenericBeanDefinition`，它是使用 `AnnotationMetadata`  创建而来的。
+
+image::/images/spring-framework/imported-BeanDefinition.png[title="import 引入的 BeanDefinition",alt="import 引入的 BeanDefinition",{image_attr}]
 
 == 占位符替换
 
