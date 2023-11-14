@@ -265,3 +265,22 @@ TIP: 为了解决网络不稳定问题，再次使用 jsDelivr 加速安装脚�
 curl https://cdn.jsdelivr.net/gh/spf13/spf13-vim/bootstrap.sh  -L > spf13-vim.sh && sh spf13-vim.sh
 ----
 
+== Git 漂亮日志配置
+
+有个技巧可以方便查看 Git 日志的，如下：
+
+[source%nowrap,bash,{source_attr}]
+----
+# 配置命令
+git config --global alias.lg "log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --"
+
+# 后续查看日志命令
+git lg
+----
+
+CAUTION: 向英年早逝的左耳朵耗子致敬！
+
+
+== 参考资料
+
+. https://coolshell.cn/articles/7755.html[Git显示漂亮日志的小技巧 | 酷 壳 - CoolShell^]
