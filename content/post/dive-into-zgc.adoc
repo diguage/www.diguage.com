@@ -1,0 +1,31 @@
+---
+title: "深入剖析 ZGC"
+date: 2023-11-19T18:18:14+08:00
+draft: true
+keywords: ["Java","JVM"]
+tags: ["Java"]
+categories: ["程序设计","系统架构","算法"]
+thumbnail: "images/java/zgc-banner.png"
+
+weight: 1
+---
+
+== 三色标记法
+
+== 染色指针
+
+== 多视图映射
+
+image::/images/java/ZGC-heap-layout42.png[title="",alt="",{image_attr}]
+image::/images/java/ZGC-heap-layout43.png[title="",alt="",{image_attr}]
+image::/images/java/ZGC-heap-layout44.png[title="",alt="",{image_attr}]
+
+== 参考资料
+
+. https://wiki.openjdk.org/display/zgc/Main[OpenJDK Wiki: ZGC^]
+. https://malloc.se/blog/zgc-jdk15[ZGC | What's new in JDK 15^]
+. https://malloc.se/blog/zgc-jdk16[ZGC | What's new in JDK 16^]
+. https://malloc.se/blog/zgc-jdk17[ZGC | What's new in JDK 17^]
+. https://malloc.se/blog/zgc-jdk18[ZGC | What's new in JDK 18^]
+. https://www.yuanjava.cn/posts/ZGC/[新一代 Java垃圾回收神器：ZGC]
+. https://zhuanlan.zhihu.com/p/364813270[Java最前沿技术——ZGC^]
