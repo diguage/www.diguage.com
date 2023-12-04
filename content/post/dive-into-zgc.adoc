@@ -10,15 +10,30 @@ thumbnail: "images/java/zgc-banner.png"
 weight: 1
 ---
 
+
+
 == 三色标记法
 
-== 染色指针
+== 染色指针 Colored Pointers
 
 == 多视图映射
 
 image::/images/java/ZGC-heap-layout42.png[title="",alt="",{image_attr}]
+
 image::/images/java/ZGC-heap-layout43.png[title="",alt="",{image_attr}]
+
 image::/images/java/ZGC-heap-layout44.png[title="",alt="",{image_attr}]
+
+
+== 读屏障 Load Barriers
+
+== Store Barriers
+
+分代 ZGC
+
+== 重要更新
+
+
 
 == 参考资料
 
@@ -29,3 +44,4 @@ image::/images/java/ZGC-heap-layout44.png[title="",alt="",{image_attr}]
 . https://malloc.se/blog/zgc-jdk18[ZGC | What's new in JDK 18^]
 . https://www.yuanjava.cn/posts/ZGC/[新一代 Java垃圾回收神器：ZGC]
 . https://zhuanlan.zhihu.com/p/364813270[Java最前沿技术——ZGC^]
+. https://tech.meituan.com/2020/08/06/new-zgc-practice-in-meituan.html[新一代垃圾回收器ZGC的探索与实践^]
