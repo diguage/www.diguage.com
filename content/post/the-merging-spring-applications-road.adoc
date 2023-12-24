@@ -47,7 +47,7 @@ weight: 1
 
 == 仓库合并，Spring Boot 父子容器
 
-在经过上述方式折腾后，就想到了可以考虑使用父子容器的方式来搞。接着就查到了了这篇文章： https://www.baeldung.com/spring-boot-context-hierarchy[Context Hierarchy with the Spring Boot Fluent Builder API^]。感觉这种方式挺不错，就尝试了一下。
+在经过上述方式折腾后，就想到了另外一个方案：可以考虑使用父子容器的方式来搞。接着就查到了这篇文章： https://www.baeldung.com/spring-boot-context-hierarchy[Context Hierarchy with the Spring Boot Fluent Builder API^]。感觉这种方式挺不错，就尝试了一下。
 
 . 代码合并及文件调整，跟上述步骤类似，这个后面就不再赘述。
 . 按照文章中的介绍，使用父子容器的方式来加载两个项目。

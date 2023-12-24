@@ -10,7 +10,7 @@ jobs:
     steps:
       # https://github.com/actions/checkout
       - name: Checkout 🛎️
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: 0
@@ -24,11 +24,11 @@ jobs:
       - name: Setup Ruby 💎
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: 3.1
+          ruby-version: 3.2
 
       # https://github.com/actions/setup-node
       - name: Setup Node.js 🕸
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           # https://github.com/nvm-sh/nvm#long-term-support
           node-version: 'lts/*'
