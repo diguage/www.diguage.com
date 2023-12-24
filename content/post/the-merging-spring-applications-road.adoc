@@ -1,0 +1,333 @@
+---
+title: "Spring 应用合并之路"
+date: 2023-12-23T20:38:47+08:00
+draft: false
+keywords: ["Java","Spring"]
+tags: ["Java","设计","架构","微服务","分布式","Spring"]
+categories: ["程序设计"]
+thumbnail: "images/banner/merge.jpeg"
+
+weight: 1
+---
+
+公司最近一年在推进降本增效，在用尽各种手段之后，发现应用太多，每个应用都做跨机房容灾部署，则最少需要 4 台机器（称为容器更合适）。那么，将相近应用做一个合并，减少维护项目，提高机器利用率就是一个可选方案。
+
+经过前后三次不同的折腾，最后探索出来一个可行方案。记录一下，分享出来，希望对有相关需求的研发童鞋有所帮助。下面按照四种可能的方案，分别做介绍。另外，为了方便做演示，专门整了两个演示项目：
+
+* https://github.com/diguage/merge-demo-boot[diguage/merge-demo-boot^] -- 合并项目，下面简称为 `boot`。
+* https://github.com/diguage/merge-demo-web[diguage/merge-demo-web^] -- 被合并项目，下面简称为 `web`。
+
+== Jar 包引用
+
+这个方式，可能是给人印象最容易的方式。仔细思考一下，从维护性的角度来看，这个方式反而是最麻烦的方式，理由如下：
+
+. `web` 项目每次更新，都需要重新打包发布新版； `boot` 项目也需要跟着更新发布。拉一次屎，脱两次裤子。属实麻烦。
+. 还需要考虑 `web` 项目的加载问题，类似下面要描述的，是否共用容器：
+.. 共用容器 -- 这是最容器想到的方式。但是这种方式，需要解决 Bean 冲突的问题。
+.. 不共用容器 -- 这种方式需要处理 `web` 容器如何加载的问题。默认应该是无法识别。
+
+基于这些考虑，这种方式直接被抛弃了。
+
+== 仓库合并，公用一套容器
+
+这是第一次尝试使用的方案。也是遇到问题最多的方案。
+
+. 将两个仓库做合并。
+.. 将 `web` 仓库的地址配置到 `boot` 项目里： `git remote add web git@github.com:diguage/merge-demo-web.git`；
+.. 在 `boot` 项目里，切出来一个分支： `git switch -c web`；
+.. 将 `web` 分支的提交清空： `git update-ref -d HEAD`，然后做一次提交；
+.. 将 `web` 项目的代码克隆到 `web` 分支上： `git pull --rebase --allow-unrelated-histories web master`；注意，这里需要加 `--allow-unrelated-histories` 参数，以允许不相干的仓库进行合并。
+.. 从 `boot` 项目的 `master` 分支上，切出来一个合并分支： `git switch -c merge`；
+.. 将 `web` 项目向 `boot` 项目合并： `git merge --allow-unrelated-histories web`；注意，这里需要加 `--allow-unrelated-histories` 参数，以允许不相干的仓库进行合并。
+.. 处理代码冲突，完成合并即可。
+. 配置文件的合并于归整。为了防止同名配置文件冲突，需要把 `web` 项目的配置文件调整到一个文件夹下，这里设定为 `web` 目录。然后，需要把 `web` 项目的配置文件，让 `boot` 可以加载到。这个调整相对简单，只需要一个注解即可 `@ImportResource({"classpath:web/spring-cfg.xml"})`。
+. 调整完配置文件，接着遇到的问题就是上面提到的 Bean 冲突的问题。由于两个项目都访问相同的数据库， Dao 及 Service 层很多很多类都是同名的。另外，在 `web` 项目里，Dao 是基于 iBATIS 开发的，而在 `boot` 项目里，DAO 是基于 MyBATIS 开发的。所以，只能给 `web` 项目的相关代码做重命名（严谨一点是给 Spring Bean 的 `beanName` 做重命名操作）。这又带来了新问题：原来的项目里，注入方式是根据名称注入的，就需要改动大量的代码，给相关的 Bean 变量做重命名操作。这无形中增加了很多的复杂度和不确定性。
+
+经过不断折腾，这种方式被迫放弃。
+
+== 仓库合并，Spring Boot 父子容器
+
+在经过上述方式折腾后，就想到了可以考虑使用父子容器的方式来搞。接着就查到了了这篇文章： https://www.baeldung.com/spring-boot-context-hierarchy[Context Hierarchy with the Spring Boot Fluent Builder API^]。感觉这种方式挺不错，就尝试了一下。
+
+. 代码合并及文件调整，跟上述步骤类似，这个后面就不再赘述。
+. 按照文章中的介绍，使用父子容器的方式来加载两个项目。
++
+--
+[source%nowrap,java,{source_attr}]
+----
+package com.diguage.demo.boot;
+
+import org.springframework.boot.WebApplicationType;
+import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.ImportResource;
+
+/**
+ * @author D瓜哥 · https://www.diguage.com
+ */
+public class DemoBootApplication {
+
+    public static void main(String[] args) {
+        new SpringApplicationBuilder()
+                .parent(BootConfig.class).web(WebApplicationType.NONE)
+                .child(WebConfig.class)
+                // 如果有第三个项目，可以作为子容器的兄弟容器加载。
+                // .sibling(SiblingConfig.class)
+                .run(args);
+    }
+
+    @Configuration
+    @ImportResource({"classpath:spring-cfg.xml"})
+    @ComponentScan(basePackages = "com.diguage.demo.boot")
+    public static class BootConfig {
+    }
+
+    @Configuration
+    @ImportResource({"classpath:web/spring-cfg.xml"})
+    public static class WebConfig {
+    }
+}
+----
+--
+
+原以为，这种方式属于父子两个容器，即使有同名的 Bean 应该也没有影响。但是，经过实践才发现，上面这个猜测是错误的。Spring Boot 在启动的时候，它背后做了检查，如果两个容器有同名的 Bean，它也会报错。也会带来像上述方式那样的大量重命名。折腾一两天，最后还是放弃了这种寄予厚望的方式。
+
+TIP: Spring Boot 背后是否做了检查，这个是根据报错信息的猜测，没有翻看代码，所以这个猜测有一定的不确定性。有机会翻一下代码，查看一下具体原因。
+
+== 仓库合并，独立容器
+
+在经历了上面的尝试，在同事为啥不搞两个独立的容器提醒下，决定抛开 Spring Boot 内置的父子容器方案，完全自己实现父子容器。
+
+=== 如何加载 `web` 项目？
+
+现在的难题只有一个：如何加载 `web` 项目？加载完成后，如何持续持有 `web` 项目？经过思考后，可以创建一个 `boot` 项目的 Spring Bean，在该 Bean 中加载并持有 `web` 项目的容器。由于 Spring Bean 默认是单例的，并且会伴随 Spring 容器长期存活，就可以保证 `web` 容器持久存活。结合 https://www.diguage.com/post/spring-extensions-overview/[Spring 扩展点概览及实践^] 中介绍的 Spring 扩展点，有两个地方可以利用：
+
+. 可以利用 `ApplicationContextAware` 获取 `boot` 容器的 `ApplicationContext` 实例，这样就可以实现自己实现的父子容器；
+. 可以利用 `ApplicationListener` 获取 `ContextRefreshedEvent` 事件，该事件表示容器已经完成初始化，可以提供服务。在监听到该事件后，来进行 `web` 容器的加载。
+
+思路确定后，代码实现就很简单了：
+
+[source%nowrap,java,{source_attr}]
+----
+package com.diguage.demo.boot.config;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.ApplicationEvent;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.stereotype.Component;
+
+/**
+ * @author D瓜哥 · https://www.diguage.com
+ */
+@Component
+public class WebLoaderListener implements ApplicationContextAware,
+        ApplicationListener<ApplicationEvent> {
+    private static final Logger logger = LoggerFactory.getLogger(WebLoaderListener.class);
+
+    /**
+     * 父容器，加载 boot 项目
+     */
+    private static ApplicationContext parentContext;
+
+    /**
+     * 子容器，加载 web 项目
+     */
+    private static ApplicationContext childContext;
+
+    @Override
+    public void setApplicationContext(ApplicationContext ctx) throws BeansException {
+        WebLoaderListener.parentContext = ctx;
+    }
+
+    @Override
+    public void onApplicationEvent(ApplicationEvent event) {
+        logger.info("receive application event: {}", event);
+        if (event instanceof ContextRefreshedEvent) {
+            WebLoaderListener.childContext = new ClassPathXmlApplicationContext(
+                    new String[]{"classpath:web/spring-cfg.xml"},
+                    WebLoaderListener.parentContext);
+        }
+    }
+}
+----
+
+=== 容器重复加载的问题
+
+这次自己实现的父子容器，如同设想的那样，没有同名 Bean 的检查，省去了很多麻烦。但是，观察日志，会发现 `com.diguage.demo.boot.config.WebLoaderListener#onApplicationEvent` 方法被两次执行，也就是监听到了两次 `ContextRefreshedEvent` 事件，导致 `web` 容器会被加载两次。由于项目的 RPC 服务不能重复注册，第二次加载抛出异常，导致启动失败。
+
+最初，怀疑是 `web` 容器，加载了 `WebLoaderListener`，但是跟踪代码，没有发现 `childContext` 容器中有 `WebLoaderListener` 的相关 Bean。
+
+昨天做了个小实验，又调试了一下 Spring 的源代码，发现了其中的奥秘。直接贴代码吧：
+
+.SPRING/spring-context/src/main/java/org/springframework/context/support/AbstractApplicationContext.java
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * Publish the given event to all listeners.
+ * <p>This is the internal delegate that all other {@code publishEvent}
+ * methods refer to. It is not meant to be called directly but rather serves
+ * as a propagation mechanism between application contexts in a hierarchy,
+ * potentially overridden in subclasses for a custom propagation arrangement.
+ * @param event the event to publish (may be an {@link ApplicationEvent}
+ * or a payload object to be turned into a {@link PayloadApplicationEvent})
+ * @param typeHint the resolved event type, if known.
+ * The implementation of this method also tolerates a payload type hint for
+ * a payload object to be turned into a {@link PayloadApplicationEvent}.
+ * However, the recommended way is to construct an actual event object via
+ * {@link PayloadApplicationEvent#PayloadApplicationEvent(Object, Object, ResolvableType)}
+ * instead for such scenarios.
+ * @since 4.2
+ * @see ApplicationEventMulticaster#multicastEvent(ApplicationEvent, ResolvableType)
+ */
+protected void publishEvent(Object event, @Nullable ResolvableType typeHint) {
+    Assert.notNull(event, "Event must not be null");
+    ResolvableType eventType = null;
+
+    // Decorate event as an ApplicationEvent if necessary
+    ApplicationEvent applicationEvent;
+    if (event instanceof ApplicationEvent applEvent) {
+        applicationEvent = applEvent;
+        eventType = typeHint;
+    }
+    else {
+        ResolvableType payloadType = null;
+        if (typeHint != null && ApplicationEvent.class.isAssignableFrom(typeHint.toClass())) {
+            eventType = typeHint;
+        }
+        else {
+            payloadType = typeHint;
+        }
+        applicationEvent = new PayloadApplicationEvent<>(this, event, payloadType);
+    }
+
+    // Determine event type only once (for multicast and parent publish)
+    if (eventType == null) {
+        eventType = ResolvableType.forInstance(applicationEvent);
+        if (typeHint == null) {
+            typeHint = eventType;
+        }
+    }
+
+    // Multicast right now if possible - or lazily once the multicaster is initialized
+    if (this.earlyApplicationEvents != null) {
+        this.earlyApplicationEvents.add(applicationEvent);
+    }
+    else if (this.applicationEventMulticaster != null) {
+        this.applicationEventMulticaster.multicastEvent(applicationEvent, eventType);
+    }
+
+    // Publish event via parent context as well...
+    // 如果有父容器，则也将事件发布给父容器。
+    if (this.parent != null) {
+        if (this.parent instanceof AbstractApplicationContext abstractApplicationContext) {
+            abstractApplicationContext.publishEvent(event, typeHint);
+        }
+        else {
+            this.parent.publishEvent(event);
+        }
+    }
+}
+----
+
+在 `publishEvent` 方法的最后，如果父容器不为 `null` 的情况下，则也会向父容器广播容器的相关事件。
+
+看到这里就清楚了，不是 `web` 容器持有了 `WebLoaderListener` 这个 Bean，而是 `web` 容器主动向父容器广播了 `ContextRefreshedEvent` 事件。
+
+=== 容器销毁
+
+除了上述问题，还有一个问题需要思考：如何销毁 `web` 容器？如果不能销毁容器，会有一些意想不到的问题。比如，注册中心的 RPC 提供方不能及时销毁等等。
+
+这里的解决方案也比较简单：同样基于事件监听，Spring 容器销毁会有 `ContextClosedEvent` 事件，在 `WebLoaderListener` 中监听该事件，然后调用 `AbstractApplicationContext#close` 方法就可以完成 Spring 容器的销毁工作。
+
+=== 父子容器加载及销毁
+
+结合上面的所有论述，完整的代码如下：
+
+[source%nowrap,java,{source_attr}]
+----
+package com.diguage.demo.boot.config;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.ApplicationEvent;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.ContextClosedEvent;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.support.AbstractApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.stereotype.Component;
+
+import java.util.Objects;
+
+/**
+ * 基于事件监听的 web 项目加载器
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ */
+@Component
+public class WebLoaderListener implements ApplicationContextAware,
+        ApplicationListener<ApplicationEvent> {
+    private static final Logger logger = LoggerFactory.getLogger(WebLoaderListener.class);
+
+    /**
+     * 父容器，加载 boot 项目
+     */
+    private static ApplicationContext parentContext;
+
+    /**
+     * 子容器，加载 web 项目
+     */
+    private static ClassPathXmlApplicationContext childContext;
+
+    @Override
+    public void setApplicationContext(ApplicationContext ctx) throws BeansException {
+        WebLoaderListener.parentContext = ctx;
+    }
+
+    /**
+     * 事件监听
+     *
+     * @author D瓜哥 · https://www.diguage.com
+     */
+    @Override
+    public void onApplicationEvent(ApplicationEvent event) {
+        logger.info("receive application event: {}", event);
+        if (event instanceof ContextRefreshedEvent refreshedEvent) {
+            ApplicationContext context = refreshedEvent.getApplicationContext();
+            if (Objects.equals(WebLoaderListener.parentContext, context)) {
+                // 加载 web 容器
+                WebLoaderListener.childContext = new ClassPathXmlApplicationContext(
+                        new String[]{"classpath:web/spring-cfg.xml"},
+                        WebLoaderListener.parentContext);
+            }
+        } else if (event instanceof ContextClosedEvent) {
+            // 处理容器销毁事件
+            if (Objects.nonNull(WebLoaderListener.childContext)) {
+                synchronized (WebLoaderListener.class) {
+                    if (Objects.nonNull(WebLoaderListener.childContext)) {
+                        AbstractApplicationContext ctx = WebLoaderListener.childContext;
+                        WebLoaderListener.childContext = null;
+                        ctx.close();
+                    }
+                }
+            }
+        }
+    }
+}
+----
+
+== 参考资料
+
+. https://www.diguage.com/post/spring-extensions-overview/[Spring 扩展点概览及实践 - "地瓜哥"博客网^]
+. https://www.baeldung.com/spring-boot-context-hierarchy[Context Hierarchy with the Spring Boot Fluent Builder API^]
+. https://stackoverflow.com/questions/6632191/how-to-revert-initial-git-commit[How to revert initial git commit?^]
