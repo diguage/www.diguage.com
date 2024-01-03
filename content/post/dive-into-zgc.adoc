@@ -3,7 +3,7 @@ title: "深入剖析 ZGC"
 date: 2023-11-19T18:18:14+08:00
 draft: true
 keywords: ["Java","JVM"]
-tags: ["Java"]
+tags: ["Java","GC"]
 categories: ["程序设计","系统架构","算法"]
 thumbnail: "images/java/zgc-banner.png"
 
