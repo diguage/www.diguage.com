@@ -101,7 +101,7 @@ NOTE: 允许 ZGC 在应用程序运行时提交和取消提交内存可能会影
 
 == 调优 ZGC
 
-研究 ZGC 性能特征的最佳方法是分析 GC 日志。GC 日志包含有关垃圾回收事件、内存使用情况和其他相关指标的详细信息。有几种工具可以帮助分析 GC 日志，如 https://gceasy.io/[GCeasy^]、https://www.ibm.com/support/pages/java-sdk[IBM GC & Memory visualizer^] 和 https://github.com/mgm3746/garbagecat[Google Garbage cat^]。通过使用这些工具，可以直观地了解内存分配模式，识别潜在的瓶颈，并评估垃圾回收的效率。这样，在微调 ZGC 以获得最佳性能时，就能做出明智的决策。
+研究 ZGC 性能特征的最佳方法是分析 GC 日志。GC 日志包含有关垃圾回收事件、内存使用情况和其他相关指标的详细信息。有几种工具可以帮助分析 GC 日志，如 https://gceasy.io/[GCeasy^]、 https://www.ibm.com/support/pages/java-sdk[IBM GC & Memory visualizer^] 和 https://github.com/mgm3746/garbagecat[Google Garbage cat^]。通过使用这些工具，可以直观地了解内存分配模式，识别潜在的瓶颈，并评估垃圾回收的效率。这样，在微调 ZGC 以获得最佳性能时，就能做出明智的决策。
 
 
 == 总结

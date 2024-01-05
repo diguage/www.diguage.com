@@ -1,0 +1,24 @@
+---
+title: "Spring Boot 应用程序浪费的内存"
+date: 2009-01-05T23:12:14+08:00
+draft: false
+keywords: [""]
+tags: [""]
+categories: [""]
+thumbnail: "images/spring-boot/memory-wasted.png"
+# aliases: "/old/path/"
+
+weight: 1
+---
+
+
+// image::/images/[title="",alt="",{image_attr}]
+
+// [source%nowrap,java,{source_attr}]
+// ----
+// // code
+// ----
+
+马上到来，敬请持续关注： https://www.diguage.com/["地瓜哥"博客网 https://www.diguage.com/^]
+
+// 原文： https://blog.heaphero.io/2019/11/18/memory-wasted-by-spring-boot-application/[MEMORY WASTED BY SPRING BOOT APPLICATION^]。

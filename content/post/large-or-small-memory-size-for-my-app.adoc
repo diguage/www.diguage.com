@@ -1,0 +1,24 @@
+---
+title: "应用程序的内存是大还是小？"
+date: 2009-01-05T23:27:32+08:00
+draft: false
+keywords: [""]
+tags: [""]
+categories: [""]
+thumbnail: "images/memory-size/memory-size.png"
+# aliases: "/old/path/"
+
+weight: 1
+---
+
+
+// image::/images/[title="",alt="",{image_attr}]
+
+// [source%nowrap,java,{source_attr}]
+// ----
+// // code
+// ----
+
+马上到来，敬请持续关注： https://www.diguage.com/["地瓜哥"博客网 https://www.diguage.com/^]
+
+// 原文： https://blog.gceasy.io/2019/06/21/large-or-small-memory-size-for-my-app/[LARGE OR SMALL MEMORY SIZE FOR MY APP?^]
