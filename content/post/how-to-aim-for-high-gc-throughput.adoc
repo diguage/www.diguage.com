@@ -22,7 +22,7 @@ weight: 1
 
 == 如何找到应用程序的 GC 吞吐量？
 
-垃圾回收日志是研究 GC 性能的最佳来源。如果你的应用程序运行在 JVM 上，你可以通过 https://blog.ycrash.io/2022/02/07/how-to-do-gc-log-analysis/[How to do GC Log analysis?^] 文章中提到的 JVM 参数启用 GC 日志。启用 GC 日志后，让应用程序处理流量至少一天，以观察高流量和低流量时段各自的运行情况。之后，可以将生成的 GC 日志文件上传到 GC 日志分析工具，以获得有价值的分析结果。一些常用的 GC 日志分析工具包括 https://gceasy.io/[GCeasy^]、 https://www.ibm.com/support/pages/java-sdk[IBM GC & Memory visualizer^] 和 https://github.com/mgm3746/garbagecat[Google Garbage cat^] 等。这些工具将报告 GC 吞吐量以及其他重要的 GC 指标。下面是 GCeasy 工具的摘录，展示了包括 GC 吞吐量在内的各种 GC 关键性能指标 (KPI) 报告。
+垃圾回收日志是研究 GC 性能的最佳来源。如果你的应用程序运行在 JVM 上，你可以通过 https://www.diguage.com/post/how-to-do-gc-log-analysis/[如何进行 GC 日志分析^] 文章中提到的 JVM 参数启用 GC 日志。启用 GC 日志后，让应用程序处理流量至少一天，以观察高流量和低流量时段各自的运行情况。之后，可以将生成的 GC 日志文件上传到 GC 日志分析工具，以获得有价值的分析结果。一些常用的 GC 日志分析工具包括 https://gceasy.io/[GCeasy^]、 https://www.ibm.com/support/pages/java-sdk[IBM GC & Memory visualizer^] 和 https://github.com/mgm3746/garbagecat[Google Garbage cat^] 等。这些工具将报告 GC 吞吐量以及其他重要的 GC 指标。下面是 GCeasy 工具的摘录，展示了包括 GC 吞吐量在内的各种 GC 关键性能指标 (KPI) 报告。
 
 image::/images/high-gc-throughput/gceasy-key-performance-indicators.png[title="GCeasy 工具报告的 GC 吞吐量",alt="GCeasy 工具报告的 GC 吞吐量",{image_attr}]
 
