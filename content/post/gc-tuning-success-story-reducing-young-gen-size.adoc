@@ -1,0 +1,23 @@
+---
+title: "GC 调优成功案例：减少年轻代的大小"
+date: 2009-01-06T13:01:04+08:00
+draft: false
+keywords: [""]
+tags: [""]
+categories: [""]
+thumbnail: "images/memory-size/reducing-young-gen-size.png"
+
+weight: 1
+---
+
+
+// image::/images/[title="",alt="",{image_attr}]
+
+// [source%nowrap,java,{source_attr}]
+// ----
+// // code
+// ----
+
+马上到来，敬请持续关注： https://www.diguage.com/["地瓜哥"博客网 https://www.diguage.com/^]
+
+// 原文： https://blog.ycrash.io/2022/03/04/garbage-collection-tuning-success-story-reducing-young-gen-size/[Garbage Collection tuning success story – reducing young gen size^]

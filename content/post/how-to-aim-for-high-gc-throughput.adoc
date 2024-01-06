@@ -75,8 +75,6 @@ image::/images/high-gc-throughput/gceasy-heap-usage-2.png[title="由于高流量
 
 ==== 错误的 GC 算法选择
 
-As of 2023, OpenJDK platform offers a range of seven Garbage Collection algorithms, including Serial, Parallel, CMS, G1 GC, ZGC, Shenandoah, and Epsilon. The selection of an appropriate GC algorithm is critical and should be based on factors like application traffic volume, pattern, object creation rate, and performance objectives. Opting for the wrong GC algorithm can substantially decrease the application’s GC throughput. For a comprehensive introduction to GC tuning, you can refer to this informative video talk.
-
 截至 2023 年，OpenJDK 平台提供了七种垃圾回收算法，包括 Serial、Parallel、CMS、G1 GC、 https://www.diguage.com/post/java-zgc-algorithm-tuning/[ZGC^]、Shenandoah 和 Epsilon。选择合适的 GC 算法至关重要，应根据应用流量、模式、对象创建速率和性能目标等因素来确定。选择错误的 GC 算法会大大降低应用程序的 GC 吞吐量。有关 GC 调整的全面介绍，请参阅本视频讲座。
 
 ==== 缺乏(或不正确)GC调优
@@ -85,7 +83,7 @@ As of 2023, OpenJDK platform offers a range of seven Garbage Collection algorith
 
 ==== 错误的分代大小
 
-JVM 内存被划分为多个内部区域，包括新生代、老年代、元空间和本地内存。这些区域大小配置不当会导致 GC 吞吐量降低。举例说明， https://www.diguage.com/post/large-or-small-memory-size-for-my-app/[优化新生代内存大小^] 可显著提高应用程序的 GC 吞吐量。
+JVM 内存被划分为多个内部区域，包括新生代、老年代、元空间和本地内存。这些区域大小配置不当会导致 GC 吞吐量降低。举例说明， https://www.diguage.com/post/gc-tuning-success-story-reducing-young-gen-size/[优化新生代内存大小^] 可显著提高应用程序的 GC 吞吐量。
 
 
 === 资源匮乏
@@ -94,7 +92,7 @@ JVM 内存被划分为多个内部区域，包括新生代、老年代、元空�
 
 ==== 堆大小不足
 
-分配的堆大小不足（由 `-Xmx` 参数控制），再加上对象创建量的增加，会导致更频繁的 GC 事件。频繁的 GC 活动会导致 GC 吞吐量下降。为解决这一问题，可通过增加堆大小来满足应用程序的内存需求，从而确保堆大小适当。
+分配的堆大小不足（由 `-Xmx` 参数控制），再加上对象创建量的增加，会导致更频繁的 GC 事件。频繁的 GC 活动会导致 GC 吞吐量下降。为解决这一问题，可通过增加堆大小来满足应用程序的内存需求，从而确保 https://www.diguage.com/post/large-or-small-memory-size-for-my-app/[堆大小适当^]。
 
 ==== GC 线程不足
 
