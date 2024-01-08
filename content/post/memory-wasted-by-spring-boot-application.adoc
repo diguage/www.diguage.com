@@ -1,10 +1,10 @@
 ---
 title: "Spring Boot 应用程序浪费的内存"
-date: 2009-01-05T23:12:14+08:00
-draft: true
-keywords: [""]
-tags: [""]
-categories: [""]
+date: 2024-01-08T23:12:14+08:00
+draft: false
+keywords: ["Java","JVM", "Spring", "Spring Boot", "调优"]
+tags: ["Java", "Spring", "翻译"]
+categories: ["性能优化"]
 thumbnail: "images/spring-boot/memory-wasted.png"
 # aliases: "/old/path/"
 
@@ -12,13 +12,150 @@ weight: 1
 ---
 
 
-// image::/images/[title="",alt="",{image_attr}]
+当今世界被广泛浪费的资源之一是：内存。由于编程效率低下，内存浪费量惊人（有时 "令人震惊"）。我们在多个企业应用程序中都看到了这种情况。为了证明这一点，我们进行了一项小型研究。我们分析了著名的 Spring Boot Pet Clinic 应用程序，看看它浪费了多少内存。该应用程序由社区设计，旨在展示如何使用 Spring 应用程序框架构建简单但功能强大的面向数据库的应用程序。
 
-// [source%nowrap,java,{source_attr}]
-// ----
-// // code
-// ----
 
-马上到来，敬请持续关注： https://www.diguage.com/["地瓜哥"博客网 https://www.diguage.com/^]
+== 环境
 
-// 原文： https://blog.heaphero.io/2019/11/18/memory-wasted-by-spring-boot-application/[MEMORY WASTED BY SPRING BOOT APPLICATION^]。
+* Spring Boot 2.1.4.RELEASE
+* Java SDK 1.8
+* Tomcat 8.5.20
+* MySQL 5.7.26 with MySQL Connector/J 8.0.15
+
+
+== 压力测试
+
+我们使用流行的开源压力测试工具 https://jmeter.apache.org/[Apache JMeter^] 进行压力测试。我们使用以下设置执行了 30 分钟的压力测试：
+
+* *线程数（用户*）- 1000（连接到目标的用户数量）
+* *上升周期（秒）* - 10。所有请求开始的时间范围。根据我们的配置，每 0.01 秒将启动 1 个新线程，即 100 个线程/秒。
+* *循环次数* - 永久。这 1000 个线程将背靠背执行测试迭代。
+* *持续时间（秒）* - 1800。启动后，1000 个线程持续运行 1800 秒。
+
+image::/images/gc-tuning/jmeter-setting.png[title="JMeter 设置",alt="JMeter 设置",{image_attr}]
+
+我们在负载测试中使用了以下场景：
+
+* 在系统中添加新的宠物主人。
+* 查看宠物主人的相关信息。
+* 向系统中添加一只新宠物。
+* 查看宠物相关信息。
+* 在宠物探视历史中添加探视信息。
+* 更新宠物相关信息。
+* 更新宠物主人的相关信息。
+* 通过搜索主人姓名查看主人信息。
+* 查看所有主人的信息。
+
+
+== 如何测量内存浪费？
+
+业界有数百种工具可以显示**内存使用量**。但是，我们很少遇到能测量因低效编程而浪费的内存量的工具。 https://heaphero.io/[HeapHero^] 是一款简单的工具，它可以分析堆转储，并告诉我们由于编程效率低下而浪费了多少内存。
+
+测试运行时，我们捕获了 Spring Boot 宠物诊所应用程序的 Heap Dump。
+
+我们将捕获的 Heap Dump 上传到 HeapHero 工具。工具生成的漂亮报告显示，由于编程效率低下，65% 的内存被浪费了。是的，这是一个简单的应用程序，本应采用所有最佳实践，但在一个备受赞誉的框架上却浪费了 65% 的内存。
+
+image::/images/gc-tuning/pie-chart.png[title="HeapHero 生成的图表显示，Spring Boot 宠物诊所应用程序浪费了 65% 的内存",alt="HeapHero 生成的图表显示，Spring Boot 宠物诊所应用程序浪费了 65% 的内存",{image_attr}]
+
+
+== 分析内存浪费情况
+
+从报告中可以看出以下几点：
+
+* 15.6% 的内存因字符串重复而浪费
+* 14.6% 的内存因低效的原始数组而浪费
+* 14.3% 的内存因重复的原始数组而被浪费
+* 12.1% 的内存因低效的集合而被浪费
+
+== 重复字符串
+
+在 Spring Boot 应用程序（以及大多数企业应用程序）中，造成内存浪费的首要原因是：字符串重复。报告显示了因字符串重复而浪费的内存总量、字符串的类型、创建者以及优化方法。
+
+image::/images/gc-tuning/duplicate-strings.png[title="重复字符串",alt="重复字符串",{image_attr}]
+
+你可以发现，15.6% 的内存是由于重复字符串造成的。请注意
+
+* “Goldi” 字符串已被创建 207,481 次。
+* “Visit” 字符串被创建了 132 308 次。“Visit” 是我们在测试脚本中提到的描述。
+* “Bangalore” 字符串已创建 75,374 次。“Bangalore” 是我们在测试脚本中指定的城市名称。
+* “123123123” 已被创建 37687 次。
+* “Mahesh” 字符串已被创建 37,687 次。
+
+显然，“Goldi” 是通过测试脚本在屏幕上输入的宠物名称。“Visit” 是通过测试脚本在屏幕上输入的描述。类似的还有数值。但问题是，为什么要创建成千上万次相同的字符串对象呢？
+
+我们都知道，字符串是不可变的（即一旦创建，就无法修改）。既然如此，为什么要创建成千上万个重复的字符串呢？
+
+HeapHero 工具还会报告创建这些重复字符串的代码路径。
+
+image::/images/gc-tuning/duplicate-strings-holding.png[title="重复字符串产生的代码路径",alt="重复字符串产生的代码路径",{image_attr}]
+
+// 以下是修复应用程序中重复字符串的高级建议。您可以采用适用于您应用程序的策略。
+
+
+== 低效的集合
+
+Spring Boot 宠物诊所应用程序内存浪费的另一个主要原因是：集合实现效率低下。以下是 HeapHero 报告的摘录：
+
+image::/images/gc-tuning/inefficient-collections.png[title="由于低效的集合而浪费的内存",alt="由于低效的集合而浪费的内存",{image_attr}]
+
+你可以注意到，内存中 99% 的 `LinkedHashSet` 都没有任何元素。如果没有元素，为什么还要创建 `LinkedHashSet` 呢？当你创建一个新的 `LinkedHashSet` 对象时，内存中会预留 16 个元素的空间。现在，为这 16 个元素预留的所有空间都被浪费了。如果对 `LinedHashset` 进行懒初始化，就不会出现这个问题了。
+
+.坏的实践
+[source%nowrap,java,{source_attr}]
+----
+private LinkedHashSet<String, String> myHashSet = new LinkedHashSet();
+
+public void addData(String key, String value) {
+    myHashSet.put(key, value);
+}
+----
+
+.最佳实践
+[source%nowrap,java,{source_attr}]
+----
+private LinkedHashSet<String, String> myHashSet;
+
+public void addData(String key, String value) {
+    if (myHashSet == null) {
+        myHashSet = new LinkedHashSet();
+    }
+    myHashSet.put(key, value);
+}
+----
+
+同样，另一个观察结果是：68% 的 `ArrayList` 只包含 1 个元素。创建 `ArrayList` 对象时，内存中预留了 10 个元素的空间。这意味着 88% 的 `ArrayList` 中浪费了 9 个元素的空间。如果能用容量初始化 `ArrayList`，就可以避免这个问题。
+
+.坏的实践：使用默认构造函数初始化集合
+[source%nowrap,java,{source_attr}]
+----
+new ArrayList();
+----
+
+.最佳实践：使用指定容量初始化集合
+[source%nowrap,java,{source_attr}]
+----
+new ArrayList(1);
+----
+
+
+== 内存并不便宜
+
+有人会反驳说，内存这么便宜，我为什么要担心呢？这个问题很有道理。但在云计算时代，内存可不便宜。有 4 种主要计算资源：
+
+* CPU
+* 内存
+* 网络
+* 存储
+
+应用程序可能运行在 AWS EC2 实例上的数以万计的应用程序服务器上。在上述 4 种计算资源中，EC2 实例中哪种资源会达到饱和？在继续阅读之前，请先暂停一下。想一想，哪种资源会首先饱和。
+
+对于大多数应用程序来说，它是**内存**。CPU 始终保持在 30% - 60%。存储空间总是很充裕。网络很难饱和（除非应用程序正在流式传输大量视频内容）。因此，对于大多数应用程序来说，首先饱和的是内存。即使 CPU、存储和网络的利用率很低，但由于内存已经饱和，最终还是要配置越来越多的 EC2 实例。这将使计算成本增加数倍。
+
+另一方面，由于低效的编程实践，现代应用程序无一例外地浪费了 30% - 90% 的内存。即使是没有太多业务逻辑的 Spring Boot 宠物诊所也要浪费 65% 的内存。真正的企业应用浪费的内存量级与此类似，甚至更多。因此，如果能编写内存效率高的代码，就能降低计算成本。由于内存是最先饱和的资源，如果能减少内存消耗，就能在更少的服务器实例上运行应用程序。或许可以减少 30 - 40% 的服务器。这意味着你的管理层可以减少 30 - 40% 的数据中心（或云托管服务提供商）成本，再加上维护和支持成本。这可以节省数百万/数十亿美元的成本。
+
+
+== 总结
+
+除了降低计算成本，编写内存效率高的代码还能大大改善客户体验。如果能减少为处理新接收请求而创建的对象数量，响应时间就会大大缩短。由于创建的对象数量减少，用于创建和垃圾回收对象的 CPU 周期也会减少。响应时间的缩短将带来更好的客户体验。
+
+原文： https://blog.heaphero.io/2019/11/18/memory-wasted-by-spring-boot-application/[MEMORY WASTED BY SPRING BOOT APPLICATION^]。
