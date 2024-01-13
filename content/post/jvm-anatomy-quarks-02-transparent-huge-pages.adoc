@@ -1,0 +1,178 @@
+---
+title: "JVM 剖析花园：2 - 透明大页"
+date: 2024-01-13T19:24:37+08:00
+draft: false
+keywords: ["Java","虚拟机","程序设计","操作系统","Linux"]
+tags: ["Java","虚拟机", "翻译"]
+categories: ["系统架构","程序设计","操作系统"]
+thumbnail: "images/java/jvm.png"
+
+weight: 1
+---
+
+
+== 问题
+
+什么是大页（Large Page）？什么是透明大页（Transparent Huge Page）？它对我有什么帮助？
+
+
+== 理论
+
+虚拟内存现在已被视为理所当然。现在只有少数人还记得，更不用说做一些“真实模式”编程了，在这种情况下，你会接触到实际的物理内存。相反，每个进程都有自己的虚拟内存空间，该空间被映射到实际内存上。例如，两个进程在相同的虚拟地址 `0x42424242` 上拥有不同的数据，而这些数据将由不同的物理内存支持。现在，当程序访问该地址时，应将虚拟地址转换为物理地址。
+
+image::/images/os/virtual-address-space-and-physical-address-space-relationship.svg[title="虚拟内存地址与物理内存地址之间的关系",alt="虚拟内存地址与物理内存地址之间的关系",{image_attr}]
+
+这通常由操作系统维护 https://en.wikipedia.org/wiki/Page_table[“页表”^]，硬件通过“页表遍历”来实现地址转换。如果在页面粒度上维护翻译，整个过程就会变得简单。但这样做的成本并不低，而且每次内存访问都需要这样做！因此，还需要对最新的翻译进行小型缓存，即 https://en.wikipedia.org/wiki/Translation_lookaside_buffer[转译后备缓冲区（Translation Lookaside Buffer (TLB)）^]。TLB 通常很小，只有不到 100 个条目，因为它的速度至少要与 L1 缓存相当，甚至更快。对于许多工作负载来说，TLB 未命中和相关的页表遍历需要大量时间。
+
+既然我们无法将 TLB 做得更大，那么我们可以做其他事情：制作更大的页面！大多数硬件有 4K 基本页和 2M/4M/1G “大页”。用更大的页来覆盖相同的区域，还能使页表本身更小，从而降低页表遍历的成本。
+
+在 Linux 世界中，至少有两种不同的方法可以在应用程序中实现这一点：
+
+* https://www.kernel.org/doc/Documentation/vm/hugetlbpage.txt[*hugetlbfs*^]。切出系统内存的一部分，将其作为虚拟文件系统公开，让应用程序通过 `mmap(2)` 从其中获取。这是一个特殊的接口，需要操作系统配置和应用程序更改才能使用。这也是一种“要么全有，要么全无”的交易：分配给 `hugetlbfs`（持久部分）的空间不能被普通进程使用。
+* https://www.kernel.org/doc/Documentation/vm/transhuge.txt[*透明大页（Transparent Huge Pages (THP)）*^]。让应用程序像往常一样分配内存，但尽量以透明方式为应用程序提供大容量页面支持的存储空间。理想情况下，不需要更改应用程序，但我们会看到应用程序如何从了解 THP 的可用性中获益。但在实际应用中，会产生内存开销（因为会为小文件分配整个大页面）或时间开销（因为 THP 有时需要对内存进行碎片整理以分配页面）。好在有一个中间方案：通过 `madvise(2)` 可以让应用程序告诉 Linux 在哪里使用 THP。
+
+不明白为什么术语中会交替使用 "large "和 "huge"。总之，OpenJDK 支持这两种模式：
+
+[source%nowrap,bash,{source_attr}]
+----
+$ java -XX:+PrintFlagsFinal 2>&1 | grep Huge
+  bool UseHugeTLBFS             = false      {product} {default}
+  bool UseTransparentHugePages  = false      {product} {default}
+$ java -XX:+PrintFlagsFinal 2>&1 | grep LargePage
+  bool UseLargePages            = false   {pd product} {default}
+----
+
+`-XX:+UseHugeTLBFS` 将 Java 堆映射到 `hugetlbfs` 中，后者应单独准备。
+
+`-XX:+UseTransparentHugePages` 参数已经在“疯狂”地提示 Java 堆应使用 THP。这是一个很方便的选项，因为我们知道 Java 堆很大，而且大部分是连续的，可能从大页面中获益最多。
+
+-XX:+UseLargePages 是一个通用快捷方式，可以启用任何可用的选项。在 Linux 上，它启用的是 hugetlbfs，而不是 THP。我猜这是出于历史原因，因为 hugetlbfs 最先出现。
+
+某些应用程序在启用大页面后确实会 https://bugs.openjdk.org/browse/JDK-8024838[受到影响^]。(有趣的是，有时看到人们为了避免 GC 而手动进行内存管理，结果却因为 THP 磁盘碎片而导致延迟激增！）。直觉告诉我，THP 会让大部分短暂的应用程序倒退，在这些应用程序中，碎片整理成本与短应用程序时间相比是显而易见的。
+
+== 实验
+
+能展示大型页面给我们带来的好处吗？当然可以，让我们以任何系统性能工程师在三十多岁时都至少运行过一次的工作负载为例。分配并随机访问一个 `byte[]` 数组：
+
+[source%nowrap,java,{source_attr}]
+----
+public class ByteArrayTouch { //<1>
+
+    @Param(...)
+    int size;
+
+    byte[] mem;
+
+    @Setup
+    public void setup() {
+        mem = new byte[size];
+    }
+
+    @Benchmark
+    public byte test() {
+        return mem[ThreadLocalRandom.current().nextInt(size)];
+    }
+}
+----
+<1> 完整代码在 https://shipilev.net/jvm/anatomy-quarks/2-transparent-huge-pages/ByteArrayTouch.java[这里^]。
+
+我们知道，根据大小不同，性能主要由 L1 缓存未命中、L2 缓存未命中或 L3 缓存未命中等因素决定。这种情况通常会忽略 TLB 的未命中成本。
+
+在运行测试之前，我们需要确定要占用多少堆。在我的机器上，L3 约为 8M，因此 100M 磁盘就足以应付它。也就是说，悲观地说，用 `-Xmx1G -Xms1G` 分配 1G 堆就错错有余了。这也为我们提供了为 `hugetlbfs` 分配多少容量的指导。
+
+因此，请确保设置了这些选项：
+
+[source%nowrap,{source_attr}]
+----
+# HugeTLBFS should allocate 1000*2M pages:
+sudo sysctl -w vm.nr_hugepages=1000
+
+# THP to "madvise" only (some distros have an opinion about defaults):
+echo madvise | sudo tee /sys/kernel/mm/transparent_hugepage/enabled
+echo madvise | sudo tee /sys/kernel/mm/transparent_hugepage/defrag
+----
+
+我喜欢为 THP 做 “madvise”，因为它可以让我“选择”我们知道会受益的特定内存部分。
+
+运行在 i7 4790K, Linux x86_64, JDK 8u101 上：
+
+[source%nowrap,{source_attr}]
+----
+Benchmark               (size)  Mode  Cnt   Score   Error  Units
+
+# Baseline
+ByteArrayTouch.test       1000  avgt   15   8.109 ± 0.018  ns/op
+ByteArrayTouch.test      10000  avgt   15   8.086 ± 0.045  ns/op
+ByteArrayTouch.test    1000000  avgt   15   9.831 ± 0.139  ns/op
+ByteArrayTouch.test   10000000  avgt   15  19.734 ± 0.379  ns/op
+ByteArrayTouch.test  100000000  avgt   15  32.538 ± 0.662  ns/op
+
+# -XX:+UseTransparentHugePages
+ByteArrayTouch.test       1000  avgt   15   8.104 ± 0.012  ns/op
+ByteArrayTouch.test      10000  avgt   15   8.060 ± 0.005  ns/op
+ByteArrayTouch.test    1000000  avgt   15   9.193 ± 0.086  ns/op // !
+ByteArrayTouch.test   10000000  avgt   15  17.282 ± 0.405  ns/op // !!
+ByteArrayTouch.test  100000000  avgt   15  28.698 ± 0.120  ns/op // !!!
+
+# -XX:+UseHugeTLBFS
+ByteArrayTouch.test       1000  avgt   15   8.104 ± 0.015  ns/op
+ByteArrayTouch.test      10000  avgt   15   8.062 ± 0.011  ns/op
+ByteArrayTouch.test    1000000  avgt   15   9.303 ± 0.133  ns/op // !
+ByteArrayTouch.test   10000000  avgt   15  17.357 ± 0.217  ns/op // !!
+ByteArrayTouch.test  100000000  avgt   15  28.697 ± 0.291  ns/op // !!!
+----
+
+这里有几点结论：
+
+. 在较小的大小上，高速缓存和 TLB 都很好，与基线没有区别。
+. 在更大的容量下，缓存未命中开始占主导地位，这就是为什么在各种配置下成本都会增加。
+. 在更大的容量下，TLB 的未命中率会更高，而启用大页面会有很大帮助！
+. `UseTHP` 和 `UseHTLBFS` 的作用是一样的，因为它们为应用程序提供的服务是一样的。
+
+为了验证 TLB 未命中假设，我们可以查看硬件计数器。JMH `-prof perfnorm` 通过操作将它们规范化。
+
+[source%nowrap,{source_attr}]
+----
+Benchmark                                (size)  Mode  Cnt    Score    Error  Units
+
+# Baseline
+ByteArrayTouch.test                   100000000  avgt   15   33.575 ±  2.161  ns/op
+ByteArrayTouch.test:cycles            100000000  avgt    3  123.207 ± 73.725   #/op
+ByteArrayTouch.test:dTLB-load-misses  100000000  avgt    3    1.017 ±  0.244   #/op  // !!!
+ByteArrayTouch.test:dTLB-loads        100000000  avgt    3   17.388 ±  1.195   #/op
+
+# -XX:+UseTransparentHugePages
+ByteArrayTouch.test                   100000000  avgt   15   28.730 ±  0.124  ns/op
+ByteArrayTouch.test:cycles            100000000  avgt    3  105.249 ±  6.232   #/op
+ByteArrayTouch.test:dTLB-load-misses  100000000  avgt    3   ≈ 10⁻³            #/op
+ByteArrayTouch.test:dTLB-loads        100000000  avgt    3   17.488 ±  1.278   #/op
+----
+
+继续！在基线状态下，每次运行都会出现一次 dTLB 负载缺失，而启用 THP 后则会大大减少。
+
+当然，启用 THP 磁盘碎片整理后，将在分配/访问时付出前期的碎片整理成本。为了将这些成本转移到 JVM 启动阶段，以避免应用程序运行时出现令人惊讶的延迟问题，可以在初始化过程中使用 `-XX:+AlwaysPreTouch` 命令 JVM 接触 Java 堆中的每个页面。无论如何，对较大的堆启用 `-XX:+AlwaysPreTouch` 是个好主意。
+
+有趣的地方来了：启用 `-XX:+UseTransparentHugePages` 实际上会让 `-XX:+AlwaysPreTouch` 更快，因为操作系统现在可以处理更大的页面：需要处理的页面更少，而且操作系统在流式（清零）写入中的胜算更大。使用 THP，进程死机后释放内存的速度也更快，等 https://lwn.net/Articles/715501/[并行释放补丁（parallel freeing patch）^] 逐渐合并到发行版内核之后，可能会快得可怕。
+
+使用 4 TB（太字节，带 T）堆就是一个很好的例子：
+
+[source%nowrap,bash,{source_attr}]
+----
+$ time java -Xms4T -Xmx4T -XX:-UseTransparentHugePages -XX:+AlwaysPreTouch
+real    13m58.167s  # About 5 GB/sec
+user    43m37.519s
+sys     1011m25.740s
+
+$ time java -Xms4T -Xmx4T -XX:+UseTransparentHugePages -XX:+AlwaysPreTouch
+real    2m14.758s   # About 31 GB/sec
+user    1m56.488s
+sys     73m59.046s
+----
+
+别着急，提交和释放 4 TB 肯定需要一段时间！
+
+== 结论
+
+大页面是提高应用程序性能的简单技巧。Linux 内核中的“透明大页”功能使其更易于使用。JVM 中的“透明大页”支持使其易于选择。尝试大页面总是一个好主意，尤其是当你的应用程序有大量数据和大堆时。
+
+原文： https://shipilev.net/jvm/anatomy-quarks/2-transparent-huge-pages/[JVM Anatomy Quark #2: Transparent Huge Pages^]
