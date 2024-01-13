@@ -1,9 +1,9 @@
 ---
-title: "理解 JVM 架构【翻译】"
+title: "理解 JVM 架构【译】"
 date: 2022-09-18T20:24:10+08:00
 draft: true
 keywords: ["Java","JVM","虚拟机","架构"]
-tags: ["Java","虚拟机","JVM"]
+tags: ["Java","虚拟机","JVM","翻译"]
 categories: ["系统架构"]
 thumbnail: "images/logo/jvm.jpg"
 

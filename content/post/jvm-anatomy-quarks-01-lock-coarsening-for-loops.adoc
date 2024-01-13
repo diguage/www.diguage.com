@@ -1,0 +1,205 @@
+---
+title: "JVM 剖析花园：1 - 锁粗化及循环"
+date: 2024-01-13T16:08:36+08:00
+draft: false
+keywords: ["Java","虚拟机","程序设计"]
+tags: ["Java","虚拟机", "翻译"]
+categories: ["系统架构","程序设计"]
+thumbnail: "images/java/jvm.png"
+
+weight: 1
+---
+
+____
+“JVM 剖析花园”是由 JVM 研发专家及性能极客 https://shipilev.net/[Aleksey Shipilëv^] 撰写的一个系列文章，专门介绍一些有关 JVM 的基本知识。笔者也是前几年无意间发现的一片宝藏文章。早就有翻译过来，介绍给大家的想法，可惜一直未能付诸实践。最近在查资料时，无意间又翻到了这个系列，遂下定决心，完成这个萌发已久的小想法。
+
+为了便于理解，对该系列的名字做了微调，原文是“JVM Anatomy Quarks”，将原文的“Quarks”（夸克）翻译为了“花园”。
+____
+
+“JVM 解剖花园”是一个正在进行中的小型系列文章，每篇文章都会介绍一些有关 JVM 的基本知识。这个名字强调了一个事实，即单篇文章不能孤立地看待，这里描述的大部分内容都会很容易地相互影响。
+
+阅读这篇文章大约需要 5-10 分钟。因此，它只针对单一主题、单一测试、单一基准和单一观察进行深入探讨。这里的证据和讨论可能是轶事，并没有对错误、一致性、写作风格、语法和语义错误、重复或一致性进行实际审查。请自行承担使用和/或信任的风险。
+
+NOTE: 以上是该系列介绍。这里介绍一次，后续文章不再赘述。
+
+== 问题
+
+众所周知，Hotspot 可以进行 https://en.wikipedia.org/wiki/Java_performance#Escape_analysis_and_lock_coarsening[锁粗化优化^]，有效合并多个相邻的锁定块，从而减少锁定开销。它能有效地对如下代码做优化：
+
+// image::/images/[title="",alt="",{image_attr}]
+
+[source%nowrap,java,{source_attr}]
+----
+synchronized (obj) {
+  // statements 1
+}
+synchronized (obj) {
+  // statements 2
+}
+----
+
+优化后：
+
+[source%nowrap,java,{source_attr}]
+----
+synchronized (obj) {
+  // statements 1
+  // statements 2
+}
+----
+
+现在，今天提出的一个有趣问题是：Hotspot 是否会对循环进行这种优化？例如：
+
+[source%nowrap,java,{source_attr}]
+----
+for (...) {
+  synchronized (obj) {
+    // something
+  }
+}
+----
+
+是否会被优化成如下这样：
+
+[source%nowrap,java,{source_attr}]
+----
+synchronized (this) {
+  for (...) {
+     // something
+  }
+}
+----
+
+理论上，没有什么能阻止我们这样做。我们甚至可以把这种优化看作是 https://en.wikipedia.org/wiki/Loop_unswitching[循环判断外提^]，只不过这里是针对锁而已。然而，这样做的缺点是有可能使锁变得过于粗糙，从而导致特定线程在执行大循环时占用锁。
+
+== 实验
+
+要回答这个问题，最简单的方法就是找到当前 Hotspot 优化的正面证据。幸运的是，有了 https://github.com/openjdk/jmh[JMH^]，这一切都变得非常简单。它不仅有助于建立基准，还有助于工程中最重要的部分--基准分析。让我们从一个简单的基准检查程序开始：
+
+[source%nowrap,java,{source_attr}]
+----
+@Fork(..., jvmArgsPrepend = {"-XX:-UseBiasedLocking"})
+@State(Scope.Benchmark)
+public class LockRoach { //<1>
+    int x;
+
+    @Benchmark
+    @CompilerControl(CompilerControl.Mode.DONT_INLINE)
+    public void test() {
+        for (int c = 0; c < 1000; c++) {
+            synchronized (this) {
+                x += 0x42;
+            }
+        }
+    }
+}
+----
+<1> 完整代码在 https://shipilev.net/jvm/anatomy-quarks/1-lock-coarsening-for-loops/LockRoach.java[这里^]。
+
+这里有几个重要的技巧：
+
+. 使用 `-XX:-UseBiasedLocking` 禁用偏向锁可以避免更长的预热时间，因为偏向锁不会立即启动，而是会在初始化阶段等待 5 秒（参见 `BiasedLockingStartupDelay` 选项）。
+. 禁用 `@Benchmark` 的方法内联有助于在反汇编时将其分离。
+. 增加一个神奇的数字 `0x42`，有助于在反汇编中快速找到增量。
+
+运行于 i7 4790K、Linux x86_64、JDK EA 9b156：
+
+[source%nowrap,{source_attr}]
+----
+Benchmark            Mode  Cnt      Score    Error  Units
+LockRoach.test       avgt    5   5331.617 ± 19.051  ns/op
+----
+
+你能从这个数字看出什么？什么都看不出来，对吧？我们需要看看下面到底发生了什么。在这方面，`-prof perfasm` 非常有用，因为它会显示生成代码中最热的区域。使用默认设置运行时，会发现最热的指令是 `lock cmpxchg`（比较和设置（compare-and-sets）），执行锁定，只打印它们周围的热区。使用 `-prof perfasm:mergeMargin=1000` 运行，将这些最热区域合并成一幅完整的图画，就会得到这个一看就吓人的 https://shipilev.net/jvm/anatomy-quarks/1-lock-coarsening-for-loops/default.perfasm[输出结果]。
+
+再往下剥离，级联跳转是锁定/解锁，然后注意累计循环次数最多的代码（第一列），我们可以看到最热的循环是这样的：
+
+[source%nowrap,{source_attr}]
+----
+ ↗  0x00007f455cc708c1: lea    0x20(%rsp),%rbx
+ │          < blah-blah-blah, monitor enter >     ; <--- coarsened!
+ │  0x00007f455cc70918: mov    (%rsp),%r10        ; load $this
+ │  0x00007f455cc7091c: mov    0xc(%r10),%r11d    ; load $this.x
+ │  0x00007f455cc70920: mov    %r11d,%r10d        ; ...hm...
+ │  0x00007f455cc70923: add    $0x42,%r10d        ; ...hmmm...
+ │  0x00007f455cc70927: mov    (%rsp),%r8         ; ...hmmmmm!...
+ │  0x00007f455cc7092b: mov    %r10d,0xc(%r8)     ; LOL Hotspot, redundant store, killed two lines below
+ │  0x00007f455cc7092f: add    $0x108,%r11d       ; add 0x108 = 0x42 * 4 <-- unrolled by 4
+ │  0x00007f455cc70936: mov    %r11d,0xc(%r8)     ; store $this.x back
+ │          < blah-blah-blah, monitor exit >      ; <--- coarsened!
+ │  0x00007f455cc709c6: add    $0x4,%ebp          ; c += 4   <--- unrolled by 4
+ │  0x00007f455cc709c9: cmp    $0x3e5,%ebp        ; c < 1000?
+ ╰  0x00007f455cc709cf: jl     0x00007f455cc708c1
+----
+
+咦？循环似乎被以 4 为批次被 https://en.wikipedia.org/wiki/Loop_unrolling[展开^]，然后在每批迭代中对锁进行了粗化！好吧，如果这是由于循环展开造成的，我们就可以量化这种有限粗化的性能优势，但要使用 `-XX:LoopUnrollLimit=1` 来减少展开：
+
+[source%nowrap,{source_attr}]
+----
+Benchmark            Mode  Cnt      Score    Error  Units
+
+# Default
+LockRoach.test       avgt    5   5331.617 ± 19.051  ns/op
+
+# -XX:LoopUnrollLimit=1
+LockRoach.test       avgt    5  20679.043 ±  3.133  ns/op
+----
+
+哇哦，性能提升了 4 倍！这是有原因的，因为我们已经观察到，最热门的代码已经从从锁定变为 `lock cmpxchg`。当然，4 倍的粗略锁定意味着 4 倍的吞吐量提升。很酷吧，我们可以宣称成功并继续前进了吗？还不行，我们还得验证一下禁用循环展开是否真的能提供我们想要比较的结果。
+
+[source%nowrap,{source_attr}]
+----
+ ↗  0x00007f964d0893d2: lea    0x20(%rsp),%rbx
+ │          < blah-blah-blah, monitor enter >
+ │  0x00007f964d089429: mov    (%rsp),%r10        ; load $this
+ │  0x00007f964d08942d: addl   $0x42,0xc(%r10)    ; $this.x += 0x42
+ │          < blah-blah-blah, monitor exit >
+ │  0x00007f964d0894be: inc    %ebp               ; c++
+ │  0x00007f964d0894c0: cmp    $0x3e8,%ebp        ; c < 1000?
+ ╰  0x00007f964d0894c6: jl     0x00007f964d0893d2 ;
+----
+
+啊，好的，一切正常。
+
+.D瓜哥注
+****
+虽然文章的主旨是明了的。但是，不好意思，最后几段的翻译有些差强人意。一个是原文有些不够明确（严谨地来说，也许是笔者理解的不够到位。）；更严重的是，笔者的英语也差强人意。实在抱歉。备注一下，以后再完善。除此之外，还想说明的是另外一个问题。
+
+笔者按照原文描述运行了一下测试程序，数据确实如文章描述的这样，又大概 4 倍的差距。有疑惑的是，笔者针对 `-XX:LoopUnrollLimit=<Number>` 的不同参数做了测试，结果却没有倍差的情况出现，百思不得其解。数据如下：
+
+[source%nowrap,{source_attr}]
+----
+无 -XX:LoopUnrollLimit 设置
+Benchmark       Mode  Cnt     Score     Error  Units
+LockRoach.test  avgt    5  4588.090 ± 224.640  ns/op
+
+-XX:LoopUnrollLimit=1
+Benchmark       Mode  Cnt      Score     Error  Units
+LockRoach.test  avgt    5  18110.053 ± 437.384  ns/op
+
+-XX:LoopUnrollLimit=2
+Benchmark       Mode  Cnt      Score     Error  Units
+LockRoach.test  avgt    5  18054.901 ± 577.089  ns/op
+
+-XX:LoopUnrollLimit=4
+Benchmark       Mode  Cnt      Score     Error  Units
+LockRoach.test  avgt    5  18203.350 ± 908.288  ns/op
+
+-XX:LoopUnrollLimit=8
+Benchmark       Mode  Cnt      Score     Error  Units
+LockRoach.test  avgt    5  18059.318 ± 399.724  ns/op
+
+-XX:LoopUnrollLimit=16
+Benchmark       Mode  Cnt      Score     Error  Units
+LockRoach.test  avgt    5  18075.222 ± 401.691  ns/op
+----
+
+有机会再深入了解学习一下相关知识再来探索。
+
+****
+
+== 结论
+
+虽然锁粗化并不适用于整个循环，但另一种循环优化方法--循环展开--为常规锁粗化创造了条件，一旦中间表示开始看起来好像有 N 个相邻的锁-解锁序列，就可以进行锁粗化。这不仅能带来性能上的优势，还有助于限制粗化的范围，避免对过大的循环进行过度粗化。
+
+原文： https://shipilev.net/jvm/anatomy-quarks/1-lock-coarsening-for-loops/[JVM Anatomy Quark #1: Lock Coarsening and Loops^]
