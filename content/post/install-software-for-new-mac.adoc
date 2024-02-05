@@ -78,19 +78,19 @@ source ~/.sdkman/bin/sdkman-init.sh
 sdk offline disable & sdk install java 21-amzn
 
 # 安装 Amazon OpenJDK 21
-sdk offline disable & sdk install java 8.0.392-amzn
+sdk offline disable & sdk install java 8.0.402-amzn
 
 # 设置默认 JDK
-sdk default java 8.0.392-amzn
+sdk default java 8.0.402-amzn
 
 # 安装 Maven，尽量和正式环境保持一致
-sdk install maven 3.9.5
+sdk install maven 3.9.6
 
 # 安装 Homebrew
 /bin/bash -c "$(curl -fsSL https://cdn.jsdelivr.net/gh/Homebrew/install/install.sh)"
 
-echo 'eval "$(/usr/local/bin/brew shellenv)"' >> ~/.zprofile
-source ~/.zprofile
+(echo; echo 'eval "$(/opt/homebrew/bin/brew shellenv)"') >> ~/.zprofile
+eval "$(/opt/homebrew/bin/brew shellenv)"
 
 # 安装 curl
 until brew install curl
