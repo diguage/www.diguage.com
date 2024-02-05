@@ -34,6 +34,19 @@ xcode-select --install
 
 image::/images/logos/oh-my-zsh.png[title="oh-my-zsh",alt="oh-my-zsh",{image_attr}]
 
+由于安装 oh my zsh 会导致脚本退出，所以，单独安装：
+
+[source%nowrap,bash,{source_attr}]
+----
+#!/usr/bin/env bash
+#
+# Author: D瓜哥 · https://www.diguage.com
+#
+
+# 安装 oh-my-zsh
+sh -c "$(curl -fsSL https://cdn.jsdelivr.net/gh/ohmyzsh/ohmyzsh/tools/install.sh)"
+----
+
 === Homebrew
 
 脚本里面主要使用了 Homebrew 来安装软件。
@@ -65,9 +78,6 @@ TIP: 将下面代码拷贝下来，保存成一个 `install.sh` 文件，然后�
 #
 # Author: D瓜哥 · https://www.diguage.com
 #
-
-# 安装 oh-my-zsh
-sh -c "$(curl -fsSL https://cdn.jsdelivr.net/gh/ohmyzsh/ohmyzsh/tools/install.sh)"
 
 # 安装 sdkman
 curl -s "https://get.sdkman.io" | bash
