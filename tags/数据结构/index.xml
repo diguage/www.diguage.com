@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>数据结构 on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/</link><description>Recent content in 数据结构 on "地瓜哥"博客网</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Mon, 01 May 2023 22:33:03 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/index.xml" rel="self" type="application/rss+xml"/><item><title>HikariCP 源码分析 -- FastList</title><link>https://www.diguage.com/post/hikari-cp-source-analysis-fast-list/</link><pubDate>Sun, 02 Aug 2020 15:06:02 +0800</pubDate><guid>https://www.diguage.com/post/hikari-cp-source-analysis-fast-list/</guid><description>在前面的文章 HikariCP 源码分析 — ConcurrentBag 中，D瓜哥分析了一下 HikariCP 中一个非常重要的数据结构 ConcurrentBag。
+今天，继续再介绍 HikariCP 中另一个很关键的数据结构： FastList。
+FastList 本身的实现非常简单，要理解它的奥秘，就需要结合 Java 原生集合类的 ArrayList 来比较性地看。
+构造函数 先来对比一下两者的构造函数。先来看看 FastList：
+FastList public final class FastList&amp;lt;T&amp;gt; implements List&amp;lt;T&amp;gt;, RandomAccess, Serializable { private static final long serialVersionUID = -4598088075242913858L; private final Class&amp;lt;?&amp;gt; clazz; private T[] elementData; private int size; /** * Construct a FastList with a default size of 32. * @param clazz the Class stored in the collection */ @SuppressWarnings(&amp;#34;unchecked&amp;#34;) public FastList(Class&amp;lt;?</description></item><item><title>深入剖析 Spring 核心数据结构：BeanFactory</title><link>https://www.diguage.com/post/dive-into-spring-core-data-structure-bean-factory/</link><pubDate>Fri, 26 Jun 2020 15:30:08 +0800</pubDate><guid>https://www.diguage.com/post/dive-into-spring-core-data-structure-bean-factory/</guid><description>在 深入剖析 Spring 核心数据结构：BeanDefinition 中，介绍了 BeanDefinition。网上很多文章介绍 BeanDefinition 的 API，D瓜哥却要反其道而行之，从内部属性来分析一下。下面我们开始。
+继承体系 Spring 非常好地遵循了面向对象的设计原则：面向接口编程。不放过任何可以提取出成接口的机会。虽然感觉似乎增加了类的继承关系，增加了一点的复杂度。但是，却带来了非常好的可扩展性。而 BeanFactory 的继承体系就是一个非常典型的例子。我们来看一下它的继承体系：
+Figure 1. BeanFactory 继承体系 AliasRegistry：别名注册器。Spring 中，别名注册相关的功能就是从这里实现的。
+SimpleAliasRegistry：别名注册器的一个简单实现，从内部属性可以看出，它是把别名映射信息存到一个 Map 中了。
+DefaultSingletonBeanRegistry：默认的单例 Bean 注册器，从内部属性来说，也是基于 Map 实现的。
+FactoryBeanRegistrySupport： FactoryBean 注册器。
+SingletonBeanRegistry：单例 Bean 注册器。
+BeanDefinitionRegistry： BeanDefinition 注册器。
+BeanFactory：容器的基类。
+ListableBeanFactory：在基本容器基础上，增加了遍历相关功能。
+HierarchicalBeanFactory：在基本容器基础上，增加了父子上下级容器关联。
+AutowireCapableBeanFactory：在基本容器基础上，增加了自动注入功能。
+ConfigurableBeanFactory：对容器增加可配置性，比如父级容器、ClassLoader、TypeConverter 等。
+ConfigurableListableBeanFactory：可配置可遍历容器。
+AbstractBeanFactory：容器的抽象实现类，实现了容器的基础功能。
+AbstractAutowireCapableBeanFactory：带自动装配功能的抽象容器类。
+DefaultListableBeanFactory：这是 Spring 内部使用的默认容器实现。也是 Spring 中最重要的一个类。
+核心属性 Registry Map&amp;lt;String, String&amp;gt; aliasMap = new ConcurrentHashMap&amp;lt;&amp;gt;(16)：别名到 Bean 名称的映射。
+Map&amp;lt;String, Object&amp;gt; singletonObjects = new ConcurrentHashMap&amp;lt;&amp;gt;(256)：Bean 名称到单例 Bean 的映射。可以理解成，这就是所谓的容器。</description></item><item><title>深入剖析 Spring 核心数据结构：BeanDefinition</title><link>https://www.diguage.com/post/dive-into-spring-core-data-structure-bean-definition/</link><pubDate>Sun, 21 Jun 2020 21:18:57 +0800</pubDate><guid>https://www.diguage.com/post/dive-into-spring-core-data-structure-bean-definition/</guid><description>林纳斯·托瓦兹（Linus Torvalds）说：“我从心底认为，优秀的程序员与平庸的程序员之间的区别，是在于认为自己的代码重要还是数据结构更加重要。平庸的程序员眼里只有代码，优秀的程序员则关注数据结构及之前的关系。” 也许很多人觉得 Spring 神秘莫测，但是如果了解了它的核心数据结构，很多问题迎刃而解。
+Spring 中两个数据结构最核心：① BeanDefinition，用于表示 Bean 的定义；② BeanFactory，用于表示整个 IoC 容器。
+在前面文章 Spring Bean 生命周期概述中，介绍了 Spring Bean 的生命周期。不知道大家有没有思考过 Spring 在内部是如何表示一个 Bean 的？本篇文章，就来聊一聊 BeanDefinition
+问题 使用 Spring 时，尤其是使用 XML 配置的时候，也许我们会这样的问题：
+Bean 怎么表示？
+Bean 的依赖怎么表示？
+init-method 方法怎么存储？
+Bean 的一些属性，比如 lazy-init 等，怎么表示？
+Bean 构造函数的参数怎么存储？
+…​
+Java 也有类似的问题，比如怎么表示一个类？Java 通过反射 API 来解决这个问题：
+Class
+Method
+Field
+Constructor
+Annotation
+但是，为什么 Spring 还要自己定义一套呢？主要原因是 Java 反射 API 不满足 Spring 的需求，比如，它没办法表示哪些类是 SCOPE_SINGLETON，哪些类是 SCOPE_PROTOTYPE。
+另外，Spring 的 Bean 抽象也并不是完全自定义的，它是基于 Java 反射 API 又增加了自定义功能，其核心 API 就是 BeanDefinition。下面，我们来仔细看一下它的继承体系以及内部核心属性。</description></item><item><title>HikariCP 源码分析 -- ConcurrentBag</title><link>https://www.diguage.com/post/hikari-cp-source-analysis-concurrent-bag/</link><pubDate>Wed, 06 May 2020 17:12:55 +0800</pubDate><guid>https://www.diguage.com/post/hikari-cp-source-analysis-concurrent-bag/</guid><description>以前无意间搜资料了解到 HikariCP，一下子就被它的简洁代码和卓越性能吸引住了。以前也有翻过它的代码，但是不是很系统，最近再次翻阅，正好做些笔记，方便以后学习。
+D瓜哥最近在学习 Java 并发知识。那就从 HikariCP 自定义的并发集合 ConcurrentBag 开始学习。
+在 HikariCP 的 Wiki 中，有 Down the Rabbit Hole · ConcurrentBag 的章节来专门介绍 ConcurrentBag：
+ConcurrentBag 的灵感借鉴自 C# .NET 的 ConcurrentBag 类。但是实现却是完全不同的。这里的 ConcurrentBag 有如下特性：
+A lock-free design
+ThreadLocal caching
+Queue-stealing
+Direct hand-off optimizations
+下面，通过代码来对此做个说明。
+在 ConcurrentBag 类的定义中，声明了集合元素必须是 IConcurrentBagEntry 的子类。先来看看这个接口的定义：
+public interface IConcurrentBagEntry { int STATE_NOT_IN_USE = 0; int STATE_IN_USE = 1; int STATE_REMOVED = -1; int STATE_RESERVED = -2; boolean compareAndSet(int expectState, int newState); void setState(int newState); int getState(); } 接下来，看一下成员变量：</description></item></channel></rss>

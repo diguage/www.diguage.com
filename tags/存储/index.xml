@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>存储 on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/%E5%AD%98%E5%82%A8/</link><description>Recent content in 存储 on "地瓜哥"博客网</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Thu, 02 Feb 2023 20:02:58 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/%E5%AD%98%E5%82%A8/index.xml" rel="self" type="application/rss+xml"/><item><title>细说编码与字符集</title><link>https://www.diguage.com/post/dive-into-encoding-and-character-set/</link><pubDate>Sat, 29 Oct 2022 09:09:12 +0800</pubDate><guid>https://www.diguage.com/post/dive-into-encoding-and-character-set/</guid><description>文章还没写完，提前放出防止出现 404。稍后慢慢更新，敬请期待： 细说编码与字符集 - &amp;#34;地瓜哥&amp;#34;博客网
+文章还没写完，提前放出防止出现 404。稍后慢慢更新，敬请期待： 细说编码与字符集 - &amp;#34;地瓜哥&amp;#34;博客网
+文章还没写完，提前放出防止出现 404。稍后慢慢更新，敬请期待： 细说编码与字符集 - &amp;#34;地瓜哥&amp;#34;博客网
+前段时间要研究 Hessian 编码格式，为了搞清楚 Hessian 对字符串的编码，就顺路查了好多编码和字符集的工作，理清了很多以前模糊的知识点。下面整理一下笔记，也梳理一下自己的思路和理解。
+ASCII 码 计算机起源于美国，他们对英语字符与二进制位之间的对应关系做了统一规定，并制定了一套字符编码规则，这套编码规则被称为 American Standard Code for Information Interchange，简称为 ASCII 编码
+其实，ASCII 最早起源于电报码。最早的商业应用是贝尔公司的七位电传打字机。后来于 1963 年发布了该标准的第一版。在网络交换中使用的 ASCII 格式是在 1969 年发布的，该格式在 2015 年发展成为互联网标准。点击 RFC 20: ASCII format for network interchange，感受一下 1969 年的古香古色。
+ASCII 编码一共定义了128个字符的编码规则，用七位二进制表示（0x00 - 0x7F）, 这些字符组成的集合就叫做 ASCII 字符集。完整列表如下：
+ASCII 码可以说是现在所有编码的鼻祖。
+编码乱战及 Unicode 应运而生 ASCII 编码是为专门英语指定的编码标准，但是却不能编码英语外来词。比如 résumé，其中 é 就不在 ASCII 编码范围内。</description></item><item><title>关于 MySQL 新版连接驱动时区对齐问题的研究</title><link>https://www.diguage.com/post/research-on-timezone-of-mysql-new-connection-driver/</link><pubDate>Wed, 07 Jul 2021 10:23:41 +0800</pubDate><guid>https://www.diguage.com/post/research-on-timezone-of-mysql-new-connection-driver/</guid><description>在一个项目开量验证过程中，发现 createDate 字段不正确，比正确时间晚了十四个小时。调研发现，这是一个非常典型的问题。现在把定位问题的思路和解决办法给大家做个分享。
+首先，检查数据库配置，查询线上生产环境配置，结果如下：
+Figure 1. MySQL 变量 同时，检查线上生产环境 MySQL 版本，为问题复现做准备：
+Figure 2. MySQL 版本 从数据库配置上来说，基本正常，没有发现什么问题。（持续运行了这么长时间，有问题应该早就发现了。）
+其次，检查数据库连接配置，正式环境的链接配置如下：
+jdbc:mysql://&amp;lt;host&amp;gt;:3306/&amp;lt;schema&amp;gt;?createDatabaseIfNotExist=true &amp;amp;characterEncoding=utf-8&amp;amp;useUnicode=true&amp;amp;connectTimeout=2000 &amp;amp;socketTimeout=2000&amp;amp;autoReconnect=true 数据库连接也没有问题。
+第三，询问 SA 线上服务器时区配置，回复上是 CST，这个和数据库对应，没有问题。
+Figure 3. 与 SA 沟通 配置检查正常，那么只好在本地搭建环境，重现问题，再寻求解决方案。由于项目是基于 Spring Boot 2.3.7.RELEASE 开发的，相关依赖也尽量使用 Spring Boot 指定版本的，所以，很快把开发环境搭好了。
+在配置服务器环境时，遇到一点小小的问题：我一直以为有个时区名称叫 CST，就在网上去查怎么设置，结果徒劳半天也没有找到。后来上开发机检查开发机时区配置，发现是 Asia/Shanghai。将测试服务器设置为该时区，数据库内部查询时区，显示和服务器一直。
+调试代码中，发现 MySQL 连接驱动的代码中，有配置时区的相关代码，如下：
+com.mysql.cj.protocol.a.NativeProtocol#configureTimezone /** * Configures the client&amp;#39;s timezone if required. * * @throws CJException * if the timezone the server is configured to use can&amp;#39;t be * mapped to a Java timezone.</description></item><item><title>Redis 核心数据结构（二）</title><link>https://www.diguage.com/post/redis-core-data-structure-2/</link><pubDate>Fri, 03 Jul 2020 00:39:43 +0800</pubDate><guid>https://www.diguage.com/post/redis-core-data-structure-2/</guid><description>在上一篇文章： Redis 核心数据结构（1） 中，介绍了链表、ziplist、quicklist 数据结构。这篇文章，来介绍一下 skiplist、dict。
+skiplist 跳跃表是一种有序数据结构，支持平均 O(logN)、最坏 O(N) 复杂度的节点查找；大部分情况效率可以和平衡树相媲美，实现却比平衡树简单。
+跳跃表就是 Redis 中有序集合键的底层实现之一。
+server.h typedef struct zskiplistNode { sds ele; double score; struct zskiplistNode *backward; struct zskiplistLevel { struct zskiplistNode *forward; unsigned long span; } level[]; } zskiplistNode; typedef struct zskiplist { struct zskiplistNode *header, *tail; unsigned long length; int level; } zskiplist; typedef struct zset { dict *dict; zskiplist *zsl; } zset; skiplist，顾名思义，首先它是一个list。实际上，它是在有序链表的基础上发展起来的。
+当我们想查找数据的时候，可以先沿着跨度大的链进行查找。当碰到比待查数据大的节点时，再回到跨度小的链表中进行查找。
+skiplist正是受这种多层链表的想法的启发而设计出来的。按照上面生成链表的方式，上面每一层链表的节点个数，是下面一层的节点个数的一半，这样查找过程就非常类似于一个二分查找，使得查找的时间复杂度可以降低到 O(logN)。但是，存在的一个问题是：如果插入新节点后就会打乱上下相邻两层节点是 2:1 的对应关系。如果要维持，则需要调整后面所有的节点。</description></item><item><title>Redis 核心数据结构（一）</title><link>https://www.diguage.com/post/redis-core-data-structure-1/</link><pubDate>Thu, 02 Jul 2020 10:13:16 +0800</pubDate><guid>https://www.diguage.com/post/redis-core-data-structure-1/</guid><description>Redis 目前是使用最广泛的缓存中间件。其突出特点就是支持多种常见的数据结构。对比 JDK 集合类的实现，Redis 的实现表现出很多独到之处，很多地方设计得别具匠心。下面就来简要介绍一下。
+linkedlist Redis 底层也有很多地方使用到 linkedlist，并且也是双向链表。
+adlist.h typedef struct listNode { struct listNode *prev; struct listNode *next; void *value; } listNode; typedef struct listIter { listNode *next; int direction; } listIter; typedef struct list { listNode *head; listNode *tail; void *(*dup)(void *ptr); void (*free)(void *ptr); int (*match)(void *ptr, void *key); unsigned long len; } list; Redis 的 linkedlist 实现特点是：
+双向：节点带有前后指针；
+无环：首尾没有相连，所以没有构成环状；
+链表保存了首尾指针；
+多态：可以保存不同类型的值，这里成为泛型也许更符合 Java 中的语义。
+Redis 在 2014 年实现了 quicklist，并使用 quicklist 代替了 linkedlist。所以，现在 linkedlist 几乎已经是废弃状态。</description></item></channel></rss>

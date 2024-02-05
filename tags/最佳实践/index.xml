@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>最佳实践 on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5/</link><description>Recent content in 最佳实践 on "地瓜哥"博客网</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Mon, 08 May 2023 14:18:07 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5/index.xml" rel="self" type="application/rss+xml"/><item><title>关于接口可维护性的一些建议</title><link>https://www.diguage.com/post/tips-for-interface-maintainability/</link><pubDate>Fri, 28 Apr 2023 17:16:24 +0800</pubDate><guid>https://www.diguage.com/post/tips-for-interface-maintainability/</guid><description>在做新需求开发或者相关系统的维护更新时，尤其是涉及到不同系统的接口调用时，在可维护性方面，总感觉有很多地方差强人意。一些零星思考，抛砖引玉，希望引发更多的思考和讨论。总结了大概有如下几条建议：
+在接口注释中加入接口文档链接
+将调用接口处写上被调用接口文档链接
+将接口源代码发布到私服仓库
+对于状态值常量，优先在接口参数类或者返回值类中定义
+如果使用 Map 对象作为传输载体，要提供 Key 值定义常量
+针对 Map 返回值，可以考虑使用将 Map 转化成对象
+尽可能简化接口依赖
+只传递必要字段，尽量避免大而全的接口
+将接口的参数和返回值原始数据打印到日志中
+将 RPC 接口的类名及方法打印到日志中
+核心思想：以人为本，就近原则，触手可及
+下面，D瓜哥对每一条建议做一个详细说明。
+1. 在接口注释中加入接口文档链接 在做接口开发时，无论是对自有接口的升级改造，还是针对外部接口的从头接入，都涉及到接口文档。不同之处是，前者的工作重点是书写或者更新接口文档；而后者是根据接口文档开发合适的接入代码。但是，经常遇到的一个麻烦是，找不到接口文档。在组内需要找老同事询问；如果是跨部门，还需要两层甚至三层的进行转接，非常麻烦。
+D瓜哥认为，在这种情况下，为了方便大家维护，最好的办法就是将接口文档链接直接放在代码注释中，这样后续维护的人员，直接就可以点击链接直达接口文档，简单方便高效。如果是新建的接口，就可以先创建一个空文档，把链接放在注释中，后续再书写文档内容。如果是维护已有接口，可以在维护时，将缺失的链接加入到注释中，自己方便，也方便其他人进行后续的维护更新。这样，在循序渐进的过程中，逐步就可以把文档链接补充到代码中，方便维护代码，也同步更新文档。
+2. 将调用接口处写上被调用接口文档链接 在调用其他系统的接口时，没有接口文档，几乎寸步难行。在第一次接入接口时，绝大多数情况下，都是参考着接口文档做接入工作。但是，目前的情况时，接入时参考文档，参考完就随手把文档给“扔了”。后续如果还需要做进一步升级维护，还需要到处找接口文档；另外，交互的系统难免有一些 Bug，在和其他系统维护人员对接处理 Bug 时，只有接口没有文档，对方可能也需要去找文档链接。无形中，很多时间都浪费在了找文档的过程中。
+D瓜哥最近尝试了一个实践，就是在接口调用的地方，把接口文档链接当做注释加入到代码中。这样，无论是后续维护升级，还是沟通协调处理问题，都非常方便。别人问接口是什么，连接口+文档都可以一把复制就搞定。
+经过最近一段时间的实践情况来看，这个处理非常方便，是一个非常值得推广的实践。再插一句，也可以像一条建议一样，可以在维护代码时，不断把已接入的接口文档加入到调用接口的地方，循序渐进，方便后续人维护升级。
+3. 将接口源代码发布到私服仓库 接口文档链接在注释中，在构建结果中就不复存在了。所以，为了方便接口使用方可以在接口中查询到对应的接口文档，就需要把源码也发布到私服仓库中。
+这里只说明一下 Java 的相关处理办法。如果使用 Maven 作为构建工具的话，默认是不会将源代码发布到私服仓库中的。关于如何将源代码发布到，在 升级 Maven 插件：将源码发布到私服仓库 中已经做过相关介绍，这里就不再赘述。
+除了将源码发布到私服仓库，另外，还建议编译构建时，保持方法的原始参数命名。这个也可以通过配置 Maven 插件来完成，具体配置见： 升级 Maven 插件：字节码文件包含原始参数名称。
+4. 对于状态值常量，优先在接口参数类或者返回值类中定义 在做接口开发时，很多数据都有一个状态值，比如订单状态，再比如接口状态等等。目前的一个情况时，这些状态值大部分书写在文档中，在接入接口时，需要接入方自定义这些状态值。这就有些繁琐了，而且状态定义也不明确，甚至有可能遗漏一些重要的状态值。有些懒省事，直接在代码中硬编码一个魔法值，后续维护的跟还需要根据上下文反推这个值的含义，非常不利于维护。
+D瓜哥个人觉得，有两个处理办法：
+如果状态值不是很多，优先在接口参数类或者返回值类中定义。
+如果状态值很多，可以考虑单独抽取成一个常量类或者枚举类。
+这样使用的时候，触手可及。不需要到处去找。
+5. 如果使用 Map 对象作为传输载体，要提供 Key 值定义常量 有些系统可能考虑方便增加字段，选择使用 Map 作为数据载体。自己开发的时候很爽，但是给接口接入却非常不友好。接入方从 Map 中获取数据时，要么自己定义 Key 值；要么直接使用魔法值硬编码在代码中。使用前者方案，就需要在各个接入方都需要自定义一套；使用后者，初期是省事了，后来维护的人员就懵逼了。这都无形中增加了很多维护成本。</description></item><item><title>Versions Maven 插件简介</title><link>https://www.diguage.com/post/intro-to-versions-maven-plugin/</link><pubDate>Fri, 21 Apr 2023 22:07:37 +0800</pubDate><guid>https://www.diguage.com/post/intro-to-versions-maven-plugin/</guid><description>在 制定组织内 Maven BOM 的一些规范 中，D瓜哥 介绍了一些组织内指定 Maven BOM 的一些规范。根据这些规范，D瓜哥 创建并维护了部门内部的 Maven BOM。今年，要求对部门内的陈旧依赖做一些升级工作。所以，在 关于升级 Spring 等依赖的一些经验 中介绍了一些升级开源依赖的经验；在上一篇文章 升级 Maven 插件 中介绍了升级 Maven 插件的一些注意事项。
+D瓜哥一直坚持“机器可以干的事情，就应该交给机器干”。对于依赖管理，Maven Enforcer 插件就可以对依赖做必要的检查，所以，在 使用 Maven Enforcer 插件检查依赖 中，介绍了如何使用 Apache Maven Enforcer 来管理依赖。由于要维护部门内部的 Maven BOM，同时由于版本控的特质，所以，需要时长检查依赖升级情况。原来都是手动检查，需要一个一个去搜索各个依赖，不仅费时费力，而且还低效。最近，Maven 有一个插件可以胜任这个工作，它就是： Versions Maven Plugin。
+依赖检查 Versions Maven Plugin 支持两种配置方式：
+外置配置文件 maven-version-rules.xml；
+内置在 POM 文件中，直接写在插件的 &amp;lt;configuration&amp;gt; 标签中。
+第一种方案不方便迁移。还要额外管理一个配置文件。推荐使用第二种方式。另外，直接将这些配置放在 Maven BOM 中，使用继承的方式使用 Maven BOM，那么子项目就自动继承了这些配置。后续也只需要一个地方的配置即可。示例配置如下：
+&amp;lt;!-- @author: D瓜哥 · https://www.diguage.com --&amp;gt; &amp;lt;plugin&amp;gt; &amp;lt;groupId&amp;gt;org.codehaus.mojo&amp;lt;/groupId&amp;gt; &amp;lt;artifactId&amp;gt;versions-maven-plugin&amp;lt;/artifactId&amp;gt; &amp;lt;version&amp;gt;2.15.0&amp;lt;/version&amp;gt; &amp;lt;configuration&amp;gt; &amp;lt;ruleSet&amp;gt; &amp;lt;ignoreVersions&amp;gt; &amp;lt;!</description></item><item><title>升级 Maven 插件</title><link>https://www.diguage.com/post/upgrade-maven-plugins/</link><pubDate>Tue, 21 Mar 2023 17:36:48 +0800</pubDate><guid>https://www.diguage.com/post/upgrade-maven-plugins/</guid><description>D瓜哥在 关于升级 Spring 等依赖的一些经验 中，介绍了一些升级 Spring 等依赖的一些经验。在 升级 iBATIS/MyBATIS 对处理 DuplicateKeyException 的影响 中，分析了升级 iBATIS/MyBATIS 对处理 DuplicateKeyException 异常的影响。在升级中，还遇到一些 Maven 插件相关的问题。这里也分享出来，希望对大家有所帮助。
+Properties 文件编码错误 在升级过程中，遇到过 Properties 文件编码错误的问题。可以通过配置对应的编码来解决这个问题。配置如下：
+&amp;lt;!-- D瓜哥 · https://www.diguage.com --&amp;gt; &amp;lt;plugin&amp;gt; &amp;lt;groupId&amp;gt;org.apache.maven.plugins&amp;lt;/groupId&amp;gt; &amp;lt;artifactId&amp;gt;maven-resources-plugin&amp;lt;/artifactId&amp;gt; &amp;lt;version&amp;gt;3.3.0&amp;lt;/version&amp;gt; &amp;lt;configuration&amp;gt; &amp;lt;propertiesEncoding&amp;gt;ISO-8859-1&amp;lt;/propertiesEncoding&amp;gt; &amp;lt;/configuration&amp;gt; &amp;lt;/plugin&amp;gt; 参考资料 Apache Maven Resources Plugin – Filtering Properties Files。
+使用 Maven Enforcer 插件检查依赖 私以为“机器可以干的事情，就应该交给机器干”。对于依赖管理，Maven Enforcer 插件就可以对依赖做必要的检查。所以，推荐使用 Maven Enforcer 插件来检查低版本及有安全漏洞的依赖。
+详细介绍请参考： 使用 Maven Enforcer 插件检查依赖
+字节码文件包含原始参数名称 一些对外发布的依赖，建议将原始参数名称编译到构建结果里。可以通过指定构建参数来完成。
+&amp;lt;!-- D瓜哥 · https://www.diguage.com --&amp;gt; &amp;lt;plugin&amp;gt; &amp;lt;groupId&amp;gt;org.</description></item><item><title>升级 iBATIS/MyBATIS 对处理 DuplicateKeyException 的影响</title><link>https://www.diguage.com/post/upgrade-ibatis-mybatis-about-duplicate-key-exception/</link><pubDate>Thu, 23 Feb 2023 11:21:23 +0800</pubDate><guid>https://www.diguage.com/post/upgrade-ibatis-mybatis-about-duplicate-key-exception/</guid><description>在 关于升级 Spring 等依赖的一些经验 中，分享了一些开源依赖的升级经验。部分小伙伴质疑升级 iBATIS/MyBATIS 会影响对 DuplicateKeyException 异常的处理。这篇文章就从源码分析/代码更新的就角度来分析一下升级相关依赖是否会对 DuplicateKeyException 异常的处理带来实质性的影响。
+由于主要的技术栈涉及 MySQL 驱动、iBATIS、MyBATIS、Spring 周边等。所以，本文仅分析涉及的这些依赖。
+D瓜哥使用 MySQL: Employees Sample Database 搭建了一个 Spring + MyBATIS + MySQL Connector/J 的测试环境。连续插入两条一样的数据，单步调试，在 com.mysql.jdbc.MysqlIO#sendCommand 方法中，就可以观察到如下异常：
+Figure 1. MySQL Error 1062 从这里可以明显看出，MySQL 驱动返回的异常中， venderCode 编码是 1062。
+顺着这个线，往上走，到 org.apache.ibatis.session.defaults.DefaultSqlSession#update(java.lang.String, java.lang.Object) 方法中，可以看到，
+Figure 2. MyBATIS wrap Exception 在这里，会将 SQLException 包装成 PersistenceException，这也是 MyBATIS 对外暴露的统一的异常类。
+继续往上走，就到了 org.mybatis.spring.SqlSessionTemplate.SqlSessionInterceptor#invoke 方法：
+Figure 3. MyBATIS translateException 在 SqlSessionInterceptor#invoke 方法的异常处理中，将 PersistenceException 异常通过 org.springframework.dao.support.PersistenceExceptionTranslator#translateExceptionIfPossible 方法，将异常转换成 DataAccessException 对象。 DataAccessException 类是 Spring 数据访问的异常类基类。</description></item><item><title>制定组织内 Maven BOM 的一些规范</title><link>https://www.diguage.com/post/specification-for-maven-bom/</link><pubDate>Sat, 03 Sep 2022 09:19:59 +0800</pubDate><guid>https://www.diguage.com/post/specification-for-maven-bom/</guid><description>在 关于升级 Spring 等依赖的一些经验 中介绍了 D瓜哥在升级项目依赖时，遇到的一些问题以及一些需要注意的地方。但是，这里还存在一个问题：各个依赖的版本依然散落在各个项目中；升级依赖，需要在所有项目中，把所有相关项目的依赖都巴拉一下，费时费力。解决这个问题的一个比较好的办法是制定一个组织内部的 Maven BOM，集中管理相关依赖的版本。这样升级的时候，还需要修改 BOM 的版本号即可。
+Maven BOM 介绍 BOM（Bill of Materials）是由 Maven 提供的功能,它通过定义一整套相互兼容的 jar 包版本集合，使用时只需要依赖该BOM文件，即可放心的使用需要的依赖 jar 包，且无需再指定版本号。
+一些基本原则 Spring &amp;amp; Spring Boot 是 Java 生态中，全世界广泛使用的开发框架，在各种场景中都经受过考验。所以，Spring &amp;amp; Spring Boot 选择的 Jar 在稳定性和兼容性方面都有保证。另外，Spring Boot 本身就集成了非常非常多的依赖，并为此创建了一个网页 Spring Boot Dependency versions 来说明它集成的依赖及版本。故而，可以选择以 Spring Boot 为底本，来制作自己的 BOM。
+如果不需要 Spring 相关依赖，可以将 Spring 相关依赖删除掉，然后在其之上增加组织内部依赖而创建自己的 BOM。
+如果需要 Spring 相关依赖，那么直接继承
+在稳定性方面，经过更多人检验的版本，则稳定性更有保障。所以，选择最近两年下载次数比较多的版本。
+更新的版本，更容易获得技术升级带来的红利。所以，在可能的情况下，优先选择高版本。
+优先考虑目标 JDK 的支持情况。例如，一些依赖的高版本或低版本不支持 Java 8，但是 Java 8 是生产环境部署的主要版本，那么太高的版本和低版本都不适合。
+外部 Jar 包选择标准 尽量将外部中间件统一到同一种依赖的同一个版本上。例如：数据库连接池全部使用 HikariCP；JSON 处理统一使用 Jackson。</description></item><item><title>关于升级 Spring 等依赖的一些经验</title><link>https://www.diguage.com/post/experience-about-upgrading-java-dependencies/</link><pubDate>Sun, 28 Aug 2022 09:19:59 +0800</pubDate><guid>https://www.diguage.com/post/experience-about-upgrading-java-dependencies/</guid><description>到公司后，熟悉了一些项目后，发现大部分项目的依赖都比较陈旧，比如某些项目还在使用 Spring 3.x 的版本。所以，在进行需求开发时，也顺手把一些项目的依赖给升级了一下。周五，一个小伙伴问我关于升级 Spring 的经验。正好趁此机会，把一些经验总结一下。
+下面的描述以 Java 8 为准，没有在其他版本 Java 上试验过。参考时，请慎重。描述的原则如下：
+尽量选择还在维护中的版本，而不是已经 End of Life 的过时版。这样有问题可以及时反馈并得到修复。
+Java 8 是目标版本，所以，一定要兼容 Java 8。
+Spring Framework 升级 Spring Framework 从 3.2.6.RELEASE 开始提供 BOM。可以利用 BOM 简化 Spring 依赖声明：
+&amp;lt;!-- D瓜哥 · https://www.diguage.com --&amp;gt; &amp;lt;dependencyManagement&amp;gt; &amp;lt;dependencies&amp;gt; &amp;lt;dependency&amp;gt; &amp;lt;groupId&amp;gt;org.springframework&amp;lt;/groupId&amp;gt; &amp;lt;artifactId&amp;gt;spring-framework-bom&amp;lt;/artifactId&amp;gt; &amp;lt;version&amp;gt;5.3.25&amp;lt;/version&amp;gt; &amp;lt;type&amp;gt;pom&amp;lt;/type&amp;gt; &amp;lt;scope&amp;gt;import&amp;lt;/scope&amp;gt; &amp;lt;/dependency&amp;gt; &amp;lt;/dependencies&amp;gt; &amp;lt;/dependencyManagement&amp;gt; 这样，就不需要重复声明 Spring 依赖的版本，直接使用即可。 Spring Framework Bom 保证了 Spring 自身依赖的版本统一。
+这里，关于 Spring 的升级，还有几点需要说明：
+从 Spring 3.X 升级到 Spring 4.X+ 后，原来的 MappingJacksonHttpMessageConverter 已经被删除了；直接使用 MappingJackson2HttpMessageConverter 即可。</description></item><item><title>使用 Maven Enforcer 插件检查依赖</title><link>https://www.diguage.com/post/use-maven-enforcer-plugin-to-check-dependencies/</link><pubDate>Tue, 29 Mar 2022 20:04:08 +0800</pubDate><guid>https://www.diguage.com/post/use-maven-enforcer-plugin-to-check-dependencies/</guid><description>最近公司项目要对一些内部依赖做集中升级。为此，D瓜哥发布了一个 BOM（BOM stands for Bill Of Materials），用于规范项目依赖及版本。
+但是升级后，效果不理想，检查发现还是有不少依赖的版本依然不符合要求。经同事提醒，可以使用 Apache Maven Enforcer 来做规范检查，测试一下效果确实不错。
+将 Apache Maven Enforcer 和 Extra Enforcer Rules 的文档大致巴拉了一遍之后，根据项目的实际情况，挑选出来可用规则如下：
+比较有用的几个规则 bannedDependencies – 排除不需要的依赖，引入需要的依赖。
+banDuplicatePomDependencyVersions – 防止依赖重复声明。
+dependencyConvergence – 确保所有依赖收敛到相同的版本。也可以考虑加入。
+reactorModuleConvergence – 多模块开发时，确保父子模块的版本是一致的。
+requireJavaVersion – 检查 JDK 的版本
+requireMavenVersion – 检查 Maven 的版本
+requireReleaseVersion – 这个可以通过激活生产环境的 profile 来启用该规则，保证发布的不是快照版。
+requireUpperBoundDeps – 确保直接引用的依赖不比间接解析出来的依赖版本低。感觉这个也挺有用，但是使用方式还没搞清楚。实例有些模糊。
+banDuplicateClasses – 检查重复类定义。可以避免一些特殊情况。
+requirePropertyDiverges – 确保项目定义的属性与依赖中包含的属性不重复。
+enforceBytecodeVersion – 确保使用的字节码版本不高于指定版本。
+banCircularDependencies – 确保没有循环依赖。
+requireEncoding – 指定项目字符集。
+实践总结 D瓜哥把上面的规则几乎全部试用了一遍，把发现的一些需要特别注意的地方标注记录一下吧：</description></item><item><title>文档技术方案选型：AsciiDoc vs Markdown</title><link>https://www.diguage.com/post/asciidoc-vs-markdown/</link><pubDate>Sun, 13 Feb 2022 19:56:09 +0800</pubDate><guid>https://www.diguage.com/post/asciidoc-vs-markdown/</guid><description>D瓜哥在前面的文章 使用 Hugo 搭建博客 中介绍了如何用 Hugo 搭建个人博客。部门准备系统地整理一下各个小组的文档。恰好 D瓜哥 对写文档非常感兴趣，正好写个材料分享一下血泪经验。
+编辑进化之路 第一代：WordPress 缺点：写作和排版割裂，排版耗时且繁琐
+第二代：MarkDown 缺点：方言众多，工具链不够完整。
+现在已经改观很多。
+第三代：AsciiDoc 轻量级标记语言的优点 思路与格式融为一体 在整理文档时，随手加入格式管理，不需要为格式分心，也无须浪费时间调整排版。
+代码高亮 AsciiDoc 与 MarkDown 都支持
+/** * @author D瓜哥 · https://www.diguage.com/ */ public class Main { public static void main(String[] args) { System.out.println(&amp;#34;Hello, D瓜哥！&amp;#34;); } } 文本格式 文本格式，天然跨平台，支持性好，方便编辑与管理。
+结合 Git，支持版本管理。
+生态完善 Markdown Hugo: The world’s fastest framework for building websites — Hugo 使用 yuin/goldmark: A markdown parser written in Go. 来做转换工作。也支持 AsciiDoc，不过需要挑选比较合适的主题： Hugo Themes。</description></item><item><title>日志最佳实践探究</title><link>https://www.diguage.com/post/logging-best-practices/</link><pubDate>Wed, 14 Jul 2021 10:52:58 +0800</pubDate><guid>https://www.diguage.com/post/logging-best-practices/</guid><description>加入公司以来，参与了很多个项目的开发维护；也排查处理过很多线上问题；为了写 Mock 测试，也专门去日志系统上扒拉过不少日志等等。在整个过程中，对日志的认识有了不少更深刻的认识和体会。也发现不少问题。这里先从存在的问题展开论述。
+日志存在的问题 从个人的眼光上来看，当前的系统存在如下问题：
+必要日志没有打印出来，导致在追踪问题或测试代码时，带来不必要的麻烦。比如查看一个接口的返回值用于 Mock 测试；再比如 RPC 调用报错，返回值以及错误信息没有打印到日志中，不知道具体错误原因是什么。
+日志抽取中日志路径配置错误，导致日志重复收集，带来不必要的处理和存储成本。
+日志代码不规范，导致不必要的性能消耗；或者大促时，日志降级不生效。
+日志框架繁多，造成造成冲突，遗漏部分日志。
+日志配置不规范，不利于日志的采集和清洗。
+日志和调用链路物理隔离，查看一个请求的整个调用链路上的日志非常不方便，不利于问题的快速排查和定位。
+大家的系统中，存在什么样的日志问题？欢迎留言交流讨论。
+针对这些问题，我觉得有些地方值得发力一下。然后，做了一些探索，总结一下，以备后续使用。
+日志最佳实践探索 对于日志的使用，相信所有的开发人员都比较清楚，网上也有大量资料，相关日志框架的官方文档，也写的非常详尽，这里就不再赘述。
+本文从一个角度对日志规范进行探究：在排查问题时，能否通过日志来尽快地了解系统运行状态，定位问题原因？另外，由于 Java 的日志框架特别多，有一些比较容易迷惑的问题，尝试做出一点总结。
+系统运行后，不严格地说，再去观察系统运行状态，就类似于在黑夜中行走。此时，向你扔过来一块板砖🧱，那么，事后如何追责呢？
+请问：你能否成功躲开这块叫做 Bug 的板砖🧱？
+日志用来记录用户操作、系统运行状态等，是一个系统的重要组成部分。然而，由于日志通常不属于系统的核心功能，但是在日志对于排查问题，有无可替代的作用，理应得到所有开发人员的重视（不重视，怎么甩锅？！）！
+If dog is a man’s best friend, logs are software engineer’s best friend.
+— Geshan Manandhar Logging best practices 好的日志可以帮助系统的开发和运维人员：
+了解线上系统的运行状态
+快速准确定位线上问题
+发现系统瓶颈
+预警系统潜在风险
+挖掘产品最大价值
+可以将一个流程完整串起来（比如orderId）
+……
+不好的日志导致：
+对系统的运行状态一知半解，甚至一无所知
+系统出现问题无法定位，或者需要花费巨大的时间和精力
+无法发现系统瓶颈，不知优化从何做起
+无法基于日志对系统运行过程中的错误和潜在风险进行监控和报警
+对挖掘用户行为和提升产品价值毫无帮助
+……
+日志从功能来说，可分为诊断日志、统计日志、审计日志。统计日志一般由运维组负责；而审计日志，一般是需要通过代码来实现。这里重点来说说诊断日志。
+诊断日志， 典型的有：
+请求入口和出口
+外部服务调用和返回
+资源消耗操作: 如读写文件等
+容错行为： 如云硬盘的副本修复操作</description></item></channel></rss>

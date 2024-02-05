@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>软件工程 on "地瓜哥"博客网</title><link>https://www.diguage.com/categories/%E8%BD%AF%E4%BB%B6%E5%B7%A5%E7%A8%8B/</link><description>Recent content in 软件工程 on "地瓜哥"博客网</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Mon, 08 May 2023 14:18:07 +0800</lastBuildDate><atom:link href="https://www.diguage.com/categories/%E8%BD%AF%E4%BB%B6%E5%B7%A5%E7%A8%8B/index.xml" rel="self" type="application/rss+xml"/><item><title>关于接口可维护性的一些建议</title><link>https://www.diguage.com/post/tips-for-interface-maintainability/</link><pubDate>Fri, 28 Apr 2023 17:16:24 +0800</pubDate><guid>https://www.diguage.com/post/tips-for-interface-maintainability/</guid><description>在做新需求开发或者相关系统的维护更新时，尤其是涉及到不同系统的接口调用时，在可维护性方面，总感觉有很多地方差强人意。一些零星思考，抛砖引玉，希望引发更多的思考和讨论。总结了大概有如下几条建议：
+在接口注释中加入接口文档链接
+将调用接口处写上被调用接口文档链接
+将接口源代码发布到私服仓库
+对于状态值常量，优先在接口参数类或者返回值类中定义
+如果使用 Map 对象作为传输载体，要提供 Key 值定义常量
+针对 Map 返回值，可以考虑使用将 Map 转化成对象
+尽可能简化接口依赖
+只传递必要字段，尽量避免大而全的接口
+将接口的参数和返回值原始数据打印到日志中
+将 RPC 接口的类名及方法打印到日志中
+核心思想：以人为本，就近原则，触手可及
+下面，D瓜哥对每一条建议做一个详细说明。
+1. 在接口注释中加入接口文档链接 在做接口开发时，无论是对自有接口的升级改造，还是针对外部接口的从头接入，都涉及到接口文档。不同之处是，前者的工作重点是书写或者更新接口文档；而后者是根据接口文档开发合适的接入代码。但是，经常遇到的一个麻烦是，找不到接口文档。在组内需要找老同事询问；如果是跨部门，还需要两层甚至三层的进行转接，非常麻烦。
+D瓜哥认为，在这种情况下，为了方便大家维护，最好的办法就是将接口文档链接直接放在代码注释中，这样后续维护的人员，直接就可以点击链接直达接口文档，简单方便高效。如果是新建的接口，就可以先创建一个空文档，把链接放在注释中，后续再书写文档内容。如果是维护已有接口，可以在维护时，将缺失的链接加入到注释中，自己方便，也方便其他人进行后续的维护更新。这样，在循序渐进的过程中，逐步就可以把文档链接补充到代码中，方便维护代码，也同步更新文档。
+2. 将调用接口处写上被调用接口文档链接 在调用其他系统的接口时，没有接口文档，几乎寸步难行。在第一次接入接口时，绝大多数情况下，都是参考着接口文档做接入工作。但是，目前的情况时，接入时参考文档，参考完就随手把文档给“扔了”。后续如果还需要做进一步升级维护，还需要到处找接口文档；另外，交互的系统难免有一些 Bug，在和其他系统维护人员对接处理 Bug 时，只有接口没有文档，对方可能也需要去找文档链接。无形中，很多时间都浪费在了找文档的过程中。
+D瓜哥最近尝试了一个实践，就是在接口调用的地方，把接口文档链接当做注释加入到代码中。这样，无论是后续维护升级，还是沟通协调处理问题，都非常方便。别人问接口是什么，连接口+文档都可以一把复制就搞定。
+经过最近一段时间的实践情况来看，这个处理非常方便，是一个非常值得推广的实践。再插一句，也可以像一条建议一样，可以在维护代码时，不断把已接入的接口文档加入到调用接口的地方，循序渐进，方便后续人维护升级。
+3. 将接口源代码发布到私服仓库 接口文档链接在注释中，在构建结果中就不复存在了。所以，为了方便接口使用方可以在接口中查询到对应的接口文档，就需要把源码也发布到私服仓库中。
+这里只说明一下 Java 的相关处理办法。如果使用 Maven 作为构建工具的话，默认是不会将源代码发布到私服仓库中的。关于如何将源代码发布到，在 升级 Maven 插件：将源码发布到私服仓库 中已经做过相关介绍，这里就不再赘述。
+除了将源码发布到私服仓库，另外，还建议编译构建时，保持方法的原始参数命名。这个也可以通过配置 Maven 插件来完成，具体配置见： 升级 Maven 插件：字节码文件包含原始参数名称。
+4. 对于状态值常量，优先在接口参数类或者返回值类中定义 在做接口开发时，很多数据都有一个状态值，比如订单状态，再比如接口状态等等。目前的一个情况时，这些状态值大部分书写在文档中，在接入接口时，需要接入方自定义这些状态值。这就有些繁琐了，而且状态定义也不明确，甚至有可能遗漏一些重要的状态值。有些懒省事，直接在代码中硬编码一个魔法值，后续维护的跟还需要根据上下文反推这个值的含义，非常不利于维护。
+D瓜哥个人觉得，有两个处理办法：
+如果状态值不是很多，优先在接口参数类或者返回值类中定义。
+如果状态值很多，可以考虑单独抽取成一个常量类或者枚举类。
+这样使用的时候，触手可及。不需要到处去找。
+5. 如果使用 Map 对象作为传输载体，要提供 Key 值定义常量 有些系统可能考虑方便增加字段，选择使用 Map 作为数据载体。自己开发的时候很爽，但是给接口接入却非常不友好。接入方从 Map 中获取数据时，要么自己定义 Key 值；要么直接使用魔法值硬编码在代码中。使用前者方案，就需要在各个接入方都需要自定义一套；使用后者，初期是省事了，后来维护的人员就懵逼了。这都无形中增加了很多维护成本。</description></item><item><title>Versions Maven 插件简介</title><link>https://www.diguage.com/post/intro-to-versions-maven-plugin/</link><pubDate>Fri, 21 Apr 2023 22:07:37 +0800</pubDate><guid>https://www.diguage.com/post/intro-to-versions-maven-plugin/</guid><description>在 制定组织内 Maven BOM 的一些规范 中，D瓜哥 介绍了一些组织内指定 Maven BOM 的一些规范。根据这些规范，D瓜哥 创建并维护了部门内部的 Maven BOM。今年，要求对部门内的陈旧依赖做一些升级工作。所以，在 关于升级 Spring 等依赖的一些经验 中介绍了一些升级开源依赖的经验；在上一篇文章 升级 Maven 插件 中介绍了升级 Maven 插件的一些注意事项。
+D瓜哥一直坚持“机器可以干的事情，就应该交给机器干”。对于依赖管理，Maven Enforcer 插件就可以对依赖做必要的检查，所以，在 使用 Maven Enforcer 插件检查依赖 中，介绍了如何使用 Apache Maven Enforcer 来管理依赖。由于要维护部门内部的 Maven BOM，同时由于版本控的特质，所以，需要时长检查依赖升级情况。原来都是手动检查，需要一个一个去搜索各个依赖，不仅费时费力，而且还低效。最近，Maven 有一个插件可以胜任这个工作，它就是： Versions Maven Plugin。
+依赖检查 Versions Maven Plugin 支持两种配置方式：
+外置配置文件 maven-version-rules.xml；
+内置在 POM 文件中，直接写在插件的 &amp;lt;configuration&amp;gt; 标签中。
+第一种方案不方便迁移。还要额外管理一个配置文件。推荐使用第二种方式。另外，直接将这些配置放在 Maven BOM 中，使用继承的方式使用 Maven BOM，那么子项目就自动继承了这些配置。后续也只需要一个地方的配置即可。示例配置如下：
+&amp;lt;!-- @author: D瓜哥 · https://www.diguage.com --&amp;gt; &amp;lt;plugin&amp;gt; &amp;lt;groupId&amp;gt;org.codehaus.mojo&amp;lt;/groupId&amp;gt; &amp;lt;artifactId&amp;gt;versions-maven-plugin&amp;lt;/artifactId&amp;gt; &amp;lt;version&amp;gt;2.15.0&amp;lt;/version&amp;gt; &amp;lt;configuration&amp;gt; &amp;lt;ruleSet&amp;gt; &amp;lt;ignoreVersions&amp;gt; &amp;lt;!</description></item><item><title>升级 Maven 插件</title><link>https://www.diguage.com/post/upgrade-maven-plugins/</link><pubDate>Tue, 21 Mar 2023 17:36:48 +0800</pubDate><guid>https://www.diguage.com/post/upgrade-maven-plugins/</guid><description>D瓜哥在 关于升级 Spring 等依赖的一些经验 中，介绍了一些升级 Spring 等依赖的一些经验。在 升级 iBATIS/MyBATIS 对处理 DuplicateKeyException 的影响 中，分析了升级 iBATIS/MyBATIS 对处理 DuplicateKeyException 异常的影响。在升级中，还遇到一些 Maven 插件相关的问题。这里也分享出来，希望对大家有所帮助。
+Properties 文件编码错误 在升级过程中，遇到过 Properties 文件编码错误的问题。可以通过配置对应的编码来解决这个问题。配置如下：
+&amp;lt;!-- D瓜哥 · https://www.diguage.com --&amp;gt; &amp;lt;plugin&amp;gt; &amp;lt;groupId&amp;gt;org.apache.maven.plugins&amp;lt;/groupId&amp;gt; &amp;lt;artifactId&amp;gt;maven-resources-plugin&amp;lt;/artifactId&amp;gt; &amp;lt;version&amp;gt;3.3.0&amp;lt;/version&amp;gt; &amp;lt;configuration&amp;gt; &amp;lt;propertiesEncoding&amp;gt;ISO-8859-1&amp;lt;/propertiesEncoding&amp;gt; &amp;lt;/configuration&amp;gt; &amp;lt;/plugin&amp;gt; 参考资料 Apache Maven Resources Plugin – Filtering Properties Files。
+使用 Maven Enforcer 插件检查依赖 私以为“机器可以干的事情，就应该交给机器干”。对于依赖管理，Maven Enforcer 插件就可以对依赖做必要的检查。所以，推荐使用 Maven Enforcer 插件来检查低版本及有安全漏洞的依赖。
+详细介绍请参考： 使用 Maven Enforcer 插件检查依赖
+字节码文件包含原始参数名称 一些对外发布的依赖，建议将原始参数名称编译到构建结果里。可以通过指定构建参数来完成。
+&amp;lt;!-- D瓜哥 · https://www.diguage.com --&amp;gt; &amp;lt;plugin&amp;gt; &amp;lt;groupId&amp;gt;org.</description></item><item><title>升级 iBATIS/MyBATIS 对处理 DuplicateKeyException 的影响</title><link>https://www.diguage.com/post/upgrade-ibatis-mybatis-about-duplicate-key-exception/</link><pubDate>Thu, 23 Feb 2023 11:21:23 +0800</pubDate><guid>https://www.diguage.com/post/upgrade-ibatis-mybatis-about-duplicate-key-exception/</guid><description>在 关于升级 Spring 等依赖的一些经验 中，分享了一些开源依赖的升级经验。部分小伙伴质疑升级 iBATIS/MyBATIS 会影响对 DuplicateKeyException 异常的处理。这篇文章就从源码分析/代码更新的就角度来分析一下升级相关依赖是否会对 DuplicateKeyException 异常的处理带来实质性的影响。
+由于主要的技术栈涉及 MySQL 驱动、iBATIS、MyBATIS、Spring 周边等。所以，本文仅分析涉及的这些依赖。
+D瓜哥使用 MySQL: Employees Sample Database 搭建了一个 Spring + MyBATIS + MySQL Connector/J 的测试环境。连续插入两条一样的数据，单步调试，在 com.mysql.jdbc.MysqlIO#sendCommand 方法中，就可以观察到如下异常：
+Figure 1. MySQL Error 1062 从这里可以明显看出，MySQL 驱动返回的异常中， venderCode 编码是 1062。
+顺着这个线，往上走，到 org.apache.ibatis.session.defaults.DefaultSqlSession#update(java.lang.String, java.lang.Object) 方法中，可以看到，
+Figure 2. MyBATIS wrap Exception 在这里，会将 SQLException 包装成 PersistenceException，这也是 MyBATIS 对外暴露的统一的异常类。
+继续往上走，就到了 org.mybatis.spring.SqlSessionTemplate.SqlSessionInterceptor#invoke 方法：
+Figure 3. MyBATIS translateException 在 SqlSessionInterceptor#invoke 方法的异常处理中，将 PersistenceException 异常通过 org.springframework.dao.support.PersistenceExceptionTranslator#translateExceptionIfPossible 方法，将异常转换成 DataAccessException 对象。 DataAccessException 类是 Spring 数据访问的异常类基类。</description></item><item><title>制定组织内 Maven BOM 的一些规范</title><link>https://www.diguage.com/post/specification-for-maven-bom/</link><pubDate>Sat, 03 Sep 2022 09:19:59 +0800</pubDate><guid>https://www.diguage.com/post/specification-for-maven-bom/</guid><description>在 关于升级 Spring 等依赖的一些经验 中介绍了 D瓜哥在升级项目依赖时，遇到的一些问题以及一些需要注意的地方。但是，这里还存在一个问题：各个依赖的版本依然散落在各个项目中；升级依赖，需要在所有项目中，把所有相关项目的依赖都巴拉一下，费时费力。解决这个问题的一个比较好的办法是制定一个组织内部的 Maven BOM，集中管理相关依赖的版本。这样升级的时候，还需要修改 BOM 的版本号即可。
+Maven BOM 介绍 BOM（Bill of Materials）是由 Maven 提供的功能,它通过定义一整套相互兼容的 jar 包版本集合，使用时只需要依赖该BOM文件，即可放心的使用需要的依赖 jar 包，且无需再指定版本号。
+一些基本原则 Spring &amp;amp; Spring Boot 是 Java 生态中，全世界广泛使用的开发框架，在各种场景中都经受过考验。所以，Spring &amp;amp; Spring Boot 选择的 Jar 在稳定性和兼容性方面都有保证。另外，Spring Boot 本身就集成了非常非常多的依赖，并为此创建了一个网页 Spring Boot Dependency versions 来说明它集成的依赖及版本。故而，可以选择以 Spring Boot 为底本，来制作自己的 BOM。
+如果不需要 Spring 相关依赖，可以将 Spring 相关依赖删除掉，然后在其之上增加组织内部依赖而创建自己的 BOM。
+如果需要 Spring 相关依赖，那么直接继承
+在稳定性方面，经过更多人检验的版本，则稳定性更有保障。所以，选择最近两年下载次数比较多的版本。
+更新的版本，更容易获得技术升级带来的红利。所以，在可能的情况下，优先选择高版本。
+优先考虑目标 JDK 的支持情况。例如，一些依赖的高版本或低版本不支持 Java 8，但是 Java 8 是生产环境部署的主要版本，那么太高的版本和低版本都不适合。
+外部 Jar 包选择标准 尽量将外部中间件统一到同一种依赖的同一个版本上。例如：数据库连接池全部使用 HikariCP；JSON 处理统一使用 Jackson。</description></item><item><title>关于升级 Spring 等依赖的一些经验</title><link>https://www.diguage.com/post/experience-about-upgrading-java-dependencies/</link><pubDate>Sun, 28 Aug 2022 09:19:59 +0800</pubDate><guid>https://www.diguage.com/post/experience-about-upgrading-java-dependencies/</guid><description>到公司后，熟悉了一些项目后，发现大部分项目的依赖都比较陈旧，比如某些项目还在使用 Spring 3.x 的版本。所以，在进行需求开发时，也顺手把一些项目的依赖给升级了一下。周五，一个小伙伴问我关于升级 Spring 的经验。正好趁此机会，把一些经验总结一下。
+下面的描述以 Java 8 为准，没有在其他版本 Java 上试验过。参考时，请慎重。描述的原则如下：
+尽量选择还在维护中的版本，而不是已经 End of Life 的过时版。这样有问题可以及时反馈并得到修复。
+Java 8 是目标版本，所以，一定要兼容 Java 8。
+Spring Framework 升级 Spring Framework 从 3.2.6.RELEASE 开始提供 BOM。可以利用 BOM 简化 Spring 依赖声明：
+&amp;lt;!-- D瓜哥 · https://www.diguage.com --&amp;gt; &amp;lt;dependencyManagement&amp;gt; &amp;lt;dependencies&amp;gt; &amp;lt;dependency&amp;gt; &amp;lt;groupId&amp;gt;org.springframework&amp;lt;/groupId&amp;gt; &amp;lt;artifactId&amp;gt;spring-framework-bom&amp;lt;/artifactId&amp;gt; &amp;lt;version&amp;gt;5.3.25&amp;lt;/version&amp;gt; &amp;lt;type&amp;gt;pom&amp;lt;/type&amp;gt; &amp;lt;scope&amp;gt;import&amp;lt;/scope&amp;gt; &amp;lt;/dependency&amp;gt; &amp;lt;/dependencies&amp;gt; &amp;lt;/dependencyManagement&amp;gt; 这样，就不需要重复声明 Spring 依赖的版本，直接使用即可。 Spring Framework Bom 保证了 Spring 自身依赖的版本统一。
+这里，关于 Spring 的升级，还有几点需要说明：
+从 Spring 3.X 升级到 Spring 4.X+ 后，原来的 MappingJacksonHttpMessageConverter 已经被删除了；直接使用 MappingJackson2HttpMessageConverter 即可。</description></item><item><title>使用 Maven Enforcer 插件检查依赖</title><link>https://www.diguage.com/post/use-maven-enforcer-plugin-to-check-dependencies/</link><pubDate>Tue, 29 Mar 2022 20:04:08 +0800</pubDate><guid>https://www.diguage.com/post/use-maven-enforcer-plugin-to-check-dependencies/</guid><description>最近公司项目要对一些内部依赖做集中升级。为此，D瓜哥发布了一个 BOM（BOM stands for Bill Of Materials），用于规范项目依赖及版本。
+但是升级后，效果不理想，检查发现还是有不少依赖的版本依然不符合要求。经同事提醒，可以使用 Apache Maven Enforcer 来做规范检查，测试一下效果确实不错。
+将 Apache Maven Enforcer 和 Extra Enforcer Rules 的文档大致巴拉了一遍之后，根据项目的实际情况，挑选出来可用规则如下：
+比较有用的几个规则 bannedDependencies – 排除不需要的依赖，引入需要的依赖。
+banDuplicatePomDependencyVersions – 防止依赖重复声明。
+dependencyConvergence – 确保所有依赖收敛到相同的版本。也可以考虑加入。
+reactorModuleConvergence – 多模块开发时，确保父子模块的版本是一致的。
+requireJavaVersion – 检查 JDK 的版本
+requireMavenVersion – 检查 Maven 的版本
+requireReleaseVersion – 这个可以通过激活生产环境的 profile 来启用该规则，保证发布的不是快照版。
+requireUpperBoundDeps – 确保直接引用的依赖不比间接解析出来的依赖版本低。感觉这个也挺有用，但是使用方式还没搞清楚。实例有些模糊。
+banDuplicateClasses – 检查重复类定义。可以避免一些特殊情况。
+requirePropertyDiverges – 确保项目定义的属性与依赖中包含的属性不重复。
+enforceBytecodeVersion – 确保使用的字节码版本不高于指定版本。
+banCircularDependencies – 确保没有循环依赖。
+requireEncoding – 指定项目字符集。
+实践总结 D瓜哥把上面的规则几乎全部试用了一遍，把发现的一些需要特别注意的地方标注记录一下吧：</description></item><item><title>文档技术方案选型：AsciiDoc vs Markdown</title><link>https://www.diguage.com/post/asciidoc-vs-markdown/</link><pubDate>Sun, 13 Feb 2022 19:56:09 +0800</pubDate><guid>https://www.diguage.com/post/asciidoc-vs-markdown/</guid><description>D瓜哥在前面的文章 使用 Hugo 搭建博客 中介绍了如何用 Hugo 搭建个人博客。部门准备系统地整理一下各个小组的文档。恰好 D瓜哥 对写文档非常感兴趣，正好写个材料分享一下血泪经验。
+编辑进化之路 第一代：WordPress 缺点：写作和排版割裂，排版耗时且繁琐
+第二代：MarkDown 缺点：方言众多，工具链不够完整。
+现在已经改观很多。
+第三代：AsciiDoc 轻量级标记语言的优点 思路与格式融为一体 在整理文档时，随手加入格式管理，不需要为格式分心，也无须浪费时间调整排版。
+代码高亮 AsciiDoc 与 MarkDown 都支持
+/** * @author D瓜哥 · https://www.diguage.com/ */ public class Main { public static void main(String[] args) { System.out.println(&amp;#34;Hello, D瓜哥！&amp;#34;); } } 文本格式 文本格式，天然跨平台，支持性好，方便编辑与管理。
+结合 Git，支持版本管理。
+生态完善 Markdown Hugo: The world’s fastest framework for building websites — Hugo 使用 yuin/goldmark: A markdown parser written in Go. 来做转换工作。也支持 AsciiDoc，不过需要挑选比较合适的主题： Hugo Themes。</description></item><item><title>《领域驱动设计》读书笔记（三）：通过重构来加深理解</title><link>https://www.diguage.com/post/domain-driven-design-3/</link><pubDate>Wed, 18 Aug 2021 14:13:58 +0800</pubDate><guid>https://www.diguage.com/post/domain-driven-design-3/</guid><description>我们面临的真正挑战是找到深层次的模型，这个模型不但能够捕捉到领域专家的微妙的关注点，还可驱动切实可行的设计。我们的最终目的是开发出能够捕捉到领域深层含义的模型。
+要想成功地开发出实用的模型，需要注意以下 3 点：
+复杂巧妙的领域模型是可以实现的，也是值得我们去花费力气实现的。
+这样的模型离开不断的重构是很难开发出来的，重构需要领域专家和热爱学习领域知识的开发人员密切参与进来。
+要实现并有效地运用模型，需要精通设计技巧。
+重构就是在不改变软件功能的前提下重新设计它。
+自动化的单元测试套件能够保证对代码进行相对安全的试验。
+设计模式重构 — 为实现更深层模型而进行的重构。
+代码细节重构
+简称为“领域模型重构”。 学习以更高维度去看待问题。
+《重构》一书中所列出的重构分类涵盖了大部分常用的代码细节重构。这些重构主要是为了解决一些可以从代码中观察到的问题。
+领域模型会随着新认识的出现而不断变化，由于其变化如此多样，以至于根本无法整理出一个完整的目录。
+建模和设计都需要你发挥创造力。
+对象分析的传统方法是先在需求文档中确定名词和动词，并将其作为系统的初始对象和方法。
+事实上，初始模型通常都是基于对领域的浅显认知而构建的，既不够成熟也不够深入。
+深层模型能够穿过领域表象，清楚地表达出领域专家们的主要关注点以及最相关的知识。
+戴久了的手套在手指关节处会变得柔软；而其他部分则依然硬实，可起到保护的作用。
+柔性设计除了便于修改，还有助于改进模型本身。 Model-Driven Design 需要以下两个方面的支持：深层模型使设计更具表现力；同时，当设计的灵活性可以让开发人员进行试验，而设计又能清晰地表达出领域含义时，那么这个设计实际上就能够将开发人员的深层理解反馈到整个模型发现的过程中。
+由于模型和设计之间具有紧密的关系，因此如果代码难于重构，建模过程也会停滞不前。
+你需要富有创造力，不断地尝试，不断地发现问题才能找到合适的方法为你所发现的领域概念建模，但有时你也可以借用别人已建好的模式。
+第 8 章 突破 Figure 1. 重构/突破 小改进可防止系统退化，成为避免模型变得陈腐的第一道防线。
+重构的原则是始终小步前进，始终保持系统正常运转。
+过渡到真正的深层模型需要从根本上调整思路，并且对设计做大幅修改。
+不要试图去制造突破，那只会使项目陷入困境。通常，只有在实现了许多适度的重构后才有可能出现突破。
+要为突破做好准备，应专注于知识消化过程，同时也要逐渐建立健壮的 Ubiquitous Language 。
+第 9 章 将隐式概念转变为显式概念 深层建模的第一步就是要设法在模型中表达出领域的基本概念。
+若开发人员识别出设计中隐含的某个概念或是在讨论中受到启发而发现一个概念时，就会对领域模型和相应的代码进行许多转换，在模型中加入一个或多个对象或关系，从而将此概念显式地表达出来。
+概念挖掘 倾听领域专家使用的语言。有没有一些术语能够简洁地表达出复杂的概念？他们有没有纠正过你的用词（也许是很委婉的提醒）？当你使用某个特定词语时，他们脸上是否已经不再流露出迷惑的表情？这些都暗示了某个概念也许可以改进模型。
+有些概念可能需要你自己去挖掘和创造。要挖掘的地方就是设计中最不足的地方，也就是操作复杂且难于解释的地方。
+看书与咨询领域专家并不冲突。即便能够从领域专家那里得到充分的支持，花点时间从文献资料中大致了解领域理论也是值得的。
+开发人员还有另一个选择，就是阅读在此领域中有过开发经验的软件专业人员编写的资料。
+阅读书籍并不能提供现成的解决方案，但可以为她提供一些全新的实验起点，以及在这个领域中探索过的人总结出来的经验。
+如何为那些不太明显的概念建模 显式的约束 约束是模型概念中非常重要的类别。它们通常是隐含的，将它们显式地表现出来可以极大地提高设计质量。
+将约束条件提取到其自己的方法中，这样就可以通过方法名来表达约束的含义，从而在设计中显式地表现出这条约束。
+下面是一些警告信号，表明约束的存在正在扰乱其“宿主对象”（Host Object）的设计：
+计算约束所需的数据从定义上看并不属于这个对象。
+相关规则在多个对象中出现，造成了代码重复或导致不属于同一族的对象之间产生了继承关系。
+很多设计和需求讨论是围绕这些约束进行的，而在代码实现中，它们却隐藏在过程代码中。
+如果约束的存在掩盖了对象的基本职责，或者如果约束在领域中非常突出但在模型中却不明显，那么就可以将其提取到一个显式的对象中，甚至可以把它建模为一个对象和关系的集合。
+将过程建模为领域对象 对象是用来封装过程的，这样我们只需考虑对象的业务目的或意图就可以了。
+过程是应该被显式表达出来，还是应该被隐藏起来呢？区分的方法很简单：它是经常被领域专家提起呢，还是仅仅被当作计算机程序机制的一部分？
+模式：Specification 业务规则通常不适合作为 Entity 或 Value Object 的职责，而且规则的变化和组合也会掩盖领域对象的基本含义。但是将规则移出领域层的结果会更糟糕，因为这样一来，领域代码就不再表达模型了。</description></item><item><title>日志最佳实践探究</title><link>https://www.diguage.com/post/logging-best-practices/</link><pubDate>Wed, 14 Jul 2021 10:52:58 +0800</pubDate><guid>https://www.diguage.com/post/logging-best-practices/</guid><description>加入公司以来，参与了很多个项目的开发维护；也排查处理过很多线上问题；为了写 Mock 测试，也专门去日志系统上扒拉过不少日志等等。在整个过程中，对日志的认识有了不少更深刻的认识和体会。也发现不少问题。这里先从存在的问题展开论述。
+日志存在的问题 从个人的眼光上来看，当前的系统存在如下问题：
+必要日志没有打印出来，导致在追踪问题或测试代码时，带来不必要的麻烦。比如查看一个接口的返回值用于 Mock 测试；再比如 RPC 调用报错，返回值以及错误信息没有打印到日志中，不知道具体错误原因是什么。
+日志抽取中日志路径配置错误，导致日志重复收集，带来不必要的处理和存储成本。
+日志代码不规范，导致不必要的性能消耗；或者大促时，日志降级不生效。
+日志框架繁多，造成造成冲突，遗漏部分日志。
+日志配置不规范，不利于日志的采集和清洗。
+日志和调用链路物理隔离，查看一个请求的整个调用链路上的日志非常不方便，不利于问题的快速排查和定位。
+大家的系统中，存在什么样的日志问题？欢迎留言交流讨论。
+针对这些问题，我觉得有些地方值得发力一下。然后，做了一些探索，总结一下，以备后续使用。
+日志最佳实践探索 对于日志的使用，相信所有的开发人员都比较清楚，网上也有大量资料，相关日志框架的官方文档，也写的非常详尽，这里就不再赘述。
+本文从一个角度对日志规范进行探究：在排查问题时，能否通过日志来尽快地了解系统运行状态，定位问题原因？另外，由于 Java 的日志框架特别多，有一些比较容易迷惑的问题，尝试做出一点总结。
+系统运行后，不严格地说，再去观察系统运行状态，就类似于在黑夜中行走。此时，向你扔过来一块板砖🧱，那么，事后如何追责呢？
+请问：你能否成功躲开这块叫做 Bug 的板砖🧱？
+日志用来记录用户操作、系统运行状态等，是一个系统的重要组成部分。然而，由于日志通常不属于系统的核心功能，但是在日志对于排查问题，有无可替代的作用，理应得到所有开发人员的重视（不重视，怎么甩锅？！）！
+If dog is a man’s best friend, logs are software engineer’s best friend.
+— Geshan Manandhar Logging best practices 好的日志可以帮助系统的开发和运维人员：
+了解线上系统的运行状态
+快速准确定位线上问题
+发现系统瓶颈
+预警系统潜在风险
+挖掘产品最大价值
+可以将一个流程完整串起来（比如orderId）
+……
+不好的日志导致：
+对系统的运行状态一知半解，甚至一无所知
+系统出现问题无法定位，或者需要花费巨大的时间和精力
+无法发现系统瓶颈，不知优化从何做起
+无法基于日志对系统运行过程中的错误和潜在风险进行监控和报警
+对挖掘用户行为和提升产品价值毫无帮助
+……
+日志从功能来说，可分为诊断日志、统计日志、审计日志。统计日志一般由运维组负责；而审计日志，一般是需要通过代码来实现。这里重点来说说诊断日志。
+诊断日志， 典型的有：
+请求入口和出口
+外部服务调用和返回
+资源消耗操作: 如读写文件等
+容错行为： 如云硬盘的副本修复操作</description></item><item><title>《领域驱动设计》读书笔记（二）：模型驱动设计的构造块</title><link>https://www.diguage.com/post/domain-driven-design-2/</link><pubDate>Sun, 11 Jul 2021 23:44:22 +0800</pubDate><guid>https://www.diguage.com/post/domain-driven-design-2/</guid><description>遵循“职责驱动设计”的原则，
+“契约式设计”思想。
+开发一个好的领域模型是一门艺术。
+Figure 1. 模型驱动设计语言 第 4 章 分离领域 模式：Layered Architecture 在面向对象的程序中，常常会在业务对象中直接写入用户界面、数据库访问等支持代码。而一些业务逻辑则会被嵌入到用户界面组件和数据库脚本中。这么做是为了以最简单的方式在短期内完成开发工作。
+如果与领域有关的代码分散在大量的其他代码之中，那么查看和分析领域代码就会变得异常困难。对用户界面的简单修改实际上很可能会改变业务逻辑，而要想调整业务规则也很可能需要对用户界面代码、数据库操作代码或者其他的程序元素进行仔细的筛查。这样就不太可能实现一致的、模型驱动的对象了，同时也会给自动化测试带来困难。考虑到程序中各个活动所涉及的大量逻辑和技术，程序本身必须简单明了，否则就会让人无法理解。
+要想创建出能够处理复杂任务的程序，需要做到关注点分离——使设计中的每个部分都得到单独的关注。
+Layered Architecture 的基本原则是层中的任何元素都仅依赖于本层的其他元素或其下层的元素。
+Figure 2. 应用分层 给复杂的应用程序划分层次。在每一层内分别进行设计，使其具有内聚性并且只依赖于它的下层。采用标准的架构模式，只与上层进行松散的耦合。将所有与领域模型相关的代码放在一个层中，并把它与用户界面层、应用层以及基础设施层的代码分开。领域对象应该将重点放在如何表达领域模型上，而不需要考虑自己的显示和存储问题，也无需管理应用任务等内容。这使得模型的含义足够丰富，结构足够清晰，可以捕捉到基本的业务知识，并有效地使用这些知识。
+关注点的清晰分离可以使每一层的设计更易理解和维护。
+在连接各层的同时不影响分离带来的好处，这是很多模式的目的所在。
+各层之间是松散连接的，层与层的依赖关系只能是单向的。上层可以直接使用或操作下层元素，方法是通过调用下层元素的公共接口，保持对下层元素的引用（至少是暂时的），以及采用常规的交互手段。
+如果下层元素需要与上层元素进行通信（不只是回应直接查询），则需要采用另一种通信机制，使用架构模式来连接上下层，如回调模式或 Observers 模式。
+最早将用户界面层与应用层和领域层相连的模式是 Model-View-Controller（MVC，模型—视图—控制器）框架。
+只要连接方式能够维持领域层的独立性，保证在设计领域对象时不需要同时考虑可能与其交互的用户界面，那么这些连接方式就都是可用的。
+最好的架构框架既能解决复杂技术问题，也能让领域开发人员集中精力去表达模型，而不考虑其他问题。
+不妄求万全之策，只要有选择性地运用框架来解决难点问题，就可以避开框架的很多不足之处。
+领域层是模型的精髓 “领域层”则是领域模型以及所有与其直接相关的设计元素的表现，它由业务逻辑的设计和实现组成。
+如果领域逻辑与程序中的其他关注点混在一起，就不可能实现这种一致性。将领域实现独立出来是领域驱动设计的前提。
+模式：The Smart UI“反模式” Smart UI是另一种设计方法，与领域驱动设计方法迥然不同且互不兼容。
+如果一个经验并不丰富的项目团队要完成一个简单的项目，却决定使用 Model-Driven Design 以及 Layered Architecture，那么这个项目组将会经历一个艰难的学习过程。团队成员不得不去掌握复杂的新技术，艰难地学习对象建模。（即使有这本书的帮助，这也依然是一个具有挑战性的任务！）对基础设施和各层的管理工作使得原本简单的任务却要花费很长的时间来完成。简单项目的开发周期较短，期望值也不是很高。所以，早在项目团队完成任务之前，该项目就会被取消，更谈不上去论证有关这种方法的许多种令人激动的可行性了。
+即使项目有更充裕的时间，如果没有专家的帮助，团队成员也不太可能掌握这些技术。最后，假如他们确实能够克服这些困难，恐怕也只会开发出一套简单的系统。因为这个项目本来就不需要丰富的功能。
+在用户界面中实现所有的业务逻辑。将应用程序分成小的功能模块，分别将它们实现成用户界面，并在其中嵌入业务规则。用关系数据库作为共享的数据存储库。使用自动化程度最高的用户界面创建工具和可用的可视化编程工具。
+如果一个架构能够把那些与领域相关的代码隔离出来，得到一个内聚的领域设计，同时又使领域与系统其他部分保持松散耦合，那么这种架构也许可以支持领域驱动设计。
+如何让一个有效的领域模型和一个富有表达力的实现同时演进。
+第 5 章 软件中所表示的模型 一个对象是用来表示某种具有连续性和标识的事物的呢（可以跟踪它所经历的不同状态，甚至可以跨不同的实现跟踪它），还是用于描述某种状态的属性呢？这是 Entity 与 Value Object 之间的根本区别。
+领域中还有一些方面适合用动作或操作来表示，这比用对象表示更加清楚。这些方面最好用 Service 来表示，而不应把操作的责任强加到 Entity 或 Value Object 上，尽管这样做稍微违背了面向对象的建模传统。 Service 是应客户端请求来完成某事。</description></item><item><title>《领域驱动设计》读书笔记（一）：运用领域模型</title><link>https://www.diguage.com/post/domain-driven-design-1/</link><pubDate>Thu, 08 Jul 2021 20:40:05 +0800</pubDate><guid>https://www.diguage.com/post/domain-driven-design-1/</guid><description>序 控制复杂性的关键是有一个好的领域模型，这个模型不应该仅仅停留在领域的表面，而是要透过表象抓住领域的实质结构，从而为软件开发人员提供他们所需的支持。
+在领域建模过程中不应将概念与实现割裂开来。
+概念与实现密不可分的最主要原因在于，领域模型的最大价值是它提供了一种通用语言，这种语言是将领域专家和技术人员联系在一起的纽带。
+领域模型并不是按照“先建模，后实现”这个次序来工作的。
+真正强大的领域模型是随着时间演进的，即使是最有经验的建模人员也往往发现他们是在系统的初始版本完成之后才有了最好的想法。
+既品尝过成功的美酒，也体验过失败的沮丧。
+前言 真正决定软件复杂性的是设计方法。
+很多应用程序最主要的复杂性并不在技术上，而是来自领域本身、用户的活动或业务。
+领域驱动设计是一种思维方式，也是一组优先任务，它旨在加速那些必须处理复杂领域的软件项目的开发。
+领域驱动设计的实质就是消化吸收大量知识，最后产生一个反映深层次领域知识并聚焦于关键概念的模型。
+极端的简约主义是解救那些过度追求设计的执迷者的良方。
+实际上， XP最适合那些对设计的感觉很敏锐的开发人员。 XP过程假定人们可以通过重构来改进设计，而且可以经常、快速地完成重构。
+首先需要深入研究模型，然后基于最初的（可能是不成熟的）模型实现一个初始设计，再反复改进这个设计。每次团队对领域有了新的理解之后，都需要对模型进行改进，使模型反映出更丰富的知识，而且必须对代码进行重构，以便反映出更深刻的模型，并使应用程序可以充分利用模型的潜力。 第一部分 运用领域模型
+模型是一种简化。它是对现实的解释——把与解决问题密切相关的方面抽象出来，而忽略无关的细节。
+模型正是解决此类信息超载问题的工具。模型这种知识形式对知识进行了选择性的简化和有意的结构化。
+领域模型并非某种特殊的图，而是这种图所要传达的思想。
+对这类知识严格的组织且有选择的抽象。
+领域建模并不是要尽可能建立一个符合“现实”的模型。
+建模更像是制作电影——出于某种目的而概括地反映现实。
+在领域驱动的设计中，3个基本用途决定了模型的选择。
+模型和设计的核心互相影响。
+模型是团队所有成员使用的通用语言的中枢。
+模型是浓缩的知识。
+软件的核心是其为用户解决领域相关的问题的能力。所有其他特性，不管有多么重要，都要服务于这个基本目的。
+第 1 章 消化知识 有效建模的要素：
+模型和实现的绑定。
+建立了一种基于模型的语言。
+开发一个蕴含丰富知识的模型。
+提炼模型。
+头脑风暴和实验。
+语言和草图，再加上头脑风暴活动，将我们的讨论变成“模型实验室”，在这些讨论中可以演示、尝试和判断上百种变化。
+高效的领域建模人员是知识的消化者。
+领域模型的不断精化迫使开发人员学习重要的业务原理，而不是机械地进行功能开发。领域专家被迫提炼自己已知道的重要知识的过程往往也是完善其自身理解的过程，而且他们会渐渐理解软件项目所必需的概念严谨性。
+模型永远都不会是完美的，因为它是一个不断演化完善的过程。
+高效率的团队需要有意识地积累知识，并持续学习。
+业务活动和规则如同所涉及的实体一样，都是领域的核心，任何领域都有各种类别的概念。知识消化所产生的模型能够反映出对知识的深层理解。
+当我们的建模不再局限于寻找实体和值对象时，我们才能充分吸取知识，因为业务规则之间可能会存在不一致。
+知识消化是一种探索，它永无止境。
+第 2 章 交流与语言的使用 领域模型可成为软件项目通用语言的核心。
+模式：Ubiquitous Language 如果语言支离破碎，项目必将遭遇严重问题。领域专家使用他们自己的术语，而技术团队所使用的语言则经过调整，以便从设计角度讨论领域。
+日常讨论所使用的术语与代码（软件项目的最重要产品）中使用的术语不一致。甚至同一个人在讲话和写东西时使用的语言也不一致，这导致的后果是，对领域的深刻表述常常稍纵即逝，根本无法记录到代码或文档中。
+翻译使得沟通不畅，并削弱了知识消化。
+然而任何一方的语言都不能成为公共语言，因为它们无法满足所有的需求。
+Ubiquitous Language（通用语言）的词汇包括类和主要操作的名称。
+将模型作为语言的支柱。确保团队在内部的所有交流中以及代码中坚持使用这种语言。在画图、写东西，特别是讲话时也要使用这种语言。
+通过尝试不同的表示方法（它们反映了备选模型）来消除难点。然后重构代码，重新命名类、方法和模块，以便与新模型保持一致。解决交谈中的术语混淆问题，就像我们对普通词汇形成一致的理解一样。
+要认识到， Ubiquitous Language 的更改就是对模型的更改。
+领域专家应该抵制不合适或无法充分表达领域理解的术语或结构，开发人员应该密切关注那些将会妨碍设计的有歧义和不一致的地方。
+改善模型的最佳方式之一就是通过对话来研究，试着大声说出可能的模型变化中的各种结构。</description></item></channel></rss>

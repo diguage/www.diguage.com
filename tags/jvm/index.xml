@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>JVM on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/jvm/</link><description>Recent content in JVM on "地瓜哥"博客网</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Wed, 07 Sep 2022 23:52:12 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/jvm/index.xml" rel="self" type="application/rss+xml"/><item><title>深入理解 Java 代码块</title><link>https://www.diguage.com/post/dive-into-java-code-block/</link><pubDate>Sun, 04 Sep 2022 19:17:06 +0800</pubDate><guid>https://www.diguage.com/post/dive-into-java-code-block/</guid><description>在 Java 虚拟机操作码探秘：常量指令 中对 Java 虚拟机操作码中关于常量操作的指令(操作码)做了初步介绍。估计会有人疑问：文中的“栈”、“栈顶”等是什么？接下来就准备解答这些疑问。
+在答疑解惑之前，先来了解一下 Java 编译器对 Java 代码中的代码块是如何处理的？常见的代码块有普通代码块和静态代码块，下面对其做分别介绍。由于涉及到构造函数，所以，先对构造函数做一个介绍。
+构造函数 无构造函数 先来看看当没有声明构造函数时，编译结果是什么样的：
+/** * 无构造函数示例 * * @author D瓜哥 · https://www.diguage.com */ public class Example { } 编译后，使用 javap -c 查看一下编译结果：
+$ javap -c Example Compiled from &amp;#34;Example.java&amp;#34; public class Example { public Example(); Code: 0: aload_0 1: invokespecial #1 // Method java/lang/Object.&amp;#34;&amp;lt;init&amp;gt;&amp;#34;:()V 4: return } 从结果上来看：编译器自动给没有声明构造函数的类，生成了一个无参构造函数，并且在其中调用了父类（这里是 Object）的无参构造函数。这是大家都熟知的基础知识。
+有参构造函数 再来看看当有声明参数的构造函数时，编译结果是什么样的：
+/** * 有参构造函数示例 * * @author D瓜哥 · https://www.</description></item></channel></rss>

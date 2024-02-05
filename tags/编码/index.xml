@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>编码 on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/%E7%BC%96%E7%A0%81/</link><description>Recent content in 编码 on "地瓜哥"博客网</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Thu, 02 Feb 2023 20:02:58 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/%E7%BC%96%E7%A0%81/index.xml" rel="self" type="application/rss+xml"/><item><title>细说编码与字符集</title><link>https://www.diguage.com/post/dive-into-encoding-and-character-set/</link><pubDate>Sat, 29 Oct 2022 09:09:12 +0800</pubDate><guid>https://www.diguage.com/post/dive-into-encoding-and-character-set/</guid><description>文章还没写完，提前放出防止出现 404。稍后慢慢更新，敬请期待： 细说编码与字符集 - &amp;#34;地瓜哥&amp;#34;博客网
+文章还没写完，提前放出防止出现 404。稍后慢慢更新，敬请期待： 细说编码与字符集 - &amp;#34;地瓜哥&amp;#34;博客网
+文章还没写完，提前放出防止出现 404。稍后慢慢更新，敬请期待： 细说编码与字符集 - &amp;#34;地瓜哥&amp;#34;博客网
+前段时间要研究 Hessian 编码格式，为了搞清楚 Hessian 对字符串的编码，就顺路查了好多编码和字符集的工作，理清了很多以前模糊的知识点。下面整理一下笔记，也梳理一下自己的思路和理解。
+ASCII 码 计算机起源于美国，他们对英语字符与二进制位之间的对应关系做了统一规定，并制定了一套字符编码规则，这套编码规则被称为 American Standard Code for Information Interchange，简称为 ASCII 编码
+其实，ASCII 最早起源于电报码。最早的商业应用是贝尔公司的七位电传打字机。后来于 1963 年发布了该标准的第一版。在网络交换中使用的 ASCII 格式是在 1969 年发布的，该格式在 2015 年发展成为互联网标准。点击 RFC 20: ASCII format for network interchange，感受一下 1969 年的古香古色。
+ASCII 编码一共定义了128个字符的编码规则，用七位二进制表示（0x00 - 0x7F）, 这些字符组成的集合就叫做 ASCII 字符集。完整列表如下：
+ASCII 码可以说是现在所有编码的鼻祖。
+编码乱战及 Unicode 应运而生 ASCII 编码是为专门英语指定的编码标准，但是却不能编码英语外来词。比如 résumé，其中 é 就不在 ASCII 编码范围内。</description></item><item><title>Hessian 协议解释与实战（三）：字符串</title><link>https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-3/</link><pubDate>Wed, 04 May 2022 16:09:05 +0000</pubDate><guid>https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-3/</guid><description>前段时间，翻译了 Hessian 2.0 的序列化协议，发布在了 Hessian 2.0 序列化协议（中文版）。但是，其中有很多言语不详之处。所以，接下来会用几篇文章来详细解释并实践一下 Hessian 序列化协议，以求做到知其然知其所以然。目录如下：
+Hessian 2.0 序列化协议（中文版） — Hessian 序列化协议的中文翻译版。根据后面的“协议解释与实战”系列文章，增加了协议内容错误提示。
+Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数 — 介绍布尔型数据、日期类型、浮点类型数据和整数类型数据等四种类型的数据的处理。
+Hessian 协议解释与实战（二）：长整型、二进制数据与 Null — 介绍长整数类型数据、二进制数据和 null 等三种类型的数据的处理。
+Hessian 协议解释与实战（三）：字符串 — 专门介绍了关于字符串的处理。由于字符串需要铺垫的基础知识比较多，处理细节也有繁琐，所以单独成篇来介绍。
+Hessian 源码分析（Java） — 开始第四篇分析之前，先来介绍一下 Hessian 的源码实现。方便后续展开说明。
+Hessian 协议解释与实战（四）：数组与集合 — 铺垫了一些关于实例对象的处理，重点介绍关于数组和集合的相关处理。
+Hessian 协议解释与实战（五）：对象与映射 — 重点介绍关于对象与映射的相关处理。
+Hessian、Msgpack 和 JSON 实例对比 — 用实例对比 JSON、Hessian 和 MessagePack 的区别。
+Avro、ProtoBuf、Thrift 的模式演进之路 — 翻译的 Martin Kleppmann 的文章，重点对比了 Avro、ProtoBuf、Thrift 的序列化处理思路。
+在上一篇文章 Hessian 协议解释与实战（二）：长整型、二进制数据与 Null 中研究了长整型、二进制数据与 null 等三种数据类型的处理方式。接下来，我们再来介绍字符串的处理情况。</description></item><item><title>Hessian 协议解释与实战（二）：长整型、二进制数据与 Null</title><link>https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-2/</link><pubDate>Tue, 03 May 2022 16:09:15 +0800</pubDate><guid>https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-2/</guid><description>前段时间，翻译了 Hessian 2.0 的序列化协议，发布在了 Hessian 2.0 序列化协议（中文版）。但是，其中有很多言语不详之处。所以，接下来会用几篇文章来详细解释并实践一下 Hessian 序列化协议，以求做到知其然知其所以然。目录如下：
+Hessian 2.0 序列化协议（中文版） — Hessian 序列化协议的中文翻译版。根据后面的“协议解释与实战”系列文章，增加了协议内容错误提示。
+Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数 — 介绍布尔型数据、日期类型、浮点类型数据和整数类型数据等四种类型的数据的处理。
+Hessian 协议解释与实战（二）：长整型、二进制数据与 Null — 介绍长整数类型数据、二进制数据和 null 等三种类型的数据的处理。
+Hessian 协议解释与实战（三）：字符串 — 专门介绍了关于字符串的处理。由于字符串需要铺垫的基础知识比较多，处理细节也有繁琐，所以单独成篇来介绍。
+Hessian 源码分析（Java） — 开始第四篇分析之前，先来介绍一下 Hessian 的源码实现。方便后续展开说明。
+Hessian 协议解释与实战（四）：数组与集合 — 铺垫了一些关于实例对象的处理，重点介绍关于数组和集合的相关处理。
+Hessian 协议解释与实战（五）：对象与映射 — 重点介绍关于对象与映射的相关处理。
+Hessian、Msgpack 和 JSON 实例对比 — 用实例对比 JSON、Hessian 和 MessagePack 的区别。
+Avro、ProtoBuf、Thrift 的模式演进之路 — 翻译的 Martin Kleppmann 的文章，重点对比了 Avro、ProtoBuf、Thrift 的序列化处理思路。
+在上一篇文章 Hessian 协议解释与实战（一） 中研究了布尔型数据、日期类型、浮点类型数据、整数类型数据等四种数据类型的处理方式。接下来，我们再来介绍长整数类型数据、二进制数据和 null 的处理情况。</description></item></channel></rss>
