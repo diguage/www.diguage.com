@@ -1,0 +1,21 @@
+---
+title: "如丝顺滑升级到 OpenJDK 21"
+date: 2024-04-22T19:50:22+08:00
+draft: true
+keywords: ["Java","OpenJDK","OpenJDK 21"]
+tags: ["Java","JVM"]
+categories: ["编程语言","软件工程"]
+thumbnail: "images/java/java-21.jpeg"
+
+weight: 1
+---
+
+https://openjdk.org/projects/jdk/21/[OpenJDK 21^] 已经发布半年有余，在这个版本中， https://openjdk.org/jeps/439[Generational ZGC^] 也一起发布了。在 https://malloc.se/blog/zgc-jdk16[ZGC | What's new in JDK 16^] 中， https://malloc.se/[Per Lidén^] 宣称，将 ZGC 的最大停顿时间从 10ms 降低到了 1ms。这些种种先进技术，着实充满诱惑，忍不住想吃口螃蟹🦀。
+
+// image::/images/[title="",alt="",{image_attr}]
+
+// [source%nowrap,java,{source_attr}]
+// ----
+// // code
+// ----
+
