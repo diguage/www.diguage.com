@@ -12,6 +12,54 @@ weight: 1
 
 https://openjdk.org/projects/jdk/21/[OpenJDK 21^] 已经发布半年有余，在这个版本中， https://openjdk.org/jeps/439[Generational ZGC^] 也一起发布了。在 https://malloc.se/blog/zgc-jdk16[ZGC | What's new in JDK 16^] 中， https://malloc.se/[Per Lidén^] 宣称，将 ZGC 的最大停顿时间从 10ms 降低到了 1ms。这些种种先进技术，着实充满诱惑，忍不住想吃口螃蟹🦀。
 
+TIP: 本文仅仅介绍升级 OpenJDK 的相关内容，至于 ZGC 等技术细节，后续再撰文介绍。
+
+由于 Spring Boot 项目与 Java Web 项目有差异，也有共性。所以，分开来讲。
+
+== 升级通用内容
+
+[source%nowrap,xml,{source_attr}]
+----
+<dependency>
+    <groupId>jakarta.annotation</groupId>
+    <artifactId>jakarta.annotation-api</artifactId> <!--1-->
+    <version>1.3.5</version>
+</dependency>
+
+<!-- 或者 -->
+
+<dependency>
+    <groupId>javax.annotation</groupId>
+    <artifactId>javax.annotation-api</artifactId>
+    <version>1.3.2</version>
+</dependency>
+----
+<1> 推荐使用该版本以后，后续升级直接改版本号即可。
+
+
+== Spring Boot 项目
+
+== Java Web 项目
+
+== 升级相关问题
+
+== 性能对比
+
+GC
+
+. JDK8 G1 GC
+. JDK17 ZGC
+. JDK21 G1 GC
+. JDK21 ZGC
+. JDK21 Gen ZGC
+
+指标
+
+. 延迟
+. 吞吐量
+. CPU
+. GC 停顿
+
 // image::/images/[title="",alt="",{image_attr}]
 
 [source%nowrap,xml,{source_attr}]
@@ -116,4 +164,6 @@ https://openjdk.org/projects/jdk/21/[OpenJDK 21^] 已经发布半年有余，在
   </build>
 </profile>
 ----
+
+. https://hibernate.org/validator/releases/7.0/[Hibernate Validator 7.0^]
 
