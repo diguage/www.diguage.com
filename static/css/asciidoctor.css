@@ -444,3 +444,9 @@ div.listingblock > div.title {
     margin-bottom: -12px;
     font-style: normal!important;
 }
+
+div.imageblock > div.title {
+    text-align: center !important;
+    font-style: normal !important;
+    margin-bottom: 1em !important;
+}

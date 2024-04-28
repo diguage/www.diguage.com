@@ -77,6 +77,7 @@ ignoreFiles = ['\.crdownload']
     sectionNumbers = false
     trace = false
     verbose = false
+    lang = "zh_CN"
     # workingFolderCurrent = true
     [markup.asciidocExt.attributes]
       icons = "font"
@@ -86,3 +87,4 @@ ignoreFiles = ['\.crdownload']
       source_attr = "indent=0"
       image_attr = "align=center,width=95%"
       # diagram_attr = "align=center,width=100%,format=svg"
+      "figure-caption" = "图"

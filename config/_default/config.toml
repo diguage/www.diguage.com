@@ -79,6 +79,7 @@ ignoreFiles = ['\.crdownload']
     sectionNumbers = false
     trace = false
     verbose = false
+    lang = "zh_CN"
     [markup.asciidocExt.attributes]
       icons = "font"
       source-highlighter = "rouge"
@@ -86,3 +87,4 @@ ignoreFiles = ['\.crdownload']
       # https://docs.asciidoctor.org/asciidoc/latest/subs/apply-subs-to-blocks/
       source_attr = "indent=0"
       image_attr = "align=center,width=95%"
+      "figure-caption" = "图"
