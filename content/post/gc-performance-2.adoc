@@ -1,0 +1,58 @@
+---
+title: "Java JVM GC 性能测试（二）"
+date: 2024-04-29T22:22:47+08:00
+draft: true
+keywords: [""]
+tags: [""]
+categories: [""]
+thumbnail: "images/logo/jvm.jpg"
+# aliases: "/old/path/"
+
+weight: 1
+---
+
+== 压测机器
+
+. J21-G1
+.. 4500(平均每台机器900)，特别稳，CPU 80%，感觉还可以加点
+.. 5000(平均每台机器1000)，偶尔抖动(不固定机器)，大部分时候很平稳，平均CPU可以干到80%+。
+.. 5250（1050），偶尔抖动(不固定机器)，大部分时候很平稳，平均CPU可以干到90%+。
+.. 5500（1100），抖动变多(不固定机器)，大部分时候很平稳，平均CPU可以干到95%+。
+.. 5750（1150），抖动变多(不固定机器)，出现剧烈抖动，大部分时候很平稳，平均CPU可以干到97%+。
+.. 6000（1200），抖动变多(不固定机器)，剧烈抖动频繁出现，大部分时候很平稳，平均CPU可以干到98%+。
+
+. J8-G1: 20*5 850+qps  抖动厉害，压不上去（压力机不给力啊！）
+.. 4750(950)，CPU95%+
+.. 5000(平均每台机器1000)，抖动幅度比较大，偶尔出现剧烈抖动，CPU99%+
+.. 5250(平均每台机器1050)，抖动幅度比较大，频繁出现剧烈抖动，CPU波动（由于剧烈抖动，导致的访问量变少）
+
+
+. J21-ZGC: 2000~2500(平均每台机器350) 抖动太厉害，CPU 73%，压不上去（压力机不给力啊！）
+
+. J21 Gen ZGC:
+.. 4500(平均每台机器900)，特别稳，CPU 80%，感觉还可以加点
+.. 950问题不大，个别机器(五台中的一台，其他很稳)开始疯狂抖动；其他还是很稳，没有特别的抖动，平均CPU可以干到92%+。
+.. 1000也还行，个别机器(五台中的二台，其他很稳)开始疯狂抖动；其他还是很稳，没有特别的抖动，平均CPU可以干到96%+。
+.. 5250(1050)，个别机器(五台中的三台，其他很稳)开始疯狂抖动；其他还是很稳，没有特别的抖动，平均CPU可以干到99%+。
+.. 5500(1100)，全部开始疯狂抖动，平均CPU可以干到99%+。
+
+
+
+
+image::/images/java/gc-performance/[title="",alt="",{image_attr}]
+image::/images/java/gc-performance/[title="",alt="",{image_attr}]
+image::/images/java/gc-performance/[title="",alt="",{image_attr}]
+image::/images/java/gc-performance/[title="",alt="",{image_attr}]
+image::/images/java/gc-performance/[title="",alt="",{image_attr}]
+image::/images/java/gc-performance/[title="",alt="",{image_attr}]
+image::/images/java/gc-performance/[title="",alt="",{image_attr}]
+image::/images/java/gc-performance/[title="",alt="",{image_attr}]
+image::/images/java/gc-performance/[title="",alt="",{image_attr}]
+image::/images/java/gc-performance/[title="",alt="",{image_attr}]
+
+
+
+// [source%nowrap,java,{source_attr}]
+// ----
+// // code
+// ----

@@ -1,0 +1,92 @@
+---
+title: "Java JVM GC 性能测试（一）"
+date: 2024-04-25T22:02:47+08:00
+draft: true
+keywords: [""]
+tags: [""]
+categories: [""]
+thumbnail: "images/logo/jvm.jpg"
+# aliases: "/old/path/"
+
+weight: 1
+---
+
+image::/images/java/gc-performance/api-same-qps-request-minute.jpg[title="",alt="",{image_attr}]
+
+image::/images/java/gc-performance/api-same-qps-request-second.jpg[title="",alt="",{image_attr}]
+
+image::/images/java/gc-performance/api-same-qps-tp999-minute.jpg[title="",alt="",{image_attr}]
+
+image::/images/java/gc-performance/api-same-qps-tp999-second.jpg[title="",alt="",{image_attr}]
+
+image::/images/java/gc-performance/api-same-qps-avg-minute.jpg[title="",alt="",{image_attr}]
+
+image::/images/java/gc-performance/api-same-qps-avg-second.jpg[title="",alt="",{image_attr}]
+
+image::/images/java/gc-performance/api-same-qps-tp99-minute.jpg[title="",alt="",{image_attr}]
+
+image::/images/java/gc-performance/api-same-qps-tp99-second.jpg[title="",alt="",{image_attr}]
+
+image::/images/java/gc-performance/jvm-cpu-avg.jpg[title="",alt="",{image_attr}]
+
+image::/images/java/gc-performance/jvm-cpu-max.jpg[title="",alt="",{image_attr}]
+
+image::/images/java/gc-performance/jvm-cpu-min.jpg[title="",alt="",{image_attr}]
+
+
+image::/images/java/gc-performance/jvm-young-gc-avg.jpg[title="",alt="",{image_attr}]
+image::/images/java/gc-performance/jvm-young-gc-max.jpg[title="",alt="",{image_attr}]
+image::/images/java/gc-performance/jvm-young-gc-min.jpg[title="",alt="",{image_attr}]
+
+image::/images/java/gc-performance/jvm-young-gc-time-avg.jpg[title="",alt="",{image_attr}]
+image::/images/java/gc-performance/jvm-young-gc-time-max.jpg[title="",alt="",{image_attr}]
+image::/images/java/gc-performance/jvm-young-gc-time-min.jpg[title="",alt="",{image_attr}]
+
+image::/images/java/gc-performance/jvm-full-gc-avg.jpg[title="",alt="",{image_attr}]
+image::/images/java/gc-performance/jvm-full-gc-max.jpg[title="",alt="",{image_attr}]
+image::/images/java/gc-performance/jvm-full-gc-min.jpg[title="",alt="",{image_attr}]
+
+image::/images/java/gc-performance/jvm-full-gc-time-avg.jpg[title="",alt="",{image_attr}]
+image::/images/java/gc-performance/jvm-full-gc-time-max.jpg[title="",alt="",{image_attr}]
+image::/images/java/gc-performance/jvm-full-gc-time-min.jpg[title="",alt="",{image_attr}]
+
+image::/images/java/gc-performance/jvm-heap-avg.jpg[title="",alt="",{image_attr}]
+image::/images/java/gc-performance/jvm-heap-max.jpg[title="",alt="",{image_attr}]
+image::/images/java/gc-performance/jvm-heap-min.jpg[title="",alt="",{image_attr}]
+
+image::/images/java/gc-performance/jvm-non-heap.jpg[title="",alt="",{image_attr}]
+
+image::/images/java/gc-performance/jvm-thead.jpg[title="",alt="",{image_attr}]
+
+image::/images/java/gc-performance/api-per-host.jpg[title="",alt="",{image_attr}]
+
+== OS CPU
+
+image::/images/java/gc-performance/os-cpu-avg-second.jpg[title="",alt="",{image_attr}]
+image::/images/java/gc-performance/os-cpu-max-second.jpg[title="",alt="",{image_attr}]
+image::/images/java/gc-performance/os-cpu-min-second.jpg[title="",alt="",{image_attr}]
+
+平均、最大和最小差异不大，只截图了平均。
+
+image::/images/java/gc-performance/os-cpu-avg-minute.jpg[title="",alt="",{image_attr}]
+
+最大、最小、秒级、分钟级差别不大，截取了秒级平均。
+image::/images/java/gc-performance/os-rss-cache-avg.jpg[title="",alt="",{image_attr}]
+
+image::/images/java/gc-performance/[title="",alt="",{image_attr}]
+image::/images/java/gc-performance/[title="",alt="",{image_attr}]
+image::/images/java/gc-performance/[title="",alt="",{image_attr}]
+image::/images/java/gc-performance/[title="",alt="",{image_attr}]
+image::/images/java/gc-performance/[title="",alt="",{image_attr}]
+image::/images/java/gc-performance/[title="",alt="",{image_attr}]
+image::/images/java/gc-performance/[title="",alt="",{image_attr}]
+image::/images/java/gc-performance/[title="",alt="",{image_attr}]
+image::/images/java/gc-performance/[title="",alt="",{image_attr}]
+image::/images/java/gc-performance/[title="",alt="",{image_attr}]
+
+
+
+// [source%nowrap,java,{source_attr}]
+// ----
+// // code
+// ----

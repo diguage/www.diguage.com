@@ -18,6 +18,10 @@ TIP: 本文仅仅介绍升级 OpenJDK 的相关内容，至于 ZGC 等技术细�
 
 == 升级通用内容
 
+=== `@javax.annotation.Resource`
+
+直接将本地使用的 JDK 版本切换成 JDK 21 后，编译大概率会报错，提示找不到 `javax.annotation.Resource`，这是由于 https://openjdk.org/jeps/320[JEP 320: Remove the Java EE and CORBA Modules^] 提案，在 OpenJDK 11 中移除了 JavaEE 的相关内容。所以，需要将其使用 Jar 包的形式专门引用一下。
+
 [source%nowrap,xml,{source_attr}]
 ----
 <dependency>
@@ -34,12 +38,224 @@ TIP: 本文仅仅介绍升级 OpenJDK 的相关内容，至于 ZGC 等技术细�
     <version>1.3.2</version>
 </dependency>
 ----
-<1> 推荐使用该版本以后，后续升级直接改版本号即可。
+<1> 上述两个依赖代码基本一样。推荐使用该版本以后，后续升级直接改版本号即可。
 
+另外，有一点需要特别说明：Spring 6+ 支持新版的 `jakarta.annotation.Resource` 注解，同时还兼容旧版的 `javax.annotation.Resource`。相关代码如下：
+
+.`CommonAnnotationBeanPostProcessor.java`
+[source%nowrap,java,{source_attr}]
+----
+public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBeanPostProcessor
+		implements InstantiationAwareBeanPostProcessor, BeanFactoryAware, Serializable {
+
+	// Defensive reference to JNDI API for JDK 9+ (optional java.naming module)
+	private static final boolean jndiPresent = ClassUtils.isPresent(
+			"javax.naming.InitialContext", CommonAnnotationBeanPostProcessor.class.getClassLoader());
+
+	private static final Set<Class<? extends Annotation>> resourceAnnotationTypes = CollectionUtils.newLinkedHashSet(3);
+
+	@Nullable
+	private static final Class<? extends Annotation> jakartaResourceType;
+
+	@Nullable
+	private static final Class<? extends Annotation> javaxResourceType;
+
+	@Nullable
+	private static final Class<? extends Annotation> ejbAnnotationType;
+
+	static {
+		jakartaResourceType = loadAnnotationType("jakarta.annotation.Resource");
+		if (jakartaResourceType != null) {
+			resourceAnnotationTypes.add(jakartaResourceType);
+		}
+
+		javaxResourceType = loadAnnotationType("javax.annotation.Resource");
+		if (javaxResourceType != null) {
+			resourceAnnotationTypes.add(javaxResourceType);
+		}
+
+		ejbAnnotationType = loadAnnotationType("jakarta.ejb.EJB");
+		if (ejbAnnotationType != null) {
+			resourceAnnotationTypes.add(ejbAnnotationType);
+		}
+	}
+
+	private final Set<String> ignoredResourceTypes = new HashSet<>(1);
+
+	private InjectionMetadata buildResourceMetadata(Class<?> clazz) {
+		if (!AnnotationUtils.isCandidateClass(clazz, resourceAnnotationTypes)) {
+			return InjectionMetadata.EMPTY;
+		}
+
+		List<InjectionMetadata.InjectedElement> elements = new ArrayList<>();
+		Class<?> targetClass = clazz;
+
+		do {
+			final List<InjectionMetadata.InjectedElement> currElements = new ArrayList<>();
+
+			ReflectionUtils.doWithLocalFields(targetClass, field -> {
+				if (ejbAnnotationType != null && field.isAnnotationPresent(ejbAnnotationType)) {
+					if (Modifier.isStatic(field.getModifiers())) {
+						throw new IllegalStateException("@EJB annotation is not supported on static fields");
+					}
+					currElements.add(new EjbRefElement(field, field, null));
+				}
+				else if (jakartaResourceType != null && field.isAnnotationPresent(jakartaResourceType)) {
+					if (Modifier.isStatic(field.getModifiers())) {
+						throw new IllegalStateException("@Resource annotation is not supported on static fields");
+					}
+					if (!this.ignoredResourceTypes.contains(field.getType().getName())) {
+						currElements.add(new ResourceElement(field, field, null));
+					}
+				}
+				else if (javaxResourceType != null && field.isAnnotationPresent(javaxResourceType)) {
+					if (Modifier.isStatic(field.getModifiers())) {
+						throw new IllegalStateException("@Resource annotation is not supported on static fields");
+					}
+					if (!this.ignoredResourceTypes.contains(field.getType().getName())) {
+						currElements.add(new LegacyResourceElement(field, field, null));
+					}
+				}
+			});
+
+			ReflectionUtils.doWithLocalMethods(targetClass, method -> {
+				Method bridgedMethod = BridgeMethodResolver.findBridgedMethod(method);
+				if (!BridgeMethodResolver.isVisibilityBridgeMethodPair(method, bridgedMethod)) {
+					return;
+				}
+				if (ejbAnnotationType != null && bridgedMethod.isAnnotationPresent(ejbAnnotationType)) {
+					if (method.equals(ClassUtils.getMostSpecificMethod(method, clazz))) {
+						if (Modifier.isStatic(method.getModifiers())) {
+							throw new IllegalStateException("@EJB annotation is not supported on static methods");
+						}
+						if (method.getParameterCount() != 1) {
+							throw new IllegalStateException("@EJB annotation requires a single-arg method: " + method);
+						}
+						PropertyDescriptor pd = BeanUtils.findPropertyForMethod(bridgedMethod, clazz);
+						currElements.add(new EjbRefElement(method, bridgedMethod, pd));
+					}
+				}
+				else if (jakartaResourceType != null && bridgedMethod.isAnnotationPresent(jakartaResourceType)) {
+					if (method.equals(ClassUtils.getMostSpecificMethod(method, clazz))) {
+						if (Modifier.isStatic(method.getModifiers())) {
+							throw new IllegalStateException("@Resource annotation is not supported on static methods");
+						}
+						Class<?>[] paramTypes = method.getParameterTypes();
+						if (paramTypes.length != 1) {
+							throw new IllegalStateException("@Resource annotation requires a single-arg method: " + method);
+						}
+						if (!this.ignoredResourceTypes.contains(paramTypes[0].getName())) {
+							PropertyDescriptor pd = BeanUtils.findPropertyForMethod(bridgedMethod, clazz);
+							currElements.add(new ResourceElement(method, bridgedMethod, pd));
+						}
+					}
+				}
+				else if (javaxResourceType != null && bridgedMethod.isAnnotationPresent(javaxResourceType)) {
+					if (method.equals(ClassUtils.getMostSpecificMethod(method, clazz))) {
+						if (Modifier.isStatic(method.getModifiers())) {
+							throw new IllegalStateException("@Resource annotation is not supported on static methods");
+						}
+						Class<?>[] paramTypes = method.getParameterTypes();
+						if (paramTypes.length != 1) {
+							throw new IllegalStateException("@Resource annotation requires a single-arg method: " + method);
+						}
+						if (!this.ignoredResourceTypes.contains(paramTypes[0].getName())) {
+							PropertyDescriptor pd = BeanUtils.findPropertyForMethod(bridgedMethod, clazz);
+							currElements.add(new LegacyResourceElement(method, bridgedMethod, pd));
+						}
+					}
+				}
+			});
+
+			elements.addAll(0, currElements);
+			targetClass = targetClass.getSuperclass();
+		}
+		while (targetClass != null && targetClass != Object.class);
+
+		return InjectionMetadata.forElements(elements, clazz);
+	}
+}
+----
+
+=== Nashorn JavaScript Engine
+
+解决完编译问题后，启动报如下异常：
+
+[source%nowrap,{source_attr}]
+----
+2024-01-02 14:27:27.062 [main] ERROR com.diguage.laf.config.spring.config.JavaScriptListener[67] - failed invoking script script/logback.js
+java.lang.NullPointerException: Cannot invoke "javax.script.ScriptEngine.put(String, Object)" because "engine" is null
+----
+
+这是因为 https://openjdk.org/jeps/372[JEP 372: Remove the Nashorn JavaScript Engine^] 提案，从 OpenJDK 11 开始，将 Nashorn JavaScript Engine 移除了。由于相关功能使用了 JavaScript 引擎，所以，就报了 “Cannot invoke "javax.script.ScriptEngine.put(String, Object)" because "engine" is null” 错误。处理办法如上，加回相关的依赖：
+
+[source%nowrap,xml,{source_attr}]
+----
+<dependency>
+    <groupId>org.openjdk.nashorn</groupId>
+    <artifactId>nashorn-core</artifactId>
+    <version>15.4</version>
+</dependency>
+----
+
+=== Java Validation API
+
+在最近一个项目升级
+
+[source%nowrap,{source_attr}]
+----
+Caused by: java.lang.ExceptionInInitializerError: Exception javax.validation.ValidationException: HV000183: Unable to initialize 'javax.el.ExpressionFactory'. Check that you have the EL dependencies on the classpath, or use ParameterMessageInterpolator instead [in thread "BZ-22001-108-T-17"]
+    at org.hibernate.validator.messageinterpolation.ResourceBundleMessageInterpolator.buildExpressionFactory(ResourceBundleMessageInterpolator.java:199)
+    at org.hibernate.validator.messageinterpolation.ResourceBundleMessageInterpolator.<init>(ResourceBundleMessageInterpolator.java:94)
+    at org.hibernate.validator.internal.engine.AbstractConfigurationImpl.getDefaultMessageInterpolator(AbstractConfigurationImpl.java:570)
+    at org.hibernate.validator.internal.engine.AbstractConfigurationImpl.getDefaultMessageInterpolatorConfiguredWithClassLoader(AbstractConfigurationImpl.java:790)
+    at org.hibernate.validator.internal.engine.AbstractConfigurationImpl.getMessageInterpolator(AbstractConfigurationImpl.java:480)
+    at org.hibernate.validator.internal.engine.ValidatorFactoryImpl.<init>(ValidatorFactoryImpl.java:151)
+    at org.hibernate.validator.HibernateValidator.buildValidatorFactory(HibernateValidator.java:38)
+    at org.hibernate.validator.internal.engine.AbstractConfigurationImpl.buildValidatorFactory(AbstractConfigurationImpl.java:430)
+----
+
+=== 各种包
+
+[source%nowrap,{source_attr}]
+----
+Caused by: java.lang.reflect.InaccessibleObjectException: Unable to make protected final java.lang.Class java.lang.ClassLoader.defineClass(java.lang.String,byte[],int,int,java.security.ProtectionDomain) throws java.lang.ClassFormatError accessible: module java.base does not "opens java.lang" to unnamed module @66f57048
+	at java.base/java.lang.reflect.AccessibleObject.throwInaccessibleObjectException(AccessibleObject.java:391)
+
+// --add-opens java.base/java.lang=ALL-UNNAMED
+----
+
+
+
+[source%nowrap,{source_attr}]
+----
+Caused by: java.lang.reflect.InaccessibleObjectException: Unable to make field protected int[] java.util.Calendar.fields accessible: module java.base does not "opens java.util" to unnamed module @21282ed8
+
+// --add-opens java.base/java.util=ALL-UNNAMED
+----
+
+[source%nowrap,{source_attr}]
+----
+Caused by: java.lang.IllegalAccessError: class com.jd.org.msgpack.template.TemplateRegistry (in unnamed module @0x21282ed8) cannot access class sun.util.calendar.ZoneInfo (in module java.base) because module java.base does not export sun.util.calendar to unnamed module @0x21282ed8
+
+// --add-opens java.base/sun.util.calendar=ALL-UNNAMED
+----
+
+[source%nowrap,{source_attr}]
+----
+java.lang.reflect.InaccessibleObjectException: Unable to make field final int[] java.math.BigInteger.mag accessible: module java.base does not "opens java.math" to unnamed module @21282ed8
+
+// --add-opens java.base/java.math=ALL-UNNAMED
+----
+
+[source%nowrap,{source_attr}]
+----
+----
 
 == Spring Boot 项目
 
 == Java Web 项目
+
 
 == 升级相关问题
 
@@ -55,10 +271,10 @@ GC
 
 指标
 
-. 延迟
-. 吞吐量
-. CPU
-. GC 停顿
+* [x] 延迟
+* [ ] 吞吐量
+* [x] CPU
+* [x] GC 停顿
 
 // image::/images/[title="",alt="",{image_attr}]
 
