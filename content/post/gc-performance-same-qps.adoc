@@ -1,7 +1,7 @@
 ---
-title: "JVM GC 性能测试（一）"
+title: "JVM GC 性能测试（一）：相同流量"
 date: 2024-04-25T22:02:47+08:00
-draft: true
+draft: false
 keywords: ["Java","虚拟机","性能","ZGC","G1","OpenJDK"]
 tags: ["Java","虚拟机","GC","性能测试"]
 categories: ["系统架构","性能优化"]
@@ -10,7 +10,14 @@ thumbnail: "images/logo/jvm.jpg"
 weight: 1
 ---
 
-想推进部门升级 JDK 到 OpenJDK21，做决策当然要
+*JVM GC 性能测试系列*:
+
+. https://www.diguage.com/post/gc-performance-comparison-method/[JVM GC 性能对比方法^]
+. https://www.diguage.com/post/gc-performance-same-qps/[JVM GC 性能测试（一）：相同流量^]
+. https://www.diguage.com/post/gc-performance-incremental-qps/[JVM GC 性能测试（二）：递增流量^]
+. https://www.diguage.com/post/gc-performance-real-qps/[JVM GC 性能测试（三）：真实流量^]
+
+'''
 
 image::/images/gc-performance/api-same-qps-request-minute.jpg[title="",alt="",{image_attr}]
 
@@ -85,9 +92,6 @@ image::/images/gc-performance/[title="",alt="",{image_attr}]
 image::/images/gc-performance/[title="",alt="",{image_attr}]
 image::/images/gc-performance/[title="",alt="",{image_attr}]
 
+== 后话
 
-
-// [source%nowrap,java,{source_attr}]
-// ----
-// // code
-// ----
+在测试方法中，D瓜哥提到“将 JMeter 的共享模式设置为所有线程，这样的话，每次发送请求的参数都会不一样。”，在后来的测试中，D瓜哥又尝试将共享模式设置为“当前线程”，却引发了不一样的结果，导致了进一步的思考。先设个谜语，在下一篇测试中，给大家揭晓谜底。
