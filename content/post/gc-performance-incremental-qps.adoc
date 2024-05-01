@@ -1,187 +1,238 @@
 ---
-title: "Java JVM GC 性能测试（二）"
-date: 2024-04-29T22:22:47+08:00
+title: "JVM GC 性能测试（二）：递增流量"
+date: 2024-04-30T00:29:00+08:00
 draft: true
-keywords: [""]
-tags: [""]
-categories: [""]
+keywords: ["Java","虚拟机","性能","ZGC","G1","OpenJDK"]
+tags: ["Java","虚拟机","GC","性能测试"]
+categories: ["系统架构","性能优化"]
 thumbnail: "images/logo/jvm.jpg"
-# aliases: "/old/path/"
 
 weight: 1
 ---
 
-== 压测机器
+*JVM GC 性能测试系列*:
 
-. J21-G1
-.. 4500(平均每台机器900)，特别稳，CPU 80%，感觉还可以加点
-.. 5000(平均每台机器1000)，偶尔抖动(不固定机器)，大部分时候很平稳，平均CPU可以干到80%+。
-.. 5250（1050），偶尔抖动(不固定机器)，大部分时候很平稳，平均CPU可以干到90%+。
-.. 5500（1100），抖动变多(不固定机器)，大部分时候很平稳，平均CPU可以干到95%+。
-.. 5750（1150），抖动变多(不固定机器)，出现剧烈抖动，大部分时候很平稳，平均CPU可以干到97%+。
-.. 6000（1200），抖动变多(不固定机器)，剧烈抖动频繁出现，大部分时候很平稳，平均CPU可以干到98%+。
+. https://www.diguage.com/post/gc-performance-comparison-method/[JVM GC 性能对比方法^]
+. https://www.diguage.com/post/gc-performance-same-qps/[JVM GC 性能测试（一）：相同流量^]
+. https://www.diguage.com/post/gc-performance-incremental-qps/[JVM GC 性能测试（二）：递增流量^]
+. https://www.diguage.com/post/gc-performance-real-qps/[JVM GC 性能测试（三）：真实流量^]
 
-. J8-G1: 20*5 850+qps  抖动厉害，压不上去（压力机不给力啊！）
-.. 4750(950)，CPU95%+
-.. 5000(平均每台机器1000)，抖动幅度比较大，偶尔出现剧烈抖动，CPU99%+
-.. 5250(平均每台机器1050)，抖动幅度比较大，频繁出现剧烈抖动，CPU波动（由于剧烈抖动，导致的访问量变少）
+'''
 
-
-. J21-ZGC:
-.. 2750（550）,稳定，没有抖动，CPU 81%
-.. 3000（600）,稳定，没有抖动，CPU 86%
-.. 3250（650）,稳定，没有抖动，CPU 88%
-.. 3500（700）,稳定，没有抖动，CPU 91%
-.. 3750（750）,稳定，没有抖动，CPU 93%
-.. 4000（800）,稳定，没有抖动，CPU 97%
-.. 4250（850）,稳定，没有抖动，CPU 99%
-.. 4500（900）,稳定，没有抖动，CPU 99%
-.. 4750（950）,出现剧烈抖动（五台中的三台），CPU 95%（由于抖动，访问量压不上来）
-.. 5000（1000）,全部机器出现剧烈抖动，CPU 80%（由于抖动，访问量压不上来）
-
-. J17-ZGC
-.. 第一轮（当前线程池）
-.. 2750（550）,稳定，没有抖动，CPU
-.. 3000（600）,稳定，没有抖动，CPU
-.. 3250（650）,稳定，没有抖动，CPU
-.. 3500（700）,稳定，没有抖动，CPU
-.. 3750（750）,稳定，没有抖动，CPU 90%
-.. 4000（800）,稳定，没有抖动，CPU 93%
-.. 4250（850）,稳定，没有抖动，CPU 95%
-.. 4500（900）,稳定，没有抖动，CPU 97%
-.. 4750（950）,稳定，没有抖动，CPU 99%
-.. 5000（1000）,一台机器剧烈抖动，CPU 99%
-.. 第二轮（所有线程共享）
-.. 2750（550）,稳定，没有抖动，CPU
-.. 3000（600）,稳定，没有抖动，CPU
-.. 3250（650）,稳定，没有抖动，CPU
-.. 3500（700）,稳定，没有抖动，CPU 88%
-.. 3750（750）,稳定，没有抖动，CPU 91%
-.. 4000（800）,1/5台机器剧烈抖动，CPU 93%（一台机器抖动，访问量降低，导致平均CPU降低）
-.. 4250（850）,1/5台机器剧烈抖动，CPU 93%
-.. 4500（900）,1/5台机器剧烈抖动，CPU 93%
-.. 4750（950）,稳定，没有抖动，CPU 99%
-.. 5000（1000）,一台机器剧烈抖动，CPU 99%
-
-. J21 Gen ZGC:
-.. 4500(平均每台机器900)，特别稳，CPU 80%，感觉还可以加点
-.. 950问题不大，个别机器(五台中的一台，其他很稳)开始疯狂抖动；其他还是很稳，没有特别的抖动，平均CPU可以干到92%+。
-.. 1000也还行，个别机器(五台中的二台，其他很稳)开始疯狂抖动；其他还是很稳，没有特别的抖动，平均CPU可以干到96%+。
-.. 5250(1050)，个别机器(五台中的三台，其他很稳)开始疯狂抖动；其他还是很稳，没有特别的抖动，平均CPU可以干到99%+。
-.. 5500(1100)，全部开始疯狂抖动，平均CPU可以干到99%+。
-
-
-压测计划：
-
-. 1000 - 30s
-. 2000 - 30s
-. 3000 - 30s
-. 3750 - 300s
-. 4000 - 600s
-. 4250 - 600s
-. 4500 - 600s
-. 4750 - 600s
-. 5000 - 600s
-. 5250 - 600s
-. 5500 - 600s
-
-== 压测
-
-开始时间： 2024-04-29 23:13:03
-
-== 4000（800）
-
-开始时间： 2024-04-29 23:19:03
-
-整体平稳
-
-. J21-ZGC CPU 96%
-. J17-ZGC CPU 92%
-. J8-G1 CPU 87%，YoungGC最频繁，次数是ZGC的三倍
-. J21-GenZGC CPU 77%(波动较大)
-. J21-G1 CPU 69%(波动较大)
-
-== 4250（850）
-
-开始时间： 2024-04-29 23:29:30
-
-波动变大，从分组的TP999 来看，J8-G1 波动最大，其次是 J21-G1，三个ZGC稳定性解决，最稳的是 J21-Gen-ZGC
-
-. J21-ZGC CPU 98%
-. J8-G1 CPU 96%，YoungGC更频繁了，是上个请求量的1.5倍
-. J17-ZGC CPU 95%
-. J21-GenZGC CPU 83%
-. J21-G1 CPU 77%(波动略大)
-
-== 4500（900）
-
-开始时间： 2024-04-29 23:39:30
-
-更多机器（大概5台）开始出现剧烈抖动，分组TP999，J8-G1 波动最大，其次是 J21-ZGC，再次是 J21-G1（也比其他分组高），比较稳定是 J17-ZGC 和 J21-Gen-ZGC(表现最好)。
-
-J8-GC 出现明细剧烈抖动
-
-. J8-G1 CPU 98%，YoungGC更频繁了
-. J21-ZGC CPU 98%
-. J17-ZGC CPU 95%
-. J21-GenZGC CPU 89%
-. J21-G1 CPU 83%
-
-== 4750（950）
-
-开始时间： 2024-04-29 23:49:30
-
-. J8-G1 全部机器开始剧烈抖动，CPU也抖动
-. J17-ZGC CPU98%
-. J21-Gen-ZGC 95%
-. J21-G1 CPU 86%
-. J21-ZGC 77%(开始出现抖动， 4/5剧烈抖动)
-
-== 5000（1000）
-
-开始时间： 2024-04-29 23:59:30
-
-. J21-ZGC 也开始沦陷 4/5 机器剧烈抖动
-. J8-G1 全部机器开始抖动，但是只是个别点在抖，大部分时间是平稳的，感觉是依赖的RPC抖动导致的？？
-. J21-Gen-ZGC 2/5 机器开始剧烈抖动，幅度比上两个要小，TP999维持在160ms上下波动（除这个和J21-G1外，其他波动都超过1000ms了）
-. J17-ZGC 也很稳，有点说不过去啊！
-. J21-G1 还是很稳，TP999波动最稳，维持在100ms左右
-
-== 5250（1050）
-
-开始时间： 2024-04-30 00:09:30
-
-. J21-Gen-ZGC 全部机器开始剧烈抖动，CPU97%
-. J21-ZGC 全部机器开始剧烈抖动
-. J17-ZGC 3/5 机器开始剧烈抖动
-. J8-G1 机器周期性抖动
-. J21-G1 整体非常平稳，没有抖动，CPU 95%
-
-== 5500（1100）
-
-开始时间： 2024-04-30 00:19:30
-
-. J21-G1 有个别剧烈抖动，CPU96%，感觉还可以再加点压力
-. J8-G1 全部机器开始抖动，但是只是个别点在抖，大部分时间是平稳的，
-. 其他分组机器全部沦陷
-
-
-
-
-image::/images/java/gc-performance/[title="",alt="",{image_attr}]
-image::/images/java/gc-performance/[title="",alt="",{image_attr}]
-image::/images/java/gc-performance/[title="",alt="",{image_attr}]
-image::/images/java/gc-performance/[title="",alt="",{image_attr}]
-image::/images/java/gc-performance/[title="",alt="",{image_attr}]
-image::/images/java/gc-performance/[title="",alt="",{image_attr}]
-image::/images/java/gc-performance/[title="",alt="",{image_attr}]
-image::/images/java/gc-performance/[title="",alt="",{image_attr}]
-image::/images/java/gc-performance/[title="",alt="",{image_attr}]
-image::/images/java/gc-performance/[title="",alt="",{image_attr}]
-
-
-
-// [source%nowrap,java,{source_attr}]
-// ----
-// // code
-// ----
+// == 压测机器
+//
+// . J21-G1
+// .. 4500(平均每台机器900)，特别稳，CPU 80%，感觉还可以加点
+// .. 5000(平均每台机器1000)，偶尔抖动(不固定机器)，大部分时候很平稳，平均CPU可以干到80%+。
+// .. 5250（1050），偶尔抖动(不固定机器)，大部分时候很平稳，平均CPU可以干到90%+。
+// .. 5500（1100），抖动变多(不固定机器)，大部分时候很平稳，平均CPU可以干到95%+。
+// .. 5750（1150），抖动变多(不固定机器)，出现剧烈抖动，大部分时候很平稳，平均CPU可以干到97%+。
+// .. 6000（1200），抖动变多(不固定机器)，剧烈抖动频繁出现，大部分时候很平稳，平均CPU可以干到98%+。
+//
+// . J8-G1: 20*5 850+qps  抖动厉害，压不上去（压力机不给力啊！）
+// .. 4750(950)，CPU95%+
+// .. 5000(平均每台机器1000)，抖动幅度比较大，偶尔出现剧烈抖动，CPU99%+
+// .. 5250(平均每台机器1050)，抖动幅度比较大，频繁出现剧烈抖动，CPU波动（由于剧烈抖动，导致的访问量变少）
+//
+//
+// . J21-ZGC:
+// .. 2750（550）,稳定，没有抖动，CPU 81%
+// .. 3000（600）,稳定，没有抖动，CPU 86%
+// .. 3250（650）,稳定，没有抖动，CPU 88%
+// .. 3500（700）,稳定，没有抖动，CPU 91%
+// .. 3750（750）,稳定，没有抖动，CPU 93%
+// .. 4000（800）,稳定，没有抖动，CPU 97%
+// .. 4250（850）,稳定，没有抖动，CPU 99%
+// .. 4500（900）,稳定，没有抖动，CPU 99%
+// .. 4750（950）,出现剧烈抖动（五台中的三台），CPU 95%（由于抖动，访问量压不上来）
+// .. 5000（1000）,全部机器出现剧烈抖动，CPU 80%（由于抖动，访问量压不上来）
+//
+// . J17-ZGC
+// .. 第一轮（当前线程池）
+// .. 2750（550）,稳定，没有抖动，CPU
+// .. 3000（600）,稳定，没有抖动，CPU
+// .. 3250（650）,稳定，没有抖动，CPU
+// .. 3500（700）,稳定，没有抖动，CPU
+// .. 3750（750）,稳定，没有抖动，CPU 90%
+// .. 4000（800）,稳定，没有抖动，CPU 93%
+// .. 4250（850）,稳定，没有抖动，CPU 95%
+// .. 4500（900）,稳定，没有抖动，CPU 97%
+// .. 4750（950）,稳定，没有抖动，CPU 99%
+// .. 5000（1000）,一台机器剧烈抖动，CPU 99%
+// .. 第二轮（所有线程共享）
+// .. 2750（550）,稳定，没有抖动，CPU
+// .. 3000（600）,稳定，没有抖动，CPU
+// .. 3250（650）,稳定，没有抖动，CPU
+// .. 3500（700）,稳定，没有抖动，CPU 88%
+// .. 3750（750）,稳定，没有抖动，CPU 91%
+// .. 4000（800）,1/5台机器剧烈抖动，CPU 93%（一台机器抖动，访问量降低，导致平均CPU降低）
+// .. 4250（850）,1/5台机器剧烈抖动，CPU 93%
+// .. 4500（900）,1/5台机器剧烈抖动，CPU 93%
+// .. 4750（950）,稳定，没有抖动，CPU 99%
+// .. 5000（1000）,一台机器剧烈抖动，CPU 99%
+//
+// . J21 Gen ZGC:
+// .. 4500(平均每台机器900)，特别稳，CPU 80%，感觉还可以加点
+// .. 950问题不大，个别机器(五台中的一台，其他很稳)开始疯狂抖动；其他还是很稳，没有特别的抖动，平均CPU可以干到92%+。
+// .. 1000也还行，个别机器(五台中的二台，其他很稳)开始疯狂抖动；其他还是很稳，没有特别的抖动，平均CPU可以干到96%+。
+// .. 5250(1050)，个别机器(五台中的三台，其他很稳)开始疯狂抖动；其他还是很稳，没有特别的抖动，平均CPU可以干到99%+。
+// .. 5500(1100)，全部开始疯狂抖动，平均CPU可以干到99%+。
+//
+//
+// 压测计划：
+//
+// . 1000 - 30s
+// . 2000 - 30s
+// . 3000 - 30s
+// . 3750 - 300s
+// . 4000 - 600s
+// . 4250 - 600s
+// . 4500 - 600s
+// . 4750 - 600s
+// . 5000 - 600s
+// . 5250 - 600s
+// . 5500 - 600s
+//
+// == 压测
+//
+// 开始时间： 2024-04-29 23:13:03
+//
+// == 4000（800）
+//
+// 开始时间： 2024-04-29 23:19:03
+//
+// 整体平稳
+//
+// . J21-ZGC CPU 96%
+// . J17-ZGC CPU 92%
+// . J8-G1 CPU 87%，YoungGC最频繁，次数是ZGC的三倍
+// . J21-GenZGC CPU 77%(波动较大)
+// . J21-G1 CPU 69%(波动较大)
+//
+// == 4250（850）
+//
+// 开始时间： 2024-04-29 23:29:30
+//
+// 波动变大，从分组的TP999 来看，J8-G1 波动最大，其次是 J21-G1，三个ZGC稳定性解决，最稳的是 J21-Gen-ZGC
+//
+// . J21-ZGC CPU 98%
+// . J8-G1 CPU 96%，YoungGC更频繁了，是上个请求量的1.5倍
+// . J17-ZGC CPU 95%
+// . J21-GenZGC CPU 83%
+// . J21-G1 CPU 77%(波动略大)
+//
+// == 4500（900）
+//
+// 开始时间： 2024-04-29 23:39:30
+//
+// 更多机器（大概5台）开始出现剧烈抖动，分组TP999，J8-G1 波动最大，其次是 J21-ZGC，再次是 J21-G1（也比其他分组高），比较稳定是 J17-ZGC 和 J21-Gen-ZGC(表现最好)。
+//
+// J8-GC 出现明细剧烈抖动
+//
+// . J8-G1 CPU 98%，YoungGC更频繁了
+// . J21-ZGC CPU 98%
+// . J17-ZGC CPU 95%
+// . J21-GenZGC CPU 89%
+// . J21-G1 CPU 83%
+//
+// == 4750（950）
+//
+// 开始时间： 2024-04-29 23:49:30
+//
+// . J8-G1 全部机器开始剧烈抖动，CPU也抖动
+// . J17-ZGC CPU98%
+// . J21-Gen-ZGC 95%
+// . J21-G1 CPU 86%
+// . J21-ZGC 77%(开始出现抖动， 4/5剧烈抖动)
+//
+// == 5000（1000）
+//
+// 开始时间： 2024-04-29 23:59:30
+//
+// . J21-ZGC 也开始沦陷 4/5 机器剧烈抖动
+// . J8-G1 全部机器开始抖动，但是只是个别点在抖，大部分时间是平稳的，感觉是依赖的RPC抖动导致的？？
+// . J21-Gen-ZGC 2/5 机器开始剧烈抖动，幅度比上两个要小，TP999维持在160ms上下波动（除这个和J21-G1外，其他波动都超过1000ms了）
+// . J17-ZGC 也很稳，有点说不过去啊！
+// . J21-G1 还是很稳，TP999波动最稳，维持在100ms左右
+//
+// == 5250（1050）
+//
+// 开始时间： 2024-04-30 00:09:30
+//
+// . J21-Gen-ZGC 全部机器开始剧烈抖动，CPU97%
+// . J21-ZGC 全部机器开始剧烈抖动
+// . J17-ZGC 3/5 机器开始剧烈抖动
+// . J8-G1 机器周期性抖动
+// . J21-G1 整体非常平稳，没有抖动，CPU 95%
+//
+// == 5500（1100）
+//
+// 开始时间： 2024-04-30 00:19:30
+//
+// . J21-G1 有个别剧烈抖动，CPU96%，感觉还可以再加点压力
+// . J8-G1 全部机器开始抖动，但是只是个别点在抖，大部分时间是平稳的，
+// . 其他分组机器全部沦陷
+//
+//
+//
+// // 分组秒级： https://taishan.jd.com/pfinder/multi-dimension/monitorChart?metricId=161448101&metricName=JsfP%40com.jd.jr.baitiao.front.export.rest.app.mall.BaitiaoInfoResource%23getShouldPayInfo&appName=front-ledger&platform=jdos&unit=all&tag=performance-key&dimension=_AG&component=JsfProvider&time=second,0,1714403736911,1714408140912,0&filter=_AG%3Aj17-zgc,j21-g1,j21-gen-zgc,j21-zgc,j8-g1&dv=j17-zgc,j21-g1,j21-gen-zgc,j21-zgc,j8-g1
+// //
+// // 分组分钟： https://taishan.jd.com/pfinder/multi-dimension/monitorChart?metricId=161448101&metricName=JsfP%40com.jd.jr.baitiao.front.export.rest.app.mall.BaitiaoInfoResource%23getShouldPayInfo&appName=front-ledger&platform=jdos&unit=all&tag=performance-key&dimension=_AG&component=JsfProvider&time=oneMinute,0,1714403736911,1714408140912,0&filter=_AG%3Aj17-zgc,j21-g1,j21-gen-zgc,j21-zgc,j8-g1&dv=j17-zgc,j21-g1,j21-gen-zgc,j21-zgc,j8-g1
+// //
+// // MDC： https://taishan.jd.com/mdc/ipMonitor?ip=11.243.84.154,11.243.84.112,11.248.8.89,11.248.1.120,11.248.8.88,11.243.84.159,11.243.84.173,11.248.8.90,11.243.85.100,11.243.84.164,11.248.1.164,11.248.1.165,11.243.86.251,11.243.65.198,11.243.85.109,11.243.87.117,11.243.87.118,11.248.1.166,11.248.8.91,11.248.1.169,11.248.1.167,11.248.8.92,11.248.8.93,11.248.1.168,11.243.87.95&global=1&startTime=1714403736193&endTime=1714408140193
+// // 可以从 https://api-pserve-proxy.jd.com/api/mdc3/v2/metrics/series_diagram 获取原始数据
+// //
+// // UMP 总计： https://taishan.jd.com/ump/monitor/perfomance?endPointKey=jr.baitiao.ledger.front.BaitiaoInfoResourceImpl.getShouldPayInfo&frequency=oneMinute&start_time=1714403736000&end_time=1714408140000
+//
+//
+image::/images/gc-performance-2/os-net-avg-minute.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/jvm-full-gc-time-min.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/api-qps-max-minute.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/jvm-full-gc-min.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/api-qps-tp99-second.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/jvm-cpu-avg.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/load-per-host.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/api-qps-tp99-second-55.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/cpu-per-host.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/jvm-heap-min.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/api-tp999-per-host-j21-zgc-vs-j17-zgc-vs-j8-g1.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/jvm-young-gc-time-max.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/jvm-thead-avg.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/os-cache-max-minute.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/jvm-thead-min.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/jvm-heap-avg.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/os-net-max-minute.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/os-cpu-min-minute.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/jvm-full-gc-avg.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/jvm-cpu-min.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/jvm-young-gc-max.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/api-qps-tp999-second.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/os-cache-avg-minute.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/api-qps-tp90-minute.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/api-qps-second.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/jvm-full-gc-time-avg.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/api-tp999-per-host-j21-gen-zgc-vs-j21-g1.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/api-qps-minute.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/os-cpu-avg-minute.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/os-disk-max-minute.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/jvm-full-gc-time-max.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/api-tp99-per-host-j21-zgc-vs-j17-zgc-vs-j8-g1.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/jvm-full-gc-max.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/api-qps-tp90-second.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/jvm-young-gc-avg.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/api-qps-tp999-minute.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/jvm-young-gc-time-min.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/jvm-heap-max.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/api-qps-avg-second.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/jvm-non-heap.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/os-cache-min-minute.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/api-tp99-per-host-j21-gen-zgc-vs-j21-g1.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/jvm-thead-max.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/os-disk-avg-minute.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/jvm-young-gc-time-avg.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/os-net-min-minute.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/os-cpu-max-minute.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/jvm-cpu-max.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/jvm-young-gc-min.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/api-qps-tp99-minute.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/api-qps-max-second.jpg[title="",alt="",{image_attr}]
