@@ -5,7 +5,7 @@ draft: false
 keywords: ["Java","虚拟机","程序设计"]
 tags: ["Java","虚拟机", "翻译"]
 categories: ["系统架构","程序设计"]
-thumbnail: "images/java/jvm.png"
+thumbnail: "images/java/jvm.jpg"
 
 weight: 1
 ---

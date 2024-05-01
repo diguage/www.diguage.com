@@ -5,7 +5,7 @@ draft: false
 keywords: ["Java","虚拟机","性能","ZGC","G1","OpenJDK"]
 tags: ["Java","虚拟机","GC","性能测试"]
 categories: ["系统架构","性能优化"]
-thumbnail: "images/logo/jvm.jpg"
+thumbnail: "images/java/jvm.jpg"
 
 weight: 1
 ---
