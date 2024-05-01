@@ -1,0 +1,22 @@
+---
+title: "JVM GC 性能测试（三）：真实流量"
+date: 2024-05-01T12:12:12+08:00
+draft: true
+keywords: ["Java","虚拟机","性能","ZGC","G1","OpenJDK"]
+tags: ["Java","虚拟机","GC","性能测试","方法论"]
+categories: ["系统架构","性能优化"]
+thumbnail: "images/logo/jvm.jpg"
+# aliases: "/old/path/"
+
+weight: 1
+---
+
+*JVM GC 性能测试系列*:
+
+. https://www.diguage.com/post/gc-performance-comparison-method/[JVM GC 性能对比方法^]
+. https://www.diguage.com/post/gc-performance-same-qps/[JVM GC 性能测试（一）：相同流量^]
+. https://www.diguage.com/post/gc-performance-incremental-qps/[JVM GC 性能测试（二）：递增流量^]
+. https://www.diguage.com/post/gc-performance-real-qps/[JVM GC 性能测试（三）：真实流量^]
+
+'''
+
