@@ -187,29 +187,91 @@ weight: 1
 //
 //
 
+在上一篇文章 https://www.diguage.com/post/gc-performance-same-qps/[JVM GC 性能测试（一）：相同流量^] 中，D瓜哥使用一个总量请求对所有分组的所有机器进行性能测试。但是，经过测试发现了一个问题，同时产生了另外一个问题，有两个问题没有得到很好的解答：
+
+. 由于服务响应时长直接关系到服务调用次数，当某一台机器出现问题时，整体调用次数就会急剧下降，调用次数加不上去。一个机器出问题，所有机器的访问量就上不去了。这是测试中发现的一个问题。当然，这属于测试工具的问题，别不是 GC 的问题。但是，也影响到我们的压测，也需要解决。
+. 上次测试，这是针对某一个指定服务调用量进行性能测试，那么，无法确定每个 GC 能支撑的极限调用峰值。另外，在极限峰值和超极限峰值的情况下，各个 GC 的表现如何？这个也有待验证。
+
+针对上述两个问题，设计了本次测试。测试方法如下：
+
+* 各个分组使用一套相同的流量策略：
+** 各个分组几乎同时开始执行测试任务；
+** 调用量从低到高，以此同时使用相关的调用量进行测试；
+** 除最开始预热阶段的调用量外，后续每个调用量都持续进行十分钟的测试。
+* 针对每个 GC 分组单独设定一套调用发量程序，这个保证各个 GC 分组直接不相互影响。
+* 最后，再分析调用量相同时段的各个 GC 表现，就可以看到各个 GC 的极限峰值。
+
+TIP: 为了保留更多细节，本文所有截图都是在 34 吋带鱼屏下，使用全屏模式展示并截图的。如果看不清楚，可以右击在新页面打开图片来查看。
+
+
+具体流量及时间段：
+
+* 750， 23:14:30 ~ 23:19:30
+* 800， 23:19:30 ~ 23:29:30
+* 850， 23:29:30 ~ 23:39:30
+* 900， 23:39:30 ~ 23:49:30
+* 950， 23:49:30 ~ 23:59:30
+* 1000，23:59:30 ~ 00:09:30
+* 1050，00:09:30 ~ 00:19:30
+* 1100，00:19:30 ~ 00:29:30
 
 == 一言以蔽之
 
-
+* J21-G1 的极限峰值最高，能支撑到 1100 QPS；其次是 J21-Gen-ZGC，大约可以支持 1000 QPS，比 J21-G1 降低了 10%。
+* 在 900 QPS 以下，从 TP999 的数据来看，J21-Gen-ZGC 耗时更短，响应性更好；超过 1000 QPS 时，则 J21-G1 更稳定，耗时最短。
 
 :sectnums:
 
-== 服务访问监控数据
+== 服务调用监控数据
+
+监控服务调用的相关数据，这是对于用户来说，感知最强烈的相关数据，也是直接关系到服务质量的数据。
 
 === 服务调用次数
+
+* 从调用次数上来看，J8-G1 最早开始失守，结合下面 <<api-qps-time>> 来看，应该是 某台机器除了问题，否则 J8-G1 不会在 TP999 表现最差的情况下，TP99 的表现反而变现不错。
+* 紧随其后，以此是 J21-ZGC、J21-Gen-ZGC、J17-ZGC 的表现开始拉胯。
+* 在极限峰值下，J21-Gen-ZGC 的表现又反超了 J17-ZGC；由此可以看出，在极限情况下，J21-Gen-ZGC 的表现更值得信赖。
+* J21-G1 变现一直非常稳定，甚至没有达到它的峰值。
 
 image::/images/gc-performance-2/api-qps-second.jpg[title="服务调用次数（秒级）",alt="服务调用次数（秒级）",{image_attr}]
 
 image::/images/gc-performance-2/api-qps-minute.jpg[title="服务调用次数（分钟级）",alt="服务调用次数（分钟级）",{image_attr}]
 
+[#api-qps-time]
 === 服务调用耗时
 
+* J8-G1 在 TP999 表现最差，但是在 TP99 的表现反而稳居第二。应该是某个机器有问题，整体变现是可以的。
+* 从 TP999 来看，表现最好的是 J21-G1，其次是 J21-Gen-ZGC。
+
+==== TP999
+
+image::/images/gc-performance-2/api-qps-tp999-minute.jpg[title="服务调用 TP999（分钟）",alt="服务调用 TP999（分钟）",{image_attr}]
+
+image::/images/gc-performance-2/api-qps-tp999-second.jpg[title="服务调用 TP999（秒）",alt="服务调用 TP999（秒）",{image_attr}]
+
+==== TP99
+
+image::/images/gc-performance-2/api-qps-tp99-minute.jpg[title="服务调用 TP99（分钟）",alt="服务调用 TP99（分钟）",{image_attr}]
+
+// image::/images/gc-performance-2/api-qps-tp99-second-55.jpg[title="服务调用 TP99（秒）",alt="服务调用 TP99（秒）",{image_attr}]
+
+image::/images/gc-performance-2/api-qps-tp99-second.jpg[title="服务调用 TP99（秒）",alt="服务调用 TP99（秒）",{image_attr}]
+
+==== TP90
+
+image::/images/gc-performance-2/api-qps-tp90-minute.jpg[title="服务调用 TP90（分钟）",alt="服务调用 TP90（分钟）",{image_attr}]
+
+image::/images/gc-performance-2/api-qps-tp90-second.jpg[title="服务调用 TP90（秒）",alt="服务调用 TP90（秒）",{image_attr}]
+
+==== 平均耗时
+
 image::/images/gc-performance-2/api-qps-avg-second.jpg[title="服务调用耗时（秒级平均）",alt="服务调用耗时（秒级平均）",{image_attr}]
+
+==== 最大耗时
 
 image::/images/gc-performance-2/api-qps-max-second.jpg[title="服务调用耗时（秒级最大）",alt="服务调用耗时（秒级最大）",{image_attr}]
 
 image::/images/gc-performance-2/api-qps-max-minute.jpg[title="服务调用耗时（分钟级最大）",alt="服务调用耗时（分钟级最大）",{image_attr}]
-
 
 === 每台机器的调用次数及耗时
 
@@ -222,11 +284,11 @@ image::/images/gc-performance-2/api-qps-max-minute.jpg[title="服务调用耗时
 
 各组的 IP 列表：
 
-* J21-Gen-ZGC：
-* J21-G1：
-* J21-ZGC：
-* J17-ZGC：
-* J8-G1：
+* J21-Gen-ZGC： 11.243.85.100，11.243.84.159，11.243.84.164，11.243.84.173，11.248.8.90
+* J21-G1： 11.243.87.118，11.243.87.95，11.248.1.166，11.248.8.91，11.243.87.117
+* J21-ZGC： 11.243.84.112，11.248.8.88，11.243.84.154，11.248.8.89，11.248.1.120
+* J17-ZGC： 11.248.1.164，11.243.65.198，11.248.1.165，11.243.85.109，11.243.86.251
+* J8-G1： 11.248.1.168，11.248.1.169，11.248.8.92，11.248.1.167，11.248.8.93
 
 ====
 
@@ -243,25 +305,6 @@ image::/images/gc-performance-2/api-tp99-per-host-j21-gen-zgc-vs-j21-g1.jpg[titl
 
 image::/images/gc-performance-2/api-tp99-per-host-j21-zgc-vs-j17-zgc-vs-j8-g1.jpg[title="每台机器服务调用 TP99 及调用次数：J21-ZGC 、 J17-ZGC 和 J8-G1",alt="每台机器服务调用 TP99 及调用次数：J21-ZGC 、 J17-ZGC 和 J8-G1",{image_attr}]
 
-=== 服务调用耗时
-
-==== TP999
-
-image::/images/gc-performance-2/api-qps-tp999-minute.jpg[title="服务调用 TP999（分钟）",alt="服务调用 TP999（分钟）",{image_attr}]
-image::/images/gc-performance-2/api-qps-tp999-second.jpg[title="服务调用 TP999（秒）",alt="服务调用 TP999（秒）",{image_attr}]
-
-==== TP99
-
-image::/images/gc-performance-2/api-qps-tp99-minute.jpg[title="服务调用 TP99（分钟）",alt="服务调用 TP99（分钟）",{image_attr}]
-image::/images/gc-performance-2/api-qps-tp99-second-55.jpg[title="服务调用 TP99（秒）",alt="服务调用 TP99（秒）",{image_attr}]
-image::/images/gc-performance-2/api-qps-tp99-second.jpg[title="服务调用 TP99（秒）",alt="服务调用 TP99（秒）",{image_attr}]
-
-==== TP90
-
-image::/images/gc-performance-2/api-qps-tp90-minute.jpg[title="服务调用 TP90（分钟）",alt="服务调用 TP90（分钟）",{image_attr}]
-
-image::/images/gc-performance-2/api-qps-tp90-second.jpg[title="服务调用 TP90（秒）",alt="服务调用 TP90（秒）",{image_attr}]
-
 == JVM 监控
 
 === CPU
@@ -273,6 +316,8 @@ image::/images/gc-performance-2/jvm-cpu-max.jpg[title="CPU 使用率（最大）
 image::/images/gc-performance-2/jvm-cpu-min.jpg[title="CPU 使用率（最小）",alt="CPU 使用率（最小）",{image_attr}]
 
 === Young GC
+
+TIP: 关于 Young GC 的说明，D瓜哥在 https://www.diguage.com/post/gc-performance-same-qps/#jvm-young-gc[JVM GC 性能测试（一）：相同流量：Young GC^] 中，已经做了说明，这里就不再赘述。
 
 ==== Young GC 次数
 
@@ -329,21 +374,42 @@ image::/images/gc-performance-2/jvm-thead-min.jpg[title="JVM 线程数（最小�
 
 == 系统监控
 
-=== CPU 使用率（秒级）
+=== CPU 使用率
 
-=== CPU 使用率（分钟级）
+=== CPU 使用率
 
-image::/images/gc-performance-2/os-cache-avg-minute.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/os-cache-max-minute.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/os-cache-min-minute.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/os-cpu-avg-minute.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/os-cpu-max-minute.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/os-cpu-min-minute.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/os-disk-avg-minute.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/os-disk-max-minute.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/os-net-avg-minute.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/os-net-max-minute.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/os-net-min-minute.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/os-cpu-avg-minute.jpg[title="系统监控 CPU 使用率（分钟级平均）",alt="系统监控 CPU 使用率（分钟级平均）",{image_attr}]
 
-image::/images/gc-performance-2/cpu-per-host.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/load-per-host.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/os-cpu-max-minute.jpg[title="系统监控 CPU 使用率（分钟级最大）",alt="系统监控 CPU 使用率（分钟级最大）",{image_attr}]
+
+image::/images/gc-performance-2/os-cpu-min-minute.jpg[title="系统监控 CPU 使用率（分钟级最小）",alt="系统监控 CPU 使用率（分钟级最小）",{image_attr}]
+
+=== 内存使用率
+
+image::/images/gc-performance-2/os-cache-avg-minute.jpg[title="内存使用率（分钟级平均）",alt="内存使用率（分钟级平均）",{image_attr}]
+
+image::/images/gc-performance-2/os-cache-max-minute.jpg[title="内存使用率（分钟级最大）",alt="内存使用率（分钟级最大）",{image_attr}]
+
+image::/images/gc-performance-2/os-cache-min-minute.jpg[title="内存使用率（分钟级最小）",alt="内存使用率（分钟级最小）",{image_attr}]
+
+=== 磁盘读写速度
+
+image::/images/gc-performance-2/os-disk-avg-minute.jpg[title="磁盘读写速度（分钟级平均）",alt="磁盘读写速度（分钟级平均）",{image_attr}]
+
+image::/images/gc-performance-2/os-disk-max-minute.jpg[title="磁盘读写速度（分钟级最大）",alt="磁盘读写速度（分钟级最大）",{image_attr}]
+
+=== 网络流入流出速率
+
+image::/images/gc-performance-2/os-net-avg-minute.jpg[title="网络流入流出速率（分钟级平均）",alt="网络流入流出速率（分钟级平均）",{image_attr}]
+
+image::/images/gc-performance-2/os-net-max-minute.jpg[title="网络流入流出速率（分钟级最大）",alt="网络流入流出速率（分钟级最大）",{image_attr}]
+
+image::/images/gc-performance-2/os-net-min-minute.jpg[title="网络流入流出速率（分钟级最小）",alt="网络流入流出速率（分钟级最小）",{image_attr}]
+
+=== 每个机器 CPU 使用率
+
+image::/images/gc-performance-2/cpu-per-host.jpg[title="每个机器 CPU 使用率",alt="每个机器 CPU 使用率",{image_attr}]
+
+=== 每个机器系统负载
+
+image::/images/gc-performance-2/load-per-host.jpg[title="每个机器系统负载",alt="每个机器系统负载",{image_attr}]
