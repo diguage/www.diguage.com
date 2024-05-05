@@ -23,6 +23,8 @@ weight: 1
 . https://www.diguage.com/post/hessian-vs-msgpack-vs-json/[Hessian、Msgpack 和 JSON 实例对比^] -- 用实例对比 JSON、Hessian 和 MessagePack 的区别。
 . https://www.diguage.com/post/schema-evolution-in-avro-protobuf-thrift[Avro、ProtoBuf、Thrift 的模式演进之路^] -- 翻译的 Martin Kleppmann 的文章，重点对比了 Avro、ProtoBuf、Thrift 的序列化处理思路。
 
+'''
+
 在上一篇文章 https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-2/[Hessian 协议解释与实战（二）：长整型、二进制数据与 Null^] 中研究了长整型、二进制数据与 `null` 等三种数据类型的处理方式。接下来，我们再来介绍字符串的处理情况。
 
 == 基础工具方法

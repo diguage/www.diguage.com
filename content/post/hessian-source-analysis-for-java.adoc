@@ -23,6 +23,8 @@ weight: 1
 . https://www.diguage.com/post/hessian-vs-msgpack-vs-json/[Hessian、Msgpack 和 JSON 实例对比^] -- 用实例对比 JSON、Hessian 和 MessagePack 的区别。
 . https://www.diguage.com/post/schema-evolution-in-avro-protobuf-thrift[Avro、ProtoBuf、Thrift 的模式演进之路^] -- 翻译的 Martin Kleppmann 的文章，重点对比了 Avro、ProtoBuf、Thrift 的序列化处理思路。
 
+'''
+
 该系列第四篇文章准备详细介绍一下 Hessian 对对象、链表以及 `Map` 等处理。但是，越调试代码，越发觉得应该先对 Hessian 的实现做一个源码分析。于是，就有了本文。
 
 这里有几点需要声明一下：
