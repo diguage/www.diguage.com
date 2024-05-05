@@ -178,6 +178,7 @@ weight: 1
 // // 分组秒级： https://taishan.jd.com/pfinder/multi-dimension/monitorChart?metricId=161448101&metricName=JsfP%40com.jd.jr.baitiao.front.export.rest.app.mall.BaitiaoInfoResource%23getShouldPayInfo&appName=front-ledger&platform=jdos&unit=all&tag=performance-key&dimension=_AG&component=JsfProvider&time=second,0,1714403736911,1714408140912,0&filter=_AG%3Aj17-zgc,j21-g1,j21-gen-zgc,j21-zgc,j8-g1&dv=j17-zgc,j21-g1,j21-gen-zgc,j21-zgc,j8-g1
 // //
 // // 分组分钟： https://taishan.jd.com/pfinder/multi-dimension/monitorChart?metricId=161448101&metricName=JsfP%40com.jd.jr.baitiao.front.export.rest.app.mall.BaitiaoInfoResource%23getShouldPayInfo&appName=front-ledger&platform=jdos&unit=all&tag=performance-key&dimension=_AG&component=JsfProvider&time=oneMinute,0,1714403736911,1714408140912,0&filter=_AG%3Aj17-zgc,j21-g1,j21-gen-zgc,j21-zgc,j8-g1&dv=j17-zgc,j21-g1,j21-gen-zgc,j21-zgc,j8-g1
+// 分组分钟： https://taishan.jd.com/pfinder/multi-dimension/monitorChart?metricId=161448101&metricName=JsfP%40com.jd.jr.baitiao.front.export.rest.app.mall.BaitiaoInfoResource%23getShouldPayInfo&appName=front-ledger&platform=jdos&unit=all&tag=performance-key&dimension=_AG&component=JsfProvider&time=oneMinute,0,1714403400911,1714408440912,0&filter=_AG%3Aj17-zgc,j21-g1,j21-gen-zgc,j21-zgc,j8-g1&dv=j17-zgc,j21-g1,j21-gen-zgc,j21-zgc,j8-g1
 // //
 // // MDC： https://taishan.jd.com/mdc/ipMonitor?ip=11.243.84.154,11.243.84.112,11.248.8.89,11.248.1.120,11.248.8.88,11.243.84.159,11.243.84.173,11.248.8.90,11.243.85.100,11.243.84.164,11.248.1.164,11.248.1.165,11.243.86.251,11.243.65.198,11.243.85.109,11.243.87.117,11.243.87.118,11.248.1.166,11.248.8.91,11.248.1.169,11.248.1.167,11.248.8.92,11.248.8.93,11.248.1.168,11.243.87.95&global=1&startTime=1714403736193&endTime=1714408140193
 // // 可以从 https://api-pserve-proxy.jd.com/api/mdc3/v2/metrics/series_diagram 获取原始数据
@@ -185,54 +186,164 @@ weight: 1
 // // UMP 总计： https://taishan.jd.com/ump/monitor/perfomance?endPointKey=jr.baitiao.ledger.front.BaitiaoInfoResourceImpl.getShouldPayInfo&frequency=oneMinute&start_time=1714403736000&end_time=1714408140000
 //
 //
-image::/images/gc-performance-2/os-net-avg-minute.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/jvm-full-gc-time-min.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/api-qps-max-minute.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/jvm-full-gc-min.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/api-qps-tp99-second.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/jvm-cpu-avg.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/load-per-host.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/api-qps-tp99-second-55.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/cpu-per-host.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/jvm-heap-min.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/api-tp999-per-host-j21-zgc-vs-j17-zgc-vs-j8-g1.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/jvm-young-gc-time-max.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/jvm-thead-avg.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/os-cache-max-minute.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/jvm-thead-min.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/jvm-heap-avg.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/os-net-max-minute.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/os-cpu-min-minute.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/jvm-full-gc-avg.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/jvm-cpu-min.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/jvm-young-gc-max.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/api-qps-tp999-second.jpg[title="",alt="",{image_attr}]
+
+
+== 一言以蔽之
+
+
+
+:sectnums:
+
+== 服务访问监控数据
+
+=== 服务调用次数
+
+image::/images/gc-performance-2/api-qps-second.jpg[title="服务调用次数（秒级）",alt="服务调用次数（秒级）",{image_attr}]
+
+image::/images/gc-performance-2/api-qps-minute.jpg[title="服务调用次数（分钟级）",alt="服务调用次数（分钟级）",{image_attr}]
+
+=== 服务调用耗时
+
+image::/images/gc-performance-2/api-qps-avg-second.jpg[title="服务调用耗时（秒级平均）",alt="服务调用耗时（秒级平均）",{image_attr}]
+
+image::/images/gc-performance-2/api-qps-max-second.jpg[title="服务调用耗时（秒级最大）",alt="服务调用耗时（秒级最大）",{image_attr}]
+
+image::/images/gc-performance-2/api-qps-max-minute.jpg[title="服务调用耗时（分钟级最大）",alt="服务调用耗时（分钟级最大）",{image_attr}]
+
+
+=== 每台机器的调用次数及耗时
+
+[TIP]
+====
+由于截图时间跨度太长，即使使用分钟级的数据，也不能在一张图上展示所有机器的访问请求。所以，将其分为两组：
+
+. J21-Gen-ZGC 和 J21-G1
+. J21-ZGC 、 J17-ZGC 和 J8-G1
+
+各组的 IP 列表：
+
+* J21-Gen-ZGC：
+* J21-G1：
+* J21-ZGC：
+* J17-ZGC：
+* J8-G1：
+
+====
+
+==== TP999 及调用次数
+
+
+image::/images/gc-performance-2/api-tp999-per-host-j21-gen-zgc-vs-j21-g1.jpg[title="每台机器服务调用 TP999 及调用次数：J21-Gen-ZGC 和 J21-G1",alt="每台机器服务调用 TP999 及调用次数：J21-Gen-ZGC 和 J21-G1",{image_attr}]
+
+image::/images/gc-performance-2/api-tp999-per-host-j21-zgc-vs-j17-zgc-vs-j8-g1.jpg[title="每台机器服务调用 TP999 及调用次数：J21-ZGC 、 J17-ZGC 和 J8-G1",alt="每台机器服务调用 TP999 及调用次数：J21-ZGC 、 J17-ZGC 和 J8-G1",{image_attr}]
+
+====  TP99 及调用次数
+
+image::/images/gc-performance-2/api-tp99-per-host-j21-gen-zgc-vs-j21-g1.jpg[title="每台机器服务调用 TP99 及调用次数：J21-Gen-ZGC 和 J21-G1",alt="每台机器服务调用 TP99 及调用次数：J21-Gen-ZGC 和 J21-G1",{image_attr}]
+
+image::/images/gc-performance-2/api-tp99-per-host-j21-zgc-vs-j17-zgc-vs-j8-g1.jpg[title="每台机器服务调用 TP99 及调用次数：J21-ZGC 、 J17-ZGC 和 J8-G1",alt="每台机器服务调用 TP99 及调用次数：J21-ZGC 、 J17-ZGC 和 J8-G1",{image_attr}]
+
+=== 服务调用耗时
+
+==== TP999
+
+image::/images/gc-performance-2/api-qps-tp999-minute.jpg[title="服务调用 TP999（分钟）",alt="服务调用 TP999（分钟）",{image_attr}]
+image::/images/gc-performance-2/api-qps-tp999-second.jpg[title="服务调用 TP999（秒）",alt="服务调用 TP999（秒）",{image_attr}]
+
+==== TP99
+
+image::/images/gc-performance-2/api-qps-tp99-minute.jpg[title="服务调用 TP99（分钟）",alt="服务调用 TP99（分钟）",{image_attr}]
+image::/images/gc-performance-2/api-qps-tp99-second-55.jpg[title="服务调用 TP99（秒）",alt="服务调用 TP99（秒）",{image_attr}]
+image::/images/gc-performance-2/api-qps-tp99-second.jpg[title="服务调用 TP99（秒）",alt="服务调用 TP99（秒）",{image_attr}]
+
+==== TP90
+
+image::/images/gc-performance-2/api-qps-tp90-minute.jpg[title="服务调用 TP90（分钟）",alt="服务调用 TP90（分钟）",{image_attr}]
+
+image::/images/gc-performance-2/api-qps-tp90-second.jpg[title="服务调用 TP90（秒）",alt="服务调用 TP90（秒）",{image_attr}]
+
+== JVM 监控
+
+=== CPU
+
+image::/images/gc-performance-2/jvm-cpu-avg.jpg[title="CPU 使用率（平均）",alt="CPU 使用率（平均）",{image_attr}]
+
+image::/images/gc-performance-2/jvm-cpu-max.jpg[title="CPU 使用率（最大）",alt="CPU 使用率（最大）",{image_attr}]
+
+image::/images/gc-performance-2/jvm-cpu-min.jpg[title="CPU 使用率（最小）",alt="CPU 使用率（最小）",{image_attr}]
+
+=== Young GC
+
+==== Young GC 次数
+
+image::/images/gc-performance-2/jvm-young-gc-avg.jpg[title="JVM Young GC 次数（平均）",alt="JVM Young GC 次数（平均）",{image_attr}]
+
+image::/images/gc-performance-2/jvm-young-gc-max.jpg[title="JVM Young GC 次数（最大）",alt="JVM Young GC 次数（最大）",{image_attr}]
+
+image::/images/gc-performance-2/jvm-young-gc-min.jpg[title="JVM Young GC 次数（最小）",alt="JVM Young GC 次数（最小）",{image_attr}]
+
+==== Young GC 耗时
+
+image::/images/gc-performance-2/jvm-young-gc-time-avg.jpg[title="JVM Young GC 耗时（平均）",alt="JVM Young GC 耗时（平均）",{image_attr}]
+
+image::/images/gc-performance-2/jvm-young-gc-time-max.jpg[title="JVM Young GC 耗时（最大）",alt="JVM Young GC 耗时（最大）",{image_attr}]
+
+image::/images/gc-performance-2/jvm-young-gc-time-min.jpg[title="JVM Young GC 耗时（最小）",alt="JVM Young GC 耗时（最小）",{image_attr}]
+
+=== Full GC
+
+==== Full GC 次数
+
+image::/images/gc-performance-2/jvm-full-gc-avg.jpg[title="JVM Full GC 次数（平均）",alt="JVM Full GC 次数（平均）",{image_attr}]
+
+image::/images/gc-performance-2/jvm-full-gc-max.jpg[title="JVM Full GC 次数（最大）",alt="JVM Full GC 次数（最大）",{image_attr}]
+
+image::/images/gc-performance-2/jvm-full-gc-min.jpg[title="JVM Full GC 次数（最小）",alt="JVM Full GC 次数（最小）",{image_attr}]
+
+==== Full GC 耗时
+
+image::/images/gc-performance-2/jvm-full-gc-time-avg.jpg[title="JVM Full GC 耗时（平均）",alt="JVM Full GC 耗时（平均）",{image_attr}]
+
+image::/images/gc-performance-2/jvm-full-gc-time-max.jpg[title="JVM Full GC 耗时（最大）",alt="JVM Full GC 耗时（最大）",{image_attr}]
+
+image::/images/gc-performance-2/jvm-full-gc-time-min.jpg[title="JVM Full GC 耗时（最小）",alt="JVM Full GC 耗时（最小）",{image_attr}]
+
+=== Heap
+
+image::/images/gc-performance-2/jvm-heap-avg.jpg[title="JVM 堆内存（平均）",alt="JVM 堆内存（平均）",{image_attr}]
+
+image::/images/gc-performance-2/jvm-heap-max.jpg[title="JVM 堆内存（最大）",alt="JVM 堆内存（最大）",{image_attr}]
+
+image::/images/gc-performance-2/jvm-heap-min.jpg[title="JVM 堆内存（最小）",alt="JVM 堆内存（最小）",{image_attr}]
+
+=== 非堆
+
+image::/images/gc-performance-2/jvm-non-heap.jpg[title="JVM 非堆内存（平均）",alt="JVM 非堆内存（平均）",{image_attr}]
+
+=== 线程数
+
+image::/images/gc-performance-2/jvm-thead-avg.jpg[title="JVM 线程数（平均）",alt="JVM 线程数（平均）",{image_attr}]
+image::/images/gc-performance-2/jvm-thead-max.jpg[title="JVM 线程数（最大）",alt="JVM 线程数（最大）",{image_attr}]
+
+image::/images/gc-performance-2/jvm-thead-min.jpg[title="JVM 线程数（最小）",alt="JVM 线程数（最小）",{image_attr}]
+
+== 系统监控
+
+=== CPU 使用率（秒级）
+
+=== CPU 使用率（分钟级）
+
 image::/images/gc-performance-2/os-cache-avg-minute.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/api-qps-tp90-minute.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/api-qps-second.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/jvm-full-gc-time-avg.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/api-tp999-per-host-j21-gen-zgc-vs-j21-g1.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/api-qps-minute.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/os-cpu-avg-minute.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/os-disk-max-minute.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/jvm-full-gc-time-max.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/api-tp99-per-host-j21-zgc-vs-j17-zgc-vs-j8-g1.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/jvm-full-gc-max.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/api-qps-tp90-second.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/jvm-young-gc-avg.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/api-qps-tp999-minute.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/jvm-young-gc-time-min.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/jvm-heap-max.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/api-qps-avg-second.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/jvm-non-heap.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/os-cache-max-minute.jpg[title="",alt="",{image_attr}]
 image::/images/gc-performance-2/os-cache-min-minute.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/api-tp99-per-host-j21-gen-zgc-vs-j21-g1.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/jvm-thead-max.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/os-disk-avg-minute.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/jvm-young-gc-time-avg.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/os-net-min-minute.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/os-cpu-avg-minute.jpg[title="",alt="",{image_attr}]
 image::/images/gc-performance-2/os-cpu-max-minute.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/jvm-cpu-max.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/jvm-young-gc-min.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/api-qps-tp99-minute.jpg[title="",alt="",{image_attr}]
-image::/images/gc-performance-2/api-qps-max-second.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/os-cpu-min-minute.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/os-disk-avg-minute.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/os-disk-max-minute.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/os-net-avg-minute.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/os-net-max-minute.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/os-net-min-minute.jpg[title="",alt="",{image_attr}]
+
+image::/images/gc-performance-2/cpu-per-host.jpg[title="",alt="",{image_attr}]
+image::/images/gc-performance-2/load-per-host.jpg[title="",alt="",{image_attr}]

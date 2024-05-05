@@ -93,9 +93,9 @@ TIP: 这里的“CPU 使用率”是通过 Java Agent 采集到的数据，不�
 
 image::/images/gc-performance/jvm-cpu-avg.jpg[title="CPU 使用率（平均）",alt="CPU 使用率（平均）",{image_attr}]
 
-image::/images/gc-performance/jvm-cpu-max.jpg[title="CPU 使用率（Max）",alt="CPU 使用率（Max）",{image_attr}]
+image::/images/gc-performance/jvm-cpu-max.jpg[title="CPU 使用率（最大）",alt="CPU 使用率（最大）",{image_attr}]
 
-image::/images/gc-performance/jvm-cpu-min.jpg[title="CPU 使用率（Min）",alt="CPU 使用率（Min）",{image_attr}]
+image::/images/gc-performance/jvm-cpu-min.jpg[title="CPU 使用率（最小）",alt="CPU 使用率（最小）",{image_attr}]
 
 === Young GC
 
