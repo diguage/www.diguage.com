@@ -1,7 +1,7 @@
 ---
 title: "JVM GC 性能测试（三）：真实流量"
 date: 2024-05-01T12:12:12+08:00
-draft: true
+draft: false
 keywords: ["Java","虚拟机","性能","ZGC","G1","OpenJDK"]
 tags: ["Java","虚拟机","GC","性能测试","方法论"]
 categories: ["系统架构","性能优化"]
@@ -19,3 +19,194 @@ weight: 1
 
 '''
 
+书接上文，在 https://www.diguage.com/post/gc-performance-incremental-qps/[JVM GC 性能测试（二）：递增流量^] 的最后，D瓜哥提到了一个问题，对于在 https://www.diguage.com/post/gc-performance-same-qps/[JVM GC 性能测试（一）：相同流量^] 和 https://www.diguage.com/post/gc-performance-incremental-qps/[JVM GC 性能测试（二）：递增流量^] 中存在的巨大 QPS 差异疑惑不解。所以，D瓜哥决定将测试机器接入到线上环境，在真实访问中，观察各个 GC 的表现。
+
+// https://taishan.jd.com/mdc/ipMonitor?ip=11.243.84.154,11.243.84.112,11.248.8.89,11.248.1.120,11.248.8.88,11.243.84.159,11.243.84.173,11.248.8.90,11.243.85.100,11.243.84.164,11.248.1.164,11.248.1.165,11.243.86.251,11.243.65.198,11.243.85.109,11.243.87.117,11.243.87.118,11.248.1.166,11.248.8.91,11.248.1.169,11.248.1.167,11.248.8.92,11.248.8.93,11.248.1.168,11.243.87.95&global=1&startTime=1714957200879&endTime=1714959000879&frequency=oneMinute -- 分IP展示系统负载情况
+
+// https://taishan.jd.com/pfinder/multi-dimension/monitorChart?ip&appName=front-ledger&platform=jdos&unit=all&tag=jvm-key&dimension=_AG&time=oneMinute,0,1714957200653,1714959000653,0&dv=check,hc-prod,j17-zgc,j21-g1,j21-gen-zgc,j21-zgc,j8-g1,m6-prod,verify,yufa&filter=_AG%3Aj17-zgc,j21-g1,j21-gen-zgc,j21-zgc,j8-g1 -- JVM 统计报表
+
+// https://taishan.jd.com/pfinder/multi-dimension/monitorChart?metricId=162236119&metricName=JsfP%40com.jd.jr.baitiao.front.export.rest.OrderResource%23queryLoanGroupSumNew&appName=front-ledger&platform=jdos&unit=all&tag=performance-key&dimension=_AG&component=JsfProvider&time=oneMinute,0,1714957200012,1714959000012,0&filter=_AG%3Aj17-zgc,j21-g1,j21-gen-zgc,j21-zgc,j8-g1 -- 接口分组监控
+
+// https://taishan.jd.com/mdc/machine?sysName=baitiao-v4&appName=front-ledger&platform=jdos&tab=application&dimension=qtp&data_type=0&by=&start_time=1714957200000&end_time=1714959000000&performance=min_mem_usage_percent&performance=min_mem_rss_file_usage_percent&agg=min&frequency=second3&groupName=j17-zgc&groupName=j21-g1&groupName=j21-gen-zgc&groupName=j21-zgc&groupName=j8-g1&groupName2= -- 系统分组监控
+
+== 一言以蔽之
+
+* J21-Gen-ZGC 和 J21-G1 无论在稳定性，吞吐量以及响应时效性上都非常优秀。
+* 再极端峰值情况，J21-G1 是更好的选择，更加稳定，不容易出凸点。
+* 日常使用，J21-Gen-ZGC 响应性更好，接口耗时更低。
+
+:sectnums:
+
+== 服务调用监控数据
+
+监控服务调用的相关数据，这是对于用户来说，感知最强烈的相关数据，也是直接关系到服务质量的数据。
+
+=== 服务调用次数
+
+从调用次数上来看，五个分组没有大的变化，可以说根本没有达到系统的极限峰值。当然，这才是正常现象，如果日常运行都爆峰值，那说明系统早该扩容了。
+
+image::/images/gc-performance-3/api-qps-second.jpg[title="服务调用次数（秒级）",alt="服务调用次数（秒级）",{image_attr}]
+
+image::/images/gc-performance-3/api-qps-minute.jpg[title="服务调用次数（分钟级）",alt="服务调用次数（分钟级）",{image_attr}]
+
+[#api-qps-time]
+=== 服务调用耗时
+
+* 整体上讲，J21-Gen-ZGC 的耗时更短，从数据上来看，TP999 能比 J21-G1 的少 10~20ms；TP99 更加夸张，J21-Gen-ZGC 的耗时只有 J21-G1 的一半。
+* J21-Gen-ZGC 和 J21-G1 还是一如既往的稳。
+* 这次测试中，J17-ZGC 也很稳，有些出乎意料。但是，结合下面 JVM <<jvm-cpu>> 和 系统 <<os-cpu>> 来看，J17-ZGC 和 J21-ZGC 的 CPU 使用率早早就达到 90%+，再结合上面两个测试，从稳定性来看，J17-ZGC 和 J21-ZGC 只能被排除掉。
+
+==== TP999
+
+image::/images/gc-performance-3/api-qps-tp999-minute.jpg[title="服务调用 TP999（分钟）",alt="服务调用 TP999（分钟）",{image_attr}]
+
+image::/images/gc-performance-3/api-qps-tp999-second.jpg[title="服务调用 TP999（秒）",alt="服务调用 TP999（秒）",{image_attr}]
+
+==== TP99
+
+image::/images/gc-performance-3/api-qps-tp99-minute.jpg[title="服务调用 TP99（分钟）",alt="服务调用 TP99（分钟）",{image_attr}]
+
+// image::/images/gc-performance-3/api-qps-tp99-second-55.jpg[title="服务调用 TP99（秒）",alt="服务调用 TP99（秒）",{image_attr}]
+
+image::/images/gc-performance-3/api-qps-tp99-second.jpg[title="服务调用 TP99（秒）",alt="服务调用 TP99（秒）",{image_attr}]
+
+==== TP90
+
+image::/images/gc-performance-3/api-qps-tp90-minute.jpg[title="服务调用 TP90（分钟）",alt="服务调用 TP90（分钟）",{image_attr}]
+
+image::/images/gc-performance-3/api-qps-tp90-second.jpg[title="服务调用 TP90（秒）",alt="服务调用 TP90（秒）",{image_attr}]
+
+==== 最大耗时
+
+image::/images/gc-performance-3/api-qps-max-second.jpg[title="服务调用耗时（秒级最大）",alt="服务调用耗时（秒级最大）",{image_attr}]
+
+image::/images/gc-performance-3/api-qps-max-minute.jpg[title="服务调用耗时（分钟级最大）",alt="服务调用耗时（分钟级最大）",{image_attr}]
+
+=== 每台机器的调用次数及耗时
+
+==== TP999 及调用次数
+
+image::/images/gc-performance-3/api-tp999-per-host.jpg[title="每台机器服务调用 TP999 及调用次数",alt="每台机器服务调用 TP999 及调用次数",{image_attr}]
+
+====  TP99 及调用次数
+
+image::/images/gc-performance-3/api-tp99-per-host.jpg[title="每台机器服务调用 TP99 及调用次数",alt="每台机器服务调用 TP99 及调用次数",{image_attr}]
+
+== JVM 监控
+
+[#jvm-cpu]
+=== CPU
+
+单独从 CPU 使用率角度来看：
+
+* J21-ZGC 和 J17-ZGC 把 CPU 干到了 90%+，这还只是日常流量，如果有突发流量，就会非常危险。
+* J21-G1 一直非常稳定。
+* J21-Gen-ZGC 也很稳定，但是比 J21-G1 要高一些，大约高 10%~15%。
+
+image::/images/gc-performance-3/jvm-cpu-avg.jpg[title="CPU 使用率（平均）",alt="CPU 使用率（平均）",{image_attr}]
+
+image::/images/gc-performance-3/jvm-cpu-max.jpg[title="CPU 使用率（最大）",alt="CPU 使用率（最大）",{image_attr}]
+
+image::/images/gc-performance-3/jvm-cpu-min.jpg[title="CPU 使用率（最小）",alt="CPU 使用率（最小）",{image_attr}]
+
+=== Young GC
+
+TIP: 关于 Young GC 的说明，D瓜哥在 https://www.diguage.com/post/gc-performance-same-qps/#jvm-young-gc[JVM GC 性能测试（一）：相同流量：Young GC^] 中，已经做了说明，这里就不再赘述。
+
+* 在日常流量场景下，J21-Gen-ZGC 的 Young GC 更低。
+* J8-G1 的 Young GC 有点高的出奇。
+
+==== Young GC 次数
+
+image::/images/gc-performance-3/jvm-young-gc-avg.jpg[title="JVM Young GC 次数（平均）",alt="JVM Young GC 次数（平均）",{image_attr}]
+
+image::/images/gc-performance-3/jvm-young-gc-max.jpg[title="JVM Young GC 次数（最大）",alt="JVM Young GC 次数（最大）",{image_attr}]
+
+image::/images/gc-performance-3/jvm-young-gc-min.jpg[title="JVM Young GC 次数（最小）",alt="JVM Young GC 次数（最小）",{image_attr}]
+
+==== Young GC 耗时
+
+image::/images/gc-performance-3/jvm-young-gc-time-avg.jpg[title="JVM Young GC 耗时（平均）",alt="JVM Young GC 耗时（平均）",{image_attr}]
+
+image::/images/gc-performance-3/jvm-young-gc-time-max.jpg[title="JVM Young GC 耗时（最大）",alt="JVM Young GC 耗时（最大）",{image_attr}]
+
+image::/images/gc-performance-3/jvm-young-gc-time-min.jpg[title="JVM Young GC 耗时（最小）",alt="JVM Young GC 耗时（最小）",{image_attr}]
+
+=== Full GC
+
+* 整个过程，J21-G1 没有出现 Full GC，比上次 https://www.diguage.com/post/gc-performance-incremental-qps/[JVM GC 性能测试（二）：递增流量^] 还要稳。
+* 只有 J21-Gen-ZGC 出现了 Full GC，5 台机器，每分钟不到一次，再结合 ZGC 不超过 0.5ms 的停顿，这个结果还是非常棒的。
+
+
+==== Full GC 次数
+
+image::/images/gc-performance-3/jvm-full-gc-avg.jpg[title="JVM Full GC 次数（平均）",alt="JVM Full GC 次数（平均）",{image_attr}]
+
+image::/images/gc-performance-3/jvm-full-gc-max.jpg[title="JVM Full GC 次数（最大）",alt="JVM Full GC 次数（最大）",{image_attr}]
+
+image::/images/gc-performance-3/jvm-full-gc-min.jpg[title="JVM Full GC 次数（最小）",alt="JVM Full GC 次数（最小）",{image_attr}]
+
+==== Full GC 耗时
+
+image::/images/gc-performance-3/jvm-full-gc-time-avg.jpg[title="JVM Full GC 耗时（平均）",alt="JVM Full GC 耗时（平均）",{image_attr}]
+
+image::/images/gc-performance-3/jvm-full-gc-time-max.jpg[title="JVM Full GC 耗时（最大）",alt="JVM Full GC 耗时（最大）",{image_attr}]
+
+image::/images/gc-performance-3/jvm-full-gc-time-min.jpg[title="JVM Full GC 耗时（最小）",alt="JVM Full GC 耗时（最小）",{image_attr}]
+
+=== Heap
+
+image::/images/gc-performance-3/jvm-heap-avg.jpg[title="JVM 堆内存（平均）",alt="JVM 堆内存（平均）",{image_attr}]
+
+image::/images/gc-performance-3/jvm-heap-max.jpg[title="JVM 堆内存（最大）",alt="JVM 堆内存（最大）",{image_attr}]
+
+image::/images/gc-performance-3/jvm-heap-min.jpg[title="JVM 堆内存（最小）",alt="JVM 堆内存（最小）",{image_attr}]
+
+=== 非堆
+
+image::/images/gc-performance-3/jvm-non-heap.jpg[title="JVM 非堆内存（平均）",alt="JVM 非堆内存（平均）",{image_attr}]
+
+=== 线程数
+
+image::/images/gc-performance-3/jvm-thead-avg.jpg[title="JVM 线程数（平均）",alt="JVM 线程数（平均）",{image_attr}]
+
+image::/images/gc-performance-3/jvm-thead-max.jpg[title="JVM 线程数（最大）",alt="JVM 线程数（最大）",{image_attr}]
+
+image::/images/gc-performance-3/jvm-thead-min.jpg[title="JVM 线程数（最小）",alt="JVM 线程数（最小）",{image_attr}]
+
+== 系统监控
+
+[#os-cpu]
+=== CPU 使用率
+
+image::/images/gc-performance-3/os-cpu-avg-minute.jpg[title="系统监控 CPU 使用率（分钟级平均）",alt="系统监控 CPU 使用率（分钟级平均）",{image_attr}]
+
+image::/images/gc-performance-3/os-cpu-max-minute.jpg[title="系统监控 CPU 使用率（分钟级最大）",alt="系统监控 CPU 使用率（分钟级最大）",{image_attr}]
+
+image::/images/gc-performance-3/os-cpu-min-minute.jpg[title="系统监控 CPU 使用率（分钟级最小）",alt="系统监控 CPU 使用率（分钟级最小）",{image_attr}]
+
+=== 内存使用率
+
+image::/images/gc-performance-3/os-cache-avg-minute.jpg[title="内存使用率（分钟级平均）",alt="内存使用率（分钟级平均）",{image_attr}]
+
+image::/images/gc-performance-3/os-cache-max-minute.jpg[title="内存使用率（分钟级最大）",alt="内存使用率（分钟级最大）",{image_attr}]
+
+image::/images/gc-performance-3/os-cache-min-minute.jpg[title="内存使用率（分钟级最小）",alt="内存使用率（分钟级最小）",{image_attr}]
+
+=== 每个机器 CPU 使用率
+
+image::/images/gc-performance-3/cpu-per-host.jpg[title="每个机器 CPU 使用率",alt="每个机器 CPU 使用率",{image_attr}]
+
+=== 每个机器系统负载
+
+image::/images/gc-performance-3/load-per-host.jpg[title="每个机器系统负载",alt="每个机器系统负载",{image_attr}]
+
+:!sectnums:
+
+== 下一步行动
+
+在这次测试中，D瓜哥通过将正式环境的机器下线，让流量更多地转发到测试机器上。由此也带来了，部分接口响应慢，以及接口超过限流等告警，由于小伙伴的给力支持，在有惊无险中，顺利结束。所以，如果有研发同学也要做类似测试，一定要做好相关监控。
+
+通过这三次测试来看，有充分的理由将 JVM 升级到 OpenJDK 21 了。Gen-ZGC + G1 可以完美替换 OpenJDK 8 的 G1 了。
+
+在下一篇文章中，D瓜哥将分享自己将应用升级到 OpenJDK 21 中遇到的各种各样的问题，敬请关注： https://www.diguage.com/post/upgrade-to-openjdk21/[升级 OpenJDK 21^]。

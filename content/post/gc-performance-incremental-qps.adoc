@@ -421,8 +421,6 @@ image::/images/gc-performance-2/jvm-thead-min.jpg[title="JVM 线程数（最小�
 
 === CPU 使用率
 
-=== CPU 使用率
-
 image::/images/gc-performance-2/os-cpu-avg-minute.jpg[title="系统监控 CPU 使用率（分钟级平均）",alt="系统监控 CPU 使用率（分钟级平均）",{image_attr}]
 
 image::/images/gc-performance-2/os-cpu-max-minute.jpg[title="系统监控 CPU 使用率（分钟级最大）",alt="系统监控 CPU 使用率（分钟级最大）",{image_attr}]
