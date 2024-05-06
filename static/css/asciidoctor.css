@@ -450,3 +450,19 @@ div.imageblock > div.title {
     font-style: normal !important;
     margin-bottom: 1em !important;
 }
+
+/*.post__content ul,.post__content ol,.post__content dl{line-height:1.6;margin-bottom:1.25em;list-style-position:outside !important;font-family:inherit}*/
+/*.post__content ul,.post__content ol{margin-left:1.5em}*/
+/*.post__content ul li ul,.post__content ul li ol{margin-left:1.25em;margin-bottom:0}*/
+/*.post__content ul.circle{list-style-type:circle}*/
+/*.post__content ul.disc{list-style-type:disc}*/
+/*.post__content ul.square{list-style-type:square}*/
+/*.post__content ul.circle ul:not([class]),ul.disc ul:not([class]),ul.square ul:not([class]){list-style:inherit}*/
+/*.post__content ol li ul,.post__content ol li ol{margin-left:1.25em;margin-bottom:0}*/
+/*.post__content dl dt{margin-bottom:.3125em;font-weight:bold}*/
+/*.post__content dl dd{margin-bottom:1.25em}*/
+/*.post__content dt,.post__content th.tableblock,.post__content td.content,.post__content div.footnote{text-rendering:optimizeLegibility}*/
+
+.post__content dd {
+    margin-left: 0px;
+}
