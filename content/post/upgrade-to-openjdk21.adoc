@@ -35,22 +35,34 @@ $ mvn versions:display-dependency-updates
 # 此处省略一万个字
 # @author: D瓜哥 · https://www.diguage.com
 
-[INFO]   org.springframework:spring-aop ...................... 5.3.33 -> 6.1.6
-[INFO]   org.springframework:spring-aspects .................. 5.3.33 -> 6.1.6
-[INFO]   org.springframework:spring-beans .................... 5.3.33 -> 6.1.6
-[INFO]   org.springframework:spring-context .................. 5.3.33 -> 6.1.6
-[INFO]   org.springframework:spring-core ..................... 5.3.33 -> 6.1.6
-[INFO]   org.springframework:spring-jdbc ..................... 5.3.33 -> 6.1.6
-[INFO]   org.springframework:spring-web ...................... 5.3.33 -> 6.1.6
+[INFO]   org.springframework:spring-aop .................. 5.3.33 -> 6.1.6
+[INFO]   org.springframework:spring-aspects .............. 5.3.33 -> 6.1.6
+[INFO]   org.springframework:spring-beans ................ 5.3.33 -> 6.1.6
+[INFO]   org.springframework:spring-context .............. 5.3.33 -> 6.1.6
+[INFO]   org.springframework:spring-core ................. 5.3.33 -> 6.1.6
+[INFO]   org.springframework:spring-jdbc ................. 5.3.33 -> 6.1.6
+[INFO]   org.springframework:spring-web .................. 5.3.33 -> 6.1.6
 
-[INFO]   org.mybatis:mybatis-2-spring .......................... 1.1.0 -> 1.2.0
-[INFO]   org.mybatis:mybatis-spring ............................ 2.1.1 -> 2.1.2
+[INFO]   org.mybatis:mybatis-2-spring ..................... 1.1.0 -> 1.2.0
+[INFO]   org.mybatis:mybatis-spring ....................... 2.1.1 -> 2.1.2
 
-[INFO]   org.junit.jupiter:junit-jupiter ...................... 5.9.3 -> 5.10.2
-[INFO]   org.junit.jupiter:junit-jupiter-api .................. 5.9.3 -> 5.10.2
+[INFO]   org.junit.jupiter:junit-jupiter ................. 5.9.3 -> 5.10.2
+[INFO]   org.junit.jupiter:junit-jupiter-api ............. 5.9.3 -> 5.10.2
 ----
 
-可以根据这个输出情况，将相关依赖做一个整体升级。如果开发环境还是以 OpenJDK8 为主，那么 Spring 最好就不要升级到 6.x，能不能忽略类似的相关问题呢？解决办法请参考： https://www.diguage.com/post/intro-to-versions-maven-plugin/[Versions Maven 插件简介^]，里面对忽略版本，一键升级等操作，都做了比较详细的介绍。
+可以根据这个输出情况，将相关依赖做一个整体升级。这里再注重提醒三个方面。
+
+=== Lombok
+
+如果项目使用了 Lombok 依赖，务必将其升级到 v1.18.30+，低于此版本的 Lombok 会报错，具体原因见： https://github.com/projectlombok/lombok/issues/3393[[BUG\] lombok 1.8.26 incompatible with JDK21 · #3393^]。
+
+=== Netty
+
+如果项目使用了 Netty，建议进来将其升级到 4.1.93.Final+。OpenJDK 21 对 `DirectByteBuffer` 的构造函数做了改动，该版本做了兼容。修改日志见： https://netty.io/news/2023/05/25/4-1-93-Final.html[Netty.news: Netty 4.1.93.Final released^]，代码改动详情见： https://github.com/netty/netty/pull/13366[Adapt to DirectByteBuffer constructor in Java 21 #13366^]。
+
+=== 反向兼容 JDK 8
+
+另外，提醒一下，如果开发环境还是以 JDK 8 为主，那么 Spring 最好就不要升级到 6.x，能不能忽略类似的相关问题呢？解决办法请参考： https://www.diguage.com/post/intro-to-versions-maven-plugin/[Versions Maven 插件简介^]，文章里对忽略版本，一键升级等操作，都做了比较详细的介绍。
 
 == `@javax.annotation.Resource`
 
@@ -60,7 +72,7 @@ $ mvn versions:display-dependency-updates
 ----
 <dependency>
     <groupId>jakarta.annotation</groupId>
-    <artifactId>jakarta.annotation-api</artifactId> <!--1-->
+    <artifactId>jakarta.annotation-api</artifactId>
     <version>1.3.5</version>
 </dependency>
 
@@ -68,11 +80,13 @@ $ mvn versions:display-dependency-updates
 
 <dependency>
     <groupId>javax.annotation</groupId>
-    <artifactId>javax.annotation-api</artifactId>
+    <artifactId>javax.annotation-api</artifactId> <!--1-->
     <version>1.3.2</version>
 </dependency>
 ----
-<1> 上述两个依赖代码基本一样。推荐使用该版本以后，后续升级直接改版本号即可。
+<1> 上述两个依赖代码基本一样。推荐使用该版本，不耽误以后同时使用更高版本的 `jakarta.annotation:jakarta.annotation-api`。
+
+=== Spring 6+ 同时支持新旧版的 `@Resource`
 
 另外，有一点需要特别说明：Spring 6+ 支持新版的 `jakarta.annotation.Resource` 注解，同时还兼容旧版的 `javax.annotation.Resource`。相关代码如下：
 
@@ -452,4 +466,8 @@ java.lang.reflect.InaccessibleObjectException: Unable to make field final int[] 
 </profile>
 ----
 
+== 参考资料
+
 . https://hibernate.org/validator/releases/7.0/[Hibernate Validator 7.0^]
+. https://stackoverflow.com/a/41265267/951836[reflection - How to solve InaccessibleObjectException ("Unable to make {member} accessible: module {A} does not 'opens {package}' to {B}") on Java 9?^]
+. https://nipafx.dev/java-modules-reflection-vs-encapsulation/[Reflection vs Encapsulation^]
