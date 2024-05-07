@@ -62,12 +62,13 @@ $ mvn versions:display-dependency-updates
 
 第一次执行，时间较长，后续再执行就很快。（根据D瓜哥的执行情况来看，这个缓存的有效期是一天，第二天第一次执行也会比较慢。也可能是由于修改了 `<ruleSet>` 配置，导致执行变慢的。）执行结果如下：
 
-[source%nowrap,bash,{source_attr}]
+[source%nowrap,{source_attr}]
 ----
 # 检查依赖升级情况
 $ mvn versions:display-dependency-updates
 
 # 此处省略一万个字
+# @author: D瓜哥 · https://www.diguage.com
 
 [INFO]   ch.qos.logback:logback-access ........................ 1.2.11 -> 1.4.7
 [INFO]   ch.qos.logback:logback-classic ....................... 1.2.11 -> 1.4.7
@@ -139,6 +140,84 @@ $ mvn versions:display-dependency-updates
                     <ignoreVersion>
                         <type>regex</type>
                         <version>[6-9].*</version>
+                    </ignoreVersion>
+                </rule>
+                <rule>
+                    <groupId>org.springframework.boot</groupId>
+                    <ignoreVersion>
+                        <type>regex</type>
+                        <version>[3-9].*</version>
+                    </ignoreVersion>
+                </rule>
+                <rule>
+                    <groupId>org.slf4j</groupId>
+                    <ignoreVersion>
+                        <type>regex</type>
+                        <version>[2-9].*</version>
+                    </ignoreVersion>
+                </rule>
+                <rule>
+                    <groupId>ch.qos.logback</groupId>
+                    <ignoreVersion>
+                        <type>regex</type>
+                        <version>1.[4-9].*</version>
+                    </ignoreVersion>
+                </rule>
+                <rule>
+                    <groupId>com.zaxxer</groupId>
+                    <ignoreVersion>
+                        <type>regex</type>
+                        <version>[5-9].*</version>
+                    </ignoreVersion>
+                </rule>
+                <rule>
+                    <groupId>org.mybatis</groupId>
+                    <artifactId>mybatis-spring</artifactId>
+                    <ignoreVersion>
+                        <type>regex</type>
+                        <version>[3-9].*</version>
+                    </ignoreVersion>
+                </rule>
+                <rule>
+                    <groupId>org.mockito</groupId>
+                    <ignoreVersion>
+                        <type>regex</type>
+                        <version>[5-9].*</version>
+                    </ignoreVersion>
+                </rule>
+                <rule>
+                    <groupId>org.apache.tomcat</groupId>
+                    <ignoreVersion>
+                        <type>regex</type>
+                        <version>[9|10|11|12].*</version>
+                    </ignoreVersion>
+                </rule>
+                <rule>
+                    <groupId>commons-io</groupId>
+                    <ignoreVersion>
+                        <type>regex</type>
+                        <version>2003.*</version>
+                    </ignoreVersion>
+                </rule>
+                <rule>
+                    <groupId>commons-lang</groupId>
+                    <ignoreVersion>
+                        <type>regex</type>
+                        <version>2003.*</version>
+                    </ignoreVersion>
+                </rule>
+                <rule>
+                    <groupId>commons-pool</groupId>
+                    <ignoreVersion>
+                        <type>regex</type>
+                        <version>200.*</version>
+                    </ignoreVersion>
+                </rule>
+                <rule>
+                    <groupId>commons-collections</groupId>
+                    <ignoreVersion>
+                        <type>regex</type>
+                        <version>200.*</version>
                     </ignoreVersion>
                 </rule>
             </rules>

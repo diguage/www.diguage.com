@@ -1,0 +1,45 @@
+---
+title: "使用 OpenRewrite 优化代码"
+date: 2024-05-07T17:48:49+08:00
+draft: true
+keywords: ["程序设计","Java","OpenRewrite"]
+tags: ["Java","最佳实践"]
+categories: ["开发工具","程序设计"]
+thumbnail: "images/logos/openrewrite.png"
+
+weight: 1
+---
+
+
+// image::/images/[title="",alt="",{image_attr}]
+
+// [source%nowrap,java,{source_attr}]
+// ----
+// // code
+// ----
+
+[#openrewrite]
+== OpenRewrite
+
+[source%nowrap,xml,{source_attr}]
+----
+<plugin>
+  <groupId>org.openrewrite.maven</groupId>
+  <artifactId>rewrite-maven-plugin</artifactId>
+  <version>5.29.0</version>
+  <configuration>
+    <activeRecipes>
+      <recipe>
+        org.openrewrite.java.migrate.jakarta.JavaxValidationMigrationToJakartaValidation
+      </recipe>
+    </activeRecipes>
+  </configuration>
+  <dependencies>
+    <dependency>
+      <groupId>org.openrewrite.recipe</groupId>
+      <artifactId>rewrite-migrate-java</artifactId>
+      <version>2.12.0</version>
+    </dependency>
+  </dependencies>
+</plugin>
+----

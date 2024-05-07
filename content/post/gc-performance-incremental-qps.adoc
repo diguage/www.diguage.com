@@ -175,15 +175,14 @@ weight: 1
 //
 //
 //
-// // 分组秒级： https://taishan.jd.com/pfinder/multi-dimension/monitorChart?metricId=161448101&metricName=JsfP%40com.jd.jr.baitiao.front.export.rest.app.mall.BaitiaoInfoResource%23getShouldPayInfo&appName=front-ledger&platform=jdos&unit=all&tag=performance-key&dimension=_AG&component=JsfProvider&time=second,0,1714403736911,1714408140912,0&filter=_AG%3Aj17-zgc,j21-g1,j21-gen-zgc,j21-zgc,j8-g1&dv=j17-zgc,j21-g1,j21-gen-zgc,j21-zgc,j8-g1
-// //
-// // 分组分钟： https://taishan.jd.com/pfinder/multi-dimension/monitorChart?metricId=161448101&metricName=JsfP%40com.jd.jr.baitiao.front.export.rest.app.mall.BaitiaoInfoResource%23getShouldPayInfo&appName=front-ledger&platform=jdos&unit=all&tag=performance-key&dimension=_AG&component=JsfProvider&time=oneMinute,0,1714403736911,1714408140912,0&filter=_AG%3Aj17-zgc,j21-g1,j21-gen-zgc,j21-zgc,j8-g1&dv=j17-zgc,j21-g1,j21-gen-zgc,j21-zgc,j8-g1
-// 分组分钟： https://taishan.jd.com/pfinder/multi-dimension/monitorChart?metricId=161448101&metricName=JsfP%40com.jd.jr.baitiao.front.export.rest.app.mall.BaitiaoInfoResource%23getShouldPayInfo&appName=front-ledger&platform=jdos&unit=all&tag=performance-key&dimension=_AG&component=JsfProvider&time=oneMinute,0,1714403400911,1714408440912,0&filter=_AG%3Aj17-zgc,j21-g1,j21-gen-zgc,j21-zgc,j8-g1&dv=j17-zgc,j21-g1,j21-gen-zgc,j21-zgc,j8-g1
-// //
-// // MDC： https://taishan.jd.com/mdc/ipMonitor?ip=11.243.84.154,11.243.84.112,11.248.8.89,11.248.1.120,11.248.8.88,11.243.84.159,11.243.84.173,11.248.8.90,11.243.85.100,11.243.84.164,11.248.1.164,11.248.1.165,11.243.86.251,11.243.65.198,11.243.85.109,11.243.87.117,11.243.87.118,11.248.1.166,11.248.8.91,11.248.1.169,11.248.1.167,11.248.8.92,11.248.8.93,11.248.1.168,11.243.87.95&global=1&startTime=1714403736193&endTime=1714408140193
-// // 可以从 https://api-pserve-proxy.jd.com/api/mdc3/v2/metrics/series_diagram 获取原始数据
-// //
-// // UMP 总计： https://taishan.jd.com/ump/monitor/perfomance?endPointKey=jr.baitiao.ledger.front.BaitiaoInfoResourceImpl.getShouldPayInfo&frequency=oneMinute&start_time=1714403736000&end_time=1714408140000
+// 分组秒级： https://taishan.jd.com/pfinder/multi-dimension/monitorChart?metricId=161448101&metricName=JsfP%40com.jd.jr.baitiao.front.export.rest.app.mall.BaitiaoInfoResource%23getShouldPayInfo&appName=front-ledger&platform=jdos&unit=all&tag=performance-key&dimension=_AG&component=JsfProvider&time=second,0,1714403520911,1714408259912,0&filter=_AG%3Aj17-zgc,j21-g1,j21-gen-zgc,j21-zgc,j8-g1&dv=j17-zgc,j21-g1,j21-gen-zgc,j21-zgc,j8-g1
+
+// // 分组分钟： https://taishan.jd.com/pfinder/multi-dimension/monitorChart?metricId=161448101&metricName=JsfP%40com.jd.jr.baitiao.front.export.rest.app.mall.BaitiaoInfoResource%23getShouldPayInfo&appName=front-ledger&platform=jdos&unit=all&tag=performance-key&dimension=_AG&component=JsfProvider&time=oneMinute,0,1714403520911,1714408259912,0&filter=_AG%3Aj17-zgc,j21-g1,j21-gen-zgc,j21-zgc,j8-g1&dv=j17-zgc,j21-g1,j21-gen-zgc,j21-zgc,j8-g1
+
+// MDC： https://taishan.jd.com/mdc/ipMonitor?ip=11.243.84.154,11.243.84.112,11.248.8.89,11.248.1.120,11.248.8.88,11.243.84.159,11.243.84.173,11.248.8.90,11.243.85.100,11.243.84.164,11.248.1.164,11.248.1.165,11.243.86.251,11.243.65.198,11.243.85.109,11.243.87.117,11.243.87.118,11.248.1.166,11.248.8.91,11.248.1.169,11.248.1.167,11.248.8.92,11.248.8.93,11.248.1.168,11.243.87.95&global=1&startTime=1714403736193&endTime=1714408140193
+// 可以从 https://api-pserve-proxy.jd.com/api/mdc3/v2/metrics/series_diagram 获取原始数据
+//
+// UMP 总计： https://taishan.jd.com/ump/monitor/perfomance?endPointKey=jr.baitiao.ledger.front.BaitiaoInfoResourceImpl.getShouldPayInfo&frequency=oneMinute&start_time=1714403736000&end_time=1714408140000
 //
 //
 

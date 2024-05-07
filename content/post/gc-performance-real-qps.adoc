@@ -54,7 +54,7 @@ image::/images/gc-performance-3/api-qps-minute.jpg[title="服务调用次数（�
 
 * 整体上讲，J21-Gen-ZGC 的耗时更短，从数据上来看，TP999 能比 J21-G1 的少 10~20ms；TP99 更加夸张，J21-Gen-ZGC 的耗时只有 J21-G1 的一半。
 * J21-Gen-ZGC 和 J21-G1 还是一如既往的稳。
-* 这次测试中，J17-ZGC 也很稳，有些出乎意料。但是，结合下面 JVM <<jvm-cpu>> 和 系统 <<os-cpu>> 来看，J17-ZGC 和 J21-ZGC 的 CPU 使用率早早就达到 90%+，再结合上面两个测试，从稳定性来看，J17-ZGC 和 J21-ZGC 只能被排除掉。
+* 这次测试中，J17-ZGC 也很稳，有些出乎意料。但是，结合下面 <<jvm-cpu, JVM CPU 使用率>> 和 <<os-cpu, 系统 CPU 使用率>> 来看，J17-ZGC 和 J21-ZGC 的 CPU 使用率早早就达到 90%+，再结合上面两个测试，从稳定性来看，J17-ZGC 和 J21-ZGC 只能被排除掉。
 
 ==== TP999
 
