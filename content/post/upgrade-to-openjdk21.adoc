@@ -288,7 +288,22 @@ Caused by: java.lang.ExceptionInInitializerError: Exception javax.validation.Val
 由于该版本的 Bean Validation 的基础包名已经从 `javax.` 改为 `jakarta.`，所以，需要修改程序，这部分工作已经有相关程序来自动完成，敬请关注： https://www.diguage.com/post/optimize-code-using-openrewrite/[使用 OpenRewrite 优化代码^]。
 
 
+== JAXB
+
+同样是由于 https://openjdk.org/jeps/320[JEP 320: Remove the Java EE and CORBA Modules^] 提案， 在 OpenJDK 11 中移除了 JavaEE 的相关内容，其中也包括 https://jcp.org/en/jsr/detail?id=222[JAXB^]。编译可能会报错，增加如下依赖即可：
+
+[source%nowrap,xml,{source_attr}]
+----
+<dependency>
+    <groupId>org.glassfish.jaxb</groupId>
+    <artifactId>jaxb-runtime</artifactId>
+    <version>2.3.9</version>
+</dependency>
+----
+
 == 模块化
+
+如果构建一切顺利，以为可以正常启动运行程序，结果却可能报如下错误：
 
 [source%nowrap,{source_attr}]
 ----
@@ -298,30 +313,49 @@ Caused by: java.lang.reflect.InaccessibleObjectException: Unable to make protect
 // --add-opens java.base/java.lang=ALL-UNNAMED
 ----
 
+这是由于在 JDK 9 中引入的 https://openjdk.org/projects/jigsaw/spec/sotms/[Java Platform Module System^] 导致的，该协议对 Java 的封装性做了进一步增强。更详细的内容可以看： ① 协议： https://openjdk.org/projects/jigsaw/spec/[Java Platform Module System JSR (376)^] ② 实现：https://openjdk.org/jeps/261[JEP 261: Module System^] ③ 解释：https://nipafx.dev/java-modules-reflection-vs-encapsulation/[Reflection vs Encapsulation^]。
+
+具体到该问题的解决办法也比较简单：将没开放的模块强制对外开放。有两个参数选项：
+
+. `--add-exports` 导出包，意味着其中的所有公共类型和成员都可以在编译和运行时访问。
+. `--add-opens` 打开包，意味着其中的所有类型和成员（不仅是公共类型）都可以在运行时访问。
+
+两者的区别在于 `--add-opens` 开放的更加彻底，不仅 `public` 类型、变量及方法可以访问，就连非 `public` 元素，也可以通过调用 `setAccessible(true)` 后也可以访问。简单起见，直接使用 `--add-opens` 即可。相关的参数在异常中也提醒出来了： `module java.base` 和 `"opens java.lang"`，结合起来，直接这样配置：在 `java` 明了启动参数中，增加 `--add-opens java.base/java.lang=ALL-UNNAMED` 选项即可。
+
+下面再列出几个相关示例：
+
+=== `java.base/java.util`
+
+错误日志：
+
 [source%nowrap,{source_attr}]
 ----
 Caused by: java.lang.reflect.InaccessibleObjectException: Unable to make field protected int[] java.util.Calendar.fields accessible: module java.base does not "opens java.util" to unnamed module @21282ed8
-
-// --add-opens java.base/java.util=ALL-UNNAMED
 ----
+
+启动项： `--add-opens java.base/java.util=ALL-UNNAMED`。
+
+=== `java.base/sun.util.calendar`
+
+错误日志：
 
 [source%nowrap,{source_attr}]
 ----
-Caused by: java.lang.IllegalAccessError: class com.jd.org.msgpack.template.TemplateRegistry (in unnamed module @0x21282ed8) cannot access class sun.util.calendar.ZoneInfo (in module java.base) because module java.base does not export sun.util.calendar to unnamed module @0x21282ed8
-
-// --add-opens java.base/sun.util.calendar=ALL-UNNAMED
+Caused by: java.lang.IllegalAccessError: class org.msgpack.template.TemplateRegistry (in unnamed module @0x21282ed8) cannot access class sun.util.calendar.ZoneInfo (in module java.base) because module java.base does not export sun.util.calendar to unnamed module @0x21282ed8
 ----
+
+启动项： `--add-opens java.base/sun.util.calendar=ALL-UNNAMED`。
+
+=== `java.base/java.math`
+
+错误日志：
 
 [source%nowrap,{source_attr}]
 ----
 java.lang.reflect.InaccessibleObjectException: Unable to make field final int[] java.math.BigInteger.mag accessible: module java.base does not "opens java.math" to unnamed module @21282ed8
-
-// --add-opens java.base/java.math=ALL-UNNAMED
 ----
 
-[source%nowrap,{source_attr}]
-----
-----
+启动项： `--add-opens java.base/java.math=ALL-UNNAMED`。
 
 == 构建与测试
 
