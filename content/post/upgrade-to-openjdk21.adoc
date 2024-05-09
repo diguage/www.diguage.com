@@ -1,7 +1,7 @@
 ---
-title: "平稳升级到 OpenJDK 21"
+title: "OpenJDK 21 升级指南"
 date: 2024-05-06T19:50:22+08:00
-draft: true
+draft: false
 keywords: ["Java","OpenJDK","OpenJDK 21"]
 tags: ["Java","JVM"]
 categories: ["编程语言","软件工程"]
@@ -10,11 +10,10 @@ thumbnail: "images/java/java-21.jpeg"
 weight: 1
 ---
 
-https://openjdk.org/projects/jdk/21/[OpenJDK 21^] 已经发布半年有余，在这个版本中， https://openjdk.org/jeps/439[Generational ZGC^] 也一起发布了。在 https://malloc.se/blog/zgc-jdk16[ZGC | What's new in JDK 16^] 中， https://malloc.se/[Per Lidén^] 宣称，将 ZGC 的最大停顿时间从 10ms 降低到了 1ms。这些种种先进技术，着实充满诱惑，忍不住想吃口螃蟹 🦀。
+https://openjdk.org/projects/jdk/21/[OpenJDK 21^] 已经发布半年有余，在这个版本中， https://openjdk.org/jeps/439[Generational ZGC^] 也一起发布了。在 https://malloc.se/blog/zgc-jdk16[ZGC | What's new in JDK 16^] 中， https://malloc.se/[Per Lidén^] 宣称，将 ZGC 的最大停顿时间从 10ms 降低到了 1ms。再加上 https://www.diguage.com/post/gc-performance-incremental-qps/[JVM GC 性能测试（二）：递增流量^] 和 https://www.diguage.com/post/gc-performance-real-qps/[JVM GC 性能测试（三）：真实流量^] 文中，GenZGC 的惊艳表现，这些种种先进技术，着实充满诱惑，忍不住想吃口螃蟹 🦀。这篇文章，D瓜哥就来分享一下，自己在升级 OpenJDK 21 中的一些经验。
 
-TIP: 本文仅仅介绍升级 OpenJDK 的相关内容，至于 ZGC 等技术细节，后续再撰文介绍。
+TIP: 本文仅介绍升级 OpenJDK 的相关内容，ZGC 原理等会专门撰文介绍。
 
-// 由于 Spring Boot 项目与 Java Web 项目有差异，也有共性。所以，分开来讲。
 
 == 升级依赖
 
@@ -35,19 +34,19 @@ $ mvn versions:display-dependency-updates
 # 此处省略一万个字
 # @author: D瓜哥 · https://www.diguage.com
 
-[INFO]   org.springframework:spring-aop .................. 5.3.33 -> 6.1.6
-[INFO]   org.springframework:spring-aspects .............. 5.3.33 -> 6.1.6
-[INFO]   org.springframework:spring-beans ................ 5.3.33 -> 6.1.6
-[INFO]   org.springframework:spring-context .............. 5.3.33 -> 6.1.6
-[INFO]   org.springframework:spring-core ................. 5.3.33 -> 6.1.6
-[INFO]   org.springframework:spring-jdbc ................. 5.3.33 -> 6.1.6
-[INFO]   org.springframework:spring-web .................. 5.3.33 -> 6.1.6
+[INFO]   org.springframework:spring-aop ......... 5.3.33 -> 6.1.6
+[INFO]   org.springframework:spring-aspects ..... 5.3.33 -> 6.1.6
+[INFO]   org.springframework:spring-beans ....... 5.3.33 -> 6.1.6
+[INFO]   org.springframework:spring-context ..... 5.3.33 -> 6.1.6
+[INFO]   org.springframework:spring-core ........ 5.3.33 -> 6.1.6
+[INFO]   org.springframework:spring-jdbc ........ 5.3.33 -> 6.1.6
+[INFO]   org.springframework:spring-web ......... 5.3.33 -> 6.1.6
 
-[INFO]   org.mybatis:mybatis-2-spring ..................... 1.1.0 -> 1.2.0
-[INFO]   org.mybatis:mybatis-spring ....................... 2.1.1 -> 2.1.2
+[INFO]   org.mybatis:mybatis-2-spring ............ 1.1.0 -> 1.2.0
+[INFO]   org.mybatis:mybatis-spring .............. 2.1.1 -> 2.1.2
 
-[INFO]   org.junit.jupiter:junit-jupiter ................. 5.9.3 -> 5.10.2
-[INFO]   org.junit.jupiter:junit-jupiter-api ............. 5.9.3 -> 5.10.2
+[INFO]   org.junit.jupiter:junit-jupiter ........ 5.9.3 -> 5.10.2
+[INFO]   org.junit.jupiter:junit-jupiter-api .... 5.9.3 -> 5.10.2
 ----
 
 可以根据这个输出情况，将相关依赖做一个整体升级。这里再注重提醒三个方面。
@@ -77,6 +76,7 @@ $ mvn versions:display-dependency-updates
 </dependency>
 
 <!-- 或者 -->
+<!-- @author: D瓜哥 · https://www.diguage.com -->
 
 <dependency>
     <groupId>javax.annotation</groupId>
@@ -90,8 +90,10 @@ $ mvn versions:display-dependency-updates
 
 另外，有一点需要特别说明：Spring 6+ 支持新版的 `jakarta.annotation.Resource` 注解，同时还兼容旧版的 `javax.annotation.Resource`。相关代码如下：
 
+TIP: 有些文章提到，Spring 6 不支持 `javax.annotation.Resource` 注解，从下面的 Spring 代码来看，这是完全错误的。
+
 .`CommonAnnotationBeanPostProcessor.java`
-[source%nowrap,java,{source_attr}]
+[source%collapsible,java,{source_attr}]
 ----
 public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBeanPostProcessor
     implements InstantiationAwareBeanPostProcessor, BeanFactoryAware, Serializable {
@@ -267,6 +269,7 @@ Caused by: java.lang.ExceptionInInitializerError: Exception javax.validation.Val
 
 [source%nowrap,xml,{source_attr}]
 ----
+<!-- @author: D瓜哥 · https://www.diguage.com -->
 <dependency>
     <groupId>jakarta.validation</groupId>
     <artifactId>jakarta.validation-api</artifactId>
@@ -301,7 +304,8 @@ Caused by: java.lang.ExceptionInInitializerError: Exception javax.validation.Val
 </dependency>
 ----
 
-== 模块化
+[#jigsaw]
+== Java 模块化
 
 如果构建一切顺利，以为可以正常启动运行程序，结果却可能报如下错误：
 
@@ -309,11 +313,9 @@ Caused by: java.lang.ExceptionInInitializerError: Exception javax.validation.Val
 ----
 Caused by: java.lang.reflect.InaccessibleObjectException: Unable to make protected final java.lang.Class java.lang.ClassLoader.defineClass(java.lang.String,byte[],int,int,java.security.ProtectionDomain) throws java.lang.ClassFormatError accessible: module java.base does not "opens java.lang" to unnamed module @66f57048
   at java.base/java.lang.reflect.AccessibleObject.throwInaccessibleObjectException(AccessibleObject.java:391)
-
-// --add-opens java.base/java.lang=ALL-UNNAMED
 ----
 
-这是由于在 JDK 9 中引入的 https://openjdk.org/projects/jigsaw/spec/sotms/[Java Platform Module System^] 导致的，该协议对 Java 的封装性做了进一步增强。更详细的内容可以看： ① 协议： https://openjdk.org/projects/jigsaw/spec/[Java Platform Module System JSR (376)^] ② 实现：https://openjdk.org/jeps/261[JEP 261: Module System^] ③ 解释：https://nipafx.dev/java-modules-reflection-vs-encapsulation/[Reflection vs Encapsulation^]。
+这是由于在 JDK 9 中引入的 https://openjdk.org/projects/jigsaw/spec/sotms/[Java Platform Module System^] 导致的，该协议对 Java 的封装性做了进一步增强。更详细的内容可以看： ① 协议： https://openjdk.org/projects/jigsaw/spec/[Java Platform Module System JSR (376)^] ② 实现： https://openjdk.org/jeps/261[JEP 261: Module System^] ③ 解释： https://nipafx.dev/java-modules-reflection-vs-encapsulation/[Reflection vs Encapsulation^]。
 
 具体到该问题的解决办法也比较简单：将没开放的模块强制对外开放。有两个参数选项：
 
@@ -333,18 +335,7 @@ Caused by: java.lang.reflect.InaccessibleObjectException: Unable to make protect
 Caused by: java.lang.reflect.InaccessibleObjectException: Unable to make field protected int[] java.util.Calendar.fields accessible: module java.base does not "opens java.util" to unnamed module @21282ed8
 ----
 
-启动项： `--add-opens java.base/java.util=ALL-UNNAMED`。
-
-=== `java.base/sun.util.calendar`
-
-错误日志：
-
-[source%nowrap,{source_attr}]
-----
-Caused by: java.lang.IllegalAccessError: class org.msgpack.template.TemplateRegistry (in unnamed module @0x21282ed8) cannot access class sun.util.calendar.ZoneInfo (in module java.base) because module java.base does not export sun.util.calendar to unnamed module @0x21282ed8
-----
-
-启动项： `--add-opens java.base/sun.util.calendar=ALL-UNNAMED`。
+启动参数： `--add-opens java.base/java.util=ALL-UNNAMED`。
 
 === `java.base/java.math`
 
@@ -355,58 +346,105 @@ Caused by: java.lang.IllegalAccessError: class org.msgpack.template.TemplateRegi
 java.lang.reflect.InaccessibleObjectException: Unable to make field final int[] java.math.BigInteger.mag accessible: module java.base does not "opens java.math" to unnamed module @21282ed8
 ----
 
-启动项： `--add-opens java.base/java.math=ALL-UNNAMED`。
+启动参数： `--add-opens java.base/java.math=ALL-UNNAMED`。
 
 == 构建与测试
 
+上面介绍了程序相关的错误及解决办法，下面介绍一下构建流程中出现的问题。
+
 === maven-compiler-plugin 配置
 
-=== maven-surefire-plugin 配置
+如果项目中，在编译阶段做了一些扩展性的东西，那么就可能触发上面 <<jigsaw>> 中描述的问题。类似如下日志：
 
-=== IntelliJ IDEA 配置
+[source%nowrap,{source_attr}]
+----
+java.lang.IllegalAccessError: class com.diguage.plugin.lombok.ToStringProcessor (in unnamed module @0x551976c2)
+cannot access class com.sun.tools.javac.api.JavacTrees (in module jdk.compiler)
+because module jdk.compiler does not export com.sun.tools.javac.api to unnamed module @0x551976c2
+        at com.diguage.plugin.lombok.ToStringProcessor.init(ToStringProcessor.java:44)
+----
 
-== 科技与狠活
+这个问题也可以通过增加参数来完成。不过，这个参数需要在 `pom.xml` 中通过给 maven-compiler-plugin 插件增加配置的方式来搞，如下：
 
 [source%nowrap,xml,{source_attr}]
 ----
+<!-- @author: D瓜哥 · https://www.diguage.com -->
 <plugin>
-    <groupId>org.eclipse.emt4j</groupId>
-    <artifactId>emt4j-maven-plugin</artifactId>
-    <version>0.8.0</version>
-    <!-- 可以将检查过程绑定到 Maven 构建周期的某个阶段，但不建议。 -->
-    <!-- <executions>-->
-    <!--     <execution>-->
-    <!--         <phase>process-test-classes</phase>-->
-    <!--         <goals>-->
-    <!--             <goal>check</goal>-->
-    <!--         </goals>-->
-    <!--     </execution>-->
-    <!-- </executions>-->
-    <configuration>
-        <fromVersion>8</fromVersion>
-        <toVersion>21</toVersion>
-        <outputFile>report.html</outputFile>
-    </configuration>
+  <groupId>org.apache.maven.plugins</groupId>
+  <artifactId>maven-compiler-plugin</artifactId>
+  <version>3.13.0</version>
+  <configuration>
+      <showWarnings>true</showWarnings>
+      <fork>true</fork>
+      <compilerArgs>
+        <arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED</arg>
+      </compilerArgs>
+  </configuration>
 </plugin>
 ----
 
-检查出来的一部分问题，可以用另外“科技与狠活”解决，敬请关注： https://www.diguage.com/post/optimize-code-using-openrewrite/[使用 OpenRewrite 优化代码^]。
+低版本的 Lombok 也会遇到类似问题，可以通过升级到高版本来解决。实在解决不了，兜底方案也可以直接在这里配置。
 
-== 升级相关问题
+=== maven-surefire-plugin 配置
 
-
-// image::/images/[title="",alt="",{image_attr}]
+使用 Maven 进行构建或者专门执行测试时，可能也会遇到 <<jigsaw>> 中描述的问题。同样，可以通过在 `pom.xml` 中配置 maven-surefire-plugin 插件的方式来解决，具体如下：
 
 [source%nowrap,xml,{source_attr}]
 ----
+<!-- @author: D瓜哥 · https://www.diguage.com -->
+<plugin>
+  <groupId>org.apache.maven.plugins</groupId>
+  <artifactId>maven-surefire-plugin</artifactId>
+  <version>3.2.5</version>
+  <configuration>
+      <skipTests>true</skipTests>
+      <includes>
+        <include>**/*Test.java</include>
+      </includes>
+      <argLine>
+        --add-opens java.base/java.lang=ALL-UNNAMED
+        --add-opens java.base/java.util=ALL-UNNAMED
+        --add-opens java.base/java.math=ALL-UNNAMED
+        --add-opens java.base/java.time=ALL-UNNAMED
+      </argLine>
+  </configuration>
+</plugin>
+----
+
+=== IntelliJ IDEA 配置
+
+在 IntelliJ IDEA 运行程序，大概率也会报错，可以通过在 “VM Option” 配置项中，增加 <<jigsaw>> 提到的相关启动参数即可正常启动。
+
+== 技巧
+
+还有一个不是问题的问题需要解决一下：目前大多数开发人员用的还是 JDK 8，如何可以让大家无痛或者无感升级呢？
+
+D瓜哥分享一个小技巧：可以使用 Maven 的 `profile` 机制，让其根据 JDK 版本号，自动激活不同的配置。具体入戏下：
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- @author: D瓜哥 · https://www.diguage.com -->
 <profile>
   <id>Java1.8</id>
   <activation>
+    <!-- 在 JDK 1.8 时自动激活-->
     <jdk>1.8</jdk>
   </activation>
   <properties>
-    <spring.version>5.3.33</spring.version>
+    <spring.version>5.3.33</spring.version> <!--1-->
   </properties>
+  <!-- 在父 POM 中使用 dependencyManagement 生命 -->
+  <!-- 在需要的子模块中可以直接使用 -->
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>javax.servlet</groupId> <!--1-->
+        <artifactId>javax.servlet-api</artifactId>
+        <version>4.0.1</version>
+        <scope>provided</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
   <build>
     <plugins>
       <plugin>
@@ -414,9 +452,9 @@ java.lang.reflect.InaccessibleObjectException: Unable to make field final int[] 
         <artifactId>maven-surefire-plugin</artifactId>
         <version>3.2.5</version>
         <configuration>
-          <includes>
-            <include>**/*Test.java</include>
-          </includes>
+        <includes>
+          <include>**/*Test.java</include>
+        </includes>
         </configuration>
       </plugin>
       <plugin>
@@ -431,18 +469,22 @@ java.lang.reflect.InaccessibleObjectException: Unable to make field final int[] 
     </plugins>
   </build>
 </profile>
+
+<!-- @author: D瓜哥 · https://www.diguage.com -->
 <profile>
-  <id>Java17</id>
+  <id>Java21</id>
   <activation>
-    <jdk>[17,)</jdk>
+    <jdk>[21,)</jdk>
   </activation>
   <properties>
-    <spring.version>6.0.19</spring.version>
+    <spring.version>6.0.19</spring.version> <!--1-->
   </properties>
+  <!-- 在父 POM 中使用 dependencyManagement 生命 -->
+  <!-- 在需要的子模块中可以直接使用 -->
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>jakarta.servlet</groupId>
+        <groupId>jakarta.servlet</groupId> <!--1-->
         <artifactId>jakarta.servlet-api</artifactId>
         <version>6.0.0</version>
         <scope>provided</scope>
@@ -459,6 +501,7 @@ java.lang.reflect.InaccessibleObjectException: Unable to make field final int[] 
       </dependency>
     </dependencies>
   </dependencyManagement>
+  <!--在几乎所有模块都会使用，所以，直接在父 POM 中声明依赖 -->
   <dependencies>
     <dependency>
       <groupId>javax.annotation</groupId>
@@ -473,13 +516,15 @@ java.lang.reflect.InaccessibleObjectException: Unable to make field final int[] 
         <artifactId>maven-surefire-plugin</artifactId>
         <version>3.2.5</version>
         <configuration>
-          <includes>
-            <include>**/*Test.java</include>
-          </includes>
-          <argLine>
-            --add-opens java.base/java.math=ALL-UNNAMED
-            --add-opens java.base/sun.util.calendar=ALL-UNNAMED
-          </argLine>
+        <includes>
+          <include>**/*Test.java</include>
+        </includes>
+        <argLine>
+          --add-opens java.base/java.lang=ALL-UNNAMED
+          --add-opens java.base/java.util=ALL-UNNAMED
+          --add-opens java.base/java.math=ALL-UNNAMED
+          --add-opens java.base/java.time=ALL-UNNAMED
+        </argLine>
         </configuration>
       </plugin>
       <plugin>
@@ -487,21 +532,72 @@ java.lang.reflect.InaccessibleObjectException: Unable to make field final int[] 
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.13.0</version>
         <configuration>
-          <showWarnings>true</showWarnings>
-          <fork>true</fork>
-          <compilerArgs>
-            <arg>-J--add-opens=java.base/java.math=ALL-UNNAMED</arg>
-            <arg>-J--add-opens=java.base/sun.util.calendar=ALL-UNNAMED</arg>
-          </compilerArgs>
+        <showWarnings>true</showWarnings>
+        <fork>true</fork>
+        <compilerArgs>
+          <arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED</arg>
+        </compilerArgs>
         </configuration>
       </plugin>
     </plugins>
   </build>
 </profile>
 ----
+<1> 开发机使用 JDK 8，所以，使用 Spring 5 + Servlet；正式环境使用 OpenJDK 21，所以，使用 Spring 6 + Jakarta Servlet。
+
+使用上面的配置，只要程序没有直接使用 Servlet API，就可以在 JDK 8 和 OpenJDK 21 之间自由切换。正在做到平稳升级。
+
+== 科技与狠活
+
+文章最后，在整一点科技与狠活。
+
+=== EMT4J
+
+关于 JDK 升级的事项，其实还有很多检查项。理想情况下，最好有工具能自动检查这些项目。关于这个问题，阿里巴巴开发了 Migration Toolkit for Java，现在已经捐给 Eclipse 基金会了，代码在 https://github.com/adoptium/emt4j[adoptium/emt4j: Eclipse Migration Toolkit for Java^]。这个工具还提供了 Maven 插件，所以，可以直接使用这个插件来做检查工作。具体配置如下：
+
+[source%nowrap,xml,{source_attr}]
+----
+<plugin>
+  <groupId>org.eclipse.emt4j</groupId>
+  <artifactId>emt4j-maven-plugin</artifactId>
+  <version>0.8.0</version>
+  <!-- 可以将检查过程绑定到 Maven 构建周期的某个阶段，但不建议。 -->
+  <!-- <executions>-->
+  <!--   <execution>-->
+  <!--     <phase>process-test-classes</phase>-->
+  <!--     <goals>-->
+  <!--       <goal>check</goal>-->
+  <!--     </goals>-->
+  <!--   </execution>-->
+  <!-- </executions>-->
+  <configuration>
+      <!-- 当前版本 -->
+      <fromVersion>8</fromVersion>
+      <!-- 期望升级版本 -->
+      <toVersion>21</toVersion>
+      <outputFile>report.html</outputFile>
+  </configuration>
+</plugin>
+----
+
+然后执行如下命令就可以对应用程序做个全面检查：
+
+[source%nowrap,bash,{source_attr}]
+----
+mvn emt4j:check
+----
+
+在构建目录里找 `report.html` 文件，会有一个个超长的文件，列出成千上百个问题。（D瓜哥检查的一个应用有 2600 行的检查结果。）其实，不用担心，大部分问题可以忽略。但是，你很清楚可能潜在的问题，就像吃西药的时候，看到一大堆不良反应后，吃起来更放心。
+
+=== OpenRewrite
+
+上述工具检查出来的一部分问题，可以用另外“科技与狠活”解决，限于篇幅，这里就不展开了。敬请关注： https://www.diguage.com/post/optimize-code-using-openrewrite/[使用 OpenRewrite 优化代码^]。
 
 == 参考资料
 
 . https://hibernate.org/validator/releases/7.0/[Hibernate Validator 7.0^]
 . https://stackoverflow.com/a/41265267/951836[reflection - How to solve InaccessibleObjectException ("Unable to make {member} accessible: module {A} does not 'opens {package}' to {B}") on Java 9?^]
 . https://nipafx.dev/java-modules-reflection-vs-encapsulation/[Reflection vs Encapsulation^]
+. https://blog.csdn.net/maiya_yayaya/article/details/132297860#t7[java 8 - java 17 升级指北^]
+. https://www.cnblogs.com/stcweb/articles/15114266.html[module java.base does not "opens java.lang" to unnamed module^]
+. https://stackoverflow.com/a/51286665/951836[java - What is the difference (or relation) between JLS, JSR and JEP?^]

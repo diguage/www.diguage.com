@@ -209,4 +209,4 @@ image::/images/gc-performance-3/load-per-host.jpg[title="每个机器系统负�
 
 通过这三次测试来看，有充分的理由将 JVM 升级到 OpenJDK 21 了。Gen-ZGC + G1 可以完美替换 OpenJDK 8 的 G1 了。
 
-在下一篇文章中，D瓜哥将分享自己将应用升级到 OpenJDK 21 中遇到的各种各样的问题，敬请关注： https://www.diguage.com/post/upgrade-to-openjdk21/[升级 OpenJDK 21^]。
+在下一篇文章中，D瓜哥将分享自己将应用升级到 OpenJDK 21 中遇到的各种各样的问题，敬请关注： https://www.diguage.com/post/upgrade-to-openjdk21/[OpenJDK 21 升级指南^]。

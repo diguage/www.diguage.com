@@ -276,8 +276,10 @@ image::/images/gc-performance-2/api-qps-max-minute.jpg[title="服务调用耗时
 
 === 每台机器的调用次数及耗时
 
-[TIP]
+.点击查看机器分组详情
+[%collapsible]
 ====
+****
 由于截图时间跨度太长，即使使用分钟级的数据，也不能在一张图上展示所有机器的访问请求。所以，将其分为两组来展示并截图：
 
 . J21-Gen-ZGC 和 J21-G1
@@ -316,6 +318,7 @@ image::/images/gc-performance-2/api-qps-max-minute.jpg[title="服务调用耗时
 ** 11.248.8.92
 ** 11.248.1.167
 ** 11.248.8.93
+****
 ====
 
 从截图上来看，“J21-Gen-ZGC 和 J21-G1” 这组机器稳定性明显比 “J21-ZGC 、 J17-ZGC 和 J8-G1” 这组要好：
