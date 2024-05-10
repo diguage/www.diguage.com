@@ -92,6 +92,9 @@ $ mvn versions:display-dependency-updates
 
 TIP: 有些文章提到，Spring 6 不支持 `javax.annotation.Resource` 注解，从下面的 Spring 代码来看，这是完全错误的。
 
+.点击查看 Spring 源码
+[%collapsible]
+====
 .`CommonAnnotationBeanPostProcessor.java`
 [source%collapsible,java,{source_attr}]
 ----
@@ -226,6 +229,7 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
   }
 }
 ----
+====
 
 == Nashorn JavaScript Engine
 
