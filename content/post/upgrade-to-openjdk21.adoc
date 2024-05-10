@@ -96,7 +96,7 @@ TIP: 有些文章提到，Spring 6 不支持 `javax.annotation.Resource` 注解�
 [%collapsible]
 ====
 .`CommonAnnotationBeanPostProcessor.java`
-[source%collapsible,java,{source_attr}]
+[source%nowrap,java,{source_attr}]
 ----
 public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBeanPostProcessor
     implements InstantiationAwareBeanPostProcessor, BeanFactoryAware, Serializable {
