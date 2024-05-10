@@ -2,7 +2,7 @@
 title: "使用 OpenRewrite 优化代码"
 date: 2024-05-07T17:48:49+08:00
 draft: true
-keywords: ["程序设计","Java","OpenRewrite"]
+keywords: ["程序设计","Java","OpenRewrite","重构"]
 tags: ["Java","最佳实践"]
 categories: ["开发工具","程序设计"]
 thumbnail: "images/logos/openrewrite.png"
@@ -10,36 +10,53 @@ thumbnail: "images/logos/openrewrite.png"
 weight: 1
 ---
 
+在 https://www.diguage.com/post/upgrade-to-openjdk21/[OpenJDK 21 升级指南^] 中提到， OpenRewrite 可以帮忙解决一些升级 OpenJDK 中发现的问题。随着不断的探索，D瓜哥发现，OpenRewrite 的功能远远不止这些。下面就挑选一些重要的功能来给大家做一些讲解。
 
-// image::/images/[title="",alt="",{image_attr}]
+TIP: 为了方便查看改动点，建议将代码交给版本管理工具，比如 Git，来管理。
 
-// [source%nowrap,java,{source_attr}]
-// ----
-// // code
-// ----
+== 快速入门
 
-[#openrewrite]
-== OpenRewrite
+OpenRewrite 是一套对源码做重构的大型生态系统，可以帮助开发人员减少技术债。所以，它提供了一套的相关工具。对于大多数开发人员来说，最方便的也许就是基于 Maven 插件的相关工具。这里以对 Java 的 `import` 语句排序来为示例展示一下 OpenRewrite 的使用方法。
+
+在项目的 `pom.xml` 中增加如下配置：
 
 [source%nowrap,xml,{source_attr}]
 ----
+<!-- @author: D瓜哥 · https://www.diguage.com -->
 <plugin>
   <groupId>org.openrewrite.maven</groupId>
   <artifactId>rewrite-maven-plugin</artifactId>
-  <version>5.29.0</version>
+  <version>5.30.0</version>
   <configuration>
     <activeRecipes>
-      <recipe>
-        org.openrewrite.java.migrate.jakarta.JavaxValidationMigrationToJakartaValidation
-      </recipe>
+      <!-- import 排序处方 -->
+      <recipe>org.openrewrite.java.OrderImports</recipe>
     </activeRecipes>
   </configuration>
-  <dependencies>
-    <dependency>
-      <groupId>org.openrewrite.recipe</groupId>
-      <artifactId>rewrite-migrate-java</artifactId>
-      <version>2.12.0</version>
-    </dependency>
-  </dependencies>
 </plugin>
 ----
+
+然后执行如下命令：
+
+[source%nowrap,bash,{source_attr}]
+----
+mvn rewrite:run
+----
+
+执行会输出一大堆东西，这里就不再展示，执行完成后，使用 Git 查看一下改动点。如下图：
+
+image::/images/open-rewrite/order-imports.png[title="使用 OpenRewrite 排序 import 的改动点",alt="使用 OpenRewrite 排序 import 的改动点",{image_attr}]
+
+将这些修改点提交，就完成了一次优化， OpenRewrite 的基本使用，你学废了吗？
+
+这里再多说一句： 由于 OpenRewrite 精巧的设计，可以通过使用不同的处方，进行各种各样的优化。所以，最重要的一点就是了解 OpenRewrite 各种不同的处方及使用办法。下面就介绍一下常用的处方及使用办法。
+
+== 常用处方
+
+== 自定义扩展
+
+== 常见问题
+
+== 参考资料
+
+. https://blog.csdn.net/supzhili/article/details/136657596[OpenRewrite框架原理解析^]
