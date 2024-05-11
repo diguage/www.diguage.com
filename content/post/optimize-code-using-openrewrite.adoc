@@ -53,6 +53,17 @@ image::/images/open-rewrite/order-imports.png[title="使用 OpenRewrite 排序 i
 
 == 常用处方
 
+
+=== 迁移 JMockit 到 Mockito
+
+. `Expectations` 和 `NonStrictExpectations` 在处理静态 方法时未能正确替换；
+. 将 `NonStrictExpectations` 的代码块替换成 `when().thenReturn()` 时，变量没有替换，导致变量命名冲突。
+. `mockit.Invocations#any` 没有正确替换成 Mockito 的 `any(Type.class)`。
+
+=== AssertJ 最佳实践
+
+. 没有处理 `compare()` 方法
+
 == 自定义扩展
 
 == 常见问题

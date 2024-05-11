@@ -2,11 +2,10 @@
 title: "Java G1 垃圾收集器主要优化"
 date: 2024-05-11T20:18:22+08:00
 draft: true
-keywords: [""]
-tags: [""]
-categories: [""]
+keywords: ["Java","JVM", "G1", "调优", "OpenJDK"]
+tags: ["Java", "GC"]
+categories: ["系统架构","性能优化"]
 thumbnail: "images/java/g1-gc-heap.svg"
-# aliases: "/old/path/"
 
 weight: 1
 ---
