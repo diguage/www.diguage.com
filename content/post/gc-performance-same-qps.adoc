@@ -33,6 +33,10 @@ weight: 1
 
 总结：**从 CPU 及服务稳定性来看，J21-G1 是更好的选择；从服务的延迟角度来看，J21-Gen-ZGC 最最佳选择。**不考虑兼容性问题（兼容性问题也在稳步改善，这不是不可逾越的障碍。），OpenJDK 8 真的可以淘汰了。
 
+****
+OpenJDK 21 G1 GC 的表现属实惊艳到了D瓜哥，测试之前完全没有想到它的表现竟然是如此给力。这里给自己挖个坑，回头整理一下 G1 GC 的主要优化，敬请关注： https://www.diguage.com/post/main-optimization-of-garbage-first-collector/[Java G1 垃圾收集器主要优化^]。
+****
+
 :sectnums:
 
 == 服务调用监控数据

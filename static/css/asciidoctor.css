@@ -466,3 +466,7 @@ div.imageblock > div.title {
 .post__content dd {
     margin-left: 0px;
 }
+
+.sidebarblock .paragraph p {
+    margin-bottom: 0;
+}

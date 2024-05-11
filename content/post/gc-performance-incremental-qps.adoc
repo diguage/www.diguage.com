@@ -221,6 +221,10 @@ TIP: 为了保留更多细节，本文所有截图都是在 34 吋带鱼屏下�
 * J21-G1 的极限峰值最高，能支撑到 1100+ QPS；其次是 J21-Gen-ZGC，大约可以支持 1000 QPS（挑食，某些机器会出现 CPU 使用率过高的问题），比 J21-G1 降低了 10%。
 * 在 900 QPS 以下，从 TP999 的数据来看，J21-Gen-ZGC 耗时更短，响应性更好；超过 1000 QPS 时，则 J21-G1 更稳定，耗时最短。
 
+****
+鉴于 OpenJDK 21 G1 GC 出人意外的惊艳表现，D瓜哥准备整理一下 G1 GC 的主要优化，敬请关注： https://www.diguage.com/post/main-optimization-of-garbage-first-collector/[Java G1 垃圾收集器主要优化^]。
+****
+
 :sectnums:
 
 == 服务调用监控数据

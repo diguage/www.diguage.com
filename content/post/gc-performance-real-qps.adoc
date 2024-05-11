@@ -35,6 +35,10 @@ weight: 1
 * 再极端峰值情况，J21-G1 是更好的选择，更加稳定，不容易出凸点。
 * 日常使用，J21-Gen-ZGC 响应性更好，接口耗时更低。
 
+****
+鉴于 OpenJDK 21 G1 GC 一如既往的惊艳表现，D瓜哥准备整理一下 G1 GC 的主要优化，敬请关注： https://www.diguage.com/post/main-optimization-of-garbage-first-collector/[Java G1 垃圾收集器主要优化^]。
+****
+
 :sectnums:
 
 == 服务调用监控数据
