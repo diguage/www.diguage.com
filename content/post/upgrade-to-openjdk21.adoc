@@ -603,6 +603,7 @@ mvn emt4j:check
 
 == 参考资料
 
+. https://openjdk.org/projects/jigsaw/spec/sotms/[The State of the Module System^]
 . https://hibernate.org/validator/releases/7.0/[Hibernate Validator 7.0^]
 . https://stackoverflow.com/a/41265267/951836[reflection - How to solve InaccessibleObjectException ("Unable to make {member} accessible: module {A} does not 'opens {package}' to {B}") on Java 9?^]
 . https://nipafx.dev/java-modules-reflection-vs-encapsulation/[Reflection vs Encapsulation^]

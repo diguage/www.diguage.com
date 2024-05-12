@@ -53,6 +53,81 @@ image::/images/open-rewrite/order-imports.png[title="使用 OpenRewrite 排序 i
 
 == 常用处方
 
+=== 升级到 Java 21
+
+在 https://www.diguage.com/post/upgrade-to-openjdk21/[OpenJDK 21 升级指南^] 中提到，可以使用“科技与狠活”来解决很多升级中遇到的问题。这里就来实操一把。
+
+OpenRewrite 提供了升级到 Java 17 和 Java 21 的相关处方。这里直接演示升级到 Java 21 的使用。另外， OpenRewrite 的很多处方没有包含在核心库里，而是提供了单独的库。所以，整体配置如下：
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- @author: D瓜哥 · https://www.diguage.com -->
+<plugin>
+  <groupId>org.openrewrite.maven</groupId>
+  <artifactId>rewrite-maven-plugin</artifactId>
+  <version>5.30.0</version>
+  <configuration>
+    <activeRecipes>
+      <!-- 升级到 Java 21 -->
+      <recipe>org.openrewrite.java.migrate.UpgradeToJava21</recipe>
+    </activeRecipes>
+  </configuration>
+  <dependencies>
+    <dependency>
+      <groupId>org.openrewrite.recipe</groupId>
+      <artifactId>rewrite-migrate-java</artifactId>
+      <version>2.13.0</version>
+    </dependency>
+  </dependencies>
+</plugin>
+----
+
+然后执行 `mvn rewrite:run` 命令，OpenRewrite 就会自动将 Java 21 支持的新特性替换掉传统写法。主要修改点如下：
+
+. 文本块，可以直接在代码中复制粘贴 JSON 等格式的数据，不用担心增加换行符等多余的符号了。详情见： https://openjdk.org/jeps/378[JEP 378: Text Blocks^]。这是D瓜哥最喜欢的特性了。也包括上面的模式匹配增强特性。
+. 模式匹配增强：支持在执行 `instanceof` 操作时，同时定义指定类型的新变量，省却了类型转换的过程。具体见： https://openjdk.org/jeps/394[JEP 394: Pattern Matching for instanceof^]。
+. 排序性集合：可以直接使用 `getFirst()` 和 `getLast()` 来获取第一个和最后一个集合元素了。当然也有对应的修改操作。详情见： https://openjdk.org/jeps/431[JEP 431: Sequenced Collections^]。
+. `String` 类增加的新格式化方法： `formatted(Object... args)`。
+. 增加 Maven 中 Java 版本。
+
+还有其他的一些细微修改，感兴趣请自行探索。
+
+
+=== 迁移到 Spring 6
+
+既然升级到了 Java 21，那么 Spring 也可以跟同一起升级到 Spring 6+。OpenRewrite 也通过了相关处方，相关配置如下：
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- @author: D瓜哥 · https://www.diguage.com -->
+<plugin>
+  <groupId>org.openrewrite.maven</groupId>
+  <artifactId>rewrite-maven-plugin</artifactId>
+  <version>5.30.0</version>
+  <configuration>
+    <activeRecipes>
+      <recipe>org.openrewrite.java.spring.framework.UpgradeSpringFramework_6_0</recipe>
+    </activeRecipes>
+  </configuration>
+  <dependencies>
+    <dependency>
+      <groupId>org.openrewrite.recipe</groupId>
+      <artifactId>rewrite-spring</artifactId>
+      <version>5.9.0</version>
+    </dependency>
+  </dependencies>
+</plugin>
+----
+
+配置完成后，执行 `mvn rewrite:run` 命令，就可以看到迁移变化。
+
+D瓜哥尝试了一下，可能让大家见笑了，基本上没有什么大的变化，只有一些个表的小变化：
+
+. 将 Maven 中 Spring 版本升级了 `6.0.19`（但是的最新版）。
+. 最大改动就是 `Assert` 类的办法，必须加说明文字了。
+
+不过，D瓜哥私以为这反倒是优点：这是 Spring API 稳定性的最好表现，稳定的 API 可以保证大多数 应用的无痛升级。
+
 
 === 迁移 JMockit 到 Mockito
 
