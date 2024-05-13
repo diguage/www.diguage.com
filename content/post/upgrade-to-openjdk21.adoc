@@ -86,6 +86,7 @@ $ mvn versions:display-dependency-updates
 ----
 <1> 上述两个依赖代码基本一样。推荐使用该版本，不耽误以后同时使用更高版本的 `jakarta.annotation:jakarta.annotation-api`。
 
+[#spring-resource]
 === Spring 6+ 同时支持新旧版的 `@Resource`
 
 另外，有一点需要特别说明：Spring 6+ 支持新版的 `jakarta.annotation.Resource` 注解，同时还兼容旧版的 `javax.annotation.Resource`。相关代码如下：
