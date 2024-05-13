@@ -1,0 +1,19 @@
+---
+title: "生产环境中 Java 21 启动参数"
+date: 2024-05-13T17:04:11+08:00
+draft: true
+keywords: ["Java","JVM", "G1", "ZGC", "调优", "OpenJDK"]
+tags: ["Java", "GC"]
+categories: ["性能优化"]
+thumbnail: "images/java/jvm.jpg"
+
+weight: 1
+---
+
+
+// image::/images/[title="",alt="",{image_attr}]
+
+// [source%nowrap,java,{source_attr}]
+// ----
+// // code
+// ----

@@ -597,6 +597,10 @@ mvn emt4j:check
 
 上述工具检查出来的一部分问题，可以用另外“科技与狠活”解决，限于篇幅，这里就不展开了。敬请关注： https://www.diguage.com/post/optimize-code-using-openrewrite/[使用 OpenRewrite 优化代码^]。
 
+== 线上参数
+
+随着 Java 的升级，Java 的启动参数也发生了不小变化。升级到 OpenJDK 21 后，原有的启动参数大概率没办法直接重用。那么，上线的时候，启动参数怎么配置呢？接下来，D瓜哥会分享一下在生产环境中的启动参数。敬请关注： https://www.diguage.com/post/java-21-boot-parameters-in-the-production/[生产环境中 Java 21 启动参数^]。
+
 == 参考资料
 
 . https://hibernate.org/validator/releases/7.0/[Hibernate Validator 7.0^]
