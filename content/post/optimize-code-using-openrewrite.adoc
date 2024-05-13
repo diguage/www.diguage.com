@@ -1,7 +1,7 @@
 ---
 title: "使用 OpenRewrite 优化代码"
 date: 2024-05-07T17:48:49+08:00
-draft: true
+draft: false
 keywords: ["程序设计","Java","OpenRewrite","重构"]
 tags: ["Java","最佳实践"]
 categories: ["开发工具","程序设计"]
@@ -53,6 +53,7 @@ image::/images/open-rewrite/order-imports.png[title="使用 OpenRewrite 排序 i
 
 == 常用处方
 
+[#upgrade-java21]
 === 升级到 Java 21
 
 在 https://www.diguage.com/post/upgrade-to-openjdk21/[OpenJDK 21 升级指南^] 中提到，可以使用“科技与狠活”来解决很多升级中遇到的问题。这里就来实操一把。
@@ -93,6 +94,7 @@ OpenRewrite 提供了升级到 Java 17 和 Java 21 的相关处方。这里直�
 还有其他的一些细微修改，感兴趣请自行探索。
 
 
+[#upgrade-spring]
 === 迁移到 Spring 6
 
 既然升级到了 Java 21，那么 Spring 也可以跟同一起升级到 Spring 6+。OpenRewrite 也通过了相关处方，相关配置如下：
@@ -106,18 +108,20 @@ OpenRewrite 提供了升级到 Java 17 和 Java 21 的相关处方。这里直�
   <version>5.30.0</version>
   <configuration>
     <activeRecipes>
-      <recipe>org.openrewrite.java.spring.framework.UpgradeSpringFramework_6_0</recipe>
+      <recipe>org.openrewrite.java.spring.framework.UpgradeSpringFramework_6_0</recipe> <!--1-->
     </activeRecipes>
   </configuration>
   <dependencies>
     <dependency>
-      <groupId>org.openrewrite.recipe</groupId>
+      <groupId>org.openrewrite.recipe</groupId> <!--2-->
       <artifactId>rewrite-spring</artifactId>
       <version>5.9.0</version>
     </dependency>
   </dependencies>
 </plugin>
 ----
+<1> 指定激活处方。后续的升级方案，主要是在这里添加不同的处方。
+<2> 处方所在的 Jar。通过引入不同的库，就可以增加响应的处方。
 
 配置完成后，执行 `mvn rewrite:run` 命令，就可以看到迁移变化。
 
@@ -128,21 +132,57 @@ D瓜哥尝试了一下，可能让大家见笑了，基本上没有什么大的�
 
 不过，D瓜哥私以为这反倒是优点：这是 Spring API 稳定性的最好表现，稳定的 API 可以保证大多数 应用的无痛升级。
 
+=== 迁移到 Spring Boot 3.x
 
-=== 迁移 JMockit 到 Mockito
+既然升级了 Spring，岂有不升级 Spring Boot 的道理？OpenRewrite 也提供了相关方案：
 
-. `Expectations` 和 `NonStrictExpectations` 在处理静态 方法时未能正确替换；
-. 将 `NonStrictExpectations` 的代码块替换成 `when().thenReturn()` 时，变量没有替换，导致变量命名冲突。
-. `mockit.Invocations#any` 没有正确替换成 Mockito 的 `any(Type.class)`。
+[source%nowrap,xml,{source_attr}]
+----
+<!-- @author: D瓜哥 · https://www.diguage.com -->
+<recipe>org.openrewrite.java.spring.boot3.UpgradeSpringBoot_3_2</recipe> <!--1-->
+----
+<1> 指定处方。其余代码与上述升级 Spring 相同，省略。
 
-=== AssertJ 最佳实践
+升级同样不大，主要改动点如下：
 
-. 没有处理 `compare()` 方法
+. 上述 <<upgrade-java21>> 中的改动点。
+. 上述 <<upgrade-spring>> 中的改动点。
+. 将 `javax.annotation.Resource` 替换为 `jakarta.annotation.Resource`。
++
+--
+这个改动点，可有可无，具体原因已经在 https://www.diguage.com/post/upgrade-to-openjdk21/#spring-resource[OpenJDK 21 升级指南：@javax.annotation.Resource^] 中介绍了。
+--
++
+. 升级 MySQL 的依赖，从 `mysql:mysql-connector-java` 升级为 `com.mysql:mysql-connector-j`。
+. 迁移 JUnit 到 JUnit 5。
+. 升级 Spring Boot 等相关依赖。
 
-== 自定义扩展
+改动点也不是很大，符合了 Spring 家族一向稳定可靠的风格。
 
-== 常见问题
+// === 迁移 JMockit 到 Mockito
+//
+// . `Expectations` 和 `NonStrictExpectations` 在处理静态 方法时未能正确替换；
+// . 将 `NonStrictExpectations` 的代码块替换成 `when().thenReturn()` 时，变量没有替换，导致变量命名冲突。
+// . `mockit.Invocations#any` 没有正确替换成 Mockito 的 `any(Type.class)`。
+//
+// === AssertJ 最佳实践
+//
+// . 没有处理 `compare()` 方法
+//
+// == 自定义扩展
+//
+// == 常见问题
 
 == 参考资料
 
 . https://blog.csdn.net/supzhili/article/details/136657596[OpenRewrite框架原理解析^]
+
+
+[NOTE]
+====
+未完待续！
+
+未完待续！
+
+未完待续！
+====
