@@ -93,6 +93,43 @@ OpenRewrite 提供了升级到 Java 17 和 Java 21 的相关处方。这里直�
 
 还有其他的一些细微修改，感兴趣请自行探索。
 
+=== Base64
+
+Base64 也是大家常用的操作，常用的实现有三种：① Apache Common Codec；② sun.misc 包下提供的实现类；③ 从 Java 1.8 开始提供的标准库 `java.util.Base64`。目前，第①种方案稳定；第②种方案，从 Java 9 开始，已经不再对外提供，也可以理解成无法使用了，在升级到 Java 21 时，就会报错；第③种方案是最稳妥的。所以，最佳实践就是迁移到 `java.util.Base64` 上。可以使用 OpenRewrite 一步到位。具体代码如下：
+
+[source%nowrap,xml,{source_attr}]
+----
+<plugin>
+  <groupId>org.openrewrite.maven</groupId>
+  <artifactId>rewrite-maven-plugin</artifactId>
+  <version>5.30.0</version>
+  <configuration>
+    <activeRecipes>
+      <!-- 使用 java.util.Base64 替换 sun.misc 包下的 Base64 实现类 -->
+      <!-- https://docs.openrewrite.org/recipes/java/migrate/usejavautilbase64 -->
+      <recipe>org.openrewrite.java.migrate.UseJavaUtilBase64</recipe>
+      <!-- 使用 java.util.Base64 替换 Apache Commons Codec 库 -->
+      <!-- https://docs.openrewrite.org/recipes/apache/commons/codec/apachebase64tojavabase64 -->
+      <recipe>org.openrewrite.apache.commons.codec.ApacheBase64ToJavaBase64</recipe>
+    </activeRecipes>
+  </configuration>
+  <dependencies>
+    <dependency>
+      <groupId>org.openrewrite.recipe</groupId>
+      <artifactId>rewrite-migrate-java</artifactId>
+      <version>2.13.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.openrewrite.recipe</groupId>
+      <artifactId>rewrite-apache</artifactId>
+      <version>1.2.0</version>
+    </dependency>
+  </dependencies>
+</plugin>
+----
+
+类似的问题还有： https://docs.openrewrite.org/recipes/java/migrate/sunnetsslpackageunavailable[Replace com.sun.net.ssl package^] 和 https://docs.openrewrite.org/recipes/java/migrate/jredonotusesunnetsslapis[Use javax.net.ssl instead of com.sun.net.ssl^] 等。感兴趣，留给大家请自行探索。
+
 
 [#upgrade-spring]
 === 迁移到 Spring 6
@@ -158,6 +195,7 @@ D瓜哥尝试了一下，可能让大家见笑了，基本上没有什么大的�
 . 升级 Spring Boot 等相关依赖。
 
 改动点也不是很大，符合了 Spring 家族一向稳定可靠的风格。
+
 
 // === 迁移 JMockit 到 Mockito
 //
