@@ -29,7 +29,8 @@ OpenRewrite 是一套对源码做重构的大型生态系统，可以帮助开�
   <version>5.30.0</version>
   <configuration>
     <activeRecipes>
-      <!-- import 排序处方 -->
+      <!-- import 排序 -->
+      <!-- https://docs.openrewrite.org/recipes/java/orderimports -->
       <recipe>org.openrewrite.java.OrderImports</recipe>
     </activeRecipes>
   </configuration>
@@ -70,6 +71,7 @@ OpenRewrite 提供了升级到 Java 17 和 Java 21 的相关处方。这里直�
   <configuration>
     <activeRecipes>
       <!-- 升级到 Java 21 -->
+      <!-- https://docs.openrewrite.org/recipes/java/migrate/upgradetojava21 -->
       <recipe>org.openrewrite.java.migrate.UpgradeToJava21</recipe>
     </activeRecipes>
   </configuration>
@@ -145,6 +147,8 @@ Base64 也是大家常用的操作，常用的实现有三种：① Apache Commo
   <version>5.30.0</version>
   <configuration>
     <activeRecipes>
+      <!-- 迁移到 Spring 6 -->
+      <!-- https://docs.openrewrite.org/recipes/java/spring/framework/upgradespringframework_6_0 -->
       <recipe>org.openrewrite.java.spring.framework.UpgradeSpringFramework_6_0</recipe> <!--1-->
     </activeRecipes>
   </configuration>
@@ -169,13 +173,15 @@ D瓜哥尝试了一下，可能让大家见笑了，基本上没有什么大的�
 
 不过，D瓜哥私以为这反倒是优点：这是 Spring API 稳定性的最好表现，稳定的 API 可以保证大多数 应用的无痛升级。
 
-=== 迁移到 Spring Boot 3.x
+=== 迁移到 Spring Boot 3.2
 
 既然升级了 Spring，岂有不升级 Spring Boot 的道理？OpenRewrite 也提供了相关方案：
 
 [source%nowrap,xml,{source_attr}]
 ----
 <!-- @author: D瓜哥 · https://www.diguage.com -->
+<!-- 迁移到 Spring Boot 3.2 -->
+<!-- https://docs.openrewrite.org/recipes/java/spring/boot3/upgradespringboot_3_2 -->
 <recipe>org.openrewrite.java.spring.boot3.UpgradeSpringBoot_3_2</recipe> <!--1-->
 ----
 <1> 指定处方。其余代码与上述升级 Spring 相同，省略。
@@ -196,6 +202,42 @@ D瓜哥尝试了一下，可能让大家见笑了，基本上没有什么大的�
 
 改动点也不是很大，符合了 Spring 家族一向稳定可靠的风格。
 
+=== 迁移到 JUnit 5 及最佳实践
+
+Spring Boot 3.x 已经将 JUnit 5 作为首要的测试框架，可以顺手把 JUnit 迁移一下：
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- @author: D瓜哥 · https://www.diguage.com -->
+<plugin>
+  <groupId>org.openrewrite.maven</groupId>
+  <artifactId>rewrite-maven-plugin</artifactId>
+  <version>5.30.0</version>
+  <configuration>
+    <activeRecipes>
+      <!-- 迁移到 JUnit 5 -->
+      <!-- https://docs.openrewrite.org/running-recipes/popular-recipe-guides/migrate-from-junit-4-to-junit-5 -->
+      <recipe>org.openrewrite.java.spring.boot2.SpringBoot2JUnit4to5Migration</recipe> <!--1-->
+      <!-- JUnit 5 最佳实践 -->
+      <!-- https://docs.openrewrite.org/recipes/java/testing/junit5/junit5bestpractices -->
+      <recipe>org.openrewrite.java.testing.junit5.JUnit5BestPractices</recipe> <!--1-->
+    </activeRecipes>
+  </configuration>
+  <dependencies>
+    <dependency>
+      <groupId>org.openrewrite.recipe</groupId>
+      <artifactId>rewrite-spring</artifactId>
+      <version>5.9.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.openrewrite.recipe</groupId>
+      <artifactId>rewrite-testing-frameworks</artifactId>
+      <version>2.8.0</version>
+    </dependency>
+  </dependencies>
+</plugin>
+----
+<1> 可以一次执行多个处方。
 
 // === 迁移 JMockit 到 Mockito
 //
