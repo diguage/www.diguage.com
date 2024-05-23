@@ -2,17 +2,13 @@
 title: "告别 2019，迎接 2020"
 date: 2019-12-31T19:20:00+08:00
 draft: false
-tags: ["个人提升", "读书", "OKR", "投资理财", "经济", "金融", "旅行"]
-categories: ["个人成长"]
+keywords: ["逸闻趣事","职业发展","书籍","OKR","理财","经济","金融","旅行","Kubernetes"]
+categories: ["逸闻趣事","职业发展"]
+tags: ["书籍","OKR","理财","经济","金融","旅行","Kubernetes"]
 
 weight: 1
-
-# You can also close(false) or open(true) something for this content.
-# P.S. comment can only be closed
-# comment: false
-# toc: true
-
 ---
+
 
 == 我的 2019
 

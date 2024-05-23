@@ -4,7 +4,7 @@ date: 2020-03-25T16:32:12+08:00
 draft: false
 keywords: ["Java","并发"]
 tags: ["Java","并发","设计","读书"]
-categories: ["Java"]
+categories: ["程序设计"]
 
 weight: 1
 
@@ -14,6 +14,7 @@ weight: 1
 # toc: true
 
 ---
+
 
 最近，D瓜哥的一个小伙伴向我抱怨，Java 并发是个大坑，问我怎么看？我回答，当然是用眼睛看啊…
 

@@ -3,9 +3,9 @@ title: "源码剖析 Spring 循环依赖"
 date: 2020-07-31T18:33:30+08:00
 draft: false
 keywords: ["Java","Spring"]
-tags: ["Java","设计","架构"]
-categories: ["Java","程序设计"]
-thumbnail: "images/spring-framework/spring-logo.jpg"
+tags: ["Java","设计","架构","Spring"]
+categories: ["程序设计"]
+thumbnail: "images/logo/spring.svg"
 
 weight: 1
 
@@ -15,11 +15,6 @@ weight: 1
 # toc: true
 ---
 
-:source-highlighter: pygments
-:pygments-style: monokai
-:pygments-linenums-mode: table
-:source_attr: indent=0,subs="attributes,verbatim,quotes,macros"
-:image_attr: align=center
 
 循环依赖在编程中是一个常见问题（当然，这并不是最佳实践）。并且，Spring 如何解决循环依赖这个问题在面试中也经常见。下面，D瓜哥就从源码的层面深入剖析一下这个问题。
 

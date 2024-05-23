@@ -1,0 +1,547 @@
+---
+title: "关于升级 Spring 等依赖的一些经验"
+date: 2022-08-28T09:19:59+08:00
+draft: false
+keywords: ["Java","Spring","依赖管理","Maven","Spring Boot","ASM","MySQL","Javassist","RESTEasy","cglib","Bouncy Castle","ProtoBuf"]
+tags: ["Java","Spring","最佳实践","数据库"]
+categories: ["开发工具","软件工程"]
+thumbnail: "images/java/spring-maven-java.png"
+
+weight: 1
+---
+
+
+到公司后，熟悉了一些项目后，发现大部分项目的依赖都比较陈旧，比如某些项目还在使用 Spring 3.x 的版本。所以，在进行需求开发时，也顺手把一些项目的依赖给升级了一下。周五，一个小伙伴问我关于升级 Spring 的经验。正好趁此机会，把一些经验总结一下。
+
+下面的描述以 Java 8 为准，没有在其他版本 Java 上试验过。参考时，请慎重。描述的原则如下：
+
+. 尽量选择还在维护中的版本，而不是已经 End of Life 的过时版。这样有问题可以及时反馈并得到修复。
+. Java 8 是目标版本，所以，一定要兼容 Java 8。
+
+== Spring Framework 升级
+
+Spring Framework 从 3.2.6.RELEASE 开始提供 BOM。可以利用 BOM 简化 Spring 依赖声明：
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- D瓜哥 · https://www.diguage.com -->
+<dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-framework-bom</artifactId>
+            <version>5.3.25</version>
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
+    </dependencies>
+</dependencyManagement>
+----
+
+这样，就不需要重复声明 Spring 依赖的版本，直接使用即可。 Spring Framework Bom 保证了 Spring 自身依赖的版本统一。
+
+这里，关于 Spring 的升级，还有几点需要说明：
+
+. 从 Spring 3.X 升级到 Spring 4.X+ 后，原来的 `MappingJacksonHttpMessageConverter` 已经被删除了；直接使用 `MappingJackson2HttpMessageConverter` 即可。
+. 从 Spring 3.0.0.RELEASE 到 Spring 3.1.4.RELEASE，Spring 有一个 `spring-asm`，如果不再使用这个区间的 Spring，请把这个依赖删掉。
+. 如果使用了 Apache Velocity 1.X 作为前端模板，由于 Spring 5+ 将相关集成代码删除，所以，只能将 Spring 升级到 4.3.30.RELEASE。相关 BOM 如下：
++
+--
+[source%nowrap,xml,{source_attr}]
+----
+<!-- D瓜哥 · https://www.diguage.com -->
+<dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-framework-bom</artifactId>
+    <version>4.3.30.RELEASE</version>
+    <type>pom</type>
+    <scope>import</scope>
+</dependency>
+----
+--
++
+. 建议把 Spring XML 配置文件中，指明 `schemaLocation` 的 `spring-*.xsd` 的版本号删除掉，这样升级 Spring 时，会自动使用对应版本的 XSD 约束。
+
+另外，Spring 全家桶还提供了很多其他的 BOM，这里列出一部分供参考使用：
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- D瓜哥 · https://www.diguage.com -->
+<dependency>
+    <groupId>org.springframework.data</groupId>
+    <artifactId>spring-data-bom</artifactId>
+    <version>2021.2.7</version>
+    <type>pom</type>
+    <scope>import</scope>
+</dependency>
+<dependency>
+    <groupId>org.springframework.integration</groupId>
+    <artifactId>spring-integration-bom</artifactId>
+    <version>5.5.16</version>
+    <type>pom</type>
+    <scope>import</scope>
+</dependency>
+<dependency>
+    <groupId>org.springframework.security</groupId>
+    <artifactId>spring-security-bom</artifactId>
+    <version>5.7.6</version>
+    <type>pom</type>
+    <scope>import</scope>
+</dependency>
+<dependency>
+    <groupId>org.springframework.session</groupId>
+    <artifactId>spring-session-bom</artifactId>
+    <version>2021.2.0</version>
+    <type>pom</type>
+    <scope>import</scope>
+</dependency>
+----
+
+WARNING: 这里只是列出来它们的最新版本，并没有测试它们的兼容性。
+
+== Spring 4+ 与 iBATIS
+
+Spring 4+ 删除了内置的 iBATIS 支持。可以通过添加下面这两个依赖来将使用 iBATIS 的应用升级到 Spring 4+。
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- D瓜哥 · https://www.diguage.com -->
+<dependency>
+    <groupId>org.mybatis</groupId>
+    <artifactId>mybatis-2-spring</artifactId>
+    <version>1.1.0</version>
+</dependency>
+<dependency>
+    <groupId>org.apache.ibatis</groupId>
+    <artifactId>ibatis-sqlmap</artifactId>
+    <version>2.3.4.726</version>
+</dependency>
+----
+
+* 首先，iBATIS 与 MyBATIS 的代码包名不一样，无须担心存在冲突问题。
+* 其次， `mybatis-2-spring` 就是将 Spring 删除的那部分代码重新打包了一下，和 MyBATIS 集成原理完全不同，也无须担心存在冲突问题。
+* 最后，`org.springframework:spring-orm` 这个依赖是为了集成实现 JPA 标准的 ORM 框架准备的。所以，无论使用 MyBATIS，还是使用 iBATIS，都不需要这个依赖。
+
+有些小伙伴反馈，Spring 不同版本对 `DuplicateKeyException` 异常的处理有变化。针对这个问题，D瓜哥专门研究了一下，详情请看 https://www.diguage.com/post/upgrade-spring-about-duplicate-key-exception/[升级 Spring 对处理 DuplicateKeyException 的影响^]。
+
+== Spring Boot
+
+没有搞过 Spring Boot 1.X 到 2.X 的升级过程，所以，没有经验可以分享。
+
+在 Spring Boot 2.X 中升级时，只需要修改 `spring-boot-starter-parent` 的版本即可。部分配置项可能需要调整。具体情况，就需要查看升级说明了： https://github.com/spring-projects/spring-boot/wiki#release-notes[Spring Boot Release Notes^]。
+
+有一点需要注意：从 Spring Boot 2.6.0 开始，默认开启了循环检查并且禁用了循环依赖。如果有循环依赖，升级到 Spring Boot 2.6+ 时，可能会报错。建议修改程序；不想修改程序的，可以通过设置 `spring.main.allow-circular-references=true` 来运行循环依赖。
+
+
+== MySQL 依赖升级
+
+如果跟随 Spring Boot 的脚步，MySQL 依赖选择 `8+` 版。将MySQL 依赖的版本从 `5.x` 升级到 `8.x` 时，一定要检查数据库连接字符串是否包含时区配置。如果没有，请添加 `serverTimezone=Asia/Shanghai` 的配置项。上线后，建议检查一下新增数据的日期字符数据是否正确。
+
+具体原因请看： https://www.diguage.com/post/research-on-timezone-of-mysql-new-connection-driver/[关于 MySQL 新版连接驱动时区对齐问题的研究^]。
+
+另外，MySQL 的依赖坐标从 8.0.31 开始做了调整，目前最新版依赖如下：
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- D瓜哥 · https://www.diguage.com -->
+<dependency>
+    <groupId>com.mysql</groupId>
+    <artifactId>mysql-connector-j</artifactId>
+    <version>8.0.32</version>
+</dependency>
+----
+
+大家在升级的时候，也需要注意调整 MySQL 的依赖坐标。
+
+== Quartz
+
+Quartz 的依赖坐标从 1.X 升级到 2.X 时发生了变化，需要做出调整。最新的依赖坐标如下：
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- D瓜哥 · https://www.diguage.com -->
+<dependency>
+    <groupId>org.quartz-scheduler</groupId>
+    <artifactId>quartz</artifactId>
+    <version>2.3.2</version>
+</dependency>
+<dependency>
+    <groupId>org.quartz-scheduler</groupId>
+    <artifactId>quartz-jobs</artifactId>
+    <version>2.3.2</version>
+</dependency>
+----
+
+将 Quartz 升级到 2.X 版本，还需要修改关于 Quartz 的相关配置：
+
+. 由于 `org.springframework.scheduling.quartz.CronTriggerBean` 不支持 Quartz 2.X，则需要将其替换为 `org.springframework.scheduling.quartz.CronTriggerFactoryBean`；
+. 更新依赖引用的方式，由 `local=` 更新为 `bean=`，具体代码如下：
++
+--
+[source%nowrap,xml,{source_attr}]
+----
+<!-- D瓜哥 · https://www.diguage.com -->
+<bean id="autoplanScheduler"
+      class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+    <property name="triggers">
+        <list>
+            <!-- 将依赖应用由 local= 更新为 bean= -->
+            <ref bean="myCronTrigger"/>
+        </list>
+    </property>
+    <property name="autoStartup" value="true"/>
+</bean>
+----
+--
+
+== Validation API & Hibernate Validation
+
+由于 Oracle 把 JavaEE 甩给了 Eclipse 基金会，但是却没有授权 Eclipse 基金会使用 `javax` 包名。所以，Eclipse 基金会投票决定将 JavaEE 改名为 JakartaEE，同时后续推出的新标准全部使用标准以 `jakarta.` 为包前缀，同时，一大批的相关依赖的坐标都发生了变化。其中，就包括 Validation API，由 `javax.validation:validation-api` 改为 `jakarta.validation:jakarta.validation-api`，从 `2.0.1` 开始，就发生了变化。但是，2.X 版本的依赖只是把 Maven 坐标发生了变化，从 3.0.0 开始，包前缀开始发生变化。目前主流还是 `javax.validation:validation-api`。
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- D瓜哥 · https://www.diguage.com -->
+<dependency>
+    <groupId>jakarta.validation</groupId>
+    <artifactId>jakarta.validation-api</artifactId>
+    <version>2.0.1</version>
+</dependency>
+<!--或-->
+<dependency>
+    <groupId>javax.validation</groupId>
+    <artifactId>validation-api</artifactId>
+    <version>2.0.1.Final</version>
+</dependency>
+----
+
+其实，这两个包没啥区别，只是“换了个马甲”。
+
+Validation API 最主流的实现，Hibernate Validator 的坐标也有调整，根据 https://hibernate.org/validator/documentation/migration-guide/#6-0-0-final[Migration Guide - Hibernate Validator^] 显示，从 6.0.0 开始，将 `groupId` 由 `org.hibernate` 改为 `org.hibernate.validator`。值得一提的是， Hibernate Validator 为了方便迁移，还是使用旧的 `groupId` 跟踪发布了同等实现及同等版本的依赖。最新的 6.X 的依赖如下：
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- D瓜哥 · https://www.diguage.com -->
+<dependency>
+    <groupId>org.hibernate.validator</groupId>
+    <artifactId>hibernate-validator</artifactId>
+    <version>6.2.4.Final</version>
+</dependency>
+----
+
+由几点需要注意：
+
+. 这个版本的 Hibernate Validator 依赖了 `jakarta.validation:jakarta.validation-api:2.0.2`；
+. 由于 `groupId` 发生了变化，Maven 不能解决这类的“依赖冲突”，所以需要手动检查并排除低版本 Hibernate Validator；
+. D瓜哥遇到了一次线上问题，低版本的 Hibernate Validator 和高版本的 Hibernate Validator 起了冲突。所以，还请务必排除低版本的 Hibernate Validator 实现。
+
+
+== ProtoBuf
+
+有些应用还依赖了 ProtoBuf，在 https://groups.google.com/g/protobuf/c/HtNHEyT1pKk/m/49dOrhOXBwAJ[Status of protobuf-java 2.x / 3.x compatibility] 中讨论了 Protocol 2.x 与 3.x 的兼容性问题。可以考虑升级到 3.x，我升级过程中，没有遇到过啥问题。最新的依赖如下：
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- D瓜哥 · https://www.diguage.com -->
+<dependency>
+    <groupId>com.google.protobuf</groupId>
+    <artifactId>protobuf-java</artifactId>
+    <version>3.21.12</version>
+</dependency>
+----
+
+== Bouncy Castle
+
+https://www.bouncycastle.org/java.html[Bouncy Castle Java Cryptography APIs^] 是 Java Cryptography APIs 的主流发布版。在发布 1.71 版时，他们发布了针对 JDK 1.8+ 的版本，同时将 `-jdk18on` 作为这系列 API 的 `artifactId` 后缀。详细介绍请看： https://www.bouncycastle.org/latest_releases.html[Bouncy Castle LATEST JAVA RELEASES]。完整依赖列表如下：
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- D瓜哥 · https://www.diguage.com -->
+<!-- *-jdk1[1/2/3/4/5/6] 和 *-jdk15on 都用如下依赖升级 -->
+<bouncycastle.version>1.72</bouncycastle.version>
+
+<dependency>
+    <groupId>org.bouncycastle</groupId>
+    <artifactId>bcprov-jdk18on</artifactId>
+    <version>${bouncycastle.version}</version>
+</dependency>
+<dependency>
+    <groupId>org.bouncycastle</groupId>
+    <artifactId>bcprov-ext-jdk18on</artifactId>
+    <version>${bouncycastle.version}</version>
+</dependency>
+<dependency>
+    <groupId>org.bouncycastle</groupId>
+    <artifactId>bcutil-jdk18on</artifactId>
+    <version>${bouncycastle.version}</version>
+</dependency>
+<dependency>
+    <groupId>org.bouncycastle</groupId>
+    <artifactId>bcpkix-jdk18on</artifactId>
+    <version>${bouncycastle.version}</version>
+</dependency>
+<dependency>
+    <groupId>org.bouncycastle</groupId>
+    <artifactId>bcmail-jdk18on</artifactId>
+    <version>${bouncycastle.version}</version>
+</dependency>
+<dependency>
+    <groupId>org.bouncycastle</groupId>
+    <artifactId>bcjmail-jdk18on</artifactId>
+    <version>${bouncycastle.version}</version>
+</dependency>
+<dependency>
+    <groupId>org.bouncycastle</groupId>
+    <artifactId>bcpg-jdk18on</artifactId>
+    <version>${bouncycastle.version}</version>
+</dependency>
+<dependency>
+    <groupId>org.bouncycastle</groupId>
+    <artifactId>bctls-jdk18on</artifactId>
+    <version>${bouncycastle.version}</version>
+</dependency>
+----
+
+TIP: 如果升级到这个版本，需要手动增加依赖；同时，为了避免不同版本带来的意外问题，建议把旧版本都排除掉。所以，升级成本略大，还请斟酌处理。
+
+== 日志
+
+关于日志相关升级，请看 https://www.diguage.com/post/logging-best-practices/[日志最佳实践探究^]。
+
+== ASM
+
+根据 https://asm.ow2.io/versions.html#5.0beta[ASM Versions^] 显示，从 ASM 5.0 开始，完整支持 Java 8。所以，ASM 的版本也要升级到 5+。ASM 从 9.3 版开始，提供 BOM，根据 Spring Boot 依赖显示，可以直接上最新版，依赖如下：
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- D瓜哥 · https://www.diguage.com -->
+<asm.version>9.4</asm.version>
+
+<dependency>
+    <groupId>org.ow2.asm</groupId>
+    <artifactId>asm-bom</artifactId>
+    <version>${asm.version}</version>
+    <type>pom</type>
+    <scope>import</scope>
+</dependency>
+----
+
+== CGLib
+
+根据 https://github.com/cglib/cglib/releases/tag/RELEASE_3_2_0[Release cglib 3.2.0 · cglib/cglib^] 显示，从 CGLib 3.2.0 开始，可以更好地支持 Java 8 了。所以，建议把 CGLib 也升级到 3.2.0+ 的版本。最新版本的依赖如下：
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- D瓜哥 · https://www.diguage.com -->
+<dependency>
+    <groupId>cglib</groupId>
+    <artifactId>cglib</artifactId>
+    <version>3.3.0</version>
+</dependency>
+----
+
+关于 CGLib 对 Java 8 支持的讨论请看： https://github.com/cglib/cglib/issues/8[Support Java 8 · Issue #8 · cglib/cglib^]。
+
+== Javassist
+
+Javassist 从 3.12.1.GA 升级到 3.13.0-GA 时，将 `groupId` 从 `javassist` 改为 `org.javassist`。另外，它从 3.24.0-GA 开始，编译版本改为 `1.8`（测试编译版本为 `11`）。考虑到兼容性以及后续升级方便，最少需要升级到 3.24.0-GA。这里选择了当前最新版 3.29.1-GA。所以，在升级该 Jar 包时，需要注意修改 Maven 坐标声明中的 `groupId`。最新坐标如下：
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- D瓜哥 · https://www.diguage.com -->
+<dependency>
+    <groupId>org.javassist</groupId>
+    <artifactId>javassist</artifactId>
+    <version>3.29.2-GA</version>
+</dependency>
+----
+
+有几点需要特别注意：
+
+. 由于 `groupId` 发生了变化，Maven 不能解决这类的“依赖冲突”，所以需要手动检查并排除低版本 Javassist；
+. 如果同时依赖了两个版本的 Javassist，就要看加载顺序了。如果先加载了低版本的 Javassist，那么就可能会出现运行时异常，提示不能识别高版本的字节码。
+. 据说 3.29.1-GA 版本存在安全问题，希望尽量升级到 3.29.2-GA 版。
+
+== RESTEasy
+
+原来使用 RESTEasy 来标注 REST 接口，切换到 RPC 框架后，RESTEasy 的实现类就毫无用处了。可以直接排除掉：
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- D瓜哥 · https://www.diguage.com -->
+<exclusions>
+    <exclusion>
+        <groupId>org.jboss.resteasy</groupId>
+        <artifactId>*</artifactId>
+    </exclusion>
+</exclusions>
+----
+
+删除 RESTEasy 依赖时，还需要把 RESTEasy 在 `web.xml` 中的相关配置删去。删除了加载配置，还需要必须确保 Spring 加载配置的相关配置存在：
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- D瓜哥 · https://www.diguage.com -->
+<web-app>
+
+    <listener>
+        <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+    </listener>
+
+    <context-param>
+        <param-name>contextConfigLocation</param-name>
+        <param-value>/WEB-INF/root-context.xml</param-value>
+    </context-param>
+
+    <!-- 如果使用 Spring MVC，则还需要增加如下配置 -->
+    <servlet>
+        <servlet-name>app</servlet-name>
+        <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+        <init-param>
+            <param-name>contextConfigLocation</param-name>
+            <param-value>/WEB-INF/web-context.xml</param-value>
+        </init-param>
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>app</servlet-name>
+        <url-pattern>/app/*</url-pattern>
+    </servlet-mapping>
+
+</web-app>
+----
+
+最后一点需要注意的是，原来的 RESTEasy 的注解，还保留在代码中，所以，还需要加一个注解的依赖：
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- D瓜哥 · https://www.diguage.com -->
+<dependency>
+    <groupId>org.jboss.resteasy</groupId>
+    <artifactId>jaxrs-api</artifactId>
+    <version>3.0.12.Final</version>
+</dependency>
+----
+
+如果项目中没有相关注解，也不依赖使用 RESTEasy 注解的外部接口，则这个依赖也不需要了。
+
+== 常用 BOM
+
+鉴于 BOM 可以有效地优化依赖声明，这里再介绍几个常用的 BOM。下面介绍的 BOM，在升级过程中，也都有使用。
+
+=== Netty
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- D瓜哥 · https://www.diguage.com -->
+<dependency>
+    <groupId>io.netty</groupId>
+    <artifactId>netty-bom</artifactId>
+    <version>4.1.87.Final</version>
+    <type>pom</type>
+    <scope>import</scope>
+</dependency>
+----
+
+=== Jackson
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- D瓜哥 · https://www.diguage.com -->
+<dependency>
+    <groupId>com.fasterxml.jackson</groupId>
+    <artifactId>jackson-bom</artifactId>
+    <version>2.13.5</version>
+    <type>pom</type>
+    <scope>import</scope>
+</dependency>
+----
+
+=== JUnit 5
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- D瓜哥 · https://www.diguage.com -->
+<dependency>
+    <groupId>org.junit</groupId>
+    <artifactId>junit-bom</artifactId>
+    <version>5.9.2</version>
+    <type>pom</type>
+    <scope>import</scope>
+</dependency>
+----
+
+=== OkHTTP
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- D瓜哥 · https://www.diguage.com -->
+<dependency>
+    <groupId>com.squareup.okhttp3</groupId>
+    <artifactId>okhttp-bom</artifactId>
+    <version>4.10.0</version>
+    <type>pom</type>
+    <scope>import</scope>
+</dependency>
+----
+
+=== Log4j 2
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- D瓜哥 · https://www.diguage.com -->
+<dependency>
+    <groupId>org.apache.logging.log4j</groupId>
+    <artifactId>log4j-bom</artifactId>
+    <version>2.20.0</version>
+    <type>pom</type>
+    <scope>import</scope>
+</dependency>
+----
+
+=== ASM
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- D瓜哥 · https://www.diguage.com -->
+<dependency>
+    <groupId>org.ow2.asm</groupId>
+    <artifactId>asm-bom</artifactId>
+    <version>9.3</version>
+    <type>pom</type>
+    <scope>import</scope>
+</dependency>
+----
+
+== AspectJ
+
+根据 https://www.eclipse.org/aspectj/doc/released/README-180.html[AspectJ 1.8.0 Readme^] 显示，从 1.8.0 开始兼容 Java 8。所以，AspectJ 选择的版本必须是 1.8.0+。在如下更新中，也数次提到 Java 兼容性问题：
+
+. https://www.eclipse.org/aspectj/doc/released/README-181.html[AspectJ 1.8.1 Readme^]
+. https://www.eclipse.org/aspectj/doc/released/README-183.html[AspectJ 1.8.3 Readme^]
+. https://www.eclipse.org/aspectj/doc/released/README-1810.html[AspectJ 1.8.10 Readme^]
+. https://www.eclipse.org/aspectj/doc/released/README-1812.html[AspectJ 1.8.12 Readme^] -- 这个版本主要是性能优化，这里还给出了一个性能测试数据。
+. https://htmlpreview.github.io/?https://github.com/eclipse/org.aspectj/blob/master/docs/dist/doc/README-199.html[AspectJ 1.9.9 Readme^] -- 这里提到，“Since 1.9.7, the AspectJ compiler ajc (contained in the aspectjtools library) no longer works on JDKs 8 to 10.”，根据这个说明，1.9.7+ 不再支持 Java 8。
+
+根据以上的资料，最好选择 1.8.12+ 的版本。查看 https://docs.spring.io/spring-boot/docs/2.7.7/reference/html/dependency-versions.html#appendix.dependency-versions[Spring Boot 2.7.7 的依赖^]，AspectJ 版本选择的版本是 1.9.7。相信 Spring Boot 的选择，选择了 1.8.X 的最新版依赖如下：
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- D瓜哥 · https://www.diguage.com -->
+<dependency>
+    <groupId>org.aspectj</groupId>
+    <artifactId>aspectjrt</artifactId>
+    <version>1.9.7</version>
+</dependency>
+<dependency>
+    <groupId>org.aspectj</groupId>
+    <artifactId>aspectjweaver</artifactId>
+    <version>1.9.7</version>
+</dependency>
+<dependency>
+    <groupId>org.aspectj</groupId>
+    <artifactId>aspectjtools</artifactId>
+    <version>1.9.7</version>
+</dependency>
+----
+
+D瓜哥遇到过 AspectJ 1.6.X 在 Java 8 下，使用 Spring AOP 报错的情况。所以，还请务必升级该依赖。

@@ -3,20 +3,12 @@ title: "Spring AOP 源码分析：创建代理（二）"
 date: 2020-08-11T15:00:46+08:00
 draft: false
 keywords: ["Java","Spring"]
-tags: ["Java","设计","架构"]
-categories: ["Java","程序设计"]
-thumbnail: "images/spring-framework/spring-logo.jpg"
+tags: ["Java","设计","架构","Spring"]
+categories: ["程序设计"]
+thumbnail: "images/logo/spring.svg"
 
 weight: 1
 ---
-
-:source-highlighter: pygments
-:pygments-style: monokai
-:pygments-linenums-mode: table
-:source_attr: indent=0,subs="attributes,verbatim,quotes,macros"
-:image_attr: align=center
-
-
 
 
 https://www.diguage.com/post/spring-aop-bootstrap/[Spring AOP 源码分析：入门] 中，梳理出来了 Spring AOP 的入口。 https://www.diguage.com/post/spring-aop-get-advices/[Spring AOP 源码分析：获得通知] 中着重介绍了如何获取通知。上一篇文章 https://www.diguage.com/post/spring-aop-create-proxy-jdk/[Spring AOP 源码分析：创建代理（一）] 重点介绍了一下切面链的组装和基于 JDK 动态代理的 AOP 的实现，这篇文章介绍一下基于 cglib 的代理类是生成。

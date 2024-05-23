@@ -1,0 +1,359 @@
+---
+title: "使用 Maven Enforcer 插件检查依赖"
+date: 2022-03-29T20:04:08+08:00
+draft: false
+keywords: ["Java","Maven","Enforcer","插件","依赖"]
+tags: ["Java","最佳实践"]
+categories: ["软件工程","开发工具"]
+thumbnail: "images/logos/maven.svg"
+
+weight: 1
+---
+
+
+最近公司项目要对一些内部依赖做集中升级。为此，D瓜哥发布了一个 BOM（BOM stands for Bill Of Materials），用于规范项目依赖及版本。
+
+但是升级后，效果不理想，检查发现还是有不少依赖的版本依然不符合要求。经同事提醒，可以使用 https://maven.apache.org/enforcer/index.html#[Apache Maven Enforcer^] 来做规范检查，测试一下效果确实不错。
+
+将 Apache Maven Enforcer 和 https://www.mojohaus.org/extra-enforcer-rules/[Extra Enforcer Rules^] 的文档大致巴拉了一遍之后，根据项目的实际情况，挑选出来可用规则如下：
+
+== 比较有用的几个规则
+
+. https://maven.apache.org/enforcer/enforcer-rules/bannedDependencies.html[bannedDependencies^] – 排除不需要的依赖，引入需要的依赖。
+. https://maven.apache.org/enforcer/enforcer-rules/banDuplicatePomDependencyVersions.html[banDuplicatePomDependencyVersions^] – 防止依赖重复声明。
+. https://maven.apache.org/enforcer/enforcer-rules/dependencyConvergence.html[dependencyConvergence^] – 确保所有依赖收敛到相同的版本。也可以考虑加入。
+. https://maven.apache.org/enforcer/enforcer-rules/reactorModuleConvergence.html[reactorModuleConvergence^] – 多模块开发时，确保父子模块的版本是一致的。
+. https://maven.apache.org/enforcer/enforcer-rules/requireJavaVersion.html[requireJavaVersion^] – 检查 JDK 的版本
+. https://maven.apache.org/enforcer/enforcer-rules/requireMavenVersion.html[requireMavenVersion^] – 检查 Maven 的版本
+. https://maven.apache.org/enforcer/enforcer-rules/requireReleaseVersion.html[requireReleaseVersion^] – 这个可以通过激活生产环境的 profile 来启用该规则，保证发布的不是快照版。
+. https://maven.apache.org/enforcer/enforcer-rules/requireUpperBoundDeps.html[requireUpperBoundDeps^] – 确保直接引用的依赖不比间接解析出来的依赖版本低。感觉这个也挺有用，但是使用方式还没搞清楚。实例有些模糊。
+. https://www.mojohaus.org/extra-enforcer-rules/banDuplicateClasses.html[banDuplicateClasses^] – 检查重复类定义。可以避免一些特殊情况。
+. https://www.mojohaus.org/extra-enforcer-rules/requirePropertyDiverges.html[requirePropertyDiverges^] – 确保项目定义的属性与依赖中包含的属性不重复。
+. https://www.mojohaus.org/extra-enforcer-rules/enforceBytecodeVersion.html[enforceBytecodeVersion^] – 确保使用的字节码版本不高于指定版本。
+. https://www.mojohaus.org/extra-enforcer-rules/banCircularDependencies.html[banCircularDependencies^] – 确保没有循环依赖。
+. https://www.mojohaus.org/extra-enforcer-rules/requireEncoding.html[requireEncoding^] – 指定项目字符集。
+
+== 实践总结
+
+D瓜哥把上面的规则几乎全部试用了一遍，把发现的一些需要特别注意的地方标注记录一下吧：
+
+. `banDuplicateClasses` -- 这个插件还是很棒的。使用的时候，成功检查出废弃不用的依赖（废弃依赖被收入到另外一个依赖中了。）。不过，也发现一些问题，项目中使用了 `netty-all` 及 Netty 的其他模块依赖。但是，并没有检查出来，感觉是项目代码有直接依赖的重复类才会被检测出来。
+. `requireUpperBoundDeps` -- 开启这个检查时，发现间接引用了 `commons-lang:commons-lang:2.6`，但是项目直接声明的依赖是 `commons-lang:commons-lang:2.5`，就直接报错了。私以为这个检查规则还是很赞的。但是，因为我们的项目中有有依赖 Gson 1.X，也有 Gson 2.X 的，而且这两个版本在处理父子类有相同字段时的存在抛异常的差异，所以无法启用，实在可惜。
+. `reactorModuleConvergence` –- 多模块开发时，确保父子模块的版本是一致的。这个规则还是很赞的。但是，因为我测试的模块不存在这个问题，所以，没有触发报警。
+. `requirePropertyDiverges` -- 本想启用这个规则，看了一下配置，着实麻烦，而且不是全局检查，似乎是检查指定配置项，感觉不是很满意。没有启用。
+. `enforceBytecodeVersion` -- 检查字节码版本。这个是不超过上限，我是想检查下限，所以没有启用。反思：在写这个文章时，又思考了一下，检查下限是有问题的，一些陈旧的依赖就不能使用了。但是这些依赖是没有问题的。
+. `banCircularDependencies` -- 这个规则似乎 Maven 已经内置了，以前遇到过这样的场景，Maven 直接报错了。所以，就没有启用这个规则。
+. `requireEncoding` -- 这个规则非常棒。在试用过程中发现，它会把存 ASCII 字符的 `UTF-8` 文件判定为 `US-ASCII` 编码。没有找到好的办法来解决这个问题。所以，可惜没有启用。
+
+在测试完上面这些规则时，同事还提醒有个漏洞检查的规则也可以用一下，然后就使用了一下。结果如下：
+
+== 安全检查
+
+这是 Sonatype 提供的插件，配置如下：
+
+[source,xml,{source_attr}]
+----
+<!-- D瓜哥 · https://www.diguage.com 出品 -->
+<build>
+  <plugins>
+    <plugin>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-enforcer-plugin</artifactId>
+      <dependencies>
+        <dependency>
+          <groupId>org.sonatype.ossindex.maven</groupId>
+          <artifactId>ossindex-maven-enforcer-rules</artifactId>
+        </dependency>
+      </dependencies>
+      <executions>
+        <execution>
+          <id>vulnerability-checks</id>
+          <phase>validate</phase>
+          <goals>
+            <goal>enforce</goal>
+          </goals>
+          <configuration>
+            <rules>
+              <banVulnerable implementation="org.sonatype.ossindex.maven.enforcer.BanVulnerableDependencies"/>
+            </rules>
+          </configuration>
+        </execution>
+      </executions>
+    </plugin>
+  </plugins>
+</build>
+----
+
+启用这个插件后，在一个项目中检查出非常多的漏洞，挑选两个来重点说明一下：
+
+. https://ossindex.sonatype.org/component/pkg:maven/mysql/mysql-connector-java@5.1.49?utm_source=ossindex-client&utm_medium=integration&utm_content=1.8.1[mysql.mysql-connector-java^] -- MySQL JDBC 5.1.49 竟然有漏洞，这是始料未及的。原来在 https://mvnrepository.com/artifact/mysql/mysql-connector-java[Maven Repository^] 中没有提示有漏洞。今天又检查了一下，发现确实有漏洞。
+. https://ossindex.sonatype.org/vulnerability/20167979-f872-4765-85ef-9b7be870cecb?component-type=maven&component-name=io.netty.netty&utm_source=ossindex-client&utm_medium=integration&utm_content=1.8.1[[CVE-2019-20444] HttpObjectDecoder.java in Netty before 4.1.44 allows an HTTP header that lacks a...^] -- 提示 Netty 有漏洞，在说明中也提示是 4.1.44 版本之前。但是，项目依赖的明明是 `4.1.75.Final`，还提示报错。这就有点差强人意了。
+
+插件还给出了每个漏洞的链接信息（上面两个网址，就是漏洞信息），想保留这个检查，但是它不知道只检查不失败，最后只能放弃。
+
+== 最终结果
+
+最后测试，最后保留的规则如下（删去了公司内部一些依赖）：
+
+[source,xml,{source_attr}]
+----
+<!-- D瓜哥 · https://www.diguage.com 出品 -->
+<plugin>
+  <groupId>org.apache.maven.plugins</groupId>
+  <artifactId>maven-enforcer-plugin</artifactId>
+  <version>3.0.0</version>
+  <dependencies>
+    <dependency>
+      <groupId>org.codehaus.mojo</groupId>
+      <artifactId>extra-enforcer-rules</artifactId>
+      <version>1.5.1</version>
+    </dependency>
+    <!-- <dependency>-->
+    <!--   <groupId>org.sonatype.ossindex.maven</groupId>-->
+    <!--   <artifactId>ossindex-maven-enforcer-rules</artifactId>-->
+    <!--   <version>3.2.0</version>-->
+    <!-- </dependency>-->
+  </dependencies>
+  <executions>
+    <execution>
+      <!-- 检测 Maven 版本 -->
+      <!-- https://maven.apache.org/enforcer/enforcer-rules/requireMavenVersion.html -->
+      <id>enforce-versions</id>
+      <phase>install</phase>
+      <goals>
+        <goal>enforce</goal>
+      </goals>
+      <configuration>
+        <rules>
+          <requireMavenVersion>
+            <version>3.5.0</version>
+          </requireMavenVersion>
+          <requireJavaVersion>
+            <version>1.8</version>
+            <message>
+              <![CDATA[You are running an older version of Java. This application requires at least JDK 1.8.]]>
+            </message>
+          </requireJavaVersion>
+        </rules>
+      </configuration>
+    </execution>
+    <execution>
+      <!-- 检查依赖重复声明的情况 -->
+      <!-- https://maven.apache.org/enforcer/enforcer-rules/banDuplicatePomDependencyVersions.html -->
+      <id>enforce-no-duplicate-declared-dependencies</id>
+      <goals>
+        <goal>enforce</goal>
+      </goals>
+      <configuration>
+        <rules>
+          <banDuplicatePomDependencyVersions/>
+        </rules>
+      </configuration>
+    </execution>
+    <execution>
+      <!-- 检查依赖版本情况 -->
+      <!-- https://maven.apache.org/enforcer/enforcer-rules/dependencyConvergence.html -->
+      <id>enforce-dependencyConvergence</id>
+      <goals>
+        <goal>enforce</goal>
+      </goals>
+      <configuration>
+        <rules>
+          <dependencyConvergence/>
+        </rules>
+      </configuration>
+    </execution>
+    <execution>
+      <!-- 确保父子模块的版本是一致的。 -->
+      <!-- https://maven.apache.org/enforcer/enforcer-rules/reactorModuleConvergence.html -->
+      <id>enforce-reactorModuleConvergence</id>
+      <goals>
+        <goal>enforce</goal>
+      </goals>
+      <configuration>
+        <rules>
+          <reactorModuleConvergence>
+            <message>父子模块的版本必须一直。</message>
+            <ignoreModuleDependencies>true</ignoreModuleDependencies>
+          </reactorModuleConvergence>
+        </rules>
+        <fail>true</fail>
+      </configuration>
+    </execution>
+    <execution>
+      <!-- 确保直接引用的依赖不比间接解析出来的依赖版本低。 -->
+      <!-- https://maven.apache.org/enforcer/enforcer-rules/requireUpperBoundDeps.html -->
+      <id>enforce-requireUpperBoundDeps</id>
+      <goals>
+        <goal>enforce</goal>
+      </goals>
+      <configuration>
+        <rules>
+          <requireUpperBoundDeps>
+          </requireUpperBoundDeps>
+        </rules>
+      </configuration>
+    </execution>
+    <!-- <execution>-->
+    <!--   &lt;!&ndash; 检测文件字符集都是 UTF-8 &ndash;&gt;-->
+    <!--   &lt;!&ndash; https://www.mojohaus.org/extra-enforcer-rules/requireEncoding.html &ndash;&gt;-->
+    <!--   <id>require-utf-8</id>-->
+    <!--   <goals>-->
+    <!--     <goal>enforce</goal>-->
+    <!--   </goals>-->
+    <!--   <configuration>-->
+    <!--     <rules>-->
+    <!--       <requireEncoding>-->
+    <!--         <encoding>UTF-8</encoding>-->
+    <!--         <includes>src/main/resources/**,src/test/resources/**</includes>-->
+    <!--       </requireEncoding>-->
+    <!--     </rules>-->
+    <!--     <fastFail>false</fastFail>-->
+    <!--   </configuration>-->
+    <!-- </execution>-->
+    <execution>
+      <!-- 检测依赖 -->
+      <!-- https://maven.apache.org/enforcer/enforcer-rules/bannedDependencies.html -->
+      <id>enforce-banned-dependencies</id>
+      <goals>
+        <goal>enforce</goal>
+      </goals>
+      <configuration>
+        <rules>
+          <!-- groupId[:artifactId][:version][:type][:scope][:classifier] -->
+          <!-- lombok -->
+          <bannedDependencies>
+            <searchTransitive>true</searchTransitive>
+            <excludes>
+              <exclude>org.projectlombok:lombok</exclude>
+            </excludes>
+            <includes>
+              <include>org.projectlombok:lombok:*:*:provided</include>
+            </includes>
+            <message>
+              <![CDATA[Lombok 不能在 runtime 被引入！请使用 provided。]]>
+            </message>
+          </bannedDependencies>
+
+          <!-- log4j -->
+          <bannedDependencies>
+            <searchTransitive>true</searchTransitive>
+            <excludes>
+              <exclude>log4j</exclude>
+              <exclude>org.slf4j:slf4j-log4j12</exclude>
+            </excludes>
+            <message><![CDATA[不能使用 Log4j。]]></message>
+          </bannedDependencies>
+
+          <!-- commons log -->
+          <bannedDependencies>
+            <searchTransitive>true</searchTransitive>
+            <excludes>
+              <exclude>commons-logging</exclude>
+            </excludes>
+            <message><![CDATA[不能使用 commons logging。]]></message>
+          </bannedDependencies>
+
+          <!-- jdk log -->
+          <bannedDependencies>
+            <searchTransitive>true</searchTransitive>
+            <excludes>
+              <exclude>org.slf4j:slf4j-jdk14</exclude>
+            </excludes>
+            <message><![CDATA[不能使用 jdk log。]]></message>
+          </bannedDependencies>
+
+          <!-- logback 1.2.0+ -->
+          <bannedDependencies>
+            <searchTransitive>true</searchTransitive>
+            <excludes>
+              <exclude>ch.qos.logback:*:[,1.2.0):jar</exclude>
+            </excludes>
+            <message><![CDATA[必须使用 logback 1.2.0+。]]></message>
+          </bannedDependencies>
+
+          <!-- slf4j 1.7.25+ -->
+          <bannedDependencies>
+            <searchTransitive>true</searchTransitive>
+            <excludes>
+              <exclude>org.slf4j:*:[,1.7.25):jar</exclude>
+            </excludes>
+            <message><![CDATA[必须使用 slf4j 1.7.25+。]]></message>
+          </bannedDependencies>
+
+          <!-- Javassist 3.24.0-GA+ -->
+          <bannedDependencies>
+            <searchTransitive>true</searchTransitive>
+            <excludes>
+              <exclude>org.javassist:javassist:[,3.24.0-GA):jar</exclude>
+              <exclude>javassist:javassist</exclude>
+            </excludes>
+            <message><![CDATA[必须使用 Javassist 3.24.0-GA+。]]></message>
+          </bannedDependencies>
+
+          <!-- Jakarta Validation -->
+          <bannedDependencies>
+            <searchTransitive>true</searchTransitive>
+            <excludes>
+              <exclude>javax.validation:validation-api:[,2.0.1.Final):jar</exclude>
+              <exclude>org.hibernate.validator:hibernate-validator:[,6.1.5.Final):jar</exclude>
+              <exclude>org.hibernate.validator:hibernate-validator-annotation-processor:[,6.1.5.Final):jar</exclude>
+              <exclude>org.hibernate:hibernate-validator</exclude>
+            </excludes>
+            <message>
+              <![CDATA[必须使用 jakarta.validation:jakarta.validation-api:2.0.1+ 和 Hibernate Validator 6.1.5.Final+（org.hibernate.validator:hibernate-validator:6.1.5.Final 和 org.hibernate.validator:hibernate-validator-annotation-processor:6.1.5.Final）。不能使用 javax.validation:validation-api 和 org.hibernate:hibernate-validator。]]>
+            </message>
+          </bannedDependencies>
+          <!-- groupId[:artifactId][:version][:type][:scope][:classifier] -->
+        </rules>
+        <fail>true</fail>
+      </configuration>
+    </execution>
+    <execution>
+      <!-- 检测重复类定义。 -->
+      <!-- https://www.mojohaus.org/extra-enforcer-rules/banDuplicateClasses.html -->
+      <id>enforce-ban-duplicate-classes</id>
+      <goals>
+        <goal>enforce</goal>
+      </goals>
+      <configuration>
+        <rules>
+          <banDuplicateClasses>
+            <scopes>
+              <scope>compile</scope>
+            </scopes>
+            <findAllDuplicates>true</findAllDuplicates>
+            <ignoreWhenIdentical>true</ignoreWhenIdentical>
+            <ignoreClasses>
+              <ignoreClass>module-info</ignoreClass>
+              <ignoreClass>org.apache.commons.logging.*</ignoreClass>
+            </ignoreClasses>
+          </banDuplicateClasses>
+        </rules>
+        <fail>true</fail>
+      </configuration>
+    </execution>
+    <!-- <execution>-->
+    <!--   &lt;!&ndash; 依赖漏洞检查 &ndash;&gt;-->
+    <!--   <id>vulnerability-checks</id>-->
+    <!--   <goals>-->
+    <!--     <goal>enforce</goal>-->
+    <!--   </goals>-->
+    <!--   <configuration>-->
+    <!--     <rules>-->
+    <!--       <banVulnerable implementation="org.sonatype.ossindex.maven.enforcer.BanVulnerableDependencies"/>-->
+    <!--     </rules>-->
+    <!--   </configuration>-->
+    <!-- </execution>-->
+  </executions>
+</plugin>
+----
+
+== 参考资料
+
+* https://maven.apache.org/enforcer/enforcer-rules/index.html[Apache Maven Enforcer Built-In Rules – Built-In Rules^]
+* https://www.mojohaus.org/extra-enforcer-rules/[Extra Enforcer Rules – Extra Enforcer Rules^]
+* https://sonatype.github.io/ossindex-maven/enforcer-rules/[Apache Maven Enforcer Rules for Sonatype OSS Index^^]
+* https://blog.csdn.net/wangjunjun2008/article/details/11599307[Maven插件之Maven-Enforcer-Plugin^]
+* https://www.lohoknang.com/2021/01/13/maven-enforcer-plugin/[enforcer-plugin 良好的依赖管理^]
+

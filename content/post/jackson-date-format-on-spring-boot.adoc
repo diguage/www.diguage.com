@@ -1,0 +1,96 @@
+---
+title: "在 Spring Boot 中 Jackson 日期格式化技巧"
+date: 2022-04-12T16:04:23+08:00
+draft: false
+keywords: ["Java","Spring", "Spring Boot","Jackson","JSON",""]
+tags: ["Java","Spring"]
+categories: ["程序设计"]
+thumbnail: "images/common/tip.jpeg"
+
+weight: 1
+---
+
+
+使用 Spring Boot 时，需要使用 Jackson 处理一些 Java Time API 类型的 JSON 序列化问题，在处理一些类的字段时，可以通过直接在属性上加注解的方式来指定其格式化样式。但是，昨天同事遇到一个格式化 `Map` 数据的问题，这样就不能通过加注解来解决格式化样式的问题了。
+
+在网上各种搜索，各种尝试后，终于解决了这个问题，记录一下，以备不时之需。
+
+闲言少叙，直接上代码：
+
+[source%nowrap,java,{source_attr}]
+----
+package com.diguage.demo.config;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.util.StdDateFormat;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer;
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+import static com.fasterxml.jackson.databind.SerializationFeature.*;
+import static java.time.format.DateTimeFormatter.ofPattern;
+
+/**
+ * 配置类
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ */
+@Configuration
+public class Config {
+
+    /**
+     * 创建 ObjectMapper 对象，配置日期格式化
+     *
+     * @author D瓜哥 · https://www.diguage.com
+     */
+    @Bean
+    @Primary
+    public ObjectMapper objectMapper() {
+        ObjectMapper mapper = new ObjectMapper();
+
+        String dateTimepattern = "yyyy-MM-dd HH:mm:ss";
+        String datePattern = "yyyy-MM-dd";
+
+        DateFormat dateFormat = new SimpleDateFormat(dateTimepattern);
+        mapper.setDateFormat(dateFormat);
+
+        mapper.configure(WRITE_DATES_AS_TIMESTAMPS, false);
+        mapper.setDateFormat(new StdDateFormat().withColonInTimeZone(true));
+
+        JavaTimeModule javaTimeModule = new JavaTimeModule();
+
+        javaTimeModule.addDeserializer(LocalDate.class,
+                new LocalDateDeserializer(ofPattern(datePattern)));
+        javaTimeModule.addSerializer(LocalDate.class,
+                new LocalDateSerializer(ofPattern(datePattern)));
+
+        javaTimeModule.addDeserializer(LocalDateTime.class,
+                new LocalDateTimeDeserializer(ofPattern(dateTimepattern)));
+        javaTimeModule.addSerializer(LocalDateTime.class,
+                new LocalDateTimeSerializer(ofPattern(dateTimepattern)));
+
+        mapper.registerModule(javaTimeModule);
+
+        return mapper;
+    }
+}
+----
+
+== 后续问题
+
+不知道通过这种方式指定日期格式化样式后，在处理一些打格式化样式注解的字段时，会有什么样的表现？有机会测试一下。
+
+== 参考资料
+
+. https://www.baeldung.com/jackson-serialize-dates[Jackson Date^]
+. https://stackoverflow.com/a/56777701/951836[json - Java 8 LocalDate Jackson format^]

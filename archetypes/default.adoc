@@ -6,19 +6,15 @@ keywords: [""]
 tags: [""]
 categories: [""]
 thumbnail: "images/"
+# aliases: "/old/path/"
 
 weight: 1
 ---
 
-:source-highlighter: pygments
-:pygments-style: monokai
-:pygments-linenums-mode: table
-:source_attr: indent=0,subs="attributes,verbatim,quotes,macros"
-:image_attr: align=center
 
-image::/images/[title="",alt="",{image_attr}]
+// image::/images/[title="",alt="",{image_attr}]
 
-[source%nowrap,java,{source_attr}]
-----
-// code
-----
+// [source%nowrap,java,{source_attr}]
+// ----
+// // code
+// ----

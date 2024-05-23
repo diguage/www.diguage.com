@@ -1,0 +1,38 @@
+@startuml
+title **压测接口依赖关系**
+
+actor 用户 #FF6666
+
+
+frame 压测应用 {
+    component "压测接口" #D5E8D4
+}
+
+
+frame 应用-A {
+    component "接口-A" #DAE8FC
+}
+
+frame 应用-B {
+    component "接口-B" #E1D5E7
+}
+
+frame 应用-C {
+    component "接口-C" #F8CECC
+}
+
+frame 应用-D {
+    component "接口-D" #FFE6CC
+}
+
+database "MySQL数据库" #006A84
+
+用户 ---> "压测接口" : 用户访问
+"压测接口" ---> "接口-A" : 同步调用
+"压测接口" ---> "接口-B" : 同步调用
+"压测接口" ---> "接口-C" : 同步调用
+"压测接口" ---> "接口-D" : 同步调用
+"压测接口" ---> "MySQL数据库" : 同步查询
+
+footer D瓜哥 · https://www.diguage.com · 出品
+@enduml

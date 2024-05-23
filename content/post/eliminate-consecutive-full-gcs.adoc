@@ -1,0 +1,24 @@
+---
+title: "消除连续的 Full GC"
+date: 2009-01-05T23:08:07+08:00
+draft: true
+keywords: [""]
+tags: [""]
+categories: [""]
+thumbnail: "images/full-gcs/eliminate-consecutive-full-gcs.jpeg"
+# aliases: "/old/path/"
+
+weight: 1
+---
+
+
+// image::/images/[title="",alt="",{image_attr}]
+
+// [source%nowrap,java,{source_attr}]
+// ----
+// // code
+// ----
+
+马上到来，敬请持续关注： https://www.diguage.com/["地瓜哥"博客网 https://www.diguage.com/^]
+
+// 原文： https://blog.gceasy.io/2016/11/22/eliminate-consecutive-full-gcs/[ELIMINATE CONSECUTIVE FULL GCs – GC easy – Universal Java GC Log Analyser^]

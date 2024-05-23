@@ -10,7 +10,6 @@ categories: ["个人成长"]
 weight: 1
 ---
 
-:image_attr: align=center
 
 image::/images/travel/happy-valley/happyvalley.jpg[title="北京欢乐谷导游图",alt="北京欢乐谷导游图",{image_attr}]
 

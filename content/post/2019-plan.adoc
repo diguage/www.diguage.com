@@ -1,4 +1,3 @@
-
 ---
 title: "2019 年度计划"
 date: 2018-12-09T00:00:00+08:00
@@ -12,7 +11,6 @@ weight: 1
 # P.S. comment can only be closed
 # comment: false
 # toc: true
-
 ---
 
 不知不觉，2019 年元旦马上就要到来。2018 年的元旦仿佛还在昨日。人生天地之间，若白驹之过隙，忽然而已。

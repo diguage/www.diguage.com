@@ -1,0 +1,1077 @@
+---
+title: "Java 虚拟机指令(操作码)集"
+date: 2022-08-31T13:00:44+08:00
+draft: false
+keywords: ["Java","虚拟机"]
+tags: ["Java","虚拟机"]
+categories: ["系统架构"]
+thumbnail: "images/java/bytecode.svg"
+
+weight: 1
+---
+
+最近在研究 Java 虚拟机字节码。在 https://book.douban.com/subject/26418340/[《Java虚拟机规范》^] 看到一个整理完整的 Java 虚拟机指令集（也叫操作码）列表。转载过来，方便查阅。
+
+关于 Java 虚拟机指令(操作码)，准备写一个“探秘”系列：
+
+. https://www.diguage.com/post/jvm-bytecode-constant/[Java 虚拟机操作码探秘：常量指令^] -- 重点介绍一下关于“常量”指令。
+
+[%header,cols="^.^7,^.^7,7,12,67",stripes=even]
+|===
+|分类 2+|操作码 ^.^|助记符 ^.^|指令含义
+
+.21+|常量
+|0
+^.^|`0x00`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.nop[nop^]
+|什么都不做
+
+|1
+|`0x01`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.aconst_null[aconst_null^]
+|将 null 推送至栈顶
+
+|2
+|`0x02`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iconst_i[iconst_m1^]
+|将 int 类型 -1 推送至栈顶
+
+|3
+|`0x03`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iconst_i[iconst_0^]
+|将 int 类型 0 推送至栈顶
+
+|4
+|`0x04`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iconst_i[iconst_1^]
+|将 int 类型 1 推送至栈顶
+
+|5
+|`0x05`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iconst_i[iconst_2^]
+|将 int 类型 2 推送至栈顶
+
+|6
+|`0x06`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iconst_i[iconst_3^]
+|将 int 类型 3 推送至栈顶
+
+|7
+|`0x07`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iconst_i[iconst_4^]
+|将 int 类型 4 推送至栈顶
+
+|8
+|`0x08`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iconst_i[iconst_5^]
+|将 int 类型 5 推送至栈顶
+
+|9
+|`0x09`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lconst_l[lconst_0^]
+|将 long 类型 0 推送至栈顶
+
+|10
+|`0x0a`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lconst_l[lconst_1^]
+|将 long 类型 1 推送至栈顶
+
+|11
+|`0x0b`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fconst_f[fconst_0^]
+|将 float 类型 0 推送至栈顶
+
+|12
+|`0x0c`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fconst_f[fconst_1^]
+|将 float 类型 1 推送至栈顶
+
+|13
+|`0x0d`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fconst_f[fconst_2^]
+|将 float 类型 2 推送至栈顶
+
+|14
+|`0x0e`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dconst_d[dconst_0^]
+|将 double 类型 0 推送至栈顶
+
+|15
+|`0x0f`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dconst_d[dconst_1^]
+|将 double 类型 1 推送至栈顶
+
+|16
+|`0x10`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.bipush[bipush^]
+|将单字节的常量值(-128 ~ 127)推送至栈顶
+
+|17
+|`0x11`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.sipush[sipush^]
+|将一个短整类型常量值(-32,768 ~ 32,767)推送栈顶
+
+|18
+|`0x12`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.ldc[ldc^]
+|将 int、 float 或 String 类型常量值从常量池中推送至栈顶
+
+|19
+|`0x13`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.ldc_w[ldc_w^]
+|将int、 float 或 String 类型常量值从常量池中推送栈顶(宽索引)
+
+|20
+|`0x14`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.ldc2_w[ldc2_w^]
+|将 long 或 double 类型常量值从常量池中推送至栈(宽索引)
+
+
+.33+|加载
+|21
+|`0x15`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iload[iload^]
+|将指定的 int 类型本地变量推送至栈顶
+
+|22
+|`0x16`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lload[lload^]
+|将指定的 long 类型本地变量推送至栈顶
+
+|23
+|`0x17`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fload[fload^]
+|将指定的 float 类型本地变量推送至栈顶
+
+|24
+|`0x18`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dload[dload^]
+|将指定的 double 类型本地变量推送至栈顶
+
+|25
+|`0x19`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.aload[aload^]
+|将指定的引用类型本地变量推送至栈顶
+
+|26
+|`0x1a`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iload_n[iload_0^]
+|将第 1 个 int 类型本地变量推送至栈顶
+
+|27
+|`0x1b`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iload_n[iload_1^]
+|将第 2 个 int 类型本地变量推送至栈顶
+
+|28
+|`0x1c`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iload_n[iload_2^]
+|将第 3 个 int 类型本地变量推送至栈顶
+
+|29
+|`0x1d`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iload_n[iload_3^]
+|将第 4 个 int 类型本地变量推送至栈顶
+
+|30
+|`0x1e`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lload_n[lload_0^]
+|将第 1 个 long 类型本地变量推送至栈顶
+
+|31
+|`0x1f`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lload_n[lload_1^]
+|将第 2 个 long 类型本地变量推送至栈顶
+
+|32
+|`0x20`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lload_n[lload_2^]
+|将第 3 个 long 类型本地变量推送至栈顶
+
+|33
+|`0x21`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lload_n[lload_3^]
+|将第 4 个 long 类型本地变量推送至栈顶
+
+|34
+|`0x22`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fload_n[fload_0^]
+|将第 1 个 float 类型本地变量推送至栈顶
+
+|35
+|`0x23`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fload_n[fload_1^]
+|将第 2 个 float 类型本地变量推送至栈顶
+
+|36
+|`0x24`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fload_n[fload_2^]
+|将第 3 个 float 类型本地变量推送至栈顶
+
+|37
+|`0x25`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fload_n[fload_3^]
+|将第 4 个 float 类型本地变量推送至栈顶
+
+|38
+|`0x26`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dload_n[dload_0^]
+|将第 1 个 double 类型本地变量推送至栈顶
+
+|39
+|`0x27`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dload_n[dload_1^]
+|将第 2 个 double 类型本地变量推送至栈顶
+
+|40
+|`0x28`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dload_n[dload_2^]
+|将第 3 个 double 类型本地变量推送至栈顶
+
+|41
+|`0x29`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dload_n[dload_3^]
+|将第 4 个 double 类型本地变量推送至栈顶
+
+|42
+|`0x2a`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.aload_n[aload_0^]
+|将第 1 个引用类型本地变量推送至栈顶
+
+|43
+|`0x2b`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.aload_n[aload_1^]
+|将第 2 个引用类型本地变量推送至栈顶
+
+|44
+|`0x2c`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.aload_n[aload_2^]
+|将第 3 个引用类型本地变量推送至栈顶
+
+|45
+|`0x2d`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.aload_n[aload_3^]
+|将第 4 个引用类型本地变量推送至栈顶
+
+|46
+|`0x2e`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iaload[iaload^]
+|将 int 类型数组的指定元素推送至栈顶
+
+|47
+|`0x2f`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.laload[laload^]
+|将 long 类型数组的指定元素推送至栈顶
+
+|48
+|`0x30`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.faload[faload^]
+|将 float 类型数组的指定元素推送至栈顶
+
+|49
+|`0x31`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.daload[daload^]
+|将 double 类型数组的指定元素推送至栈顶
+
+|50
+|`0x32`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.aaload[aaload^]
+|将引用类型数组的指定元素推送至栈顶
+
+|51
+|`0x33`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.baload[baload^]
+|将 boolean 或 byte 类型数组的指定元素推送至栈顶
+
+|52
+|`0x34`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.caload[caload^]
+|将 char 类型数组的指定元素推送至栈顶
+
+|53
+|`0x35`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.saload[saload^]
+|将 short 类型数组的指定元素推送至栈顶
+
+
+.33+|存储
+|54
+|`0x36`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.istore[istore^]
+|将栈顶 int 类型数值存入指定本地变量
+
+|55
+|`0x37`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lstore[lstore^]
+|将栈顶 long 类型数值存入指定本地变量
+
+|56
+|`0x38`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fstore[fstore^]
+|将栈顶 float 类型数值存入指定本地变量
+
+|57
+|`0x39`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dstore[dstore^]
+|将栈顶 double 类型数值存入指定本地变量
+
+|58
+|`0x3a`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.astore[astore^]
+|将栈顶引用类型数值存入指定本地变量
+
+|59
+|`0x3b`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.istore_n[istore_0^]
+|将栈顶 int 类型数值存入第 1 个本地变量
+
+|60
+|`0x3c`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.istore_n[istore_1^]
+|将栈顶 int 类型数值存入第 2 个本地变量
+
+|61
+|`0x3d`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.istore_n[istore_2^]
+|将栈顶 int 类型数值存入第 3 个本地变量
+
+|62
+|`0x3e`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.istore_n[istore_3^]
+|将栈顶 int 类型数值存入第 4 个本地变量
+
+|63
+|`0x3f`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lstore_n[lstore_0^]
+|将栈顶 long 类型数值存入第 1 个本地变量
+
+|64
+|`0x40`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lstore_n[lstore_1^]
+|将栈顶 long 类型数值存入第 2 个本地变量
+
+|65
+|`0x41`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lstore_n[lstore_2^]
+|将栈顶 long 类型数值存入第 3 个本地变量
+
+|66
+|`0x42`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lstore_n[lstore_3^]
+|将栈顶 long 类型数值存入第 4 个本地变量
+
+|67
+|`0x43`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fstore_n[fstore_0^]
+|将栈顶 float 类型数值存入第 1 个本地变量
+
+|68
+|`0x44`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fstore_n[fstore_1^]
+|将栈顶 float 类型数值存入第 2 个本地变量
+
+|69
+|`0x45`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fstore_n[fstore_2^]
+|将栈顶 float 类型数值存入第 3 个本地变量
+
+|70
+|`0x46`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fstore_n[fstore_3^]
+|将栈顶 float 类型数值存入第 4 个本地变量
+
+|71
+|`0x47`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dstore_n[dstore_0^]
+|将栈顶 double 类型数值存入第 1 个本地变量
+
+|72
+|`0x48`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dstore_n[dstore_1^]
+|将栈顶 double 类型数值存入第 2 个本地变量
+
+|73
+|`0x49`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dstore_n[dstore_2^]
+|将栈顶 double 类型数值存入第 3 个本地变量
+
+|74
+|`0x4a`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dstore_n[dstore_3^]
+|将栈顶 double 类型数值存入第 4 个本地变量
+
+|75
+|`0x4b`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.astore_n[astore_0^]
+|将栈顶引用类型数值存入第 1 个本地变量
+
+|76
+|`0x4c`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.astore_n[astore_1^]
+|将栈顶引用类型数值存入第 2 个本地变量
+
+|77
+|`0x4d`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.astore_n[astore_2^]
+|将栈顶引用类型数值存入第 3 个本地变量
+
+|78
+|`0x4e`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.astore_n[astore_3^]
+|将栈顶引用类型数值存入第 4 个本地变量
+
+|79
+|`0x4f`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iastore[iastore^]
+|将栈顶 int 类型数值存入指定数组的指定索引位置
+
+|80
+|`0x50`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lastore[lastore^]
+|将栈顶 long 类型数值存入指定数组的指定索引位置
+
+|81
+|`0x51`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fastore[fastore^]
+|将栈顶 float 类型数值存入指定数组的指定索引位置
+
+|82
+|`0x52`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dastore[dastore^]
+|将栈顶 double 类型数值存入指定数组的指定索引位置
+
+|83
+|`0x53`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.aastore[aastore^]
+|将栈顶引用类型数值存入指定数组的指定索引位置
+
+|84
+|`0x54`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.bastore[bastore^]
+|将栈顶 boolean 或 byte 类型数值存入指定数组的指定索引位置
+
+|85
+|`0x55`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.castore[castore^]
+|将栈顶 char 类型数值存入指定数组的指定索引位置
+
+|86
+|`0x56`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.sastore[sastore^]
+|将栈顶 short 类型数值存入指定数组的指定索引位置
+
+
+.9+|栈
+|87
+|`0x57`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.pop[pop^]
+|将栈顶数值弹出(数值不能是 long 或 double 类型的)
+
+|88
+|`0x58`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.pop2[pop2^]
+|将栈顶的一个 long 或 double 类型的数值或两个其他类型的数值弹出
+
+|89
+|`0x59`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dup[dup^]
+|复制栈顶数值并将复制值压入栈顶
+
+|90
+|`0x5a`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dup_x1[dup_x1^]
+|复制栈顶值并将其插入栈顶那两个值的下面
+
+|91
+|`0x5b`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dup_x2[dup_x2^]
+|复制栈顶值并将其插入栈顶那两个或三个值的下面
+
+|92
+|`0x5c`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dup2[dup2^]
+|复制栈顶的一个 long 或 double 类型的值，或两个其他类型的值，并将其压入栈顶
+
+|93
+|`0x5d`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dup2_x1[dup2_x1^]
+|复制栈顶的一个或两个值，并将其插入栈顶那两个或三个值的下面
+
+|94
+|`0x5e`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dup2_x2[dup2_x2^]
+|复制栈顶的一个或两个值，并将其插入栈顶那两个、三个或四个值的下面
+
+|95
+|`0x5f`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.swap[swap^]
+|将栈顶的两个数值互换(数值不能是 long 或 double 类型的)
+
+
+.37+|数学
+|96
+|`0x60`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iadd[iadd^]
+|将栈顶两 int 类型数值相加并将结果压入栈顶
+
+|97
+|`0x61`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.ladd[ladd^]
+|将栈顶两 1ong 类型数值相加并将结果压入栈顶
+
+|98
+|`0x62`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fadd[fadd^]
+|将栈顶两 float 类型数值相加并将结果压入栈顶
+
+|99
+|`0x63`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dadd[dadd^]
+|将栈顶两 double 类型数值相加并将结果压入栈顶
+
+|100
+|`0x64`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.isub[isub^]
+|将栈顶两 int 类型数值相减并将结果压入栈顶
+
+|101
+|`0x65`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lsub[lsub^]
+|将栈顶两 long 类型数值相减并将结果压入栈顶
+
+|102
+|`0x66`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fsub[fsub^]
+|将栈顶两 float 类型数值相减并将结果压入栈顶
+
+|103
+|`0x67`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dsub[dsub^]
+|将栈顶两 double 类型数值相减并将结果压入栈顶
+
+|104
+|`0x68`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.imul[imul^]
+|将栈顶两 int 类型数值相乘并将结果压入栈顶
+
+|105
+|`0x69`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lmul[lmul^]
+|将栈顶两 long 类型数值相乘并将结果压入栈顶
+
+|106
+|`0x6a`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fmul[fmul^]
+|将栈顶两 float 类型数值相乘并将结果压入栈顶
+
+|107
+|`0x6b`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dmul[dmul^]
+|将栈顶两 double 类型数值相乘并将结果压入栈顶
+
+|108
+|`0x6с`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.idiv[idiv^]
+|将栈顶两 int 类型数值相除并将结果压入栈顶
+
+|109
+|`0x6d`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.ldiv[ldiv^]
+|将栈顶两 long 类型数值相除并将结果压入栈顶
+
+|110
+|`0x6e`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fdiv[fdiv^]
+|将栈顶两 float 类型数值相除并将结果压入栈顶
+
+|111
+|`0x6f`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.ddiv[ddiv^]
+|将栈顶两 double 类型数值相除并将结果压入栈顶
+
+|112
+|`0x70`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.irem[irem^]
+|将栈顶两 int 类型数值作取模运算并将结果压入栈顶
+
+|113
+|`0x71`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lrem[lrem^]
+|将栈顶两 long 类型数值作取模运算并将结果压入栈顶
+
+|114
+|`0x72`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.frem[frem^]
+|将栈顶两 float 类型数值作取模运算并将结果压入栈顶
+
+|115
+|`0x73`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.drem[drem^]
+|将栈顶两 double 类型数值作取模运算并将结果压入栈顶
+
+|116
+|`0x74`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.ineg[ineg^]
+|将栈顶 int 类型数值取负并将结果压入栈顶
+
+|117
+|`0x75`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lneg[lneg^]
+|将栈顶 long 类型数值取负并将结果压入栈顶
+
+|118
+|`0x76`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fneg[fneg^]
+|将栈顶 float 类型数值取负并将结果压入栈顶
+
+|119
+|`0x77`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dneg[dneg^]
+|将栈顶 double 类型数值取负并将结果压入栈顶
+
+|120
+|`0x78`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.ishl[ishl^]
+|将 int 类型数值左移位指定位数并将结果压入栈顶
+
+|121
+|`0x79`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lshl[lshl^]
+|将 long 类型数值左移位指定位数并将结果压入栈顶
+
+|122
+|`0x7a`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.ishr[ishr^]
+|将 int 类型数值(有符号)右移位指定位数并将结果压入栈顶
+
+|123
+|`0x7b`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lshr[lshr^]
+|将 long 类型数值(有符号)右移位指定位数并将结果压入栈顶
+
+|124
+|0x7c
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iushr[iushr^]
+|将 int 类型数值(无符号)右移位指定位数并将结果压入栈顶
+
+|125
+|`0x7d`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lushr[lushr^]
+|将 long 类型数值(无符号)右移位指定位数并将结果压入栈顶
+
+|126
+|`0x7e`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iand[iand^]
+|将栈顶两 int 类型数值作“按位与”并将结果压入栈顶
+
+|127
+|`0x7f`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.land[land^]
+|将栈顶两 long 类型数值作“按位与”并将结果压入栈顶
+
+|128
+|`0x80`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.ior[ior^]
+|将栈顶两 int 类型数值作“按位或”并将结果压入栈顶
+
+|129
+|0x81
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lor[lor^]
+|将栈顶两 long 类型数值作“按位或”并将结果压入栈顶
+
+|130
+|`0x82`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.ixor[ixor^]
+|将栈顶两 int 类型数值作“按位异或”并将结果压入栈顶
+
+|131
+|`0x83`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lxor[lxor^]
+|将栈顶两 long 类型数值作“按位异或”并将结果压入栈顶
+
+|132
+|`0x84`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iinc[iinc^]
+|将指定 int 类型变量增加指定值(`i++`，`i--`，`i += 2`)
+
+
+.15+|转换
+|133
+|`0x85`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.i2l[i2l^]
+|将栈顶 int 类型数值强制转换成 long 类型数值并将结果压入栈顶
+
+|134
+|`0x86`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.i2f[i2f^]
+|将栈顶 int 类型数值强制转换成 float 类型数值并将结果压入栈顶
+
+|135
+|`0x87`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.i2d[i2d^]
+|将栈顶 int 类型数值强制转换成 double 类型数值并将结果压入栈顶
+
+|136
+|`0x88`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.l2i[l2i^]
+|将栈顶 long 类型数值强制转换成 int 类型数值并将结果压入栈顶
+
+|137
+|`0x89`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.l2f[l2f^]
+|将栈顶 long 类型数值强制转换成 float 类型数值并将结果压入栈顶
+
+|138
+|`0x8a`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.l2d[l2d^]
+|将栈顶 long 类型数值强制转换成 double 类型数值并将结果压入栈顶
+
+|139
+|`0x8b`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.f2i[f2i^]
+|将栈顶 float 类型数值强制转换成 int 类型数值并将结果压入栈顶
+
+|140
+|`0x8c`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.f2l[f2l^]
+|将栈顶 float 类型数值强制转换成 long 类型数值并将结果压入栈顶
+
+|141
+|`0x8d`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.f2d[f2d^]
+|将栈顶 float 类型数值强制转换成 double 类型数值并将结果压入栈顶
+
+|142
+|`0x8e`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.d2i[d2i^]
+|将栈顶 double 类型数值强制转换成 int 类型数值并将结果压入栈顶
+
+|143
+|`0x8f`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.d2l[d2l^]
+|将栈顶 double 类型数值强制转换成 long 类型数值并将结果压入栈顶
+
+|144
+|`0x90`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.d2f[d2f^]
+|将栈顶 double 类型数值强制转换成 float 类型数值并将结果压入栈顶
+
+|145
+|`0x91`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.i2b[i2b^]
+|将栈顶 int 类型数值强制转换成 byte 类型数值并将结果压入栈顶
+
+|146
+|`0x92`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.i2c[i2c^]
+|将栈顶 int 类型数值强制转换成 char 类型数值并将结果压入栈顶
+
+|147
+|`0x93`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.i2s[i2s^]
+|将栈顶 int 类型数值强制转换成 short 类型数值并将结果压入栈顶
+
+
+.19+|比较
+|148
+|`0x94`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lcmp[lcmp^]
+|比较栈顶两 long 类型数值大小，并将结果(1，0，-1)压入栈顶
+
+|149
+|`0x95`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fcmp_op[fcmpl^]
+|比较栈顶两 float 类型数值大小，并将结果(1，0，-1)压入栈顶；当其中一个数值为“NaN”时，将 -1 压入栈顶
+
+|150
+|`0x96`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fcmp_op[fcmpg^]
+|比较栈顶两 float 类型数值大小，并将结果(1，0，-1)压入栈顶；当其中一个数值为“NaN”时，将1压入栈顶
+
+|151
+|`0x97`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dcmp_op[dcmpl^]
+|比较栈顶两 double 类型数值大小，并将结果(1，0，-1)压入栈顶；当其中一个数值为“NaN”时，将-1压入栈顶
+
+|152
+|`0x98`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dcmp_op[dcmpg^]
+|比较栈顶两 double 类型数值大小，并将结果(1，0，-1)压入栈顶；当其中一个数值为“NaN”时，将1压入栈顶
+
+|153
+|`0x99`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.if_cond[ifeq^]
+|当栈顶 int 类型数值等于 0 时跳转
+
+|154
+|`0x9a`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.if_cond[ifne^]
+|当栈顶 int 类型数值不等于 0 时跳转
+
+|155
+|`0x9b`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.if_cond[iflt^]
+|当栈顶 int 类型数值小于 0 时跳转
+
+|156
+|`0x9c`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.if_cond[ifge^]
+|当栈顶 int 类型数值大于等于 0 时跳转
+
+|157
+|`0x9d`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.if_cond[ifgt^]
+|当栈顶 int 类型数值大于 0 时跳转
+
+|158
+|`0x9e`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.if_cond[ifle^]
+|当栈顶 int 类型数值小于等于 0 时跳转
+
+|159
+|`0x9f`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.if_icmp_cond[if_icmpeq^]
+|比较栈顶两 int 类型数值大小，当前者等于后者时跳转
+
+|160
+|`0xa0`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.if_icmp_cond[if_icmpne^]
+|比较栈顶两 int 类型数值大小，当前者不等于后者时跳转
+
+|161
+|`0xa1`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.if_icmp_cond[if_icmplt^]
+|比较栈顶两 int 类型数值大小，当前者小于后者时跳转
+
+|162
+|`0xa2`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.if_icmp_cond[if_icmpge^]
+|比较栈顶两 int 类型数值大小，当前者大于等于后者时跳转
+
+|163
+|`0xa3`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.if_icmp_cond[if_icmpgt^]
+|比较栈顶两 int 类型数值大小，当前者大于后者时跳转
+
+|164
+|`0xa4`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.if_icmp_cond[if_icmple^]
+|比较栈顶两 int 类型数值大小，当前者小于等于后者时跳转
+
+|165
+|`0xa5`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.if_acmp_cond[if_acmpeq^]
+|比较栈顶两引用类型数值，当结果相等时跳转
+
+|166
+|`0xa6`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.if_acmp_cond[ifacmpne^]
+|比较栈顶两引用类型数值，当结果不相等时跳转
+
+
+.11+|控制
+|167
+|`0xa7`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.goto[goto^]
+|无条件跳转
+
+|168
+|`0xa8`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.jsr[jsr^]
+|跳转至指定 16 位 offset 位置，并将 jsr 下一条指令地址压入栈顶
+
+|169
+|`0xa9`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.ret[ret^]
+|返回至由指定的局部变量所给出的指令位置(一般与 jsr、jsr_w 联合使用)
+
+|170
+|`0xaa`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.tableswitch[tableswitch^]
+|用于 switch 条件跳转，case 值连续(变长指令)
+
+|171
+|`0xab`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lookupswitch[lookupswitch^]
+|用于 switch 条件跳转，case 值不连续(变长指令)
+
+|172
+|`0xac`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.ireturn[ireturn^]
+|从当前方法返回 int
+
+|173
+|`Oxad`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lreturn[lreturn^]
+|从当前方法返回 long
+
+|174
+|`0xae`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.freturn[freturn^]
+|从当前方法返回 float
+
+|175
+|`0xaf`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dreturn[dreturn^]
+|从当前方法返回 double
+
+|176
+|`0xb0`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.areturn[areturn^]
+|从当前方法返回对象引用
+
+|177
+|`0xb1`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.return[return^]
+|从当前方法返回void
+
+
+.18+|引用
+|178
+|`0xb2`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.getstatic[getstatic^]
+|获取指定类的静态字段，并将其值压入栈顶
+
+|179
+|`0xb3`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.putstatic[putstatic^]
+|为指定类的静态字段赋值
+
+|180
+|`0xb4`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.getfield[getfield^]
+|获取指定类的实例字段，并将其值压入栈顶
+
+|181
+|`0xb5`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.putfield[putfield^]
+|为指定类的实例字段赋值
+
+|182
+|`0xb6`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.invokevirtual[invokevirtual^]
+|调用实例方法
+
+|183
+|`0xb7`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.invokespecial[invokespecial^]
+|调用父类方法、实例初始化方法、私有方法
+
+|184
+|`0xb8`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.invokestatic[invokestatic^]
+|调用静态方法
+
+|185
+|`0xb9`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.invokeinterface[invokeinterface^]
+|调用接口方法
+
+|186
+|`0xba`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.invokedynamic[invokedynamic^]
+|调用动态链接方法
+
+|187
+|`0xbb`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.new[new^]
+|创建一个对象，并将其引用值压入栈顶
+
+|188
+|`0xbc`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.newarray[newarray^]
+|创建一个指定原始类型(如int、float 、char等)的数组，并将其引用值压入栈顶
+
+|189
+|`0xbd`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.anewarray[anewarray^]
+|创建一个引用型(如类、接口、数组)的数组，并将其引用值压入栈顶
+
+|190
+|`0xbe`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.arraylength[arraylength^]
+|获得数组的长度值并压入栈顶
+
+|191
+|`0xbf`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.athrow[athrow^]
+|将栈顶的异常抛出
+
+|192
+|0xcO
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.checkcast[checkcast^]
+|检验类型转换，检验未通过将抛出 ClassCastException
+
+|193
+|0xc1
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.instanceof[instanceof^]
+|检验对象是否是指定类的实例。如果是，就将 1 压入栈顶，否则将 0 压入栈顶
+
+|194
+|`0xc2`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.monitorenter[monitorenter^]
+|获得对象的锁，用于实现同步块
+
+|195
+|`0xc3`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.monitorexit[monitorexit^]
+|释放对象的锁，用于实现同步块
+
+
+.6+|扩展
+|196
+|`0xc4`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.wide[wide^]
+|扩展本地变量索引的宽度
+
+|197
+|`0xс5`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.multianewarray[multianewarray^]
+|创建指定类型和指定维度的多维数组(执行该指令时，操作栈中必须包含各维度的长度值)，并将其引用值压入栈顶
+
+|198
+|`0xc6`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.ifnull[ifnull^]
+|为nu11时跳转
+
+|199
+|`0xc7`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.ifnonnull[ifnonnull^]
+|不为nu11时跳转
+
+|200
+|`0xc8`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.goto_w[goto_w^]
+|无条件跳转(宽索引)
+
+|201
+|`0xc9`
+|https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.jsr_w[jsr_w^]
+|跳转至指定 32 位 offset 位置，并将 jsr_w 下一条指令地址压入栈顶
+
+
+.3+|保留指令
+|202
+|`Оxca`
+|breakpoint
+|调试时的断点标记
+
+|254
+|`Oxfe`
+|impdep1
+|为特定软件面预留的语言后门
+
+|255
+|`0xff`
+|impdep2
+|为特定硬件面预留的语言后门
+|===
+
+== 参考资料
+
+. https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html[Chapter 6. The Java Virtual Machine Instruction Set^]
+. https://en.wikipedia.org/wiki/Java_bytecode[Java bytecode^]
+. https://en.wikipedia.org/wiki/List_of_Java_bytecode_instructions[List of Java bytecode instructions^]
+
+
+

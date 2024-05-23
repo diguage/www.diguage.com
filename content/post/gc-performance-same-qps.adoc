@@ -1,0 +1,189 @@
+---
+title: "JVM GC 性能测试（一）：相同流量"
+date: 2024-04-25T22:02:47+08:00
+draft: false
+keywords: ["Java","虚拟机","性能","ZGC","G1","OpenJDK"]
+tags: ["Java","虚拟机","GC","性能测试"]
+categories: ["系统架构","性能优化"]
+thumbnail: "images/java/jvm.jpg"
+
+weight: 1
+---
+
+*JVM GC 性能测试系列*:
+
+. https://www.diguage.com/post/gc-performance-comparison-method/[JVM GC 性能对比方法^]
+. https://www.diguage.com/post/gc-performance-same-qps/[JVM GC 性能测试（一）：相同流量^]
+. https://www.diguage.com/post/gc-performance-incremental-qps/[JVM GC 性能测试（二）：递增流量^]
+. https://www.diguage.com/post/gc-performance-real-qps/[JVM GC 性能测试（三）：真实流量^]
+
+'''
+
+在上一篇文章 https://www.diguage.com/post/gc-performance-comparison-method/[JVM GC 性能对比方法^] 介绍了性能对比的方法，这篇文章就根据该方法对上述提到的5种 JVM GC 进行性能测试。
+
+在正式测试之前，D瓜哥进行了多次小流量试探性测试，来探索一个合适的量。找到一个比较平稳的量后，乘以机器数量，获得一个每秒总计请求量，最后使用该总量数据去做压测。
+
+根据多次测试的数据来看，最后选择的是每台每秒 500 QPS，5 个分组，每个分组 5 台机器，所以，每秒的请求总量是：  500 * 5 * 5 = 12500 QPS；每个分组每分钟的总量是：500 * 5 * 60 = 150000 QPS。使用每台机器以此使用 100 QPS，200 QPS，300 QPS，400 QPS 各运行一分钟来对系统进行预热。最后以每台每秒 500 QPS 的访问量来对测试机器进行持续十分钟的性能测试，最后分析这十分钟的相关数据。
+
+== 一言以蔽之
+
+. 服务稳定性：J21-Gen-ZGC、J21-G1、J8-G1 稳定性最好；J17-ZGC 有轻微波动；J21-ZGC 有剧烈波动；
+. 服务耗时 TP999：J21-Gen-ZGC < J17-ZGC < J21-G1 < J8-G1 < J21-ZGC；
+. CPU 消耗：J21-G1 < J8-G1 < J17-ZGC < J21-Gen-ZGC < J21-ZGC；
+
+总结：**从 CPU 及服务稳定性来看，J21-G1 是更好的选择；从服务的延迟角度来看，J21-Gen-ZGC 最最佳选择。**不考虑兼容性问题（兼容性问题也在稳步改善，这不是不可逾越的障碍。），OpenJDK 8 真的可以淘汰了。
+
+****
+OpenJDK 21 G1 GC 的表现属实惊艳到了D瓜哥，测试之前完全没有想到它的表现竟然是如此给力。这里给自己挖个坑，回头整理一下 G1 GC 的主要优化，敬请关注： https://www.diguage.com/post/main-optimization-of-garbage-first-collector/[Java G1 垃圾收集器主要优化^]。
+****
+
+:sectnums:
+
+== 服务调用监控数据
+
+监控服务调用的相关数据，这是对于用户来说，感知最强烈的相关数据，也是直接关系到服务质量的数据。
+
+=== 服务调用次数
+
+服务调用次数，在分钟级数据上来看，基本一样；秒级数据，调用次数有上下波动。波动跟调用耗时呈负相关。
+
+image::/images/gc-performance/api-same-qps-request-minute.jpg[title="服务调用次数（分钟）",alt="服务调用次数（分钟）",{image_attr}]
+
+image::/images/gc-performance/api-same-qps-request-second.jpg[title="服务调用次数（秒）",alt="服务调用次数（秒）",{image_attr}]
+
+=== 每台机器的调用次数及耗时
+
+image::/images/gc-performance/api-per-host.jpg[title="每台机器服务调用次数（秒）",alt="每台机器服务调用次数（秒）",{image_attr}]
+
+=== 服务调用耗时
+
+==== TP999
+
+image::/images/gc-performance/api-same-qps-tp999-minute.jpg[title="服务调用 TP999（分钟）",alt="服务调用 TP999（分钟）",{image_attr}]
+
+image::/images/gc-performance/api-same-qps-tp999-second.jpg[title="服务调用 TP999（秒）",alt="服务调用 TP999（秒）",{image_attr}]
+
+==== TP99
+
+image::/images/gc-performance/api-same-qps-tp99-minute.jpg[title="服务调用 TP99（分钟）",alt="服务调用 TP99（分钟）",{image_attr}]
+
+image::/images/gc-performance/api-same-qps-tp99-second.jpg[title="服务调用 TP99（秒）",alt="服务调用 TP99（秒）",{image_attr}]
+
+==== 平均耗时
+
+坦白讲，D瓜哥对平均耗时不感兴趣，就像正常人也不关注平均工资一样。截图只是保存数据。
+
+image::/images/gc-performance/api-same-qps-avg-minute.jpg[title="服务调用平均耗时（分钟）",alt="服务调用平均耗时（分钟）",{image_attr}]
+
+image::/images/gc-performance/api-same-qps-avg-second.jpg[title="服务调用平均耗时（秒）",alt="服务调用平均耗时（秒）",{image_attr}]
+
+== JVM 监控
+
+TIP: JMV 监控目前只有分钟级的数据，所以，本节的数据全部是分钟级。
+
+*从以下图表可以看出：*
+
+. J21-G1 相比 J8-G1 有了非常明显的进步，无论是在 CPU 使用率，还是在 GC 耗时，或者 GC 次数等各方面，都有了非常明显的进步。
+. J21-Gen-ZGC 相比 ZGC，使用更频繁的 GC 来换取耗时的降低，所以，在 CPU 消耗方面更大。
+
+*疑问：*
+
+. 在相同访问量的情况下，为什么 J21-G1 比 J8-G1 的 GC 次数都减少很多呢？相同访问量的情况下，产生的垃圾对象也应该比较接近啊。
+. J21-ZGC 非常拉胯，比 J17-ZGC 还要拉胯。有点费解。同时，也好奇，从 OpenJDK17 到 OpenJDK 21，ZGC 都做了什么改动？
+
+NOTE: D瓜哥保存了这些机器的相关 JVM 日志。如果有好用的 GC 日志分析工具，欢迎推荐，我后续再将 GC 日志分析的图片分享出来。
+
+=== CPU
+
+TIP: 这里的“CPU 使用率”是通过 Java Agent 采集到的数据，不是 JVM 使用的“CPU 使用率”。
+
+image::/images/gc-performance/jvm-cpu-avg.jpg[title="CPU 使用率（平均）",alt="CPU 使用率（平均）",{image_attr}]
+
+image::/images/gc-performance/jvm-cpu-max.jpg[title="CPU 使用率（最大）",alt="CPU 使用率（最大）",{image_attr}]
+
+image::/images/gc-performance/jvm-cpu-min.jpg[title="CPU 使用率（最小）",alt="CPU 使用率（最小）",{image_attr}]
+
+[#jvm-young-gc]
+=== Young GC
+
+TIP: 本监控将 ZGC（即非分代 ZGC）的 GC 动作都按照 Full GC 处理。所以，J17-ZGC、J21-ZGC 的 GC 统计全部按照 Young GC 来处理。
+
+* 从 GC 次数上来看，J21-ZGC 和 J17-ZGC 的次数最少；其次是 J21-G1、J8-G1。
+* 从 GC 耗时上来看，J21-G1 可谓是一骑绝尘，后面依次是：J8-G1、G21-Gen-ZGC、J21-ZGC、J17-ZGC。
+
+==== Young GC 次数
+
+image::/images/gc-performance/jvm-young-gc-avg.jpg[title="JVM Young GC 次数（平均）",alt="JVM Young GC 次数（）",{image_attr}]
+
+image::/images/gc-performance/jvm-young-gc-max.jpg[title="JVM Young GC 次数（最大）",alt="JVM Young GC 次数（最大）",{image_attr}]
+
+image::/images/gc-performance/jvm-young-gc-min.jpg[title="JVM Young GC 次数（最小）",alt="JVM Young GC 次数（最小）",{image_attr}]
+
+==== Young GC 耗时
+
+image::/images/gc-performance/jvm-young-gc-time-avg.jpg[title="JVM Young GC 耗时（平均）",alt="JVM Young GC 耗时（平均）",{image_attr}]
+
+image::/images/gc-performance/jvm-young-gc-time-max.jpg[title="JVM Young GC 耗时（最大）",alt="JVM Young GC 耗时（最大）",{image_attr}]
+
+image::/images/gc-performance/jvm-young-gc-time-min.jpg[title="JVM Young GC 耗时（最小）",alt="JVM Young GC 耗时（最小）",{image_attr}]
+
+=== Full GC
+
+==== Full GC 次数
+
+image::/images/gc-performance/jvm-full-gc-avg.jpg[title="JVM Full GC 次数（平均）",alt="JVM Full GC 次数（平均）",{image_attr}]
+
+image::/images/gc-performance/jvm-full-gc-max.jpg[title="JVM Full GC 次数（最大）",alt="JVM Full GC 次数（最大）",{image_attr}]
+
+image::/images/gc-performance/jvm-full-gc-min.jpg[title="JVM Full GC 次数（最小）",alt="JVM Full GC 次数（最小）",{image_attr}]
+
+==== Full GC 耗时
+
+image::/images/gc-performance/jvm-full-gc-time-avg.jpg[title="JVM Full GC 耗时（平均）",alt="JVM Full GC 耗时（平均）",{image_attr}]
+
+image::/images/gc-performance/jvm-full-gc-time-max.jpg[title="JVM Full GC 耗时（最大）",alt="JVM Full GC 耗时（最大）",{image_attr}]
+
+image::/images/gc-performance/jvm-full-gc-time-min.jpg[title="JVM Full GC 耗时（最小）",alt="JVM Full GC 耗时（最小）",{image_attr}]
+
+=== Heap
+
+image::/images/gc-performance/jvm-heap-avg.jpg[title="JVM 堆内存（平均）",alt="JVM 堆内存（平均）",{image_attr}]
+
+image::/images/gc-performance/jvm-heap-max.jpg[title="JVM 堆内存（最大）",alt="JVM 堆内存（最大）",{image_attr}]
+
+image::/images/gc-performance/jvm-heap-min.jpg[title="JVM 堆内存（最小）",alt="JVM 堆内存（最小）",{image_attr}]
+
+=== 非堆
+
+image::/images/gc-performance/jvm-non-heap.jpg[title="JVM 非堆内存（平均）",alt="JVM 非堆内存（平均）",{image_attr}]
+
+=== 线程数
+
+image::/images/gc-performance/jvm-thead.jpg[title="JVM 线程数（平均）",alt="JVM 线程数（平均）",{image_attr}]
+
+== 系统监控
+
+=== CPU 使用率（秒级）
+
+image::/images/gc-performance/os-cpu-avg-second.jpg[title="系统监控 CPU 使用率（秒级平均）",alt="系统监控 CPU 使用率（秒级平均）",{image_attr}]
+
+image::/images/gc-performance/os-cpu-max-second.jpg[title="系统监控 CPU 使用率（秒级最大）",alt="系统监控 CPU 使用率（秒级最大）",{image_attr}]
+
+image::/images/gc-performance/os-cpu-min-second.jpg[title="系统监控 CPU 使用率（秒级最小）",alt="系统监控 CPU 使用率（秒级最小）",{image_attr}]
+
+=== CPU 使用率（分钟级）
+
+image::/images/gc-performance/os-cpu-avg-minute.jpg[title="系统监控 CPU 使用率（分钟级平均）",alt="系统监控 CPU 使用率（分钟级平均）",{image_attr}]
+
+TIP: 系统监控 CPU 使用率和内存使用率在分钟级的数据，最大、最小和平均区别不大，几乎一致。这里只截图了平均的数据。
+
+image::/images/gc-performance/os-rss-cache-avg.jpg[title="系统监控内存使用率（分钟级平均）",alt="系统监控内存使用率（分钟级平均）",{image_attr}]
+
+:!sectnums:
+
+[#to-be-continued]
+== 后话
+
+在测试方法中，D瓜哥提到“将 JMeter 的共享模式设置为所有线程，这样的话，每次发送请求的参数都会不一样。”，在后来的测试中，D瓜哥又尝试将共享模式设置为“当前线程”，却引发了不一样的结果，导致了进一步的思考。先设个谜语，在下一篇测试中，给大家揭晓谜底。
+
+下一篇文章中，D瓜哥将使用逐步增量的方式，探索各个 GC 的极限处理能力，同时对比在极限和超极限访问量的情况下，各个 GC 又是一个什么样的表现。敬请关注： https://www.diguage.com/post/gc-performance-incremental-qps/[JVM GC 性能测试（二）：递增流量^]。

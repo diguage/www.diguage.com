@@ -3,20 +3,12 @@ title: "Spring AOP 源码分析：创建代理（一）"
 date: 2020-08-10T14:10:00+08:00
 draft: false
 keywords: ["Java","Spring"]
-tags: ["Java","设计","架构"]
-categories: ["Java","程序设计"]
-thumbnail: "images/spring-framework/spring-logo.jpg"
+tags: ["Java","设计","架构","Spring"]
+categories: ["程序设计"]
+thumbnail: "images/logo/spring.svg"
 
 weight: 1
 ---
-
-:source-highlighter: pygments
-:pygments-style: monokai
-:pygments-linenums-mode: table
-:source_attr: indent=0,subs="attributes,verbatim,quotes,macros"
-:image_attr: align=center
-
-image::/images/[title="",alt="",{image_attr}]
 
 
 https://www.diguage.com/post/spring-aop-bootstrap/[Spring AOP 源码分析：入门] 中，梳理出来了 Spring AOP 的入口。上一篇文章 https://www.diguage.com/post/spring-aop-get-advices/[Spring AOP 源码分析：获得通知] 中着重介绍了如何获取通知。接着上一篇文章，这篇文章介绍一下如何创建代理。
@@ -31,8 +23,10 @@ protected Object createProxy(Class<?> beanClass, @Nullable String beanName,
     AutoProxyUtils.exposeTargetClass((ConfigurableListableBeanFactory) this.beanFactory, beanName, beanClass);
   }
 
+
   // 创建代理工厂对象
   ProxyFactory proxyFactory = new ProxyFactory();
+
   // 获取当前类的属性
   proxyFactory.copyFrom(this);
 

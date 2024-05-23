@@ -1,0 +1,652 @@
+---
+title: "Spring 对占位符的处理（二）：注解 过的 Bean"
+date: 2023-06-20T21:50:08+08:00
+draft: true
+keywords: ["Java", "Spring", "占位符"]
+tags: ["Java","设计","架构", "Spring"]
+categories: ["程序设计"]
+thumbnail: "images/logo/spring.svg"
+
+weight: 1
+---
+
+在 https://www.diguage.com/post/placeholder-in-spring-1/[Spring 对占位符的处理（一）：XML 中的 Bean^] 中如何将 XML 解析成 `BeanDefinition`。下面，我们看一下，如何处理打着注解的 Bean。
+
+
+== 示例代码
+
+在正式开始之前，先来看一下示例代码：
+
+.`UserRpc.java`
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * @author D瓜哥 · https://www.diguage.com
+ * @since 2023-06-20 21:50:08
+ */
+public class UserRpc {
+
+  @Value("${user.appId}")
+  private String appId;
+
+  @Value("${user.token}")
+  private String token;
+}
+----
+
+.`Config.java`
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * @author D瓜哥 · https://www.diguage.com
+ * @since 2023-06-20 21:50:08
+ */
+@Configuration
+// 这里使用 @Import 来加载 Bean
+@Import(UserRpc.class)
+@PropertySource("classpath:token.properties")
+public static class Config {
+}
+----
+
+.`PlaceholderAnnoTest.java`
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * @author D瓜哥 · https://www.diguage.com
+ * @since 2023-06-20 21:50:08
+ */
+public class PlaceholderAnnoTest {
+  @Test
+  public void test() {
+    AnnotationConfigApplicationContext context
+        = new AnnotationConfigApplicationContext();
+    context.register(Config.class);
+    context.refresh();
+    UserRpc userRpc = context.getBean(UserRpc.class);
+    System.out.println(userRpc.appId);
+    System.out.println(userRpc.token);
+  }
+}
+----
+
+.`token.properties`
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+user.appId=dummyAppId
+user.token=dummyToken
+----
+
+== 注解 Bean 加载
+
+在上述示例中，为了方便起见，使用了 `@Import` 注解引入 Bean。关于在 `@Import` 的使用，在 https://www.diguage.com/post/spring-extensions-and-mybatis/[Spring 扩展点实践：整合 MyBATIS^] 中已经做了介绍，这里就不再赘述。
+
+// include::{context_src_dir}/context/annotation/ConfigurationClassBeanDefinitionReader.java[tag=loadBeanDefinitionsForConfigurationClass]
+
+在上述文章中，主要介绍了 `@Import` + `ImportBeanDefinitionRegistrar` 的引入方式。本示例直接使用的方式是通过 `@Import` 直接引入。看一下获取原始信息的过程，通过解析就可以拿到 `@Import` 注解中的 `value` 值，然后就可以通过如下方式将类引入：
+
+
+.`ConfigurationClassParser.SourceClass.java`
+[source%nowrap,java,{source_attr}]
+----
+private SourceClass getRelated(String className) throws IOException {
+    if (this.source instanceof Class<?> sourceClass) {
+        try {
+            Class<?> clazz = ClassUtils.forName(className, sourceClass.getClassLoader());
+            return asSourceClass(clazz, DEFAULT_EXCLUSION_FILTER);
+        }
+        catch (ClassNotFoundException ex) {
+            // Ignore -> fall back to ASM next, except for core java types.
+            if (className.startsWith("java")) {
+                throw new IOException("Failed to load class [" + className + "]", ex);
+            }
+            return new SourceClass(metadataReaderFactory.getMetadataReader(className));
+        }
+    }
+    return asSourceClass(className, DEFAULT_EXCLUSION_FILTER);
+}
+----
+
+接着看一下 `asSourceClass` 方法的处理：
+
+.`ConfigurationClassParser.java`
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * Factory method to obtain a {@link SourceClass} from a {@link Class}.
+ */
+SourceClass asSourceClass(@Nullable Class<?> classType, Predicate<String> filter) throws IOException {
+    if (classType == null || filter.test(classType.getName())) {
+        return this.objectSourceClass;
+    }
+    try {
+        // Sanity test that we can reflectively read annotations,
+        // including Class attributes; if not -> fall back to ASM
+        for (Annotation ann : classType.getDeclaredAnnotations()) {
+            AnnotationUtils.validateAnnotation(ann);
+        }
+        return new SourceClass(classType);
+    }
+    catch (Throwable ex) {
+        // Enforce ASM via class name resolution
+        return asSourceClass(classType.getName(), filter);
+    }
+}
+----
+
+接着，看一下 `new SourceClass` 会有什么操作：
+
+.`ConfigurationClassParser.java`
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * Simple wrapper that allows annotated source classes to be dealt with
+ * in a uniform manner, regardless of how they are loaded.
+ */
+private class SourceClass implements Ordered {
+
+    private final Object source;  // Class or MetadataReader
+
+    private final AnnotationMetadata metadata;
+
+    public SourceClass(Object source) {
+        this.source = source;
+        if (source instanceof Class<?> sourceClass) {
+            this.metadata = AnnotationMetadata.introspect(sourceClass);
+        }
+        else {
+            this.metadata = ((MetadataReader) source).getAnnotationMetadata();
+        }
+    }
+    // 此处省略一万行代码
+}
+----
+
+从这里就可以提取到原始信息，后续会被 `ConfigurationClassBeanDefinitionReader#registerBeanDefinitionForImportedConfigurationClass` 方法来注册到容器中。来看一下代码：
+
+.`ConfigurationClassBeanDefinitionReader.java`
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * Register the {@link Configuration} class itself as a bean definition.
+ */
+private void registerBeanDefinitionForImportedConfigurationClass(ConfigurationClass configClass) {
+    AnnotationMetadata metadata = configClass.getMetadata();
+    AnnotatedGenericBeanDefinition configBeanDef = new AnnotatedGenericBeanDefinition(metadata);
+
+    ScopeMetadata scopeMetadata = scopeMetadataResolver.resolveScopeMetadata(configBeanDef);
+    configBeanDef.setScope(scopeMetadata.getScopeName());
+    String configBeanName = this.importBeanNameGenerator.generateBeanName(configBeanDef, this.registry);
+    AnnotationConfigUtils.processCommonDefinitionAnnotations(configBeanDef, metadata);
+
+    BeanDefinitionHolder definitionHolder = new BeanDefinitionHolder(configBeanDef, configBeanName);
+    definitionHolder = AnnotationConfigUtils.applyScopedProxyMode(scopeMetadata, definitionHolder, this.registry);
+    this.registry.registerBeanDefinition(definitionHolder.getBeanName(), definitionHolder.getBeanDefinition());
+    configClass.setBeanName(configBeanName);
+
+    if (logger.isTraceEnabled()) {
+        logger.trace("Registered bean definition for imported class '" + configBeanName + "'");
+    }
+}
+----
+
+.`.java`
+[source%nowrap,java,{source_attr}]
+----
+
+----
+
+.`.java`
+[source%nowrap,java,{source_attr}]
+----
+
+----
+
+在这个方法的最开始的两行代码可知： 使用注解 Bean 对应的 `BeanDefinition` 的类型是 `AnnotatedGenericBeanDefinition`，它是使用 `AnnotationMetadata`  创建而来的。
+
+image::/images/spring-framework/imported-BeanDefinition.png[title="import 引入的 BeanDefinition",alt="import 引入的 BeanDefinition",{image_attr}]
+
+== 占位符替换
+
+跟踪 `AbstractBeanFactory.resolveEmbeddedValue` 方法的调用就可知， `@Value` 注解是在 `AutowiredAnnotationBeanPostProcessor` 中处理的。先来看一下 `AutowiredAnnotationBeanPostProcessor` 的继承结构：
+
+image::/images/spring-framework/AutowiredAnnotationBeanPostProcessor.svg[title="AutowiredAnnotationBeanPostProcessor 继承体系",alt="AutowiredAnnotationBeanPostProcessor 继承体系",{image_attr}]
+
+
+D瓜哥在 https://www.diguage.com/post/spring-bean-lifecycle-overview/[Spring Bean 生命周期概述^] 中对 Spring Bean 完整的生命周期做了介绍。由此可知，在处理在处理 `@Value` 注解时，主要涉及如下两步：
+
+. 首先，调用 `MergedBeanDefinitionPostProcessor#postProcessMergedBeanDefinition` 方法，收集注解信息，例如 `@Resource`、 `@Autowired` 和 `@Value` 等注解信息；
+. 其次，调用 `InstantiationAwareBeanPostProcessor#postProcessProperties` 方法，完整依赖注入、占位符替换等操作。
+
+=== 收集注解信息
+
+通过上文可知，注解信息的收集是在 `AutowiredAnnotationBeanPostProcessor` 的 `postProcessMergedBeanDefinition` 方法中完成的。查看 Spring 的实现可知，这个方法只有一个方法调用，就不再贴代码了，直接跳过中间环节，来到执行实际收集操作的方法：
+
+.`AutowiredAnnotationBeanPostProcessor`
+[source%nowrap,java,{source_attr}]
+----
+private InjectionMetadata findAutowiringMetadata(String beanName, Class<?> clazz, @Nullable PropertyValues pvs) {
+  // Fall back to class name as cache key, for backwards compatibility with custom callers.
+  String cacheKey = (StringUtils.hasLength(beanName) ? beanName : clazz.getName());
+  // Quick check on the concurrent map first, with minimal locking.
+  InjectionMetadata metadata = this.injectionMetadataCache.get(cacheKey);
+  if (InjectionMetadata.needsRefresh(metadata, clazz)) {
+    synchronized (this.injectionMetadataCache) {
+      metadata = this.injectionMetadataCache.get(cacheKey);
+      if (InjectionMetadata.needsRefresh(metadata, clazz)) {
+        if (metadata != null) {
+          metadata.clear(pvs);
+        }
+        // 构建需要处理的注解信息
+        metadata = buildAutowiringMetadata(clazz);
+        this.injectionMetadataCache.put(cacheKey, metadata);
+      }
+    }
+  }
+  return metadata;
+}
+
+private InjectionMetadata buildAutowiringMetadata(Class<?> clazz) {
+  if (!AnnotationUtils.isCandidateClass(clazz, this.autowiredAnnotationTypes)) {
+    return InjectionMetadata.EMPTY;
+  }
+
+  List<InjectionMetadata.InjectedElement> elements = new ArrayList<>();
+  Class<?> targetClass = clazz;
+
+  do {
+    final List<InjectionMetadata.InjectedElement> currElements = new ArrayList<>();
+    // 检查 Bean 类的实例变量，寻找需要处理的实例属性
+    ReflectionUtils.doWithLocalFields(targetClass, field -> {
+      MergedAnnotation<?> ann = findAutowiredAnnotation(field);
+      if (ann != null) {
+        if (Modifier.isStatic(field.getModifiers())) {
+          if (logger.isInfoEnabled()) {
+            logger.info("Autowired annotation is not supported on static fields: " + field);
+          }
+          return;
+        }
+        boolean required = determineRequiredStatus(ann);
+        currElements.add(new AutowiredFieldElement(field, required));
+      }
+    });
+    // 检查 Bean 类的实例方法，寻找需要处理的实例方法；
+    ReflectionUtils.doWithLocalMethods(targetClass, method -> {
+      Method bridgedMethod = BridgeMethodResolver.findBridgedMethod(method);
+      if (!BridgeMethodResolver.isVisibilityBridgeMethodPair(method, bridgedMethod)) {
+        return;
+      }
+      MergedAnnotation<?> ann = findAutowiredAnnotation(bridgedMethod);
+      if (ann != null && method.equals(ClassUtils.getMostSpecificMethod(method, clazz))) {
+        if (Modifier.isStatic(method.getModifiers())) {
+          if (logger.isInfoEnabled()) {
+            logger.info("Autowired annotation is not supported on static methods: " + method);
+          }
+          return;
+        }
+        if (method.getParameterCount() == 0) {
+          if (logger.isInfoEnabled()) {
+            logger.info("Autowired annotation should only be used on methods with parameters: " +
+                method);
+          }
+        }
+        boolean required = determineRequiredStatus(ann);
+        PropertyDescriptor pd = BeanUtils.findPropertyForMethod(bridgedMethod, clazz);
+        currElements.add(new AutowiredMethodElement(method, required, pd));
+      }
+    });
+
+    elements.addAll(0, currElements);
+    targetClass = targetClass.getSuperclass();
+  }
+  // 遍历检查 Bean 类的父类信息，查找父类需要处理的注解信息。
+  while (targetClass != null && targetClass != Object.class);
+
+  return InjectionMetadata.forElements(elements, clazz);
+}
+----
+
+查看上面两个方法可知：
+
+. 在 `buildAutowiringMetadata` 方法中，构建需要注入的原始信息。
+.. `this.autowiredAnnotationTypes` 实例变量是 `AutowiredAnnotationBeanPostProcessor` 初始化时一起完成初始化工作，同时添加了 `@Autowired`、 `@Value`、 `@jakarta.inject.Inject`、 `@javax.inject.Inject` 四个注解，也就是 `AutowiredAnnotationBeanPostProcessor` 只关注这四个注解的处理。
+.. 使用反射，检查 Bean 类的实例变量，寻找需要处理的实例属性；
+.. 使用反射，检查 Bean 类的实例方法，寻找需要处理的实例方法；
+.. 遍历检查 Bean 类的父类信息，查找父类需要处理的注解信息。
+. 在 `findAutowiringMetadata` 方法中，把 `buildAutowiringMetadata` 方法构建待注入的原始信息存放在 `this.injectionMetadataCache` 实例变量，用于后续的处理。
+
+经过上述的处理，需要注入的注解信息已经解析出来，等待后续调用 `InstantiationAwareBeanPostProcessor#postProcessProperties` 方法，完整依赖注入、占位符替换等操作。
+
+
+=== 完成占位符替换
+
+.`AutowiredAnnotationBeanPostProcessor`
+[source%nowrap,java,{source_attr}]
+----
+@Override
+public PropertyValues postProcessProperties(PropertyValues pvs, Object bean, String beanName) {
+  InjectionMetadata metadata = findAutowiringMetadata(beanName, bean.getClass(), pvs);
+  try {
+    // 注入依赖
+    metadata.inject(bean, beanName, pvs);
+  }
+  catch (BeanCreationException ex) {
+    throw ex;
+  }
+  catch (Throwable ex) {
+    throw new BeanCreationException(beanName, "Injection of autowired dependencies failed", ex);
+  }
+  return pvs;
+}
+----
+
+.`AutowiredAnnotationBeanPostProcessor.AutowiredFieldElement`
+[source%nowrap,java,{source_attr}]
+----
+  @Override
+  protected void inject(Object bean, @Nullable String beanName, @Nullable PropertyValues pvs) throws Throwable {
+    Field field = (Field) this.member;
+    Object value;
+    if (this.cached) {
+      try {
+        value = resolvedCachedArgument(beanName, this.cachedFieldValue);
+      }
+      catch (NoSuchBeanDefinitionException ex) {
+        // Unexpected removal of target bean for cached argument -> re-resolve
+        value = resolveFieldValue(field, bean, beanName);
+      }
+    }
+    else { // 解析属性值
+      value = resolveFieldValue(field, bean, beanName);
+    }
+    if (value != null) {
+      ReflectionUtils.makeAccessible(field);
+      field.set(bean, value);
+    }
+  }
+----
+
+继续往下走，查看 `resolveFieldValue` 方法的实现，发现是委托给 `DefaultListableBeanFactory#resolveDependency` 方法实现了解析依赖注入工作。跳过 `resolveFieldValue` 方法，直接看 `DefaultListableBeanFactory#resolveDependency` 的实现。
+
+
+.`DefaultListableBeanFactory`
+[source%nowrap,java,{source_attr}]
+----
+@Override
+@Nullable
+public Object resolveDependency(DependencyDescriptor descriptor, @Nullable String requestingBeanName,
+    @Nullable Set<String> autowiredBeanNames, @Nullable TypeConverter typeConverter) throws BeansException {
+
+  descriptor.initParameterNameDiscovery(getParameterNameDiscoverer());
+  if (Optional.class == descriptor.getDependencyType()) {
+    return createOptionalDependency(descriptor, requestingBeanName);
+  }
+  else if (ObjectFactory.class == descriptor.getDependencyType() ||
+      ObjectProvider.class == descriptor.getDependencyType()) {
+    return new DependencyObjectProvider(descriptor, requestingBeanName);
+  }
+  else if (javaxInjectProviderClass == descriptor.getDependencyType()) {
+    return new Jsr330Factory().createDependencyProvider(descriptor, requestingBeanName);
+  }
+  else {
+    Object result = getAutowireCandidateResolver().getLazyResolutionProxyIfNecessary(
+        descriptor, requestingBeanName);
+    if (result == null) {
+      result = doResolveDependency(descriptor, requestingBeanName, autowiredBeanNames, typeConverter);
+    }
+    return result;
+  }
+}
+----
+
+实际上， `resolveDependency` 方法也没有完成属性解析注入工作，最后交给了 `doResolveDependency` 方法继续。
+
+
+.`DefaultListableBeanFactory`
+[source%nowrap,java,{source_attr}]
+----
+@Nullable
+public Object doResolveDependency(DependencyDescriptor descriptor, @Nullable String beanName,
+    @Nullable Set<String> autowiredBeanNames, @Nullable TypeConverter typeConverter) throws BeansException {
+
+  InjectionPoint previousInjectionPoint = ConstructorResolver.setCurrentInjectionPoint(descriptor);
+  try {
+    Object shortcut = descriptor.resolveShortcut(this);
+    if (shortcut != null) {
+      return shortcut;
+    }
+
+    Class<?> type = descriptor.getDependencyType();
+    Object value = getAutowireCandidateResolver().getSuggestedValue(descriptor);
+    if (value != null) {
+      if (value instanceof String strValue) {
+        String resolvedValue = resolveEmbeddedValue(strValue);
+        BeanDefinition bd = (beanName != null && containsBean(beanName) ?
+            getMergedBeanDefinition(beanName) : null);
+        value = evaluateBeanDefinitionString(resolvedValue, bd);
+      }
+      TypeConverter converter = (typeConverter != null ? typeConverter : getTypeConverter());
+      try {
+        return converter.convertIfNecessary(value, type, descriptor.getTypeDescriptor());
+      }
+      catch (UnsupportedOperationException ex) {
+        // A custom TypeConverter which does not support TypeDescriptor resolution...
+        return (descriptor.getField() != null ?
+            converter.convertIfNecessary(value, type, descriptor.getField()) :
+            converter.convertIfNecessary(value, type, descriptor.getMethodParameter()));
+      }
+    }
+    // ...此处省略一万行代码...
+    return result;
+  }
+  finally {
+    ConstructorResolver.setCurrentInjectionPoint(previousInjectionPoint);
+  }
+}
+----
+
+在 `doResolveDependency` 方法中，我们看到了上文提到的 `resolveEmbeddedValue` 方法。由于我们需要注入的也正是 `String` 类型的值，所以，最后肯定会交给 `resolveEmbeddedValue` 方法来处理的。
+
+.`AbstractBeanFactory`
+[source%nowrap,java,{source_attr}]
+----
+@Override
+@Nullable
+public String resolveEmbeddedValue(@Nullable String value) {
+  if (value == null) {
+    return null;
+  }
+  String result = value;
+  for (StringValueResolver resolver : this.embeddedValueResolvers) {
+    result = resolver.resolveStringValue(result);
+    if (result == null) {
+      return null;
+    }
+  }
+  return result;
+}
+----
+
+在这个方法里，可以看到 `this.embeddedValueResolvers` 属性，而这正是上文提到的 `AbstractBeanFactory.embeddedValueResolvers`。而 `embeddedValueResolvers` 存储的对象，正是上面 <<PropertySourcesPlaceholderConfigurer-processProperties>> 创建的 `StringValueResolver valueResolver` 对象。
+
+继续跟踪代码就会发现，最后的是由 `AbstractPropertyResolver.doResolvePlaceholders` 方法来处理的：
+
+.`AbstractPropertyResolver`
+[source%nowrap,java,{source_attr}]
+----
+private String doResolvePlaceholders(String text, PropertyPlaceholderHelper helper) {
+  return helper.replacePlaceholders(text, this::getPropertyAsRawString);
+}
+----
+
+继续跟进代码，就会发现，字符串的占位符替换是由 `PropertyPlaceholderHelper.parseStringValue` 方法来完成处理的：
+
+.`PropertyPlaceholderHelper`
+[source%nowrap,java,{source_attr}]
+----
+protected String parseStringValue(
+    String value, PlaceholderResolver placeholderResolver, @Nullable Set<String> visitedPlaceholders) {
+  // 如果不包含指定前缀，那就原样返回
+  int startIndex = value.indexOf(this.placeholderPrefix);
+  if (startIndex == -1) {
+    return value;
+  }
+
+  StringBuilder result = new StringBuilder(value);
+  while (startIndex != -1) {
+    // 先找到对应后缀的下标
+    int endIndex = findPlaceholderEndIndex(result, startIndex);
+    if (endIndex != -1) {
+      // 截取前后缀中间的目标字符串
+      String placeholder = result.substring(startIndex + this.placeholderPrefix.length(), endIndex);
+      String originalPlaceholder = placeholder;
+      if (visitedPlaceholders == null) {
+        visitedPlaceholders = new HashSet<>(4);
+      }
+      // 先把解析目标字符串保存起来，避免循环解析
+      if (!visitedPlaceholders.add(originalPlaceholder)) {
+        throw new IllegalArgumentException(
+            "Circular placeholder reference '" + originalPlaceholder + "' in property definitions");
+      }
+      // 开始递归解析目标字符串，因为目标字符串可能也包含占位符，比如 ${a${b}}
+      // Recursive invocation, parsing placeholders contained in the placeholder key.
+      placeholder = parseStringValue(placeholder, placeholderResolver, visitedPlaceholders);
+      // Now obtain the value for the fully resolved key...
+      // 解析占位符在这里完成
+      String propVal = placeholderResolver.resolvePlaceholder(placeholder);
+      // 如果解析结果是 null，那就看是有指定默认值分割符，
+      // 如果有且原始值包含该分割符，则先获取分割符前的 key，获取无果返回指定默认值
+      if (propVal == null && this.valueSeparator != null) {
+        int separatorIndex = placeholder.indexOf(this.valueSeparator);
+        if (separatorIndex != -1) {
+          String actualPlaceholder = placeholder.substring(0, separatorIndex);
+          String defaultValue = placeholder.substring(separatorIndex + this.valueSeparator.length());
+          propVal = placeholderResolver.resolvePlaceholder(actualPlaceholder);
+          if (propVal == null) {
+            propVal = defaultValue;
+          }
+        }
+      }
+      // 如果获取成功，则再解析一次
+      // 这意味着如果最终解析出来的属性中仍然包含占位符，是可以继续解析的
+      if (propVal != null) {
+        // Recursive invocation, parsing placeholders contained in the
+        // previously resolved placeholder value.
+        propVal = parseStringValue(propVal, placeholderResolver, visitedPlaceholders);
+        // 解析完后整体替换
+        result.replace(startIndex, endIndex + this.placeholderSuffix.length(), propVal);
+        if (logger.isTraceEnabled()) {
+          logger.trace("Resolved placeholder '" + placeholder + "'");
+        }
+        // 然后更新 startIndex，
+        // 如果后面还有占位符，就更新到下一个占位符前缀下标；
+        // 如果没有，就返回 -1，打破循环
+        startIndex = result.indexOf(this.placeholderPrefix, startIndex + propVal.length());
+      }
+      else if (this.ignoreUnresolvablePlaceholders) {
+        // 到这里就是解析无果了，根据属性 ignoreUnresolvablePlaceholders
+        // 决定是否抛出异常 IllegalArgumentException
+        // Proceed with unprocessed value.
+        startIndex = result.indexOf(this.placeholderPrefix, endIndex + this.placeholderSuffix.length());
+      }
+      else {
+        throw new IllegalArgumentException("Could not resolve placeholder '" +
+            placeholder + "'" + " in value \"" + value + "\"");
+      }
+      // 解析完后从缓存中移除
+      visitedPlaceholders.remove(originalPlaceholder);
+    }
+    else {
+      startIndex = -1;
+    }
+  }
+  return result.toString();
+}
+
+private int findPlaceholderEndIndex(CharSequence buf, int startIndex) {
+  // 赋值 index
+  int index = startIndex + this.placeholderPrefix.length();
+  int withinNestedPlaceholder = 0;
+  // 从 index 处开始解析
+  while (index < buf.length()) {
+    /**
+     * 先匹配后缀，如果匹配到，先看下是不是嵌套的后缀,
+     * 如果是嵌套后缀，嵌套层级 -1，重新计算 index；
+     * 否则就是匹配到了，直接返回
+     */
+    if (StringUtils.substringMatch(buf, index, this.placeholderSuffix)) {
+      if (withinNestedPlaceholder > 0) {
+        withinNestedPlaceholder--;
+        index = index + this.placeholderSuffix.length();
+      }
+      else {
+        return index;
+      }
+    }
+    /**
+     * 如果没匹配到，就看下是否匹配到 simplePrefix，
+     * 如果匹配到了，说明有嵌套 占位符；
+     * 嵌套层级 +1，重新计算 index
+     */
+    else if (StringUtils.substringMatch(buf, index, this.simplePrefix)) {
+      withinNestedPlaceholder++;
+      index = index + this.simplePrefix.length();
+    }
+    // 如果都没有，index + 1 即可
+    else {
+      index++;
+    }
+  }
+  return -1;
+}
+----
+
+首先解析出占位符内的字符串，然后，使用字符串通过 `String propVal = placeholderResolver.resolvePlaceholder(placeholder);` 在 <<PropertySourcesPlaceholderConfigurer-postProcessBeanFactory>> 提到的两个 `PropertySource` 对象中查找对应的值。下面看一下具体处理过程：
+
+.`PropertySourcesPropertyResolver`
+[source%nowrap,java,{source_attr}]
+----
+@Nullable
+protected <T> T getProperty(String key, Class<T> targetValueType, boolean resolveNestedPlaceholders) {
+  if (this.propertySources != null) {
+    for (PropertySource<?> propertySource : this.propertySources) {
+      if (logger.isTraceEnabled()) {
+        logger.trace("Searching for key '" + key + "' in PropertySource '" +
+            propertySource.getName() + "'");
+      }
+      Object value = propertySource.getProperty(key);
+      if (value != null) {
+        if (resolveNestedPlaceholders && value instanceof String string) {
+          value = resolveNestedPlaceholders(string);
+        }
+        logKeyFound(key, propertySource, value);
+        return convertValueIfNecessary(value, targetValueType);
+      }
+    }
+  }
+  if (logger.isTraceEnabled()) {
+    logger.trace("Could not find key '" + key + "' in any property source");
+  }
+  return null;
+}
+----
+
+到这里所有的占位符处理已经解释清楚了。下面做一个总结来收尾。
+
+== XML 配置与注解配置的不同之处
+
+由于 XML 的占位符处理得更早一些，所以，在一些特殊场景下只能使用 XML 配置。比如 `BeanFactoryPostProcessor` 实现类中使用的占位符，根据 https://www.diguage.com/post/spring-startup-process-overview/[Spring 启动流程概述^] 中关于 `BeanFactoryPostProcessor` 描述可知， `BeanFactoryPostProcessor` 是在 Bean 初始化之前被执行，此时还没有进行 Bean 初始化，自然也没有执行到 `BeanPostProcessor`，也就无法处理注解类型的占位符。
+
+当然，不可否认的是，注解类的占位符一目了然，更利于维护。虽然，多数场景更推荐使用注解类的占位符，但是注解类占位符无能为力的情况下，也可以试试 XML 配置的占位符。
+
+
+== 总结
+
+Spring 对占位符的处理，总共可以分为下面三步：
+
+. 通过对 `<context:property-placeholder>` 标签的解析，来获取配置文件路径，同时构建出 `PropertySourcesPlaceholderConfigurer` 对应的 `BeanDefinition`；
+. 由于 `PropertySourcesPlaceholderConfigurer` 是一个 `BeanFactoryPostProcessor`，会在 Spring 容器初始化时、Bean 创建之前，执行它实现的 `postProcessBeanFactory`，来完成对配置文件的解析，以及对 Bean 定义相关的属性（不包含使用 `@Value` 注解给 Bean 字段添加的占位符）中的占位符的处理。
+. 在 Bean 初始化的过程中，使用第 2 步获取的解析后的配置信息，完成对使用 `@Value` 注解给 Bean 字段添加的占位符的处理工作。
+

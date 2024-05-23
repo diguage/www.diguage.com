@@ -1,0 +1,72 @@
+---
+title: "GC 调优成功案例：减少新生代的大小"
+date: 2024-01-06T16:51:18+08:00
+draft: false
+keywords: ["Java","JVM", "ZGC", "调优"]
+tags: ["Java", "GC", "翻译"]
+categories: ["系统架构","性能优化"]
+thumbnail: "images/gc-tuning/reducing-young-gen-size.png"
+
+weight: 1
+---
+
+当对垃圾回收性能做调优时，不仅能改善垃圾回收暂停时间，还能改善整个应用程序的响应时间并降低云计算成本。最近，我们帮助调整了一个流行应用程序的垃圾回收行为。仅仅是一个微小的改动，就带来了巨大的改善。让我们在这篇文章中讨论一下这个垃圾回收调整的成功案例。
+
+== 垃圾收集关键绩效指标
+
+有句名言叫“无法衡量的东西就无法优化”。说到垃圾回收的调整，您只需关注 3 个主要关键绩效指标 (KPI)：
+
+. GC 暂停时间
+. GC 吞吐量
+. CPU 消耗量
+
+垃圾回收运行时，会暂停应用程序。“GC 停顿时间”表示应用程序在垃圾回收事件中停顿的时间。该指标以秒或毫秒为单位。
+
+“GC 吞吐量”表示应用程序处理客户事务的总时间与处理垃圾回收活动的总时间之比。该指标以百分比为单位。例如，如果有人说他的应用程序的 GC 吞吐量是 98%，这表明该应用程序有 98% 的时间用于处理客户活动，其余 2% 的时间用于处理垃圾回收活动。
+
+即使是处理一个简单的请求，现代应用程序也会创建成千上万个对象。因此，垃圾收集器必须在后台不断运行，以释放为每个请求创建的成千上万个对象。因此，垃圾回收往往会消耗大量的 CPU。因此，在调整垃圾回收性能时，还应研究 CPU 消耗。要了解有关这些 KPI 的更多信息，请参阅： 内存调整： https://www.diguage.com/post/garbage-collection-kpi/[关键性能指标^]。
+
+
+== 如何获取这些 KPI？
+
+在调优垃圾回收性能时，垃圾回收日志是您最好的朋友。您可以通过 https://www.diguage.com/post/how-to-do-gc-log-analysis/[这篇文章^] 给出的 JVM 参数在应用程序中启用垃圾回收日志。建议始终开启垃圾回收日志，因为它能提供丰富的信息，有助于预测中断、排除生产问题并帮助进行容量规划。此外，启用垃圾收集不会给应用程序增加任何明显的开销。
+
+启用垃圾收集日志后，您可以使用免费的垃圾收集日志分析工具，如 https://gceasy.io/[GCeasy^]、 https://www.ibm.com/support/pages/java-sdk[IBM GC & Memory visualizer^] 和 https://github.com/mgm3746/garbagecat[Google Garbage cat^] 等，查看上述关键绩效指标。
+
+在下面这篇文章，教你 https://www.diguage.com/post/how-to-do-gc-log-analysis/[如何进行 GC 日志分析^]。
+
+
+== 垃圾回收行为基线
+
+介绍到此为止。让我们回到本文最初的主题。我们在这个流行的应用程序上启用了垃圾回收日志。我们让应用程序运行了 24 小时。然后，我们将生成的 GC 日志文件上传到 GCeasy 工具。该工具提供了具有洞察力的图表和 GC KPI。该应用程序的 GC 吞吐量为 96.176%，平均暂停时间为 12.429 秒。
+
+image::/images/gc-tuning/baselin-KPI.png[title="基线 GC KPI（由 GCeasy 生成）",alt="基线 GC KPI（由 GCeasy 生成）",{image_attr}]
+
+基本上，这些 GC KPI 对于高吞吐量、低延迟类型的应用程序来说不够理想。该应用程序使用 “Parallel GC” 算法运行。该应用程序被配置为以 40GB 堆大小（即 `-Xmx`）运行。在这 40GB 堆大小中，20GB（即 50%）分配给新生代，其余 20GB 分配给老一代。
+
+image::/images/gc-tuning/baseline-gccauses.png[title="GC 原因（由 GCeasy 生成）",alt="GC 原因（由 GCeasy 生成）",{image_attr}]
+
+来自 GCeasy 工具的上表显示了触发 GC 事件的原因。你可以注意到，大量 GC 事件是由于 “分配失败（Allocation failure）”导致的。这类“分配失败” GC 事件是在新生代没有足够内存创建新对象时触发的。你可以注意到，仅“分配失败” GC 事件就累计触发了 55 分 16 秒的暂停时间。在 24 小时内，这是一个非常大的暂停时间。
+
+
+== 减小新生代的大小
+
+如果你注意到这个应用程序的新生代大小，它是相当大的（即 20GB）。由于新生代非常大，因此必须扫描新生代中的大量对象，并释放该区域中未引用的对象。因此，新生代越大，暂停时间就越长。因此，研究小组决定将新生代的大小从 20GB 减少到 1GB。理由是如果新生代较小，那么需要扫描和释放的对象数量就会减少，从而减少垃圾收集暂停时间。
+
+== 垃圾回收行为对照：
+
+将新生代大小从 20GB 降至 1GB，然后在生产环境中运行应用程序 24 小时。当我们将生成的垃圾收集日志文件上传到 GCeasy 工具时，它生成了以下 KPI：
+
+image::/images/gc-tuning/benchmark-KPI.png[title="GC KPI 对照（由 GCeasy 生成）",alt="GC KPI 对照（由 GCeasy 生成）",{image_attr}]
+
+GC Throughput improved from 96.176% to 99.36%. Average GC pause time improved from 12.429 seconds to 139ms. This is a phenomenal improvement. Eureka moment. Below is how the GC causes table started to look:
+
+GC 吞吐量从 96.176% 提高到 99.36%。平均 GC 暂停时间从 12.429 秒缩短至 139ms。这是一个惊人的进步。Eureka 时刻！下面是 GC 原因的情况：
+
+image::/images/gc-tuning/benchmark-gccauses.png[title="GC 原因（由 GCeasy 生成）",alt="GC 原因（由 GCeasy 生成）",{image_attr}]
+
+您可以注意到，“分配失败” GC 事件计数从 259 次大幅增至 3976 次。由于新生代的规模变小，“分配失败” GC 事件的发生次数也随之增加。尽管“分配失败”的次数增加了，但累计暂停时间却从“55 分 16 秒”减少到了“8 分 56 秒”。这是因为新生代较小，需要从内存中释放的对象数量较少。因此，正如我们所预期的那样，减少新生代的大小改善了垃圾收集行为。
+
+WARNING: 减少年轻代大小并不总是能减少 GC 暂停时间。这取决于流量、应用程序的对象类型创建（即短寿命或长寿命对象）以及 GC 算法配置。因此，不要根据这篇文章来减少年轻代的大小，在更改新生代大小之前，请自行进行适当的调查和测试。
+
+原文： https://blog.ycrash.io/2022/03/04/garbage-collection-tuning-success-story-reducing-young-gen-size/[Garbage Collection tuning success story – reducing young gen size^]

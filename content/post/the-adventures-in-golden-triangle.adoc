@@ -1,0 +1,27 @@
+---
+title: "金三角历险记"
+date: 2022-09-01T23:15:18+08:00
+draft: true
+keywords: ["3M","风机","防毒面具"]
+tags: ["生活"]
+categories: ["逸闻趣事"]
+thumbnail: "images/life/golden-triangle.jpg"
+
+weight: 1
+---
+
+
+// image::/images/[title="",alt="",{image_attr}]
+
+// [source%nowrap,java,{source_attr}]
+// ----
+// // code
+// ----
+
+最近需要挪窝。新窝风景宜人，七里飘香，暂且称称之为“金三角”。
+
+虽然新窝香气四溢，奈克对气温敏感，无福消受，所以，就走上了“我要空气”的各种折腾之路。解决方案不断在脑中迸发出来，又经过不断地检验，然后不停地迭代，最后才确定方案。整个过程，跌宕起伏，好不精彩。所以，提笔记录一下。
+
+image::/images/life/3m-6200.jpg[alt="3M6200",{image_attr}]
+
+image::/images/life/fengji.png[alt="风机",{image_attr}]

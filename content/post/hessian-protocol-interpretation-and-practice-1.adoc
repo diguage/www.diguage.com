@@ -1,0 +1,798 @@
+---
+title: "Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数"
+date: 2022-05-02T17:22:01+08:00
+draft: false
+keywords: ["Hessian","序列化","协议","Java","微服务","架构","程序设计","浮点数","IEEE-754"]
+tags: ["Java","微服务","架构","设计","序列化"]
+categories: ["系统架构","程序设计"]
+thumbnail: "images/common/confused-target-vector.jpg"
+
+weight: 1
+---
+
+
+前段时间，翻译了 Hessian 2.0 的序列化协议，发布在了 https://www.diguage.com/post/hessian-serialization-protocol/[Hessian 2.0 序列化协议（中文版）^]。但是，其中有很多言语不详之处。所以，接下来会用几篇文章来详细解释并实践一下 Hessian 序列化协议，以求做到知其然知其所以然。
+
+目录如下：
+
+. https://www.diguage.com/post/hessian-serialization-protocol/[Hessian 2.0 序列化协议（中文版）^] -- Hessian 序列化协议的中文翻译版。根据后面的“协议解释与实战”系列文章，增加了协议内容错误提示。
+. https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/[Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数^] -- 介绍布尔型数据、日期类型、浮点类型数据和整数类型数据等四种类型的数据的处理。
+. https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-2/[Hessian 协议解释与实战（二）：长整型、二进制数据与 Null^] -- 介绍长整数类型数据、二进制数据和 `null` 等三种类型的数据的处理。
+. https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-3/[Hessian 协议解释与实战（三）：字符串^] -- 专门介绍了关于字符串的处理。由于字符串需要铺垫的基础知识比较多，处理细节也有繁琐，所以单独成篇来介绍。
+. https://www.diguage.com/post/hessian-source-analysis-for-java/[Hessian 源码分析（Java）^] -- 开始第四篇分析之前，先来介绍一下 Hessian 的源码实现。方便后续展开说明。
+. https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-4/[Hessian 协议解释与实战（四）：数组与集合^] -- 铺垫了一些关于实例对象的处理，重点介绍关于数组和集合的相关处理。
+. https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-5/[Hessian 协议解释与实战（五）：对象与映射^] -- 重点介绍关于对象与映射的相关处理。
+. https://www.diguage.com/post/hessian-vs-msgpack-vs-json/[Hessian、Msgpack 和 JSON 实例对比^] -- 用实例对比 JSON、Hessian 和 MessagePack 的区别。
+. https://www.diguage.com/post/schema-evolution-in-avro-protobuf-thrift[Avro、ProtoBuf、Thrift 的模式演进之路^] -- 翻译的 Martin Kleppmann 的文章，重点对比了 Avro、ProtoBuf、Thrift 的序列化处理思路。
+
+'''
+
+[#helper-methods]
+== 基础工具方法
+
+Hessian 序列化之后的数据，都是字节数组，为了方便查看字节数组的二进制形式和十六进制形式，在正式开始之前，先介绍一下期间用到的辅助工具方法。闲言少叙，直接上代码：
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 创建 Hessian2Output 对象，以便用于序列化
+ *
+ * @author D瓜哥 · https://www.diguage.com/
+ */
+private Hessian2Output getHessian2Output(OutputStream stream) {
+    SerializerFactory serializerFactory = new SerializerFactory();
+    serializerFactory.setAllowNonSerializable(true);
+    Hessian2Output result = new Hessian2Output(stream);
+    result.setSerializerFactory(serializerFactory);
+    return result;
+}
+
+/**
+ * 打印字节数组
+ *
+ * @author D瓜哥 · https://www.diguage.com/
+ */
+private void printBytes(byte[] result) {
+    for (byte b : result) {
+        String bitx = Integer.toBinaryString(Byte.toUnsignedInt(b));
+        String zbits = String.format("%8s", bitx).replace(' ', '0');
+        if (0 <= b) {
+            System.out.printf("%4d 0x%02X %8s %c %n", b, b, zbits, b);
+        } else {
+            System.out.printf("%4d 0x%02X %8s %n", b, b, zbits);
+        }
+    }
+}
+
+/**
+ * 将 long 转化成二进制字符串（前面补0）
+ *
+ * @author D瓜哥 · https://www.diguage.com/
+ */
+private String getBinaryString(long value) {
+    String bits = Long.toBinaryString(value);
+    char[] chars = String.format("%64s", bits)
+                         .replace(' ', '0').toCharArray();
+    StringBuilder result = new StringBuilder(64 + 7);
+    for (int i = 0; i < chars.length; i++) {
+        result.append(chars[i]);
+        if (i % 8 == 7 && i != chars.length - 1) {
+            result.append(",");
+        }
+    }
+    return result.toString();
+}
+
+/**
+ * 将 int 转化成二进制字符串（前面补0）
+ *
+ * @author D瓜哥 · https://www.diguage.com/
+ */
+private String getBinaryString(int value) {
+    String bits = Integer.toBinaryString(value);
+    char[] chars = String.format("%32s", bits)
+                         .replace(' ', '0').toCharArray();
+    StringBuilder result = new StringBuilder(64 + 7);
+    for (int i = 0; i < chars.length; i++) {
+        result.append(chars[i]);
+        if (i % 8 == 7 && i != chars.length - 1) {
+            result.append(",");
+        }
+    }
+    return result.toString();
+}
+----
+
+[#boolean]
+== 布尔型数据
+
+先来看一下布尔型数据的处理。布尔数据只有两种情况，在 https://www.diguage.com/post/hessian-serialization-protocol/#boolean[Hessian 2.0 序列化协议（中文版）：布尔型数据^] 中说明的很清楚。这里只是验证一下。
+
+[source%nowrap,java,{source_attr}]
+----
+@Test
+public void testBoolean() throws Throwable {
+    boolTo(true);
+    boolTo(false);
+}
+
+private void boolTo(boolean bool) throws Throwable {
+    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+    Hessian2Output out = new Hessian2Output(bos);
+
+    System.out.println("\n== Boolean: " + bool + " ==");
+    out.writeBoolean(bool);
+    out.close();
+    byte[] result = bos.toByteArray();
+    printBytes(result);
+}
+
+
+// -- 输出结果 ------------------------------------------------
+== Boolean: true ==
+  84 0x54 01010100 T 
+
+== Boolean: false ==
+  70 0x46 01000110 F 
+----
+
+布尔型数据的处理比较简单明了，实验结果也与 https://www.diguage.com/post/hessian-serialization-protocol/#boolean[Hessian 2.0 序列化协议（中文版）：布尔型数据^] 中的描述非常吻合：**字节 `F` 表示 `false`，字节 `T` 表示 `true`。**
+
+[#date]
+== 日期类型
+
+接下来看一下日期类型的处理。在 https://www.diguage.com/post/hessian-serialization-protocol/#date[Hessian 2.0 序列化协议（中文版）：日期类型数据^] 中，只是是说明对日期类型分为两种情况处理，但是并没有说明区分标准。这里要重点探究一下区分标准。
+
+[source%nowrap,java,{source_attr}]
+----
+@Test
+public void testDate() throws Throwable {
+    LocalDateTime time = LocalDateTime.of(2022, 5, 1, 23, 27, 48);
+    Instant instant = ZonedDateTime
+            .of(time, ZoneId.of("Asia/Shanghai")).toInstant();
+    // milli = 1651418868000
+    long milli = instant.toEpochMilli();
+    Date date = new Date(milli);
+    dateTo(date);
+
+    // 代码中，有 time % 60000L == 0 则使用压缩格式
+    Date shortDate = new Date(milli - (milli % 60000L));
+    dateTo(shortDate);
+}
+
+public void dateTo(Date date) throws Throwable {
+    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+    Hessian2Output out = new Hessian2Output(bos);
+
+    long time = date.getTime();
+    out.writeUTCDate(time); // Hessian 直接将日期转换成毫秒数来处理的，简单直接。
+    out.close();
+    byte[] result = bos.toByteArray();
+    String pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX";
+    DateFormat dateFormat = new SimpleDateFormat(pattern);
+    System.out.println("\n== Date: " + dateFormat.format(date) + " ==");
+    System.out.println("== Date: " + time + "ms ==");
+    if (time % 60000L == 0) {
+      System.out.printf("== Date: " + getBinaryString(time/60000) + " m ==%n");
+    } else {
+      System.out.printf("== Date: " + getBinaryString(time) + " ms ==%n");
+    }
+
+    printBytes(result);
+}
+
+
+// -- 输出结果 ------------------------------------------------
+// 正常日期
+== Date: 2022-05-01T23:27:48.000+08:00 ==
+== Date: 1651418868000ms ==
+== Date: 00000000,00000000,00000001,10000000,
+         10000000,00111100,00101001,00100000 ms ==
+  74 0x4A 01001010 J 
+   0 0x00 00000000   
+   0 0x00 00000000   
+   1 0x01 00000001  
+-128 0x80 10000000 
+-128 0x80 10000000 
+  60 0x3C 00111100 < 
+  41 0x29 00101001 ) 
+  32 0x20 00100000   
+
+// 紧凑日期（毫秒数可以被 60000L 整除的数，即整分钟的日期。）
+== Date: 2022-05-01T23:27:00.000+08:00 ==
+== Date: 1651418820000ms ==
+== Date: 00000000,00000000,00000000,00000000,
+         00000001,10100011,11111010,00111111 m ==
+  75 0x4B 01001011 K 
+   1 0x01 00000001  
+ -93 0xA3 10100011 
+  -6 0xFA 11111010 
+  63 0x3F 00111111 ? 
+----
+
+
+
+这里有几点需要注意：
+
+. 从 `Hessian2Output.writeUTCDate(time)` 就可以看出，Hessian 是直接将日期转换成毫秒数来处理的，简单直接。
+. 对于符合紧凑日期条件（毫秒数可以被 60000L 整除的数，即分钟以下的时间单位都为 0 的时间点。），直接将毫秒数除以 60000L 来表示其分钟数，这样只需要取最后 32 位的整数值即可。翻看 Hessian 的代码，也确实如此：
++
+--
+.Hessian 源代码
+[source%nowrap,java,{source_attr}]
+----
+  public void writeUTCDate(long time)
+    throws IOException
+  {
+    // ......
+    // 紧凑日期处理
+    if (time % 60000L == 0) {
+      // compact date ::= x65 b3 b2 b1 b0
+
+      long minutes = time / 60000L;
+
+      if ((minutes >> 31) == 0 || (minutes >> 31) == -1) {
+        buffer[offset++] = (byte) BC_DATE_MINUTE;
+        buffer[offset++] = ((byte) (minutes >> 24));
+        buffer[offset++] = ((byte) (minutes >> 16));
+        buffer[offset++] = ((byte) (minutes >> 8));
+        buffer[offset++] = ((byte) (minutes >> 0));
+
+        _offset = offset;
+        return;
+      }
+    }
+
+    // ......
+  }
+----
+--
++
+. 正常的日期格式，则是直接用毫秒数（长整型数字）的数值进行编码。
+
+关于日期的处理，也和 https://www.diguage.com/post/hessian-serialization-protocol/#date[Hessian 2.0 序列化协议（中文版）：日期类型数据^] 相符。原协议也没什么歧义，这里就不再多做介绍。
+
+[#double]
+== 浮点类型数据
+
+接下来看一下浮点数的处理。在 https://www.diguage.com/post/hessian-serialization-protocol/#double[Hessian 2.0 序列化协议（中文版）：浮点类型数据^] 中，对浮点数的处理还有有不少言语不详的地方的，比如“32位浮点数等价的双精度浮点数”啥意思等。需要重点探索一下。
+
+[source%nowrap,java,{source_attr}]
+----
+@Test
+public void testDouble() throws Throwable {
+    doubleTo(0.0);
+    doubleTo(1.0);
+    doubleTo(1.1);
+    doubleTo(-128.0);
+    doubleTo(-129.0);
+    doubleTo(127.0);
+    doubleTo(128.0);
+    doubleTo(-32768.0);
+    doubleTo(-32769.0);
+    doubleTo(32767.0);
+    doubleTo(32768.0);
+
+    // 与 32位浮点数等价的双精度浮点数，可以用四个字节来表示；
+    // 从代码来看，假设 newValue = (int) x * 1000，
+    // 如果 0.001 * newValue = x，则符合此条件，
+    // 将整数 newValue 的二进制位作为 x 的序列化结果
+    doubleTo(0.001D);
+    doubleTo(-0.001D);
+    doubleTo(0.0011D);
+    doubleTo(-0.0011D);
+
+    // 这里测试一下协议中提到的 12.25
+    doubleTo(12.25);
+
+    doubleTo(Integer.MAX_VALUE / 1000.0);
+    doubleTo((1.0D + (long) Integer.MAX_VALUE) / 1000);
+
+    doubleTo(Integer.MIN_VALUE / 1000.0);
+    doubleTo(((long) Integer.MIN_VALUE - 1L) / 1000.0);
+
+    // 除了上述的几种情况，其余一律按照 IEEE-754 浮点数标准来处理。
+    // 按照双精度来处理
+    doubleTo(Float.MIN_VALUE);
+    // 按照双精度来处理
+    doubleTo(Float.MAX_VALUE);
+    // 按照双精度来处理
+    doubleTo(Double.MIN_VALUE);
+    // 按照双精度来处理
+    doubleTo(Double.MAX_VALUE);
+}
+
+public void doubleTo(double value) throws Throwable {
+    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+    Hessian2Output out = new Hessian2Output(bos);
+
+    out.writeDouble(value);
+    out.close();
+    byte[] result = bos.toByteArray();
+
+    System.out.println("\n== double: " + value + " ==");
+    printBytes(result);
+}
+
+
+// -- 输出结果 ------------------------------------------------
+== double: 0.0 ==
+  91 0x5B 01011011 [ 
+
+== double: 1.0 ==
+  92 0x5C 01011100 \ 
+
+== double: 1.1 ==
+  95 0x5F 01011111 _ 
+   0 0x00 00000000   
+   0 0x00 00000000   
+   4 0x04 00000100  
+  76 0x4C 01001100 L 
+
+== double: -128.0 ==
+  93 0x5D 01011101 ] 
+-128 0x80 10000000 
+
+== double: -129.0 ==
+  94 0x5E 01011110 ^ 
+  -1 0xFF 11111111 
+ 127 0x7F 01111111  
+
+== double: 127.0 ==
+  93 0x5D 01011101 ] 
+ 127 0x7F 01111111  
+
+== double: 128.0 ==
+  94 0x5E 01011110 ^ 
+   0 0x00 00000000   
+-128 0x80 10000000 
+
+== double: -32768.0 ==
+  94 0x5E 01011110 ^ 
+-128 0x80 10000000 
+   0 0x00 00000000   
+
+== double: -32769.0 ==
+  95 0x5F 01011111 _ 
+  -2 0xFE 11111110 
+  11 0x0B 00001011  
+  -4 0xFC 11111100 
+  24 0x18 00011000  
+
+== double: 32767.0 ==
+  94 0x5E 01011110 ^ 
+ 127 0x7F 01111111  
+  -1 0xFF 11111111 
+
+== double: 32768.0 ==
+  95 0x5F 01011111 _ 
+   1 0x01 00000001  
+ -12 0xF4 11110100 
+   0 0x00 00000000   
+   0 0x00 00000000   
+
+== double: 0.001 ==
+  95 0x5F 01011111 _ 
+   0 0x00 00000000   
+   0 0x00 00000000   
+   0 0x00 00000000   
+   1 0x01 00000001  
+
+== double: -0.001 ==
+  95 0x5F 01011111 _ 
+  -1 0xFF 11111111 
+  -1 0xFF 11111111 
+  -1 0xFF 11111111 
+  -1 0xFF 11111111 
+
+== double: 0.0011 ==
+  68 0x44 01000100 D 
+  63 0x3F 00111111 ? 
+  82 0x52 01010010 R 
+   5 0x05 00000101  
+ -68 0xBC 10111100 
+   1 0x01 00000001  
+ -93 0xA3 10100011 
+ 110 0x6E 01101110 n 
+  47 0x2F 00101111 / 
+
+== double: -0.0011 ==
+  68 0x44 01000100 D 
+ -65 0xBF 10111111 
+  82 0x52 01010010 R 
+   5 0x05 00000101  
+ -68 0xBC 10111100 
+   1 0x01 00000001  
+ -93 0xA3 10100011 
+ 110 0x6E 01101110 n 
+  47 0x2F 00101111 / 
+
+== double: 12.25 ==
+  95 0x5F 01011111 _ 
+   0 0x00 00000000   
+   0 0x00 00000000   
+  47 0x2F 00101111 / 
+ -38 0xDA 11011010 
+
+== double: 2147483.647 ==
+  95 0x5F 01011111 _ 
+ 127 0x7F 01111111  
+  -1 0xFF 11111111 
+  -1 0xFF 11111111 
+  -1 0xFF 11111111 
+
+== double: 2147483.648 ==
+  68 0x44 01000100 D 
+  65 0x41 01000001 A 
+  64 0x40 01000000 @ 
+  98 0x62 01100010 b 
+  77 0x4D 01001101 M 
+ -46 0xD2 11010010 
+ -15 0xF1 11110001 
+ -87 0xA9 10101001 
+  -4 0xFC 11111100 
+
+== double: -2147483.648 ==
+  95 0x5F 01011111 _ 
+-128 0x80 10000000 
+   0 0x00 00000000   
+   0 0x00 00000000   
+   0 0x00 00000000   
+
+== double: -2147483.649 ==
+  68 0x44 01000100 D 
+ -63 0xC1 11000001 
+  64 0x40 01000000 @ 
+  98 0x62 01100010 b 
+  77 0x4D 01001101 M 
+ -45 0xD3 11010011 
+  18 0x12 00010010  
+ 110 0x6E 01101110 n 
+-104 0x98 10011000 
+
+== double: Float.MIN_VALUE ==
+  68 0x44 01000100 D 
+  54 0x36 00110110 6 
+ -96 0xA0 10100000 
+   0 0x00 00000000   
+   0 0x00 00000000   
+   0 0x00 00000000   
+   0 0x00 00000000   
+   0 0x00 00000000   
+   0 0x00 00000000   
+
+== double: Float.MAX_VALUE ==
+  68 0x44 01000100 D 
+  71 0x47 01000111 G 
+ -17 0xEF 11101111 
+  -1 0xFF 11111111 
+  -1 0xFF 11111111 
+ -32 0xE0 11100000 
+   0 0x00 00000000   
+   0 0x00 00000000   
+   0 0x00 00000000   
+
+== double: Double.MIN_VALUE ==
+  68 0x44 01000100 D 
+   0 0x00 00000000   
+   0 0x00 00000000   
+   0 0x00 00000000   
+   0 0x00 00000000   
+   0 0x00 00000000   
+   0 0x00 00000000   
+   0 0x00 00000000   
+   1 0x01 00000001  
+
+== double: Double.MAX_VALUE ==
+  68 0x44 01000100 D 
+ 127 0x7F 01111111  
+ -17 0xEF 11101111 
+  -1 0xFF 11111111 
+  -1 0xFF 11111111 
+  -1 0xFF 11111111 
+  -1 0xFF 11111111 
+  -1 0xFF 11111111 
+  -1 0xFF 11111111
+----
+
+这里有几点说明一下：
+
+. 协议中提到的 `0.0`、 `1.0` 使用一个字节表示。
+. 协议中提到的 `-128.0` ~ `127.0` 之间的“整数”浮点数，则是使用一个前缀 `0x5D` 和一个表示数字的字节来表示。
+. 协议中提到的 `-32768.0` ~ `32767.0` 之间的“整数”浮点数，则是使用一个前缀 `0x5E` 和两个表示数字的字节来表示。
+. 重点说明一下关于“32位浮点数等价的双精度浮点数，用四个字节来表示”。最初，D瓜哥 理解成 `Float.MIN_VALUE` ~ `Float.MAX_VALUE` 之间的数字可以用四个字节表示，但是测试一下发现是八个字节。后来，去翻了 Hessian 的源代码，才发现这个表述歧义非常大，更准确的表述应该是：假设 `newValue = (int) x * 1000`，如果 `0.001 * newValue = x`，则符合此条件，可以将整数 `newValue` 的二进制位作为 `x` 的序列化结果。换句话说，可以用 `(Integer.MIN_VALUE ~ Integer.MAX_VALUE)/1000` 表示的浮点数，才可以用四个字节表示。实验结果，也符合描述。相关代码如下：
++
+--
+.Hessian 源代码
+[source%nowrap,java,{source_attr}]
+----
+  public void writeDouble(double value)
+    throws IOException
+  {
+    // ......
+
+    int mills = (int) (value * 1000);
+
+    if (0.001 * mills == value) {
+      buffer[offset + 0] = (byte) (BC_DOUBLE_MILL);
+      buffer[offset + 1] = (byte) (mills >> 24);
+      buffer[offset + 2] = (byte) (mills >> 16);
+      buffer[offset + 3] = (byte) (mills >> 8);
+      buffer[offset + 4] = (byte) (mills);
+
+      _offset = offset + 5;
+
+      return;
+    }
+
+    // ......
+  }
+----
+--
++
+. 除上述几种情况之外，其余都是使用九个字节来表示：一个标志位字节 `0x44`；八个按照 https://en.wikipedia.org/wiki/IEEE_754[IEEE-754 浮点数标准^] 编码的浮点数字节。这里再多说一句：Hessian 在处理这种情况浮点数时，使用 `java.lang.Double.doubleToRawLongBits(double value)` 方法，将其二进制位转化成“相等”的 `long` 数，然后再将二进制位按照字节逐个添加到序列化结果中的。
+. 综上所述， https://www.diguage.com/post/hessian-serialization-protocol/#double[Hessian 2.0 序列化协议（中文版）：浮点类型数据^] 的示例中提到的 `12.25` 按照九个字节也是一个错误示例。应该是按照五个字节编码。上面的程序运行的结果，也说明了D瓜哥的论断。
+
+[#int]
+== 整数类型数据
+
+在 https://www.diguage.com/post/hessian-serialization-protocol/#int[Hessian 2.0 序列化协议（中文版）：整数类型数据^] 中， 对于整数处理的说明已经比较清楚了。而且，相对来说，比较好解释：可以直接将其二进制表示打印出来和序列化的结果进行相互印证。
+
+[source%nowrap,java,{source_attr}]
+----
+@Test
+public void testInt() throws Throwable {
+    intTo(-16);
+    intTo(-17);
+
+    intTo(47);
+    intTo(48);
+
+    // 在编码 -16 ~ 47 时，用 10000000（0x80） 表示 -16，
+    // 之后就在后六位上逐渐加 1，直到 10111111（0xBF） 来表示 47。
+    // for (int i = 0; i <= 47; i++) {
+    //     intTo(i);
+    // }
+
+    // 在编码 -2048 ~ 2047 时，使用两个字节表示。
+    // 其中，后面的 12 位用于表示数值。
+    // 11000000（0xC0） 00000000（0x00） 表示 -2048，
+    // 之后就在后十二位上逐渐加 1，直到
+    // 11001111（0xCF） 11111111（0xFF） 表示  2047
+    // value = ((code - 0xc8) << 8) + b0;
+    intTo(-2048);
+    intTo(-2049);
+
+    intTo(-2047);
+    intTo(-1024);
+
+    intTo(2047);
+    intTo(2048);
+
+    // 在编码 -262144 ~ 262143 时，使用三个字节表示。
+    // 其中，后面的 19 位用于表示数值。
+    // 11010000（0xD0） 00000000（0x00） 00000000（0x00） 表示 -262144，
+    // 之后就在后十九位上逐渐加 1，直到
+    // 11010111（0xD7） 11111111（0xFF） 11111111（0xFF） 表示  262143
+    intTo(-262144);
+    intTo(-262145);
+
+    intTo(262143);
+    intTo(262144);
+
+
+    // 演示各个“区间”的分界线
+    intTo(Integer.MIN_VALUE);
+    intTo(-262145);
+    intTo(-262144);
+    intTo(-2049);
+    intTo(-2048);
+    intTo(-17);
+    intTo(-16);
+    intTo(47);
+    intTo(48);
+    intTo(2047);
+    intTo(2048);
+    intTo(262143);
+    intTo(262144);
+    intTo(Integer.MAX_VALUE);
+}
+
+public void intTo(int value) throws Throwable {
+    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+    Hessian2Output out = getHessian2Output(bos);
+
+    out.writeInt(value);
+    out.close();
+    byte[] result = bos.toByteArray();
+
+    System.out.println("\n== int: " + value + " ==");
+    System.out.println("== int: " + getBinaryString(value) + " ==");
+    printBytes(result);
+}
+
+// -- 输出结果 ------------------------------------------------
+== int: -16 ==
+== int: 11111111,11111111,11111111,11110000 ==
+-128 0x80 10000000 
+
+== int: -17 ==
+== int: 11111111,11111111,11111111,11101111 ==
+ -57 0xC7 11000111 
+ -17 0xEF 11101111 
+
+== int: 47 ==
+== int: 00000000,00000000,00000000,00101111 ==
+ -65 0xBF 10111111 
+
+== int: 48 ==
+== int: 00000000,00000000,00000000,00110000 ==
+ -56 0xC8 11001000 
+  48 0x30 00110000 0 
+
+== int: -2048 ==
+== int: 11111111,11111111,11111000,00000000 ==
+ -64 0xC0 11000000 
+   0 0x00 00000000   
+
+== int: -2049 ==
+== int: 11111111,11111111,11110111,11111111 ==
+ -45 0xD3 11010011 
+  -9 0xF7 11110111 
+  -1 0xFF 11111111 
+
+== int: -2047 ==
+== int: 11111111,11111111,11111000,00000001 ==
+ -64 0xC0 11000000 
+   1 0x01 00000001  
+
+== int: -1024 ==
+== int: 11111111,11111111,11111100,00000000 ==
+ -60 0xC4 11000100 
+   0 0x00 00000000   
+
+== int: 2047 ==
+== int: 00000000,00000000,00000111,11111111 ==
+ -49 0xCF 11001111 
+  -1 0xFF 11111111 
+
+== int: 2048 ==
+== int: 00000000,00000000,00001000,00000000 ==
+ -44 0xD4 11010100 
+   8 0x08 00001000 
+   0 0x00 00000000   
+
+== int: -262144 ==
+== int: 11111111,11111100,00000000,00000000 ==
+ -48 0xD0 11010000 
+   0 0x00 00000000   
+   0 0x00 00000000   
+
+== int: -262145 ==
+== int: 11111111,11111011,11111111,11111111 ==
+  73 0x49 01001001 I 
+  -1 0xFF 11111111 
+  -5 0xFB 11111011 
+  -1 0xFF 11111111 
+  -1 0xFF 11111111 
+
+== int: 262143 ==
+== int: 00000000,00000011,11111111,11111111 ==
+ -41 0xD7 11010111 
+  -1 0xFF 11111111 
+  -1 0xFF 11111111 
+
+== int: 262144 ==
+== int: 00000000,00000100,00000000,00000000 ==
+  73 0x49 01001001 I 
+   0 0x00 00000000   
+   4 0x04 00000100  
+   0 0x00 00000000   
+   0 0x00 00000000   
+
+// 以下是各个“区间”分界线展示
+== int: -2147483648 ==
+== int: 10000000,00000000,00000000,00000000 ==
+  73 0x49 01001001 I 
+-128 0x80 10000000 
+   0 0x00 00000000   
+   0 0x00 00000000   
+   0 0x00 00000000   
+
+== int: -262145 ==
+== int: 11111111,11111011,11111111,11111111 ==
+  73 0x49 01001001 I 
+  -1 0xFF 11111111 
+  -5 0xFB 11111011 
+  -1 0xFF 11111111 
+  -1 0xFF 11111111 
+
+== int: -262144 ==
+== int: 11111111,11111100,00000000,00000000 ==
+ -48 0xD0 11010000 
+   0 0x00 00000000   
+   0 0x00 00000000   
+
+== int: -2049 ==
+== int: 11111111,11111111,11110111,11111111 ==
+ -45 0xD3 11010011 
+  -9 0xF7 11110111 
+  -1 0xFF 11111111 
+
+== int: -2048 ==
+== int: 11111111,11111111,11111000,00000000 ==
+ -64 0xC0 11000000 
+   0 0x00 00000000   
+
+== int: -17 ==
+== int: 11111111,11111111,11111111,11101111 ==
+ -57 0xC7 11000111 
+ -17 0xEF 11101111 
+
+== int: -16 ==
+== int: 11111111,11111111,11111111,11110000 ==
+-128 0x80 10000000 
+
+== int: 47 ==
+== int: 00000000,00000000,00000000,00101111 ==
+ -65 0xBF 10111111 
+
+== int: 48 ==
+== int: 00000000,00000000,00000000,00110000 ==
+ -56 0xC8 11001000 
+  48 0x30 00110000 0 
+
+== int: 2047 ==
+== int: 00000000,00000000,00000111,11111111 ==
+ -49 0xCF 11001111 
+  -1 0xFF 11111111 
+
+== int: 2048 ==
+== int: 00000000,00000000,00001000,00000000 ==
+ -44 0xD4 11010100 
+   8 0x08 00001000 
+   0 0x00 00000000   
+
+== int: 262143 ==
+== int: 00000000,00000011,11111111,11111111 ==
+ -41 0xD7 11010111 
+  -1 0xFF 11111111 
+  -1 0xFF 11111111 
+
+== int: 262144 ==
+== int: 00000000,00000100,00000000,00000000 ==
+  73 0x49 01001001 I 
+   0 0x00 00000000   
+   4 0x04 00000100  
+   0 0x00 00000000   
+   0 0x00 00000000   
+
+== int: 2147483647 ==
+== int: 01111111,11111111,11111111,11111111 ==
+  73 0x49 01001001 I 
+ 127 0x7F 01111111  
+  -1 0xFF 11111111 
+  -1 0xFF 11111111 
+  -1 0xFF 11111111 
+----
+
+关于整数类型的处理，有几点做一下说明：
+
+. 在编码 `-16` ~ `47` 时，用 `10000000`（`0x80`） 表示 `-16`，之后就在后六位上逐渐加 `1`，直到 `10111111`（`0xBF`） 来表示 `47`。
+. 在编码 `-2048` ~ `2047` 时，使用两个字节表示。其中，后面的 `12` 位用于表示数值。`11000000`（`0xC0`） `00000000`（`0x00`） 表示 `-2048`，之后就在后十二位上逐渐加 `1`，直到 `11001111`（`0xCF`） `11111111`（`0xFF`） 表示 `2047`
++
+NOTE: 计算公式 `value = ((code - 0xc8) << 8) + b0`，还没搞清楚怎么计算。等搞清楚了，再来更新。能搞明白的小伙伴，欢迎留言交流。
++
+. 在编码 `-262144` ~ `262143` 时，使用三个字节表示。其中，后面的十九位用于表示数值。`11010000`（`0xD0`） `00000000`（`0x00`） `00000000`（`0x00`） 表示 `-262144`，之后就在后十九位上逐渐加 `1`，直到 `11010111`（`0xD7`） `11111111`（`0xFF`） `11111111`（`0xFF`） 表示 `262143`。
+. 其余情况，则是按照五个字节来处理：一个标志位字节 `0x49`（`I`）和四个 `int` 对应的二进制表示的字节。
+
+为了更形象地说明问题，干脆画了个图来说明：
+
+image::/images/marshal/hessian-int.svg[{image_attr}]
+
+文章已经很长，就此打住，剩下的一些数据类型后续在做说明。关于长整型、二进制数据与 `null` 等数据类型的处理，请移步 https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-2/[Hessian 协议解释与实战（二）：长整型、二进制数据与 Null^]。
+
+== 参考资料
+
+. https://www.diguage.com/post/hessian-serialization-protocol/[Hessian 2.0 序列化协议（中文版）^]
+. http://svn.caucho.com/resin-doc/admin/hessian.xtp[Hessian^]

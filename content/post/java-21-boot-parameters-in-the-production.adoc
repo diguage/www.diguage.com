@@ -1,0 +1,523 @@
+---
+title: "生产环境中 Java 21 启动参数"
+date: 2024-05-13T17:04:11+08:00
+draft: false
+keywords: ["Java","JVM", "G1", "ZGC", "调优", "OpenJDK"]
+tags: ["Java", "GC"]
+categories: ["性能优化","开发工具"]
+thumbnail: "images/java/jvm.jpg"
+
+weight: 1
+---
+
+在 https://www.diguage.com/post/upgrade-to-openjdk21/[OpenJDK 21 升级指南^] 中，给大家分享了一下升级到 OpenJDK 21 中遇到的一些问题。文末留了一个小问题：生产环境的 Java 21 启动参数怎么配置？这篇文章将给出 D瓜哥的答案。
+
+先说明一下生产环境的机器配置：4C8G，四个内核，8G 内存。
+
+== 启动参数
+
+鉴于 https://www.diguage.com/post/gc-performance-incremental-qps/[JVM GC 性能测试（二）：递增流量^] 和 https://www.diguage.com/post/gc-performance-real-qps/[JVM GC 性能测试（三）：真实流量^] 中，G1 GC 的惊艳表现，这里分别提供 Gen ZGC 和 G1 GC 两个配置。
+
+TIP: 两个配置差距级小，为了方便复制粘贴，还是分两个来展示。
+
+=== Gen ZGC 配置
+
+追求极致低延迟，就上 GenZGC，它通过牺牲大约 10% 的吞吐量，换来无与伦比的低延时。
+
+TIP: 注意：使用时，请修改日志目录！
+
+[source%nowrap,bash,{source_attr}]
+----
+## 变量配置 #######################################################################
+# java -XshowSettings:all --展示所有配置项（测试发现也不全）
+-Dfile.encoding=UTF-8
+
+# https://zhuanlan.zhihu.com/p/455313866
+# https://zhuanlan.zhihu.com/p/455746995
+# https://blog.csdn.net/u014149685/article/details/83002405
+# 随机数来源
+-Djava.security.egd=file:/dev/./urandom
+-Djava.security=file:/dev/./urandom
+
+# https://docs.oracle.com/javase/8/docs/api/java/net/doc-files/net-properties.html
+# https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/net/doc-files/net-properties.html
+# DNS 过期时间
+-Dnetworkaddress.cache.ttl=10
+#
+-Dsun.net.client.defaultConnectTimeout=60000
+-Dsun.net.client.defaultReadTimeout=60000
+#-Dsun.net.inetaddr.ttl=300
+
+# https://mdnice.com/writing/47e729bbf8e44431a396a481ed173dae
+-Djava.awt.headless=true
+# https://blog.csdn.net/maverick0/article/details/8282472
+-Djmagick.systemclassloader=no
+
+# From Cassandra
+# On Java >= 9 Netty requires the io.netty.tryReflectionSetAccessible system property
+# to be set to true to enable creation of direct buffers using Unsafe. Without it,
+# this falls back to ByteBuffer.allocateDirect which has inferior performance and
+# risks exceeding MaxDirectMemory
+# https://blog.csdn.net/jdcdev_/article/details/132843927
+-Dio.netty.tryReflectionSetAccessible=true
+# 内部中间件
+# 注意：一些中间件会内嵌 Netty，这里建议同步修改其相关参数配置。
+-Dump.profiler.shade.io.netty.tryReflectionSetAccessible=true
+-Dtitan.profiler.shade.io.netty.tryReflectionSetAccessible=true
+
+# Revert changes in defaults introduced in https://netty.io/news/2022/03/10/4-1-75-Final.html
+-Dio.netty.allocator.useCacheForAllThreads=true
+-Dio.netty.allocator.maxOrder=11
+
+# 内部中间件
+# 理由上面已讲
+-Dump.profiler.shade.io.netty.allocator.useCacheForAllThreads=true
+-Dump.profiler.shade.io.netty.allocator.maxOrder=11
+
+# Byte Buddy 支持21
+-Dnet.bytebuddy.experimental=true
+-Dpfinder.shade.net.bytebuddy.experimental=true
+
+
+
+## 参数配置 #####################################################################
+
+# https://jacoline.dev/inspect -- JVM 参数诊断
+# https://chriswhocodes.com/corretto_jdk21_options.html
+# https://docs.oracle.com/en/java/javase/21/docs/specs/man/java.html
+
+# https://blog.csdn.net/wxb880114/article/details/119888587
+# https://www.cnblogs.com/three-fighter/p/14644152.html
+#- https://www.skjava.com/article/2134434173
+
+# 解锁诊断参数
+-XX:+UnlockDiagnosticVMOptions
+
+# 解锁试验参数
+-XX:+UnlockExperimentalVMOptions
+
+# 启用 ZGC
+-XX:+UseZGC
+# 启用分代ZGC
+-XX:+ZGenerational
+
+# https://tech.meituan.com/2020/08/06/new-zgc-practice-in-meituan.html
+# 加快 GC 的时间和能力
+-XX:ZAllocationSpikeTolerance=5
+-XX:ConcGCThreads=2
+-XX:ParallelGCThreads=4
+
+# G1 GC
+#-XX:+UseG1GC
+#-XX:MaxGCPauseMillis=50
+
+# 初始堆大小，等价于 -XX:InitialHeapSize
+-Xms4608m
+
+# 弱最大堆，尽量保持，但是可以突破
+#-XX:SoftMaxHeapSize=3g
+
+# 最大堆大小，等价于 -XX:MaxHeapSize
+-Xmx4608m
+
+# 归还未使用的内存
+#-XX:+ZUncommit
+
+# 设置每个线程的堆栈大小，等价于 -XX:ThreadStackSize=512k
+-Xss512k
+
+# https://cloud.tencent.com/developer/article/1408384
+# 本地内存大小
+-XX:MaxDirectMemorySize=512m
+
+# https://cloud.tencent.com/developer/article/2277327
+# https://cloud.tencent.com/developer/article/2277328
+# https://cloud.tencent.com/developer/article/2277329
+# 元空间
+# 设置为 256m 时，发生过一次频繁 GC 导致应用无法相应的问题
+-XX:MetaspaceSize=512m
+# 最大元空间
+-XX:MaxMetaspaceSize=512m
+
+# https://cloud.tencent.com/developer/article/1408773
+# https://blog.csdn.net/lidf1992/article/details/75050219
+# 编译代码缓存空间
+-XX:ReservedCodeCacheSize=256m
+
+# https://cloud.tencent.com/developer/article/1408827
+# https://malloc.se/blog/zgc-jdk15
+# https://tinyzzh.github.io/java/jvm/2022/04/24/JVM_CompressedOops.html
+# https://www.cnblogs.com/star95/p/17512212.html -- 由于从 JDK15 开始，
+#     -XX:+UseCompressedClassPointers 与 -XX:-UseCompressedOops 之间的强
+#     关联被打破，文章里关于上述这种搭配是不正确的。 TODO 可以从新测试验证一线。
+# TODO 如果开启 -XX:+UseCompressedClassPointers，不确定 32M 是否够用？
+# https://www.zhihu.com/question/268392125
+-XX:+UseCompressedClassPointers
+-XX:CompressedClassSpaceSize=48M
+
+# 关闭热度衰减
+-XX:-UseCounterDecay
+
+# 内存占座
+-XX:+AlwaysPreTouch
+
+# 禁止代码中显示调用GC
+-XX:+DisableExplicitGC
+
+# 关闭安全点间隔
+-XX:GuaranteedSafepointInterval=0
+
+# 避免循环无法进入安全点的问题
+-XX:+UseCountedLoopSafepoints
+# https://blog.csdn.net/m0_46596655/article/details/123606813
+-XX:LoopStripMiningIter=1000
+
+# 打印命令行参数
+-XX:+PrintCommandLineFlags
+
+# 显式地并发处理 GC 调用
+-XX:+ExplicitGCInvokesConcurrent
+
+# https://panlw.github.io/15320998566522.html
+-XX:AutoBoxCacheMax=20000
+
+# https://blog.csdn.net/zshake/article/details/88796414
+# 省略异常栈信息从而快速抛出
+-XX:-OmitStackTraceInFastThrow
+
+# https://www.jianshu.com/p/c9259953ca38
+# 致命错误日志文件
+-XX:ErrorFile=/path/to/log/jvm/hs_err_%p.log
+
+# https://blog.csdn.net/lusa1314/article/details/84134458
+# https://juejin.cn/post/7127557371932442632
+# 当JVM发生OOM时，自动生成DUMP文件。
+-XX:+HeapDumpOnOutOfMemoryError
+# 设置上述DUMP文件路径
+-XX:HeapDumpPath=/path/to/log/jvm/
+
+# https://juejin.cn/post/6959405798556434440
+# 设置 JFR 相关参数
+# TODO 感觉这里不全乎，似乎需要 -XX:+FlightRecorder 来启用
+# TODO 似乎可以设置文件，例如： -XX:StartFlightRecording=duration=200s,filename=flight.jfr
+# 不确定文件名是否可以这样配置，测试一下_%p-%t
+# Amazon Corretto JDK OK；Eclipse Temurin 不识别，并且监控报错
+#-XX:StartFlightRecording=delay=5s,disk=true,dumponexit=true,duration=24h,maxage=5d,maxsize=2g,filename=/path/to/log/jvm/jfr_%p-%t.jfr.log
+#-XX:FlightRecorderOptions=maxchunksize=128m
+
+#-XX:StringDeduplicationAgeThreshold=threshold? TODO 测试之后才可以定
+
+# https://zhuanlan.zhihu.com/p/111886882
+# https://github.com/apache/cassandra/tree/trunk/conf
+# https://github.com/elastic/elasticsearch/blob/main/distribution/src/config/jvm.options
+# java -Xlog:help
+# 日志配置
+-Xlog:gc*=debug,stringdedup*=debug,heap*=trace,age*=debug,promotion*=trace,jit*=info,safepoint*=debug:file=/path/to/log/jvm/gc_%p-%t.log:time,pid,tid,level,tags:filecount=10,filesize=500M
+# 分开设置可用，使用分开的配置
+#-Xlog:gc*=debug,stringdedup*=debug,heap*=trace,age*=debug,promotion*=trace:file=/path/to/log/jvm/gc-%t.log:utctime,level,tags:filecount=10,filesize=200M
+#-Xlog:jit*=info:file=/path/to/log/jvm/jit_compile-%t.log:utctime,level,tags:filecount=10,filesize=50M
+#-Xlog:safepoint*=debug:file=/path/to/log/jvm/safepoint-%t.log:utctime,level,tags:filecount=10,filesize=50M
+
+
+# https://stackoverflow.com/a/44059335
+# https://openjdk.org/jeps/261
+# https://www.diguage.com/post/upgrade-to-openjdk21/ -- 内有详细介绍
+# 开启模块权限：下面是D瓜哥需要的模块，请根据自己实际需求来调整。
+--add-exports java.base/sun.security.action=ALL-UNNAMED
+--add-opens java.base/java.io=ALL-UNNAMED
+--add-opens java.base/java.lang.reflect=ALL-UNNAMED
+--add-opens java.base/java.lang=ALL-UNNAMED
+--add-opens java.base/java.math=ALL-UNNAMED
+--add-opens java.base/java.net=ALL-UNNAMED
+--add-opens java.base/java.security=ALL-UNNAMED
+--add-opens java.base/java.time=ALL-UNNAMED
+--add-opens java.base/java.util.concurrent.locks=ALL-UNNAMED
+--add-opens java.base/java.util.concurrent=ALL-UNNAMED
+--add-opens java.base/java.util=ALL-UNNAMED
+--add-opens java.base/jdk.internal.loader=ALL-UNNAMED
+# Netty 内部需要 https://stackoverflow.com/a/57892679
+# https://github.com/netty/netty/issues/7769
+# https://blog.csdn.net/thewindkee/article/details/123618476
+--add-opens java.base/jdk.internal.misc=ALL-UNNAMED
+--add-opens java.base/sun.net.util=ALL-UNNAMED
+# 设置 -Dio.netty.tryReflectionSetAccessible=true 后，不设置该值也会报错
+--add-opens java.base/java.nio=ALL-UNNAMED
+--add-opens java.base/sun.nio.ch=ALL-UNNAMED
+--add-opens java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
+--add-opens java.base/sun.util.calendar=ALL-UNNAMED
+--add-opens java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
+--add-opens java.management/java.lang.management=ALL-UNNAMED
+--add-opens java.management/sun.management=ALL-UNNAMED
+--add-opens jdk.management/com.sun.management.internal=ALL-UNNAMED
+----
+
+
+=== G1 GC 配置
+
+追求稳定性，就选 G1，它可以完全榨干 CPU 上的每一滴油水。让 CPU 变成资本家理想中的工人，尽其所能，为你服务！
+
+TIP: 注意：使用时，请修改日志目录！
+
+[source%nowrap,bash,{source_attr}]
+----
+## 变量配置 #######################################################################
+# java -XshowSettings:all --展示所有配置项（测试发现也不全）
+-Dfile.encoding=UTF-8
+
+# https://zhuanlan.zhihu.com/p/455313866
+# https://zhuanlan.zhihu.com/p/455746995
+# https://blog.csdn.net/u014149685/article/details/83002405
+# 随机数来源
+-Djava.security.egd=file:/dev/./urandom
+-Djava.security=file:/dev/./urandom
+
+# https://docs.oracle.com/javase/8/docs/api/java/net/doc-files/net-properties.html
+# https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/net/doc-files/net-properties.html
+# DNS 过期时间
+-Dnetworkaddress.cache.ttl=10
+#
+-Dsun.net.client.defaultConnectTimeout=60000
+-Dsun.net.client.defaultReadTimeout=60000
+#-Dsun.net.inetaddr.ttl=300
+
+# https://mdnice.com/writing/47e729bbf8e44431a396a481ed173dae
+-Djava.awt.headless=true
+# https://blog.csdn.net/maverick0/article/details/8282472
+-Djmagick.systemclassloader=no
+
+# From Cassandra
+# On Java >= 9 Netty requires the io.netty.tryReflectionSetAccessible system property
+# to be set to true to enable creation of direct buffers using Unsafe. Without it,
+# this falls back to ByteBuffer.allocateDirect which has inferior performance and
+# risks exceeding MaxDirectMemory
+# https://blog.csdn.net/jdcdev_/article/details/132843927
+-Dio.netty.tryReflectionSetAccessible=true
+# 内部中间件
+# 注意：一些中间件会内嵌 Netty，这里建议同步修改其相关参数配置。
+-Dump.profiler.shade.io.netty.tryReflectionSetAccessible=true
+-Dtitan.profiler.shade.io.netty.tryReflectionSetAccessible=true
+
+# Revert changes in defaults introduced in https://netty.io/news/2022/03/10/4-1-75-Final.html
+-Dio.netty.allocator.useCacheForAllThreads=true
+-Dio.netty.allocator.maxOrder=11
+
+# 内部中间件
+# 理由上面已讲
+-Dump.profiler.shade.io.netty.allocator.useCacheForAllThreads=true
+-Dump.profiler.shade.io.netty.allocator.maxOrder=11
+
+# Byte Buddy 支持21
+-Dnet.bytebuddy.experimental=true
+-Dpfinder.shade.net.bytebuddy.experimental=true
+
+
+
+## 参数配置 #####################################################################
+
+# https://jacoline.dev/inspect -- JVM 参数诊断
+# https://chriswhocodes.com/corretto_jdk21_options.html
+# https://docs.oracle.com/en/java/javase/21/docs/specs/man/java.html
+
+# https://blog.csdn.net/wxb880114/article/details/119888587
+# https://www.cnblogs.com/three-fighter/p/14644152.html
+#- https://www.skjava.com/article/2134434173
+
+# 解锁诊断参数
+-XX:+UnlockDiagnosticVMOptions
+
+# 解锁试验参数
+-XX:+UnlockExperimentalVMOptions
+
+# 启用 ZGC
+#-XX:+UseZGC
+# 启用分代ZGC
+#-XX:+ZGenerational
+
+# https://tech.meituan.com/2020/08/06/new-zgc-practice-in-meituan.html
+# 加快 GC 的时间和能力
+#-XX:ZAllocationSpikeTolerance=5
+-XX:ConcGCThreads=2
+-XX:ParallelGCThreads=4
+
+# G1 GC
+-XX:+UseG1GC
+-XX:MaxGCPauseMillis=50
+
+# 初始堆大小，等价于 -XX:InitialHeapSize
+-Xms4608m
+
+# 弱最大堆，尽量保持，但是可以突破
+#-XX:SoftMaxHeapSize=3g
+
+# 最大堆大小，等价于 -XX:MaxHeapSize
+-Xmx4608m
+
+# 归还未使用的内存
+#-XX:+ZUncommit
+
+# 设置每个线程的堆栈大小，等价于 -XX:ThreadStackSize=512k
+-Xss512k
+
+# https://cloud.tencent.com/developer/article/1408384
+# 本地内存大小
+-XX:MaxDirectMemorySize=512m
+
+# https://cloud.tencent.com/developer/article/2277327
+# https://cloud.tencent.com/developer/article/2277328
+# https://cloud.tencent.com/developer/article/2277329
+# 元空间
+# 设置为 256m 时，发生过一次频繁 GC 导致应用无法相应的问题
+-XX:MetaspaceSize=512m
+# 最大元空间
+-XX:MaxMetaspaceSize=512m
+
+# https://cloud.tencent.com/developer/article/1408773
+# https://blog.csdn.net/lidf1992/article/details/75050219
+# 编译代码缓存空间
+-XX:ReservedCodeCacheSize=256m
+
+# https://cloud.tencent.com/developer/article/1408827
+# https://malloc.se/blog/zgc-jdk15
+# https://tinyzzh.github.io/java/jvm/2022/04/24/JVM_CompressedOops.html
+# https://www.cnblogs.com/star95/p/17512212.html -- 由于从 JDK15 开始，
+#     -XX:+UseCompressedClassPointers 与 -XX:-UseCompressedOops 之间的强
+#     关联被打破，文章里关于上述这种搭配是不正确的。 TODO 可以从新测试验证一线。
+# TODO 如果开启 -XX:+UseCompressedClassPointers，不确定 32M 是否够用？
+# https://www.zhihu.com/question/268392125
+-XX:+UseCompressedClassPointers
+-XX:CompressedClassSpaceSize=48M
+
+# 关闭热度衰减
+-XX:-UseCounterDecay
+
+# 内存占座
+-XX:+AlwaysPreTouch
+
+# 禁止代码中显示调用GC
+-XX:+DisableExplicitGC
+
+# 关闭安全点间隔
+-XX:GuaranteedSafepointInterval=0
+
+# 避免循环无法进入安全点的问题
+-XX:+UseCountedLoopSafepoints
+# https://blog.csdn.net/m0_46596655/article/details/123606813
+-XX:LoopStripMiningIter=1000
+
+# 打印命令行参数
+-XX:+PrintCommandLineFlags
+
+# 显式地并发处理 GC 调用
+-XX:+ExplicitGCInvokesConcurrent
+
+# https://panlw.github.io/15320998566522.html
+-XX:AutoBoxCacheMax=20000
+
+# https://blog.csdn.net/zshake/article/details/88796414
+# 省略异常栈信息从而快速抛出
+-XX:-OmitStackTraceInFastThrow
+
+# https://www.jianshu.com/p/c9259953ca38
+# 致命错误日志文件
+-XX:ErrorFile=/path/to/log/jvm/hs_err_%p.log
+
+# https://blog.csdn.net/lusa1314/article/details/84134458
+# https://juejin.cn/post/7127557371932442632
+# 当JVM发生OOM时，自动生成DUMP文件。
+-XX:+HeapDumpOnOutOfMemoryError
+# 设置上述DUMP文件路径
+-XX:HeapDumpPath=/path/to/log/jvm/
+
+# https://juejin.cn/post/6959405798556434440
+# 设置 JFR 相关参数
+# TODO 感觉这里不全乎，似乎需要 -XX:+FlightRecorder 来启用
+# TODO 似乎可以设置文件，例如： -XX:StartFlightRecording=duration=200s,filename=flight.jfr
+# 不确定文件名是否可以这样配置，测试一下_%p-%t
+# Amazon Corretto JDK OK；Eclipse Temurin 不识别，并且监控报错
+#-XX:StartFlightRecording=delay=5s,disk=true,dumponexit=true,duration=24h,maxage=5d,maxsize=2g,filename=/path/to/log/jvm/jfr_%p-%t.jfr.log
+#-XX:FlightRecorderOptions=maxchunksize=128m
+
+#-XX:StringDeduplicationAgeThreshold=threshold? TODO 测试之后才可以定
+
+# https://zhuanlan.zhihu.com/p/111886882
+# https://github.com/apache/cassandra/tree/trunk/conf
+# https://github.com/elastic/elasticsearch/blob/main/distribution/src/config/jvm.options
+# java -Xlog:help
+# 日志配置
+-Xlog:gc*=debug,stringdedup*=debug,heap*=trace,age*=debug,promotion*=trace,jit*=info,safepoint*=debug:file=/path/to/log/jvm/gc_%p-%t.log:time,pid,tid,level,tags:filecount=10,filesize=500M
+# 分开设置可用，使用分开的配置
+#-Xlog:gc*=debug,stringdedup*=debug,heap*=trace,age*=debug,promotion*=trace:file=/path/to/log/jvm/gc-%t.log:utctime,level,tags:filecount=10,filesize=200M
+#-Xlog:jit*=info:file=/path/to/log/jvm/jit_compile-%t.log:utctime,level,tags:filecount=10,filesize=50M
+#-Xlog:safepoint*=debug:file=/path/to/log/jvm/safepoint-%t.log:utctime,level,tags:filecount=10,filesize=50M
+
+
+# https://stackoverflow.com/a/44059335
+# https://openjdk.org/jeps/261
+# https://www.diguage.com/post/upgrade-to-openjdk21/ -- 内有详细介绍
+# 开启模块权限：下面是D瓜哥需要的模块，请根据自己实际需求来调整。
+--add-exports java.base/sun.security.action=ALL-UNNAMED
+--add-opens java.base/java.io=ALL-UNNAMED
+--add-opens java.base/java.lang.reflect=ALL-UNNAMED
+--add-opens java.base/java.lang=ALL-UNNAMED
+--add-opens java.base/java.math=ALL-UNNAMED
+--add-opens java.base/java.net=ALL-UNNAMED
+--add-opens java.base/java.security=ALL-UNNAMED
+--add-opens java.base/java.time=ALL-UNNAMED
+--add-opens java.base/java.util.concurrent.locks=ALL-UNNAMED
+--add-opens java.base/java.util.concurrent=ALL-UNNAMED
+--add-opens java.base/java.util=ALL-UNNAMED
+--add-opens java.base/jdk.internal.loader=ALL-UNNAMED
+# Netty 内部需要 https://stackoverflow.com/a/57892679
+# https://github.com/netty/netty/issues/7769
+# https://blog.csdn.net/thewindkee/article/details/123618476
+--add-opens java.base/jdk.internal.misc=ALL-UNNAMED
+--add-opens java.base/sun.net.util=ALL-UNNAMED
+# 设置 -Dio.netty.tryReflectionSetAccessible=true 后，不设置该值也会报错
+--add-opens java.base/java.nio=ALL-UNNAMED
+--add-opens java.base/sun.nio.ch=ALL-UNNAMED
+--add-opens java.base/sun.reflect.generics.reflectiveObjects=ALL-UNNAMED
+--add-opens java.base/sun.util.calendar=ALL-UNNAMED
+--add-opens java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED
+--add-opens java.management/java.lang.management=ALL-UNNAMED
+--add-opens java.management/sun.management=ALL-UNNAMED
+--add-opens jdk.management/com.sun.management.internal=ALL-UNNAMED
+----
+
+
+== 使用技巧
+
+上述启动参数中，包含了很多解释说明的链接，如何去除注释，提取参数呢？这里再分享一个小技巧：
+
+[source%nowrap,bash,{source_attr}]
+----
+# 获取运行脚本所在目录
+BASEDIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )/
+echo "BASEDIR=${BASEDIR}"
+
+# 定义启动 jvm 的参数信息。
+export JAVA_PARAMS=" $(cat $BASEDIR/jvm.properties | grep -v '#\|//\|^\s*$' | tr '\r\n' ' ') "
+
+# 如果使用 Spring Boot，直接使用 java 命令启动参数，则：
+# https://docs.oracle.com/en/java/javase/21/docs/specs/man/java.html
+export JDK_JAVA_OPTIONS=" ${JDK_JAVA_OPTIONS}  ${JAVA_PARAMS} "
+echo "JDK_JAVA_OPTIONS=${JDK_JAVA_OPTIONS}"
+
+# 如果使用 Tomcat，将应用防止在 Tomcat 容器中，则：
+export CATALINA_OPTS=" $CATALINA_OPTS ${JAVA_PARAMS} "
+echo "CATALINA_OPTS=${CATALINA_OPTS}"
+----
+
+这里再说明一下： `JDK_JAVA_OPTIONS` 是 Java 新增的定义参数的方式。为了更好的兼容性，优先使用 `JDK_JAVA_OPTIONS` 变量来定义参数。详细介绍见： https://docs.oracle.com/en/java/javase/21/docs/specs/man/java.html#using-the-jdk_java_options-launcher-environment-variable[The java Command - Using the JDK_JAVA_OPTIONS Launcher Environment Variable^]。
+
+
+== 参数工具
+
+再分享另外两个参数工具。
+
+=== 参数查询
+
+Java 参数太多，从哪里查找？可以到 https://chriswhocodes.com/corretto_jdk21_options.html[VM Options Explorer - Corretto JDK21^] 中参照，里面根据 JDK 的版本以及发行商，列出来所有的相关参数，选择好对应发行商的正确版本，就可以搜索或者查看 `java` 命令支持的所有参数了。
+
+=== 参数诊断
+
+增加了很多参数，是否合规？有没有错误？可以通过 https://jacoline.dev/inspect[JaCoLine - Inspect your Java command line^] 工具来检查，把参数复制进去，选择好 JDK 版本及操作系统类型，点击 “Inspect Command Line” 按钮，就会给出一份诊断说明。相当方便。

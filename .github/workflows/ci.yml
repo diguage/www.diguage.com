@@ -1,0 +1,169 @@
+name: GitHub Pages
+on:
+  push:
+    branches:
+      - master
+jobs:
+  deploy:
+    # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idruns-on
+    runs-on: ubuntu-latest
+    steps:
+      # https://github.com/actions/checkout
+      - name: Checkout 🛎️
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup Hugo 🐯
+        uses: peaceiris/actions-hugo@v3
+        with:
+          hugo-version: 'latest'
+          extended: true
+
+      - name: Setup Ruby 💎
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.3
+
+      # https://github.com/actions/setup-node
+      - name: Setup Node.js 🕸
+        uses: actions/setup-node@v4
+        with:
+          # https://github.com/nvm-sh/nvm#long-term-support
+          node-version: 'lts/*'
+
+      - name: Install AsciiDoctor 🐶
+        run: |
+          gem install asciidoctor
+          gem install asciidoctor-diagram
+          gem install asciidoctor-comment-links
+          gem install rouge
+
+#      - name: Install Graphviz 🐰
+#        run: |
+#          sudo apt update -y -m
+#          sudo apt install -y python3-pip
+#          # https://graphviz.org/
+#          sudo apt install -y graphviz
+#          # http://blockdiag.com/en/seqdiag/index.html
+#          pip3 install seqdiag
+#          # http://blockdiag.com/en/blockdiag/index.html
+#          pip3 install blockdiag
+#          # http://blockdiag.com/en/actdiag/index.html
+#          pip3 install actdiag
+#          # http://blockdiag.com/en/nwdiag/index.html
+#          pip3 install nwdiag
+#          # https://github.com/Deep-Symmetry/bytefield-svg
+#          npm install -g bytefield-svg
+#          # https://github.com/gtudan/bpmn-js-cmd
+#          npm install -g bpmn-js-cmd
+#          # 展示不需要 PlantUML，注释掉，加快构建速度
+#          # sudo apt -y install plantuml
+
+      - name: Install font 🎃
+        run: |
+          mkdir $HOME/.fonts
+          cd $HOME/.fonts
+          wget https://github.com/diguage/open-fonts/releases/download/latest/SourceHanSerifSC-Regular.otf 1>/dev/null 2>&1 &
+          wget https://github.com/diguage/open-fonts/releases/download/latest/SourceHanSansSC-Regular.otf 1>/dev/null 2>&1 &
+          wget https://github.com/diguage/open-fonts/releases/download/latest/SourceCodePro-Regular.otf 1>/dev/null 2>&1 &
+          wget https://github.com/diguage/open-fonts/releases/download/latest/SourceCodePro-It.otf 1>/dev/null 2>&1 &
+          wget https://github.com/diguage/open-fonts/releases/download/latest/SourceCodePro-Bold.otf 1>/dev/null 2>&1 &
+          wget https://github.com/diguage/open-fonts/releases/download/latest/SourceCodePro-BoldIt.otf 1>/dev/null 2>&1 &
+          echo -e "[seqdiag]\nfontpath = $HOME/.fonts/SourceHanSerifSC-Regular.otf" > $HOME/.blockdiagrc
+          echo -e "\n[blockdiag]\nfontpath = $HOME/.fonts/SourceHanSerifSC-Regular.otf" >> $HOME/.blockdiagrc
+          echo -e "\n[actdiag]\nfontpath = $HOME/.fonts/SourceHanSerifSC-Regular.otf" >> $HOME/.blockdiagrc
+          echo -e "\n[nwdiag]\nfontpath = $HOME/.fonts/SourceHanSerifSC-Regular.otf" >> $HOME/.blockdiagrc
+          # Check result
+          echo "$(date +%T) wait for downloading fonts"
+          wait
+          echo "$(date +%T) finish downloading fonts"
+          ls -lh $HOME/.fonts 
+          cat $HOME/.blockdiagrc
+
+      - name: Run Hugo 🏗
+        run: |
+          hugo --minify
+
+      - name: Compress Style 🍭
+        run: |
+          npm install clean-css-cli -g
+          cd public/css
+          for f in `ls *.css`;
+          do
+            fn="${f%.*}.min.css";
+            cleancss -o $fn $f
+            rm -rf $f;
+            mv $fn $f
+          done
+
+      - name: Add Watermark to Images 🎖
+        run: |
+          # sudo add-apt-repository -y ppa:strukturag/libheif
+          # sudo add-apt-repository -y ppa:strukturag/libde265
+          # sudo apt update -y
+          # sudo apt install -y libheif-dev
+          # sudo apt install -y libde265-dev
+          
+          # sudo apt update -y # 不再重复执行
+          sudo apt install imagemagick
+          # t=$(mktemp) && wget 'https://dist.1-2.dev/imei.sh' -qO "$t" && sudo bash "$t" && rm "$t"
+          
+          cd public/images
+          wget https://github.com/diguage/open-fonts/releases/download/latest/SourceCodePro-Semibold.otf 1>/dev/null 2>&1 &
+          
+          # 异步加水印
+          # JPG
+          find . -type f -name "*.jpg" | grep -v "goodbye-2019-hello-2020\|wx-jikerizhi-qrcode.jpg\|wx-jikerizhi.jpg\|wxpay.jpg\|avatar.jpg" | sed "s/.jpg$//g" | xargs -I {} convert -compress JPEG2000 -strip -thumbnail 960 -quality 75 -font ./SourceCodePro-Semibold.otf -pointsize 30 -gravity southeast -fill "#DE282A" -draw 'text 15,18 "https://www.diguage.com"' {}.jpg {}-mark.jpg 1>/dev/null 2>&1 &
+          # JPEG
+          find . -type f -name "*.jpeg" | sed "s/.jpeg$//g" | xargs -I {} convert -compress JPEG2000 -strip -thumbnail 960 -quality 75 -font ./SourceCodePro-Semibold.otf -pointsize 30 -gravity southeast -fill "#DE282A" -draw 'text 15,18 "https://www.diguage.com"' {}.jpeg {}-mark.jpeg 1>/dev/null 2>&1 &
+          echo "$(date +%T) wait for adding watermark"
+          
+          # 等待水印加完后再执行后续操作
+          wait
+          echo "$(date +%T) finish adding watermark"
+          find . -type f -name "*.jpg" | grep -v "goodbye-2019-hello-2020\|wx-jikerizhi-qrcode.jpg\|wx-jikerizhi.jpg\|wxpay.jpg\|avatar.jpg" | grep -v "\-mark.jpg" | xargs -I {} rm -f {} \;
+          find . -type f -name "*-mark.jpg" | sed "s/-mark.jpg//g" | xargs -I {} mv {}-mark.jpg {}.jpg
+          find . -type f -name "*.jpeg" | grep -v "\-mark.jpeg" | xargs -I {} rm -f {} \;
+          find . -type f -name "*-mark.jpeg" | sed "s/-mark.jpeg//g" | xargs -I {} mv {}-mark.jpeg {}.jpeg
+          
+          # TODO PNG 加完水印，文件增大很多
+          # find . -type f -name "*.png" | sed "s/.png$//g" | xargs -I {} convert -depth 24 -define png:compression-filter=1 -define png:compression-level=9 -define png:compression-strategy=2 -font ./SourceCodePro-Semibold.otf -pointsize 30 -gravity southeast -fill "#DE282A" -draw 'text 15,18 "https://www.diguage.com"' {}.png {}-mark.png
+          # find . -type f -name "*.png" | grep -v "\-mark.png" | xargs -I {} rm -f {} \;
+          # find . -type f -name "*-mark.png" | sed "s/-mark.png//g" | xargs -I {} mv {}-mark.png {}.png
+
+      - name: Generate Redirect HTML 🏓
+        run: |
+          cd public/archives/
+          for i in {1..147} ; do echo "<meta http-equiv=\"refresh\" content=\"0;url=https://wordpress.diguage.com/archives/${i}.html\">" > ${i}.html; done
+
+      - name: Rsync Deploy 🏹
+        uses: Burnett01/rsync-deployments@7.0.1
+        with:
+          switches: -avzr --delete --exclude 'diagrams'
+          path: public/
+          remote_path: ${{ secrets.DEPLOY_PATH }}
+          remote_host: ${{ secrets.DEPLOY_HOST }}
+          remote_port: ${{ secrets.DEPLOY_PORT }}
+          remote_user: ${{ secrets.DEPLOY_USER }}
+          remote_key: ${{ secrets.DEPLOY_KEY }}
+
+      - name: Change Files Mod 🔐
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          port: ${{ secrets.DEPLOY_PORT }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          script: |
+            cd ${{ secrets.DEPLOY_PATH }}
+            sudo chmod -R 777 *
+
+      - name: Deploy 🚀
+        continue-on-error: true
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages # The branch the action should deploy to.
+          folder: public # The folder the action should deploy.
+          single-commit: true

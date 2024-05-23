@@ -1,0 +1,689 @@
+---
+title: "Java 虚拟机操作码探秘：常量指令"
+date: 2022-09-03T16:17:34+08:00
+draft: false
+keywords: ["Java","虚拟机"]
+tags: ["Java","虚拟机"]
+categories: ["系统架构"]
+thumbnail: "images/java/bytecode.svg"
+
+weight: 1
+---
+
+在 https://www.diguage.com/post/jvm-instruction-set/[Java 虚拟机指令(操作码)集^] 中给出了一个操作码的列表。针对所有的指令，仅仅给出了一个大概介绍，对理解来说可以说毫无助力。为了弥补这个短板，这里也学习 https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/[“Hessian 协议解释与实战”系列^] 那样，来一个详细解释和实战，配合实例来做个深入分析和讲解。这是这个系列的第一篇文章，就以列表中第一部分“常量”指令开始。
+
+从 https://www.diguage.com/post/jvm-instruction-set/[Java 虚拟机指令(操作码)集^] 列表上来看，一共 21 个指令；按照处理数据的类型，合并同类项后，剩下有 `nop`、 <<aconst_null>>、 <<iconst>>、 <<lconst>>、 <<fconst>>、 <<dconst>>、 <<bipush>>、 <<sipush>>、 <<ldc>> 和 <<ldc2_w>> 等几个指令。下面，按照顺序，对其进行一一讲解。
+
+[NOTE]
+====
+操作码助记符的首字母一般是有特殊含义的，表示操作码所作用的数据类型： `i` 代表对 `int` 类型的数据操作； `l` 代表 `long`； `s` 代表 `short`； `b` 代表 `byte`；`c` 代表 `char`；`f` 代表 `float`， `d` 代表 `double`； `a` 代表 reference。
+
+尖括号之间的字母指定了指令隐含操作数的数据类型，`<n>` 代表非负的整数； `<i>` 代表是 `int` 类型数据； `<l>` 代表 `long` 类型； `<f>` 代表 `float` 类型； `<d>` 代表 `double` 类型。
+
+另外还需要指出一点：这种指令表示法在整个 Java 虚拟机规范之中都是通用的。
+====
+
+== `nop`
+
+根据 https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.nop[Chapter 6. The Java Virtual Machine Instruction Set：nop^] 来看，就是“Do nothing”，暂时没有找到使用方法。就不做多介绍，后续看到相关资料，再做补充。
+
+== `const`
+
+`*const` 是一个大类，根据不同的操作数类型，又分为 <<aconst_null>>、 <<iconst>>、 <<lconst>>、 <<fconst>> 和 <<dconst>> 等几个分类。
+
+`const` 指令主要就是将相关类型的“常量”（与 Java 使用 `static final` 修饰的“常量”的定义不同，这里是 Java 代码中存在的“直接量”，比如给对象赋值的 `null`等）推送至栈顶。下面对其一一介绍。
+
+[#aconst_null]
+=== `aconst_null`
+
+这里只有 https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.aconst_null[`aconst_null`^]，直接上代码演示：
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 字节码示例代码
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ */
+public class Example {
+    /**
+     * 操作码 aconst_null 示例
+     */
+    public Object testAconst() {
+        return null;
+    }
+}
+----
+
+使用 `javac Example.java` 编译，然后使用 `javap` 来查看编译的结果：
+
+[source%nowrap,bash,highlight=12,{source_attr}]
+----
+$ javap -c Example
+Compiled from "Example.java"
+public class Example {
+  public Example();
+    Code:
+       0: aload_0
+       1: invokespecial #1          // Method java/lang/Object."<init>":()V
+       4: return
+
+  public java.lang.Object testAconst();
+    Code:
+       0: aconst_null
+       1: areturn
+}
+----
+
+在上述结果中，我们如愿看到了 `aconst_null` 操作码。从上面的 `testAconst` 方法的指令来看，是将 `null` 加载到栈顶，然后返回。与我们的代码是一致的。
+
+TIP: 对比了 Java 8 与 Java 17 的编译结果。从 `javap -c` 的输出上来看，两者没有差异。以后不再赘述。如有不同，再另行说明。
+
+[#iconst]
+=== `iconst_<i>`
+
+包含 https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iconst_i[`iconst_m1`^]、 https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iconst_i[`iconst_0`^]、 https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iconst_i[`iconst_1`^]、 https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iconst_i[`iconst_2`^]、 https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iconst_i[`iconst_3`^]、 https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iconst_i[`iconst_4`^] 和  https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iconst_i[`iconst_5`^] 五个操作码。
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 字节码示例代码
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ */
+public class Example {
+    /**
+     * 操作码 iconst_<i> 示例
+     */
+    public void testIconst() {
+        int im1 = -1;
+        int i0 = 0;
+        int i1 = 1;
+        int i2 = 2;
+        int i3 = 3;
+        int i4 = 4;
+        int i5 = 5;
+    }
+}
+----
+
+使用 `javac Example.java` 编译，然后使用 `javap` 来查看编译的结果：
+
+[source%nowrap,bash,highlight=12,{source_attr}]
+----
+$ javap -c Example
+Compiled from "Example.java"
+public class Example {
+  public Example();
+    Code:
+       0: aload_0
+       1: invokespecial #1          // Method java/lang/Object."<init>":()V
+       4: return
+
+  public void testIconst();
+    Code:
+       0: iconst_m1
+       1: istore_1
+       2: iconst_0
+       3: istore_2
+       4: iconst_1
+       5: istore_3
+       6: iconst_2
+       7: istore        4
+       9: iconst_3
+      10: istore        5
+      12: iconst_4
+      13: istore        6
+      15: iconst_5
+      16: istore        7
+      18: return
+}
+----
+
+在上述结果中，依次看到了 `iconst_m1`、 `iconst_0`、 `iconst_1`、 `iconst_2`、 `iconst_3`、 `iconst_4` 和 `iconst_5` 操作码。从上面的 `testIconst` 方法的指令来看，是依次将 `int` 的 `-1`、 `0`、 `1`、 `2`、 `3`、 `4` 和 `5` 加载到栈顶并栈顶数据赋值给第二、三、四、五、六和七个（下标从 `0` 开始）变量。与我们的代码是一致的。
+
+[#lconst]
+=== `lconst_<l>`
+
+包含 https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lconst_l[lconst_0^] 和  https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lconst_l[lconst_1^] 两个操作码。
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 字节码示例代码
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ */
+public class Example {
+    /**
+     * 操作码 lconst_<l> 示例
+     */
+    public void testLconst() {
+        long l0 = 0L;
+        long l1 = 1L;
+    }
+}
+----
+
+使用 `javac Example.java` 编译，然后使用 `javap` 来查看编译的结果：
+
+[source%nowrap,bash,highlight=12,{source_attr}]
+----
+$ javap -c Example
+Compiled from "Example.java"
+public class Example {
+  public Example();
+    Code:
+       0: aload_0
+       1: invokespecial #1          // Method java/lang/Object."<init>":()V
+       4: return
+
+  public void testLconst();
+    Code:
+       0: lconst_0
+       1: lstore_1
+       2: lconst_1
+       3: lstore_3
+       4: return
+}
+----
+
+在上述结果中，依次看到了 `lconst_0` 和 `lconst_1` 操作码。从上面的 `testLconst` 方法的指令来看，是依次将 `long` 的 `0` 和 `1` 加载到栈顶并栈顶数据赋值给第二和四个（下标从 `0` 开始）变量。与我们的代码是一致的。
+
+[NOTE]
+====
+细心的朋友可能发现了 `lstore_1` 之后，直接就是 `lstore_3`，为什么会有一个间隙呢？
+
+这是因为 `long` 类型的数据在本地变量表中占据两个槽位，并且使用低槽位来表示该数字。所以，就会跳过一个槽位。
+
+下面将要介绍的 `dconst` 也会有类似问题，就不再重复解释了。
+====
+
+[#fconst]
+=== `fconst_<f>`
+
+包含 https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fconst_f[fconst_0^]、 https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fconst_f[fconst_1^] 和  https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fconst_f[fconst_2^] 三个操作码。
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 字节码示例代码
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ */
+public class Example {
+    /**
+     * 操作码 fconst_<f> 示例
+     */
+    public float testFconst() {
+// 依次替换为 1.0F 和 2.0F，编译查看结果
+        return 0.0F;
+    }
+}
+----
+
+使用 `javac Example.java` 编译，然后使用 `javap` 来查看编译的结果：
+
+[source%nowrap,bash,highlight=12,{source_attr}]
+----
+$ javap -c Example
+Compiled from "Example.java"
+public class Example {
+  public Example();
+    Code:
+       0: aload_0
+       1: invokespecial #1          // Method java/lang/Object."<init>":()V
+       4: return
+
+  public float testFconst();
+    Code:
+       0: fconst_0
+       1: freturn
+}
+----
+
+在上述结果中，就看到了 `fconst_0`。从上面的 `testFconst` 方法的指令来看，是依次将 `float` 的 `0.0` 到栈顶。与我们的代码是一致的。
+
+将上述代码中的 `0.0F` 依次替换为 `1.0F` 和 `2.0F`，编译查看结果，也会看到 `fconst_1` 和 `fconst_2`。
+
+[#dconst]
+=== `dconst_<d>`
+
+包含 https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dconst_d[dconst_0^] 和  https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dconst_d[dconst_1^] 三个操作码。
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 字节码示例代码
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ */
+public class Example {
+    /**
+     * 操作码 dconst_<d> 示例
+     */
+    public double testDconst() {
+// 替换为 1.0，编译查看结果
+        return 0.0;
+    }
+}
+----
+
+使用 `javac Example.java` 编译，然后使用 `javap` 来查看编译的结果：
+
+[source%nowrap,bash,highlight=12,{source_attr}]
+----
+$ javap -c Example
+Compiled from "Example.java"
+public class Example {
+  public Example();
+    Code:
+       0: aload_0
+       1: invokespecial #1          // Method java/lang/Object."<init>":()V
+       4: return
+
+  public double testDconst();
+    Code:
+       0: dconst_0
+       1: dreturn
+}
+----
+
+在上述结果中，就看到了 `dconst_0`。从上面的 `testDconst` 方法的指令来看，是将 `dconst_0` 的 `0.0` 到栈顶。与我们的代码是一致的。
+
+将上述代码中的 `0.0` 替换为 `1.0`，编译查看结果，也会看到 `dconst_1`。
+
+[#bipush]
+== `bipush`
+
+`bipush` 只有一个操作码 https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.bipush[bipush^]，后面紧跟一个字节的数据。作用是将后面一个字节的数据推到栈顶。
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 字节码示例代码
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ */
+public class Example {
+    /**
+     * 操作码 bipush 示例
+     */
+    public int testBipush() {
+// 替换为 -128 ~ -2 和 6 ~ 127 之间的整数，
+// 编译查看结果
+        return 6;
+    }
+}
+----
+
+使用 `javac Example.java` 编译，然后使用 `javap` 来查看编译的结果：
+
+[source%nowrap,bash,highlight=12,{source_attr}]
+----
+$ javap -c Example
+Compiled from "Example.java"
+public class Example {
+  public Example();
+    Code:
+       0: aload_0
+       1: invokespecial #1          // Method java/lang/Object."<init>":()V
+       4: return
+
+  public int testBipush();
+    Code:
+       0: bipush        6
+       2: ireturn
+}
+----
+
+在上述结果中，就看到了 `bipush`。从上面的 `testBipush` 方法的指令来看，是将后面参数 `6` 到栈顶。来看一下原始数据。使用合适的编辑器，打开 `Example.class` 文件，调整成二进制（或者十六进制）模式，如下图所示：
+
+image::/images/java/bytecode-bipush6.png[alt="Java 字节码 bipush",{image_attr}]
+
+可以在 https://www.diguage.com/post/jvm-instruction-set/[Java 虚拟机指令(操作码)集^] 中，查找 `bipush` 和 `ireturn` 对应的编码是 `0x10` 和 `0xAC`，中间有一个 `6`(编码为 `0x06`)，符合上述要求的字节序列，已经在上图中标注出来。如果把 `6` 改为 `127`，那么显示就如下图：
+
+image::/images/java/bytecode-bipush127.png[alt="Java 字节码 bipush",{image_attr}]
+
+将上述代码中的 `6` 替换为 `-128` ~ `-2` 和 `6` ~ `127` 的整数，编译查看结果，也都会看到 `bipush`。之所以是这个数字区间，也是因为后面就处理一个字节的数据，一个字节内能存放的数字也就是这么大区间啦。
+
+结合前面介绍的 <<iconst, `iconst_<i>`>> 来看，处理思路和 https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/#int[Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数^] 的处理思路是一样的，尽可能减少字节，提高处理效率。
+
+[#sipush]
+== `sipush`
+
+`sipush` 只有一个操作码 https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.sipush[sipush^]，后面紧跟两个字节的数据。作用是将后面两个字节的数据推到栈顶。
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 字节码示例代码
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ */
+public class Example {
+    /**
+     * 操作码 sipush 示例
+     */
+    public int testSipush() {
+// 替换为 -32768 ~ -129 和 128 ~ 32767 之间的整数，
+// 编译查看结果
+        return 128;
+    }
+}
+----
+
+使用 `javac Example.java` 编译，然后使用 `javap` 来查看编译的结果：
+
+[source%nowrap,bash,highlight=12,{source_attr}]
+----
+$ javap -c Example
+Compiled from "Example.java"
+public class Example {
+  public Example();
+    Code:
+       0: aload_0
+       1: invokespecial #1          // Method java/lang/Object."<init>":()V
+       4: return
+
+  public int testSipush();
+    Code:
+       0: sipush        128
+       3: ireturn
+}
+----
+
+在上述结果中，就看到了 `sipush`。从上面的 `testSipush` 方法的指令来看，是将后面参数 `128` 到栈顶。来看一下原始数据。使用合适的编辑器，打开 `Example.class` 文件，调整成二进制（或者十六进制）模式，如下图所示：
+
+image::/images/java/bytecode-sipush128.png[alt="Java 字节码 sipush",{image_attr}]
+
+将上述代码中的 `128` 替换为 `-32768` ~ `-129` 和 `128` ~ `32767` 之间的整数，编译查看结果，也都会看到 `sipush`。
+
+== `ldc`
+
+`ldc` 有两种形式 <<ldc>> 和 <<ldc_w>>，下面进行分别介绍。
+
+[#ldc]
+=== `ldc`
+
+`ldc` 只有一个操作码 https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.ldc[ldc^]，后面紧跟的是常量池的索引。作用是将索引指向的常量池中的数据推到栈顶。数据类型可以是： `int`、 `float` 或 `String`。
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 字节码示例代码
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ */
+public class Example {
+    /**
+     * 操作码 ldc 示例
+     */
+    public int testLdc() {
+// 替换为除上述内容提到的 int 和 float 之外的值，或者字符串
+// 编译查看结果
+        return 32768;
+    }
+}
+----
+
+使用 `javac Example.java` 编译，然后使用 `javap` 来查看编译的结果：
+
+[source%nowrap,bash,highlight=12,{source_attr}]
+----
+# 由于需要查看常量池中的内容，由 javap -c 替换为 javap -v
+$ javap -v Example
+Classfile Example.class
+  Last modified Sep 3, 2022; size 250 bytes
+  MD5 checksum 5776ccc3c6e038fbe0f77473cd7a42fc
+  Compiled from "Example.java"
+public class Example
+  minor version: 0
+  major version: 52
+  flags: ACC_PUBLIC, ACC_SUPER
+Constant pool:
+   #1 = Methodref          #4.#13          // java/lang/Object."<init>":()V
+   #2 = Integer            32768
+   #3 = Class              #14             // Example
+   #4 = Class              #15             // java/lang/Object
+   #5 = Utf8               <init>
+   #6 = Utf8               ()V
+   #7 = Utf8               Code
+   #8 = Utf8               LineNumberTable
+   #9 = Utf8               testLdc
+  #10 = Utf8               ()I
+  #11 = Utf8               SourceFile
+  #12 = Utf8               Example.java
+  #13 = NameAndType        #5:#6           // "<init>":()V
+  #14 = Utf8               Example
+  #15 = Utf8               java/lang/Object
+{
+  public Example();
+    descriptor: ()V
+    flags: ACC_PUBLIC
+    Code:
+      stack=1, locals=1, args_size=1
+         0: aload_0
+         1: invokespecial #1        // Method java/lang/Object."<init>":()V
+         4: return
+      LineNumberTable:
+        line 6: 0
+
+  public int testLdc();
+    descriptor: ()I
+    flags: ACC_PUBLIC
+    Code:
+      stack=1, locals=1, args_size=1
+         0: ldc           #2          // int 32768
+         2: ireturn
+      LineNumberTable:
+        line 13: 0
+}
+SourceFile: "Example.java"
+----
+
+在上述结果中，就看到了 `ldc`。从上面的 `testLdc` 方法的指令来看，`ldc` 是将后面参数 `#2` 指向的上面的 `Constant pool` 中的第二个数据 `32768` 到栈顶。
+
+将上面代码中的 `32768` 替换为除上述内容提到的 `int` 和 `float` 之外的值，或者字符串，也可以查看到相同的结果。
+
+NOTE: 关于字符串在 `Constant pool` 的处理过程略复杂，这里不再详细介绍。再专门行文介绍。
+
+[TIP]
+====
+对比了 Java 8 与 Java 17 的编译结果，从 `javap -v` 的结果来看，差异还是蛮大的，目前主要观察到两点：
+
+. 验证码在 Java 8 使用的是 MD5 算法；在 Java 17 是 SHA 算法；
+. 常量池中的常量顺序也有非常大的调整。
+
+至于变化原因，后续再探究。
+====
+
+
+[#ldc_w]
+=== `ldc_w`
+
+暂时没有找到合适的示例。后续找到再来补充。
+
+[#ldc2_w]
+== `ldc2_w`
+
+`ldc` 只有一个操作码 https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.ldc[ldc^]，后面紧跟的是常量池的索引。作用是将索引指向的常量池中的数据推到栈顶。数据类型可以是： `int`、 `float` 或 `String`。
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 字节码示例代码
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ */
+public class Example {
+    /**
+     * 操作码 ldc2_w 示例
+     */
+    public long testLdc2_w() {
+// 替换为 long 和 double 类型除上述内容提到的之外的值，
+// 编译查看结果
+        return 2L;
+    }
+}
+----
+
+使用 `javac Example.java` 编译，然后使用 `javap` 来查看编译的结果：
+
+[source%nowrap,bash,highlight=12,{source_attr}]
+----
+# 由于需要查看常量池中的内容，由 javap -c 替换为 javap -v
+$ javap -v Example
+Classfile Example.class
+  Last modified Sep 3, 2022; size 258 bytes
+  MD5 checksum e81e3682cef33eeb28eceed93df1e938
+  Compiled from "Example.java"
+public class Example
+  minor version: 0
+  major version: 52
+  flags: ACC_PUBLIC, ACC_SUPER
+Constant pool:
+   #1 = Methodref          #5.#14          // java/lang/Object."<init>":()V
+   #2 = Long               2l
+   #4 = Class              #15             // Example
+   #5 = Class              #16             // java/lang/Object
+   #6 = Utf8               <init>
+   #7 = Utf8               ()V
+   #8 = Utf8               Code
+   #9 = Utf8               LineNumberTable
+  #10 = Utf8               testLdc2_w
+  #11 = Utf8               ()J
+  #12 = Utf8               SourceFile
+  #13 = Utf8               Example.java
+  #14 = NameAndType        #6:#7           // "<init>":()V
+  #15 = Utf8               Example
+  #16 = Utf8               java/lang/Object
+{
+  public Example();
+    descriptor: ()V
+    flags: ACC_PUBLIC
+    Code:
+      stack=1, locals=1, args_size=1
+         0: aload_0
+         1: invokespecial #1        // Method java/lang/Object."<init>":()V
+         4: return
+      LineNumberTable:
+        line 6: 0
+
+  public long testLdc2_w();
+    descriptor: ()J
+    flags: ACC_PUBLIC
+    Code:
+      stack=2, locals=1, args_size=1
+         0: ldc2_w        #2          // long 2l
+         3: lreturn
+      LineNumberTable:
+        line 14: 0
+}
+SourceFile: "Example.java"
+----
+
+在上述结果中，就看到了 `ldc2_w`。从上面的 `testLdc2_w` 方法的指令来看，`ldc2_w` 是将后面参数 `#2` 指向的上面的 `Constant pool` 中的第二个数据 `2l` 到栈顶。
+
+将上面代码中的 `2L` 替换为 long 和 double 类型除上述内容提到的之外的值，也可以查看到相同的结果。
+
+[#bool-byte-char-short]
+== `boolean`、 `byte`、 `char` 与 `short`
+
+这些常量的加载指令中，没有关于 `boolean`、 `byte`、 `char` 与 `short` 类型的处理操作码。那么，这些类型的数据是怎么处理的呢？下面做个实验验证一下：
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 字节码示例代码
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ */
+public class Example {
+    /**
+     * 测试 boolean 型示例
+     */
+    public boolean testBoolean() {
+        return true;
+    }
+
+    /**
+     * 测试 byte 型示例
+     */
+    public byte testByte() {
+        // '0' == 0x30 == 48
+        return '0';
+    }
+
+    /**
+     * 测试 char 型示例
+     */
+    public char testChar() {
+        // '0' == 0x30 == 48
+        return '0';
+    }
+
+    /**
+     * 测试 short 型示例
+     */
+    public short testShort() {
+        // '0' == 0x30 == 48
+        return 32767;
+    }
+}
+----
+
+使用 `javac Example.java` 编译，然后使用 `javap` 来查看编译的结果：
+
+[source%nowrap,bash,highlight=12,{source_attr}]
+----
+$ javap -c Example
+Compiled from "Example.java"
+public class Example {
+  public Example();
+    Code:
+       0: aload_0
+       1: invokespecial #1          // Method java/lang/Object."<init>":()V
+       4: return
+
+  public boolean testBoolean();
+    Code:
+       0: iconst_1
+       1: ireturn
+
+  public byte testByte();
+    Code:
+       0: bipush        48
+       2: ireturn
+
+  public char testChar();
+    Code:
+       0: bipush        48
+       2: ireturn
+
+  public short testShort();
+    Code:
+       0: sipush        32767
+       3: ireturn
+}
+----
+
+`boolean` 型的 `true` 在字节码中却是使用 `int` 的 `iconst_1`来处理的。想必 `false` 会被“翻译”为 `iconst_0`；同样是 `'0'`，在 `byte` 和 `char` 不同类型的方法中，编译之后字节码确实一样的，全部是是 `bipush 48`；而 `short` 型的 `32767`，却使用的是是 `int` 的 `sipush 32767` 来处理的。另外，它们的返回操作码也都一样，全部是 `ireturn`，这也是 `int` 型的操作码。
+
+可见，在字节码层面， `boolean`、 `byte`、 `char` 与 `short` 全部是按照 `int` 来处理的。也有不同之处，后面遇到再专门说明。
+
+== 总结
+
+为 `int` 分配这么多操作码，就是为了使字节码更加紧凑，`int` 型常量值根据值 `n` 的范围，使用的指令按照如下的规则。
+
+* 若 `n ∈ [-1, 5]` 范围内，使用 <<iconst>> 的方式，操作数和操作码加一起只占一个字节。比如 `iconst_2` 对应的十六进制为 `0x05`。`-1` 比较特殊，对应的指令是 `iconst_m1`(`0x02`)。
+* 若 `n ∈ [-128, -2] ∪ [6, 127]` 范围内，使用 <<bipush>> 的方式，操作数和操作码一起只占两个字节。比如 `n` 值为 `100`(`0x64`) 时，`bipush_100` 对应十六进制为 `0x1064`。
+* 若 `n ∈ [-32768, -129] ∪ [128, 32767]` 范围内，使用 <<sipush>> 的方式，操作数和操作码一起只占三个字节。比如 `n` 值为 `1024`(`0x0400`) 时，对应的字节码为 `sipush_1024`(`0x110400`)。
+* 若 `n` 在其他范围内，则使用 <<ldc>> 的方式，这个范围的整整数值被放在常量池中，比如 `n` 值为 `40000` 时， `40000` 被不存储到常量池中，加载的指令为 `ldc #i`(`i` 为常量池的索引值)。
+
+使用一张图来总结一下 `int` 的加载：
+
+image::/images/java/bytecode-int-load.png[alt="Java 字节码：int 加载",{image_attr}]
+
+从这张图与 https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/#int[Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数^] 中关于 `int` 编码的图做对比来看，更容易理解对 `int` 的优化。
+

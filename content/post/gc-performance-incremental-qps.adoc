@@ -1,0 +1,479 @@
+---
+title: "JVM GC 性能测试（二）：递增流量"
+date: 2024-04-30T00:29:00+08:00
+draft: false
+keywords: ["Java","虚拟机","性能","ZGC","G1","OpenJDK"]
+tags: ["Java","虚拟机","GC","性能测试"]
+categories: ["系统架构","性能优化"]
+thumbnail: "images/java/jvm.jpg"
+
+weight: 1
+---
+
+*JVM GC 性能测试系列*:
+
+. https://www.diguage.com/post/gc-performance-comparison-method/[JVM GC 性能对比方法^]
+. https://www.diguage.com/post/gc-performance-same-qps/[JVM GC 性能测试（一）：相同流量^]
+. https://www.diguage.com/post/gc-performance-incremental-qps/[JVM GC 性能测试（二）：递增流量^]
+. https://www.diguage.com/post/gc-performance-real-qps/[JVM GC 性能测试（三）：真实流量^]
+
+'''
+
+// == 压测机器
+//
+// . J21-G1
+// .. 4500(平均每台机器900)，特别稳，CPU 80%，感觉还可以加点
+// .. 5000(平均每台机器1000)，偶尔抖动(不固定机器)，大部分时候很平稳，平均CPU可以干到80%+。
+// .. 5250（1050），偶尔抖动(不固定机器)，大部分时候很平稳，平均CPU可以干到90%+。
+// .. 5500（1100），抖动变多(不固定机器)，大部分时候很平稳，平均CPU可以干到95%+。
+// .. 5750（1150），抖动变多(不固定机器)，出现剧烈抖动，大部分时候很平稳，平均CPU可以干到97%+。
+// .. 6000（1200），抖动变多(不固定机器)，剧烈抖动频繁出现，大部分时候很平稳，平均CPU可以干到98%+。
+//
+// . J8-G1: 20*5 850+qps  抖动厉害，压不上去（压力机不给力啊！）
+// .. 4750(950)，CPU95%+
+// .. 5000(平均每台机器1000)，抖动幅度比较大，偶尔出现剧烈抖动，CPU99%+
+// .. 5250(平均每台机器1050)，抖动幅度比较大，频繁出现剧烈抖动，CPU波动（由于剧烈抖动，导致的访问量变少）
+//
+//
+// . J21-ZGC:
+// .. 2750（550）,稳定，没有抖动，CPU 81%
+// .. 3000（600）,稳定，没有抖动，CPU 86%
+// .. 3250（650）,稳定，没有抖动，CPU 88%
+// .. 3500（700）,稳定，没有抖动，CPU 91%
+// .. 3750（750）,稳定，没有抖动，CPU 93%
+// .. 4000（800）,稳定，没有抖动，CPU 97%
+// .. 4250（850）,稳定，没有抖动，CPU 99%
+// .. 4500（900）,稳定，没有抖动，CPU 99%
+// .. 4750（950）,出现剧烈抖动（五台中的三台），CPU 95%（由于抖动，访问量压不上来）
+// .. 5000（1000）,全部机器出现剧烈抖动，CPU 80%（由于抖动，访问量压不上来）
+//
+// . J17-ZGC
+// .. 第一轮（当前线程池）
+// .. 2750（550）,稳定，没有抖动，CPU
+// .. 3000（600）,稳定，没有抖动，CPU
+// .. 3250（650）,稳定，没有抖动，CPU
+// .. 3500（700）,稳定，没有抖动，CPU
+// .. 3750（750）,稳定，没有抖动，CPU 90%
+// .. 4000（800）,稳定，没有抖动，CPU 93%
+// .. 4250（850）,稳定，没有抖动，CPU 95%
+// .. 4500（900）,稳定，没有抖动，CPU 97%
+// .. 4750（950）,稳定，没有抖动，CPU 99%
+// .. 5000（1000）,一台机器剧烈抖动，CPU 99%
+// .. 第二轮（所有线程共享）
+// .. 2750（550）,稳定，没有抖动，CPU
+// .. 3000（600）,稳定，没有抖动，CPU
+// .. 3250（650）,稳定，没有抖动，CPU
+// .. 3500（700）,稳定，没有抖动，CPU 88%
+// .. 3750（750）,稳定，没有抖动，CPU 91%
+// .. 4000（800）,1/5台机器剧烈抖动，CPU 93%（一台机器抖动，访问量降低，导致平均CPU降低）
+// .. 4250（850）,1/5台机器剧烈抖动，CPU 93%
+// .. 4500（900）,1/5台机器剧烈抖动，CPU 93%
+// .. 4750（950）,稳定，没有抖动，CPU 99%
+// .. 5000（1000）,一台机器剧烈抖动，CPU 99%
+//
+// . J21 Gen ZGC:
+// .. 4500(平均每台机器900)，特别稳，CPU 80%，感觉还可以加点
+// .. 950问题不大，个别机器(五台中的一台，其他很稳)开始疯狂抖动；其他还是很稳，没有特别的抖动，平均CPU可以干到92%+。
+// .. 1000也还行，个别机器(五台中的二台，其他很稳)开始疯狂抖动；其他还是很稳，没有特别的抖动，平均CPU可以干到96%+。
+// .. 5250(1050)，个别机器(五台中的三台，其他很稳)开始疯狂抖动；其他还是很稳，没有特别的抖动，平均CPU可以干到99%+。
+// .. 5500(1100)，全部开始疯狂抖动，平均CPU可以干到99%+。
+//
+//
+// 压测计划：
+//
+// . 1000 - 30s
+// . 2000 - 30s
+// . 3000 - 30s
+// . 3750 - 300s
+// . 4000 - 600s
+// . 4250 - 600s
+// . 4500 - 600s
+// . 4750 - 600s
+// . 5000 - 600s
+// . 5250 - 600s
+// . 5500 - 600s
+//
+// == 压测
+//
+// 开始时间： 2024-04-29 23:13:03
+//
+// == 4000（800）
+//
+// 开始时间： 2024-04-29 23:19:03
+//
+// 整体平稳
+//
+// . J21-ZGC CPU 96%
+// . J17-ZGC CPU 92%
+// . J8-G1 CPU 87%，YoungGC最频繁，次数是ZGC的三倍
+// . J21-GenZGC CPU 77%(波动较大)
+// . J21-G1 CPU 69%(波动较大)
+//
+// == 4250（850）
+//
+// 开始时间： 2024-04-29 23:29:30
+//
+// 波动变大，从分组的TP999 来看，J8-G1 波动最大，其次是 J21-G1，三个ZGC稳定性解决，最稳的是 J21-Gen-ZGC
+//
+// . J21-ZGC CPU 98%
+// . J8-G1 CPU 96%，YoungGC更频繁了，是上个请求量的1.5倍
+// . J17-ZGC CPU 95%
+// . J21-GenZGC CPU 83%
+// . J21-G1 CPU 77%(波动略大)
+//
+// == 4500（900）
+//
+// 开始时间： 2024-04-29 23:39:30
+//
+// 更多机器（大概5台）开始出现剧烈抖动，分组TP999，J8-G1 波动最大，其次是 J21-ZGC，再次是 J21-G1（也比其他分组高），比较稳定是 J17-ZGC 和 J21-Gen-ZGC(表现最好)。
+//
+// J8-GC 出现明细剧烈抖动
+//
+// . J8-G1 CPU 98%，YoungGC更频繁了
+// . J21-ZGC CPU 98%
+// . J17-ZGC CPU 95%
+// . J21-GenZGC CPU 89%
+// . J21-G1 CPU 83%
+//
+// == 4750（950）
+//
+// 开始时间： 2024-04-29 23:49:30
+//
+// . J8-G1 全部机器开始剧烈抖动，CPU也抖动
+// . J17-ZGC CPU98%
+// . J21-Gen-ZGC 95%
+// . J21-G1 CPU 86%
+// . J21-ZGC 77%(开始出现抖动， 4/5剧烈抖动)
+//
+// == 5000（1000）
+//
+// 开始时间： 2024-04-29 23:59:30
+//
+// . J21-ZGC 也开始沦陷 4/5 机器剧烈抖动
+// . J8-G1 全部机器开始抖动，但是只是个别点在抖，大部分时间是平稳的，感觉是依赖的RPC抖动导致的？？
+// . J21-Gen-ZGC 2/5 机器开始剧烈抖动，幅度比上两个要小，TP999维持在160ms上下波动（除这个和J21-G1外，其他波动都超过1000ms了）
+// . J17-ZGC 也很稳，有点说不过去啊！
+// . J21-G1 还是很稳，TP999波动最稳，维持在100ms左右
+//
+// == 5250（1050）
+//
+// 开始时间： 2024-04-30 00:09:30
+//
+// . J21-Gen-ZGC 全部机器开始剧烈抖动，CPU97%
+// . J21-ZGC 全部机器开始剧烈抖动
+// . J17-ZGC 3/5 机器开始剧烈抖动
+// . J8-G1 机器周期性抖动
+// . J21-G1 整体非常平稳，没有抖动，CPU 95%
+//
+// == 5500（1100）
+//
+// 开始时间： 2024-04-30 00:19:30
+//
+// . J21-G1 有个别剧烈抖动，CPU96%，感觉还可以再加点压力
+// . J8-G1 全部机器开始抖动，但是只是个别点在抖，大部分时间是平稳的，
+// . 其他分组机器全部沦陷
+//
+//
+//
+// 分组秒级： https://taishan.jd.com/pfinder/multi-dimension/monitorChart?metricId=161448101&metricName=JsfP%40com.jd.jr.baitiao.front.export.rest.app.mall.BaitiaoInfoResource%23getShouldPayInfo&appName=front-ledger&platform=jdos&unit=all&tag=performance-key&dimension=_AG&component=JsfProvider&time=second,0,1714403520911,1714408259912,0&filter=_AG%3Aj17-zgc,j21-g1,j21-gen-zgc,j21-zgc,j8-g1&dv=j17-zgc,j21-g1,j21-gen-zgc,j21-zgc,j8-g1
+
+// // 分组分钟： https://taishan.jd.com/pfinder/multi-dimension/monitorChart?metricId=161448101&metricName=JsfP%40com.jd.jr.baitiao.front.export.rest.app.mall.BaitiaoInfoResource%23getShouldPayInfo&appName=front-ledger&platform=jdos&unit=all&tag=performance-key&dimension=_AG&component=JsfProvider&time=oneMinute,0,1714403520911,1714408259912,0&filter=_AG%3Aj17-zgc,j21-g1,j21-gen-zgc,j21-zgc,j8-g1&dv=j17-zgc,j21-g1,j21-gen-zgc,j21-zgc,j8-g1
+
+// MDC： https://taishan.jd.com/mdc/ipMonitor?ip=11.243.84.154,11.243.84.112,11.248.8.89,11.248.1.120,11.248.8.88,11.243.84.159,11.243.84.173,11.248.8.90,11.243.85.100,11.243.84.164,11.248.1.164,11.248.1.165,11.243.86.251,11.243.65.198,11.243.85.109,11.243.87.117,11.243.87.118,11.248.1.166,11.248.8.91,11.248.1.169,11.248.1.167,11.248.8.92,11.248.8.93,11.248.1.168,11.243.87.95&global=1&startTime=1714403736193&endTime=1714408140193
+// 可以从 https://api-pserve-proxy.jd.com/api/mdc3/v2/metrics/series_diagram 获取原始数据
+//
+// UMP 总计： https://taishan.jd.com/ump/monitor/perfomance?endPointKey=jr.baitiao.ledger.front.BaitiaoInfoResourceImpl.getShouldPayInfo&frequency=oneMinute&start_time=1714403736000&end_time=1714408140000
+//
+//
+
+在上一篇文章 https://www.diguage.com/post/gc-performance-same-qps/[JVM GC 性能测试（一）：相同流量^] 中，D瓜哥使用一个总量请求对所有分组的所有机器进行性能测试。但是，经过测试发现了一个问题，同时产生了另外一个问题，有两个问题没有得到很好的解答：
+
+. 由于服务响应时长直接关系到服务调用次数，当某一台机器出现问题时，整体调用次数就会急剧下降，调用次数加不上去。一个机器出问题，所有机器的访问量就上不去了。这是测试中发现的一个问题。当然，这属于测试工具的问题，别不是 GC 的问题。但是，也影响到我们的压测，也需要解决。
+. 上次测试，这是针对某一个指定服务调用量进行性能测试，那么，无法确定每个 GC 能支撑的极限调用峰值。另外，在极限峰值和超极限峰值的情况下，各个 GC 的表现如何？这个也有待验证。
+
+针对上述两个问题，设计了本次测试。测试方法如下：
+
+* 各个分组使用一套相同的流量策略：
+** 各个分组几乎同时开始执行测试任务；
+** 调用量从低到高，以此同时使用相关的调用量进行测试；
+** 除最开始预热阶段的调用量外，后续每个调用量都持续进行十分钟的测试。
+* 针对每个 GC 分组单独设定一套调用发量程序，这个保证各个 GC 分组直接不相互影响。
+* 最后，再分析调用量相同时段的各个 GC 表现，就可以看到各个 GC 的极限峰值。
+
+TIP: 为了保留更多细节，本文所有截图都是在 34 吋带鱼屏下，使用全屏模式展示并截图的。如果看不清楚，可以右击在新页面打开图片来查看。
+
+
+具体流量及时间段：
+
+* 750， 23:14:30 ~ 23:19:30
+* 800， 23:19:30 ~ 23:29:30
+* 850， 23:29:30 ~ 23:39:30
+* 900， 23:39:30 ~ 23:49:30
+* 950， 23:49:30 ~ 23:59:30
+* 1000，23:59:30 ~ 00:09:30
+* 1050，00:09:30 ~ 00:19:30
+* 1100，00:19:30 ~ 00:29:30
+
+这里的流量是单台服务器的测试接口接受到的调用量。
+
+== 一言以蔽之
+
+* J21-G1 的极限峰值最高，能支撑到 1100+ QPS；其次是 J21-Gen-ZGC，大约可以支持 1000 QPS（挑食，某些机器会出现 CPU 使用率过高的问题），比 J21-G1 降低了 10%。
+* 在 900 QPS 以下，从 TP999 的数据来看，J21-Gen-ZGC 耗时更短，响应性更好；超过 1000 QPS 时，则 J21-G1 更稳定，耗时最短。
+
+****
+鉴于 OpenJDK 21 G1 GC 出人意外的惊艳表现，D瓜哥准备整理一下 G1 GC 的主要优化，敬请关注： https://www.diguage.com/post/main-optimization-of-garbage-first-collector/[Java G1 垃圾收集器主要优化^]。
+****
+
+:sectnums:
+
+== 服务调用监控数据
+
+监控服务调用的相关数据，这是对于用户来说，感知最强烈的相关数据，也是直接关系到服务质量的数据。
+
+=== 服务调用次数
+
+* 从调用次数上来看，J8-G1 最早开始失守，结合下面 <<api-qps-time>> 来看，应该是 某台机器除了问题，否则 J8-G1 不会在 TP999 表现最差的情况下，TP99 的表现反而变现不错。
+* 紧随其后，以此是 J21-ZGC、J21-Gen-ZGC、J17-ZGC 的表现开始拉胯。
+* 在极限峰值下，J21-Gen-ZGC 的表现又反超了 J17-ZGC；由此可以看出，在极限情况下，J21-Gen-ZGC 的表现更值得信赖。
+* J21-G1 变现一直非常稳定，甚至没有达到它的峰值。
+
+image::/images/gc-performance-2/api-qps-second.jpg[title="服务调用次数（秒级）",alt="服务调用次数（秒级）",{image_attr}]
+
+image::/images/gc-performance-2/api-qps-minute.jpg[title="服务调用次数（分钟级）",alt="服务调用次数（分钟级）",{image_attr}]
+
+[#api-qps-time]
+=== 服务调用耗时
+
+* J8-G1 在 TP999 表现最差，但是在 TP99 的表现反而稳居第二。应该是某个机器有问题，整体表现是可以的。
+* 从 TP999 来看，表现最好的是 J21-G1，其次是 J21-Gen-ZGC。
+
+==== TP999
+
+image::/images/gc-performance-2/api-qps-tp999-minute.jpg[title="服务调用 TP999（分钟）",alt="服务调用 TP999（分钟）",{image_attr}]
+
+image::/images/gc-performance-2/api-qps-tp999-second.jpg[title="服务调用 TP999（秒）",alt="服务调用 TP999（秒）",{image_attr}]
+
+==== TP99
+
+image::/images/gc-performance-2/api-qps-tp99-minute.jpg[title="服务调用 TP99（分钟）",alt="服务调用 TP99（分钟）",{image_attr}]
+
+// image::/images/gc-performance-2/api-qps-tp99-second-55.jpg[title="服务调用 TP99（秒）",alt="服务调用 TP99（秒）",{image_attr}]
+
+image::/images/gc-performance-2/api-qps-tp99-second.jpg[title="服务调用 TP99（秒）",alt="服务调用 TP99（秒）",{image_attr}]
+
+==== TP90
+
+image::/images/gc-performance-2/api-qps-tp90-minute.jpg[title="服务调用 TP90（分钟）",alt="服务调用 TP90（分钟）",{image_attr}]
+
+image::/images/gc-performance-2/api-qps-tp90-second.jpg[title="服务调用 TP90（秒）",alt="服务调用 TP90（秒）",{image_attr}]
+
+==== 平均耗时
+
+image::/images/gc-performance-2/api-qps-avg-second.jpg[title="服务调用耗时（秒级平均）",alt="服务调用耗时（秒级平均）",{image_attr}]
+
+==== 最大耗时
+
+image::/images/gc-performance-2/api-qps-max-second.jpg[title="服务调用耗时（秒级最大）",alt="服务调用耗时（秒级最大）",{image_attr}]
+
+image::/images/gc-performance-2/api-qps-max-minute.jpg[title="服务调用耗时（分钟级最大）",alt="服务调用耗时（分钟级最大）",{image_attr}]
+
+=== 每台机器的调用次数及耗时
+
+.点击查看机器分组详情
+[%collapsible]
+====
+****
+由于截图时间跨度太长，即使使用分钟级的数据，也不能在一张图上展示所有机器的访问请求。所以，将其分为两组来展示并截图：
+
+. J21-Gen-ZGC 和 J21-G1
+. J21-ZGC 、 J17-ZGC 和 J8-G1
+
+//-
+
+各组的 IP 列表::
+* J21-Gen-ZGC：
+** 11.243.85.100
+** 11.243.84.159
+** 11.243.84.164
+** 11.243.84.173
+** 11.248.8.90
+* J21-G1：
+** 11.243.87.118
+** 11.243.87.95
+** 11.248.1.166
+** 11.248.8.91
+** 11.243.87.117
+* J21-ZGC：
+** 11.243.84.112
+** 11.248.8.88
+** 11.243.84.154
+** 11.248.8.89
+** 11.248.1.120
+* J17-ZGC
+** 11.248.1.164
+** 11.243.65.198
+** 11.248.1.165
+** 11.243.85.109
+** 11.243.86.251
+* J8-G1：
+** 11.248.1.168
+** 11.248.1.169
+** 11.248.8.92
+** 11.248.1.167
+** 11.248.8.93
+****
+====
+
+从截图上来看，“J21-Gen-ZGC 和 J21-G1” 这组机器稳定性明显比 “J21-ZGC 、 J17-ZGC 和 J8-G1” 这组要好：
+
+* 剧烈抖动出现的更晚；
+* 在最高峰值，前者依然有机器支持高流量访问，而后者都已经全部沦陷，只有少量机器支持起降配的访问量。
+* 看 TP99 图表，去掉了个别剧烈抖动的点，前者从 00:10 开始（也就是 QPS 已经到 1050 后），才有一半机器调用耗时过高；而后者，早早就有大量机器开始剧烈抖动。
+
+==== TP999 及调用次数
+
+image::/images/gc-performance-2/api-tp999-per-host-j21-gen-zgc-vs-j21-g1.jpg[title="每台机器服务调用 TP999 及调用次数：J21-Gen-ZGC 和 J21-G1",alt="每台机器服务调用 TP999 及调用次数：J21-Gen-ZGC 和 J21-G1",{image_attr}]
+
+image::/images/gc-performance-2/api-tp999-per-host-j21-zgc-vs-j17-zgc-vs-j8-g1.jpg[title="每台机器服务调用 TP999 及调用次数：J21-ZGC 、 J17-ZGC 和 J8-G1",alt="每台机器服务调用 TP999 及调用次数：J21-ZGC 、 J17-ZGC 和 J8-G1",{image_attr}]
+
+====  TP99 及调用次数
+
+image::/images/gc-performance-2/api-tp99-per-host-j21-gen-zgc-vs-j21-g1.jpg[title="每台机器服务调用 TP99 及调用次数：J21-Gen-ZGC 和 J21-G1",alt="每台机器服务调用 TP99 及调用次数：J21-Gen-ZGC 和 J21-G1",{image_attr}]
+
+image::/images/gc-performance-2/api-tp99-per-host-j21-zgc-vs-j17-zgc-vs-j8-g1.jpg[title="每台机器服务调用 TP99 及调用次数：J21-ZGC 、 J17-ZGC 和 J8-G1",alt="每台机器服务调用 TP99 及调用次数：J21-ZGC 、 J17-ZGC 和 J8-G1",{image_attr}]
+
+== JVM 监控
+
+=== CPU
+
+单独从 CPU 使用率角度来看：
+
+* J21-ZGC 和 J17-ZGC 早早就把 CPU 干到了 90%+，而这个时候 QPS 只有 750。
+* J21-G1 一直非常稳定，跟随 QPS 的提升，CPU 使用率也稳步上升；而 J21-Gen-ZGC 则更早的把 CPU 使用率打到接近 100%（时间是：00:00，QPS：1000）。J21-G1 比 J21-Gen-ZGC 的稳定性好很多。
+
+image::/images/gc-performance-2/jvm-cpu-avg.jpg[title="CPU 使用率（平均）",alt="CPU 使用率（平均）",{image_attr}]
+
+image::/images/gc-performance-2/jvm-cpu-max.jpg[title="CPU 使用率（最大）",alt="CPU 使用率（最大）",{image_attr}]
+
+image::/images/gc-performance-2/jvm-cpu-min.jpg[title="CPU 使用率（最小）",alt="CPU 使用率（最小）",{image_attr}]
+
+=== Young GC
+
+TIP: 关于 Young GC 的说明，D瓜哥在 https://www.diguage.com/post/gc-performance-same-qps/#jvm-young-gc[JVM GC 性能测试（一）：相同流量：Young GC^] 中，已经做了说明，这里就不再赘述。
+
+* J21-G1 的 Young GC 次数也是随 QPS 的提升，逐步上升；
+* J21-Gen-ZGC 在前期，Young GC 次数也是随 QPS 的提升，逐步上升；临界点在“时间是：00:00，QPS：1000”，在此之后，可能是回收速度有点力不从心，开始频繁地进行 Young GC，耗时也有大幅度增加。
+
+==== Young GC 次数
+
+image::/images/gc-performance-2/jvm-young-gc-avg.jpg[title="JVM Young GC 次数（平均）",alt="JVM Young GC 次数（平均）",{image_attr}]
+
+image::/images/gc-performance-2/jvm-young-gc-max.jpg[title="JVM Young GC 次数（最大）",alt="JVM Young GC 次数（最大）",{image_attr}]
+
+image::/images/gc-performance-2/jvm-young-gc-min.jpg[title="JVM Young GC 次数（最小）",alt="JVM Young GC 次数（最小）",{image_attr}]
+
+==== Young GC 耗时
+
+image::/images/gc-performance-2/jvm-young-gc-time-avg.jpg[title="JVM Young GC 耗时（平均）",alt="JVM Young GC 耗时（平均）",{image_attr}]
+
+image::/images/gc-performance-2/jvm-young-gc-time-max.jpg[title="JVM Young GC 耗时（最大）",alt="JVM Young GC 耗时（最大）",{image_attr}]
+
+image::/images/gc-performance-2/jvm-young-gc-time-min.jpg[title="JVM Young GC 耗时（最小）",alt="JVM Young GC 耗时（最小）",{image_attr}]
+
+=== Full GC
+
+* 整个过程，J21-G1 几乎没有出现 Full GC（图表里只出现了两次），有些让人吃惊。
+* 对比之下，J8-G1 却出现了频繁的 Full GC。
+* J21-Gen-ZGC 后期由于无法支撑超极限流量，所以 Full GC 反倒没有前期多了。
+
+
+==== Full GC 次数
+
+image::/images/gc-performance-2/jvm-full-gc-avg.jpg[title="JVM Full GC 次数（平均）",alt="JVM Full GC 次数（平均）",{image_attr}]
+
+image::/images/gc-performance-2/jvm-full-gc-max.jpg[title="JVM Full GC 次数（最大）",alt="JVM Full GC 次数（最大）",{image_attr}]
+
+image::/images/gc-performance-2/jvm-full-gc-min.jpg[title="JVM Full GC 次数（最小）",alt="JVM Full GC 次数（最小）",{image_attr}]
+
+==== Full GC 耗时
+
+image::/images/gc-performance-2/jvm-full-gc-time-avg.jpg[title="JVM Full GC 耗时（平均）",alt="JVM Full GC 耗时（平均）",{image_attr}]
+
+image::/images/gc-performance-2/jvm-full-gc-time-max.jpg[title="JVM Full GC 耗时（最大）",alt="JVM Full GC 耗时（最大）",{image_attr}]
+
+image::/images/gc-performance-2/jvm-full-gc-time-min.jpg[title="JVM Full GC 耗时（最小）",alt="JVM Full GC 耗时（最小）",{image_attr}]
+
+=== Heap
+
+image::/images/gc-performance-2/jvm-heap-avg.jpg[title="JVM 堆内存（平均）",alt="JVM 堆内存（平均）",{image_attr}]
+
+image::/images/gc-performance-2/jvm-heap-max.jpg[title="JVM 堆内存（最大）",alt="JVM 堆内存（最大）",{image_attr}]
+
+image::/images/gc-performance-2/jvm-heap-min.jpg[title="JVM 堆内存（最小）",alt="JVM 堆内存（最小）",{image_attr}]
+
+=== 非堆
+
+image::/images/gc-performance-2/jvm-non-heap.jpg[title="JVM 非堆内存（平均）",alt="JVM 非堆内存（平均）",{image_attr}]
+
+=== 线程数
+
+image::/images/gc-performance-2/jvm-thead-avg.jpg[title="JVM 线程数（平均）",alt="JVM 线程数（平均）",{image_attr}]
+image::/images/gc-performance-2/jvm-thead-max.jpg[title="JVM 线程数（最大）",alt="JVM 线程数（最大）",{image_attr}]
+
+image::/images/gc-performance-2/jvm-thead-min.jpg[title="JVM 线程数（最小）",alt="JVM 线程数（最小）",{image_attr}]
+
+== 系统监控
+
+=== CPU 使用率
+
+image::/images/gc-performance-2/os-cpu-avg-minute.jpg[title="系统监控 CPU 使用率（分钟级平均）",alt="系统监控 CPU 使用率（分钟级平均）",{image_attr}]
+
+image::/images/gc-performance-2/os-cpu-max-minute.jpg[title="系统监控 CPU 使用率（分钟级最大）",alt="系统监控 CPU 使用率（分钟级最大）",{image_attr}]
+
+image::/images/gc-performance-2/os-cpu-min-minute.jpg[title="系统监控 CPU 使用率（分钟级最小）",alt="系统监控 CPU 使用率（分钟级最小）",{image_attr}]
+
+=== 内存使用率
+
+image::/images/gc-performance-2/os-cache-avg-minute.jpg[title="内存使用率（分钟级平均）",alt="内存使用率（分钟级平均）",{image_attr}]
+
+image::/images/gc-performance-2/os-cache-max-minute.jpg[title="内存使用率（分钟级最大）",alt="内存使用率（分钟级最大）",{image_attr}]
+
+image::/images/gc-performance-2/os-cache-min-minute.jpg[title="内存使用率（分钟级最小）",alt="内存使用率（分钟级最小）",{image_attr}]
+
+=== 磁盘读写速度
+
+image::/images/gc-performance-2/os-disk-avg-minute.jpg[title="磁盘读写速度（分钟级平均）",alt="磁盘读写速度（分钟级平均）",{image_attr}]
+
+image::/images/gc-performance-2/os-disk-max-minute.jpg[title="磁盘读写速度（分钟级最大）",alt="磁盘读写速度（分钟级最大）",{image_attr}]
+
+=== 网络流入流出速率
+
+image::/images/gc-performance-2/os-net-avg-minute.jpg[title="网络流入流出速率（分钟级平均）",alt="网络流入流出速率（分钟级平均）",{image_attr}]
+
+image::/images/gc-performance-2/os-net-max-minute.jpg[title="网络流入流出速率（分钟级最大）",alt="网络流入流出速率（分钟级最大）",{image_attr}]
+
+image::/images/gc-performance-2/os-net-min-minute.jpg[title="网络流入流出速率（分钟级最小）",alt="网络流入流出速率（分钟级最小）",{image_attr}]
+
+=== 每个机器 CPU 使用率
+
+image::/images/gc-performance-2/cpu-per-host.jpg[title="每个机器 CPU 使用率",alt="每个机器 CPU 使用率",{image_attr}]
+
+=== 每个机器系统负载
+
+image::/images/gc-performance-2/load-per-host.jpg[title="每个机器系统负载",alt="每个机器系统负载",{image_attr}]
+
+:!sectnums:
+
+== 揭秘
+
+在上一篇文章 https://www.diguage.com/post/gc-performance-same-qps/#to-be-continued[JVM GC 性能测试（一）：相同流量^] 的“后话”一节中，D瓜哥提到了对“将 JMeter 的共享模式设置为所有线程，这样的话，每次发送请求的参数都会不一样。”这句话有了新的思考和理解，在这里做个揭秘。
+
+D瓜哥在 https://www.diguage.com/post/gc-performance-comparison-method/[JVM GC 性能对比方法^] 中提到，对于测试接口，最好符合线上实际运行情况，那么就会出现既依赖数据库，又依赖外部接口的情况。那么外部接口的响应变化对我们的测试 GC 的表现来看，其实属于负面影响。这里，也包含数据库的情况。所以，如果“将 JMeter 的共享模式设置为所有线程”，这样每次调用都是一个新的参数（D瓜哥这里的参数样本是700w+，循环一遍要几十分钟），虽然这样的访问情况，更加符合线上真是的访问场景，但是对我们的影响也是巨大的。
+
+如果“将 JMeter 的共享模式设置为当前线程”，这样各个线程之间调用的参数都是一样的，最早的调用相当于给后面的调用做了预热，如果外部依赖有缓存，那么后续的调用都可以直接利用外部依赖的缓存，响应会更好，对我们的测试影响反而更小，更利于对 GC 表现的测试。所以，在这次测试中，D瓜哥就是将 JMeter 的共享模式设置为当前线程。大家有不同的意见和想法，也欢迎留言交流。
+
+== 下一个问题
+
+在 https://www.diguage.com/post/gc-performance-same-qps/#to-be-continued[JVM GC 性能测试（一）：相同流量^] 中，D瓜哥经过小批量测试，确定的 QPS 是 500。但是，在这次测试中，QPS 直接从 750 起步（前面使用 200、400、600 各跑了 30s 做预热），最后的 QPS 达到了 1100。所以，两个测试得出的结论是一致的。那么，在实际使用中的表现纠结如何呢？这里要打个问号。所以，接下来，D瓜哥准备将这些机器接入到上线流量，使用真是的流量来验证各个 GC 的表现，敬请期待： https://www.diguage.com/post/gc-performance-real-qps/[JVM GC 性能测试（三）：真实流量^]。
+

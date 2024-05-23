@@ -1,0 +1,613 @@
+---
+title: "OpenJDK 21 升级指南"
+date: 2024-05-06T19:50:22+08:00
+draft: false
+keywords: ["Java","OpenJDK","OpenJDK 21"]
+tags: ["Java","JVM"]
+categories: ["编程语言","软件工程"]
+thumbnail: "images/java/java-21.jpeg"
+
+weight: 1
+---
+
+https://openjdk.org/projects/jdk/21/[OpenJDK 21^] 已经发布半年有余，在这个版本中， https://openjdk.org/jeps/439[Generational ZGC^] 也一起发布了。在 https://malloc.se/blog/zgc-jdk16[ZGC | What's new in JDK 16^] 中， https://malloc.se/[Per Lidén^] 宣称，将 ZGC 的最大停顿时间从 10ms 降低到了 1ms。再加上 https://www.diguage.com/post/gc-performance-incremental-qps/[JVM GC 性能测试（二）：递增流量^] 和 https://www.diguage.com/post/gc-performance-real-qps/[JVM GC 性能测试（三）：真实流量^] 文中，GenZGC 的惊艳表现，这些种种先进技术，着实充满诱惑，忍不住想吃口螃蟹 🦀。这篇文章，D瓜哥就来分享一下，自己在升级 OpenJDK 21 中的一些经验。
+
+TIP: 本文仅介绍升级 OpenJDK 的相关内容，ZGC 原理等会专门撰文介绍。
+
+
+== 升级依赖
+
+依赖升级不是 KPI，也不涉及需求交付。所以，大多数项目的依赖自从项目创建后，就很少升级。如果想比较顺利地将项目升级到 OpenJDK 21，那么，先将项目所用依赖做一个整体升级是一个事半功倍的操作。可以直接使用 Maven 命令来检查依赖可以升级的情况：
+
+[source%nowrap,bash,{source_attr}]
+----
+mvn versions:display-dependency-updates
+----
+
+执行该命令后，会有如下类似输出：
+
+[source%nowrap,bash,{source_attr}]
+----
+# 检查依赖升级情况
+$ mvn versions:display-dependency-updates
+
+# 此处省略一万个字
+# @author: D瓜哥 · https://www.diguage.com
+
+[INFO]   org.springframework:spring-aop ......... 5.3.33 -> 6.1.6
+[INFO]   org.springframework:spring-aspects ..... 5.3.33 -> 6.1.6
+[INFO]   org.springframework:spring-beans ....... 5.3.33 -> 6.1.6
+[INFO]   org.springframework:spring-context ..... 5.3.33 -> 6.1.6
+[INFO]   org.springframework:spring-core ........ 5.3.33 -> 6.1.6
+[INFO]   org.springframework:spring-jdbc ........ 5.3.33 -> 6.1.6
+[INFO]   org.springframework:spring-web ......... 5.3.33 -> 6.1.6
+
+[INFO]   org.mybatis:mybatis-2-spring ............ 1.1.0 -> 1.2.0
+[INFO]   org.mybatis:mybatis-spring .............. 2.1.1 -> 2.1.2
+
+[INFO]   org.junit.jupiter:junit-jupiter ........ 5.9.3 -> 5.10.2
+[INFO]   org.junit.jupiter:junit-jupiter-api .... 5.9.3 -> 5.10.2
+----
+
+可以根据这个输出情况，将相关依赖做一个整体升级。这里再注重提醒三个方面。
+
+=== Lombok
+
+如果项目使用了 Lombok 依赖，务必将其升级到 v1.18.30+，低于此版本的 Lombok 会报错，具体原因见： https://github.com/projectlombok/lombok/issues/3393[[BUG\] lombok 1.8.26 incompatible with JDK21 · #3393^]。
+
+=== Netty
+
+如果项目使用了 Netty，建议进来将其升级到 4.1.93.Final+。OpenJDK 21 对 `DirectByteBuffer` 的构造函数做了改动，该版本做了兼容。修改日志见： https://netty.io/news/2023/05/25/4-1-93-Final.html[Netty.news: Netty 4.1.93.Final released^]，代码改动详情见： https://github.com/netty/netty/pull/13366[Adapt to DirectByteBuffer constructor in Java 21 #13366^]。
+
+=== 反向兼容 JDK 8
+
+另外，提醒一下，如果开发环境还是以 JDK 8 为主，那么 Spring 最好就不要升级到 6.x，能不能忽略类似的相关问题呢？解决办法请参考： https://www.diguage.com/post/intro-to-versions-maven-plugin/[Versions Maven 插件简介^]，文章里对忽略版本，一键升级等操作，都做了比较详细的介绍。
+
+== `@javax.annotation.Resource`
+
+直接将本地使用的 JDK 版本切换成 JDK 21 后，编译大概率会报错，提示找不到 `javax.annotation.Resource`，这是由于 https://openjdk.org/jeps/320[JEP 320: Remove the Java EE and CORBA Modules^] 提案，在 OpenJDK 11 中移除了 JavaEE 的相关内容。所以，需要将其使用 Jar 包的形式专门引用一下。
+
+[source%nowrap,xml,{source_attr}]
+----
+<dependency>
+    <groupId>jakarta.annotation</groupId>
+    <artifactId>jakarta.annotation-api</artifactId>
+    <version>1.3.5</version>
+</dependency>
+
+<!-- 或者 -->
+<!-- @author: D瓜哥 · https://www.diguage.com -->
+
+<dependency>
+    <groupId>javax.annotation</groupId>
+    <artifactId>javax.annotation-api</artifactId> <!--1-->
+    <version>1.3.2</version>
+</dependency>
+----
+<1> 上述两个依赖代码基本一样。推荐使用该版本，不耽误以后同时使用更高版本的 `jakarta.annotation:jakarta.annotation-api`。
+
+[#spring-resource]
+=== Spring 6+ 同时支持新旧版的 `@Resource`
+
+另外，有一点需要特别说明：Spring 6+ 支持新版的 `jakarta.annotation.Resource` 注解，同时还兼容旧版的 `javax.annotation.Resource`。相关代码如下：
+
+TIP: 有些文章提到，Spring 6 不支持 `javax.annotation.Resource` 注解，从下面的 Spring 代码来看，这是完全错误的。
+
+.点击查看 Spring 源码
+[%collapsible]
+====
+.`CommonAnnotationBeanPostProcessor.java`
+[source%nowrap,java,{source_attr}]
+----
+public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBeanPostProcessor
+    implements InstantiationAwareBeanPostProcessor, BeanFactoryAware, Serializable {
+
+  // Defensive reference to JNDI API for JDK 9+ (optional java.naming module)
+  private static final boolean jndiPresent = ClassUtils.isPresent(
+      "javax.naming.InitialContext", CommonAnnotationBeanPostProcessor.class.getClassLoader());
+
+  private static final Set<Class<? extends Annotation>> resourceAnnotationTypes = CollectionUtils.newLinkedHashSet(3);
+
+  @Nullable
+  private static final Class<? extends Annotation> jakartaResourceType;
+
+  @Nullable
+  private static final Class<? extends Annotation> javaxResourceType;
+
+  @Nullable
+  private static final Class<? extends Annotation> ejbAnnotationType;
+
+  static {
+    jakartaResourceType = loadAnnotationType("jakarta.annotation.Resource");
+    if (jakartaResourceType != null) {
+      resourceAnnotationTypes.add(jakartaResourceType);
+    }
+
+    javaxResourceType = loadAnnotationType("javax.annotation.Resource");
+    if (javaxResourceType != null) {
+      resourceAnnotationTypes.add(javaxResourceType);
+    }
+
+    ejbAnnotationType = loadAnnotationType("jakarta.ejb.EJB");
+    if (ejbAnnotationType != null) {
+      resourceAnnotationTypes.add(ejbAnnotationType);
+    }
+  }
+
+  private final Set<String> ignoredResourceTypes = new HashSet<>(1);
+
+  private InjectionMetadata buildResourceMetadata(Class<?> clazz) {
+    if (!AnnotationUtils.isCandidateClass(clazz, resourceAnnotationTypes)) {
+      return InjectionMetadata.EMPTY;
+    }
+
+    List<InjectionMetadata.InjectedElement> elements = new ArrayList<>();
+    Class<?> targetClass = clazz;
+
+    do {
+      final List<InjectionMetadata.InjectedElement> currElements = new ArrayList<>();
+
+      ReflectionUtils.doWithLocalFields(targetClass, field -> {
+        if (ejbAnnotationType != null && field.isAnnotationPresent(ejbAnnotationType)) {
+          if (Modifier.isStatic(field.getModifiers())) {
+            throw new IllegalStateException("@EJB annotation is not supported on static fields");
+          }
+          currElements.add(new EjbRefElement(field, field, null));
+        }
+        else if (jakartaResourceType != null && field.isAnnotationPresent(jakartaResourceType)) {
+          if (Modifier.isStatic(field.getModifiers())) {
+            throw new IllegalStateException("@Resource annotation is not supported on static fields");
+          }
+          if (!this.ignoredResourceTypes.contains(field.getType().getName())) {
+            currElements.add(new ResourceElement(field, field, null));
+          }
+        }
+        else if (javaxResourceType != null && field.isAnnotationPresent(javaxResourceType)) {
+          if (Modifier.isStatic(field.getModifiers())) {
+            throw new IllegalStateException("@Resource annotation is not supported on static fields");
+          }
+          if (!this.ignoredResourceTypes.contains(field.getType().getName())) {
+            currElements.add(new LegacyResourceElement(field, field, null));
+          }
+        }
+      });
+
+      ReflectionUtils.doWithLocalMethods(targetClass, method -> {
+        Method bridgedMethod = BridgeMethodResolver.findBridgedMethod(method);
+        if (!BridgeMethodResolver.isVisibilityBridgeMethodPair(method, bridgedMethod)) {
+          return;
+        }
+        if (ejbAnnotationType != null && bridgedMethod.isAnnotationPresent(ejbAnnotationType)) {
+          if (method.equals(ClassUtils.getMostSpecificMethod(method, clazz))) {
+            if (Modifier.isStatic(method.getModifiers())) {
+              throw new IllegalStateException("@EJB annotation is not supported on static methods");
+            }
+            if (method.getParameterCount() != 1) {
+              throw new IllegalStateException("@EJB annotation requires a single-arg method: " + method);
+            }
+            PropertyDescriptor pd = BeanUtils.findPropertyForMethod(bridgedMethod, clazz);
+            currElements.add(new EjbRefElement(method, bridgedMethod, pd));
+          }
+        }
+        else if (jakartaResourceType != null && bridgedMethod.isAnnotationPresent(jakartaResourceType)) {
+          if (method.equals(ClassUtils.getMostSpecificMethod(method, clazz))) {
+            if (Modifier.isStatic(method.getModifiers())) {
+              throw new IllegalStateException("@Resource annotation is not supported on static methods");
+            }
+            Class<?>[] paramTypes = method.getParameterTypes();
+            if (paramTypes.length != 1) {
+              throw new IllegalStateException("@Resource annotation requires a single-arg method: " + method);
+            }
+            if (!this.ignoredResourceTypes.contains(paramTypes[0].getName())) {
+              PropertyDescriptor pd = BeanUtils.findPropertyForMethod(bridgedMethod, clazz);
+              currElements.add(new ResourceElement(method, bridgedMethod, pd));
+            }
+          }
+        }
+        else if (javaxResourceType != null && bridgedMethod.isAnnotationPresent(javaxResourceType)) {
+          if (method.equals(ClassUtils.getMostSpecificMethod(method, clazz))) {
+            if (Modifier.isStatic(method.getModifiers())) {
+              throw new IllegalStateException("@Resource annotation is not supported on static methods");
+            }
+            Class<?>[] paramTypes = method.getParameterTypes();
+            if (paramTypes.length != 1) {
+              throw new IllegalStateException("@Resource annotation requires a single-arg method: " + method);
+            }
+            if (!this.ignoredResourceTypes.contains(paramTypes[0].getName())) {
+              PropertyDescriptor pd = BeanUtils.findPropertyForMethod(bridgedMethod, clazz);
+              currElements.add(new LegacyResourceElement(method, bridgedMethod, pd));
+            }
+          }
+        }
+      });
+
+      elements.addAll(0, currElements);
+      targetClass = targetClass.getSuperclass();
+    }
+    while (targetClass != null && targetClass != Object.class);
+
+    return InjectionMetadata.forElements(elements, clazz);
+  }
+}
+----
+====
+
+== Nashorn JavaScript Engine
+
+解决完编译问题后，启动报如下异常：
+
+[source%nowrap,{source_attr}]
+----
+2024-01-02 14:27:27.062 [main] ERROR com.diguage.laf.config.spring.config.JavaScriptListener[67] - failed invoking script script/logback.js
+java.lang.NullPointerException: Cannot invoke "javax.script.ScriptEngine.put(String, Object)" because "engine" is null
+----
+
+这是因为 https://openjdk.org/jeps/372[JEP 372: Remove the Nashorn JavaScript Engine^] 提案，从 OpenJDK 11 开始，将 Nashorn JavaScript Engine 移除了。由于相关功能使用了 JavaScript 引擎，所以，就报了 “Cannot invoke "javax.script.ScriptEngine.put(String, Object)" because "engine" is null” 错误。处理办法如上，加回相关的依赖：
+
+[source%nowrap,xml,{source_attr}]
+----
+<dependency>
+    <groupId>org.openjdk.nashorn</groupId>
+    <artifactId>nashorn-core</artifactId>
+    <version>15.4</version>
+</dependency>
+----
+
+== Java Validation API
+
+最近，对一个项目升级中，遇到了如下一个报错：
+
+[source%nowrap,{source_attr}]
+----
+Caused by: java.lang.ExceptionInInitializerError: Exception javax.validation.ValidationException: HV000183: Unable to initialize 'javax.el.ExpressionFactory'. Check that you have the EL dependencies on the classpath, or use ParameterMessageInterpolator instead [in thread "BZ-22001-108-T-17"]
+    at org.hibernate.validator.messageinterpolation.ResourceBundleMessageInterpolator.buildExpressionFactory(ResourceBundleMessageInterpolator.java:199)
+    at org.hibernate.validator.messageinterpolation.ResourceBundleMessageInterpolator.<init>(ResourceBundleMessageInterpolator.java:94)
+    at org.hibernate.validator.internal.engine.AbstractConfigurationImpl.getDefaultMessageInterpolator(AbstractConfigurationImpl.java:570)
+    at org.hibernate.validator.internal.engine.AbstractConfigurationImpl.getDefaultMessageInterpolatorConfiguredWithClassLoader(AbstractConfigurationImpl.java:790)
+    at org.hibernate.validator.internal.engine.AbstractConfigurationImpl.getMessageInterpolator(AbstractConfigurationImpl.java:480)
+    at org.hibernate.validator.internal.engine.ValidatorFactoryImpl.<init>(ValidatorFactoryImpl.java:151)
+    at org.hibernate.validator.HibernateValidator.buildValidatorFactory(HibernateValidator.java:38)
+    at org.hibernate.validator.internal.engine.AbstractConfigurationImpl.buildValidatorFactory(AbstractConfigurationImpl.java:430)
+----
+
+这是由于 Bean Validation 导致的问题。将依赖升级到如下版本即可：
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- @author: D瓜哥 · https://www.diguage.com -->
+<dependency>
+    <groupId>jakarta.validation</groupId>
+    <artifactId>jakarta.validation-api</artifactId>
+    <version>3.0.2</version> <!--1-->
+</dependency>
+<dependency>
+    <groupId>org.hibernate.validator</groupId>
+    <artifactId>hibernate-validator</artifactId>
+    <version>7.0.5.Final</version><!--1-->
+</dependency>
+<dependency>
+    <groupId>org.hibernate.validator</groupId>
+    <artifactId>hibernate-validator-annotation-processor</artifactId>
+    <version>7.0.5.Final</version><!--1-->
+</dependency>
+----
+<1> 选择该版本是由于该版本支持 Java8，这样可以让项目无感升级到 OpenJDK21。
+
+由于该版本的 Bean Validation 的基础包名已经从 `javax.` 改为 `jakarta.`，所以，需要修改程序，这部分工作已经有相关程序来自动完成，敬请关注： https://www.diguage.com/post/optimize-code-using-openrewrite/[使用 OpenRewrite 优化代码^]。
+
+
+== JAXB
+
+同样是由于 https://openjdk.org/jeps/320[JEP 320: Remove the Java EE and CORBA Modules^] 提案， 在 OpenJDK 11 中移除了 JavaEE 的相关内容，其中也包括 https://jcp.org/en/jsr/detail?id=222[JAXB^]。编译可能会报错，增加如下依赖即可：
+
+[source%nowrap,xml,{source_attr}]
+----
+<dependency>
+    <groupId>org.glassfish.jaxb</groupId>
+    <artifactId>jaxb-runtime</artifactId>
+    <version>2.3.9</version>
+</dependency>
+----
+
+[#jigsaw]
+== Java 模块化
+
+如果构建一切顺利，以为可以正常启动运行程序，结果却可能报如下错误：
+
+[source%nowrap,{source_attr}]
+----
+Caused by: java.lang.reflect.InaccessibleObjectException: Unable to make protected final java.lang.Class java.lang.ClassLoader.defineClass(java.lang.String,byte[],int,int,java.security.ProtectionDomain) throws java.lang.ClassFormatError accessible: module java.base does not "opens java.lang" to unnamed module @66f57048
+  at java.base/java.lang.reflect.AccessibleObject.throwInaccessibleObjectException(AccessibleObject.java:391)
+----
+
+这是由于在 JDK 9 中引入的 https://openjdk.org/projects/jigsaw/spec/sotms/[Java Platform Module System^] 导致的，该协议对 Java 的封装性做了进一步增强。更详细的内容可以看： ① 协议： https://openjdk.org/projects/jigsaw/spec/[Java Platform Module System JSR (376)^] ② 实现： https://openjdk.org/jeps/261[JEP 261: Module System^] ③ 解释： https://nipafx.dev/java-modules-reflection-vs-encapsulation/[Reflection vs Encapsulation^]。
+
+具体到该问题的解决办法也比较简单：将没开放的模块强制对外开放。有两个参数选项：
+
+. `--add-exports` 导出包，意味着其中的所有公共类型和成员都可以在编译和运行时访问。
+. `--add-opens` 打开包，意味着其中的所有类型和成员（不仅是公共类型）都可以在运行时访问。
+
+两者的区别在于 `--add-opens` 开放的更加彻底，不仅 `public` 类型、变量及方法可以访问，就连非 `public` 元素，也可以通过调用 `setAccessible(true)` 后也可以访问。简单起见，直接使用 `--add-opens` 即可。相关的参数在异常中也提醒出来了： `module java.base` 和 `"opens java.lang"`，结合起来，直接这样配置：在 `java` 明了启动参数中，增加 `--add-opens java.base/java.lang=ALL-UNNAMED` 选项即可。
+
+下面再列出几个相关示例：
+
+=== `java.base/java.util`
+
+错误日志：
+
+[source%nowrap,{source_attr}]
+----
+Caused by: java.lang.reflect.InaccessibleObjectException: Unable to make field protected int[] java.util.Calendar.fields accessible: module java.base does not "opens java.util" to unnamed module @21282ed8
+----
+
+启动参数： `--add-opens java.base/java.util=ALL-UNNAMED`。
+
+=== `java.base/java.math`
+
+错误日志：
+
+[source%nowrap,{source_attr}]
+----
+java.lang.reflect.InaccessibleObjectException: Unable to make field final int[] java.math.BigInteger.mag accessible: module java.base does not "opens java.math" to unnamed module @21282ed8
+----
+
+启动参数： `--add-opens java.base/java.math=ALL-UNNAMED`。
+
+== 构建与测试
+
+上面介绍了程序相关的错误及解决办法，下面介绍一下构建流程中出现的问题。
+
+=== maven-compiler-plugin 配置
+
+如果项目中，在编译阶段做了一些扩展性的东西，那么就可能触发上面 <<jigsaw>> 中描述的问题。类似如下日志：
+
+[source%nowrap,{source_attr}]
+----
+java.lang.IllegalAccessError: class com.diguage.plugin.lombok.ToStringProcessor (in unnamed module @0x551976c2)
+cannot access class com.sun.tools.javac.api.JavacTrees (in module jdk.compiler)
+because module jdk.compiler does not export com.sun.tools.javac.api to unnamed module @0x551976c2
+        at com.diguage.plugin.lombok.ToStringProcessor.init(ToStringProcessor.java:44)
+----
+
+这个问题也可以通过增加参数来完成。不过，这个参数需要在 `pom.xml` 中通过给 maven-compiler-plugin 插件增加配置的方式来搞，如下：
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- @author: D瓜哥 · https://www.diguage.com -->
+<plugin>
+  <groupId>org.apache.maven.plugins</groupId>
+  <artifactId>maven-compiler-plugin</artifactId>
+  <version>3.13.0</version>
+  <configuration>
+      <showWarnings>true</showWarnings>
+      <fork>true</fork>
+      <compilerArgs>
+        <arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED</arg>
+      </compilerArgs>
+  </configuration>
+</plugin>
+----
+
+低版本的 Lombok 也会遇到类似问题，可以通过升级到高版本来解决。实在解决不了，兜底方案也可以直接在这里配置。
+
+=== maven-surefire-plugin 配置
+
+使用 Maven 进行构建或者专门执行测试时，可能也会遇到 <<jigsaw>> 中描述的问题。同样，可以通过在 `pom.xml` 中配置 maven-surefire-plugin 插件的方式来解决，具体如下：
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- @author: D瓜哥 · https://www.diguage.com -->
+<plugin>
+  <groupId>org.apache.maven.plugins</groupId>
+  <artifactId>maven-surefire-plugin</artifactId>
+  <version>3.2.5</version>
+  <configuration>
+      <skipTests>true</skipTests>
+      <includes>
+        <include>**/*Test.java</include>
+      </includes>
+      <argLine>
+        --add-opens java.base/java.lang=ALL-UNNAMED
+        --add-opens java.base/java.util=ALL-UNNAMED
+        --add-opens java.base/java.math=ALL-UNNAMED
+        --add-opens java.base/java.time=ALL-UNNAMED
+      </argLine>
+  </configuration>
+</plugin>
+----
+
+=== IntelliJ IDEA 配置
+
+在 IntelliJ IDEA 运行程序，大概率也会报错，可以通过在 “VM Option” 配置项中，增加 <<jigsaw>> 提到的相关启动参数即可正常启动。
+
+== 技巧
+
+还有一个不是问题的问题需要解决一下：目前大多数开发人员用的还是 JDK 8，如何可以让大家无痛或者无感升级呢？
+
+D瓜哥分享一个小技巧：可以使用 Maven 的 `profile` 机制，让其根据 JDK 版本号，自动激活不同的配置。具体入戏下：
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- @author: D瓜哥 · https://www.diguage.com -->
+<profile>
+  <id>Java1.8</id>
+  <activation>
+    <!-- 在 JDK 1.8 时自动激活-->
+    <jdk>1.8</jdk>
+  </activation>
+  <properties>
+    <spring.version>5.3.33</spring.version> <!--1-->
+  </properties>
+  <!-- 在父 POM 中使用 dependencyManagement 生命 -->
+  <!-- 在需要的子模块中可以直接使用 -->
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>javax.servlet</groupId> <!--1-->
+        <artifactId>javax.servlet-api</artifactId>
+        <version>4.0.1</version>
+        <scope>provided</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.2.5</version>
+        <configuration>
+        <includes>
+          <include>**/*Test.java</include>
+        </includes>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.13.0</version>
+        <configuration>
+          <showWarnings>true</showWarnings>
+          <fork>true</fork>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</profile>
+
+<!-- @author: D瓜哥 · https://www.diguage.com -->
+<profile>
+  <id>Java21</id>
+  <activation>
+    <jdk>[21,)</jdk>
+  </activation>
+  <properties>
+    <spring.version>6.0.19</spring.version> <!--1-->
+  </properties>
+  <!-- 在父 POM 中使用 dependencyManagement 生命 -->
+  <!-- 在需要的子模块中可以直接使用 -->
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>jakarta.servlet</groupId> <!--1-->
+        <artifactId>jakarta.servlet-api</artifactId>
+        <version>6.0.0</version>
+        <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.openjdk.nashorn</groupId>
+        <artifactId>nashorn-core</artifactId>
+        <version>15.4</version>
+      </dependency>
+      <dependency>
+        <groupId>org.glassfish.jaxb</groupId>
+        <artifactId>jaxb-runtime</artifactId>
+        <version>2.3.9</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+  <!--在几乎所有模块都会使用，所以，直接在父 POM 中声明依赖 -->
+  <dependencies>
+    <dependency>
+      <groupId>javax.annotation</groupId>
+      <artifactId>javax.annotation-api</artifactId>
+      <version>1.3.2</version>
+    </dependency>
+  </dependencies>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.2.5</version>
+        <configuration>
+        <includes>
+          <include>**/*Test.java</include>
+        </includes>
+        <argLine>
+          --add-opens java.base/java.lang=ALL-UNNAMED
+          --add-opens java.base/java.util=ALL-UNNAMED
+          --add-opens java.base/java.math=ALL-UNNAMED
+          --add-opens java.base/java.time=ALL-UNNAMED
+        </argLine>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.13.0</version>
+        <configuration>
+        <showWarnings>true</showWarnings>
+        <fork>true</fork>
+        <compilerArgs>
+          <arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED</arg>
+        </compilerArgs>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</profile>
+----
+<1> 开发机使用 JDK 8，所以，使用 Spring 5 + Servlet；正式环境使用 OpenJDK 21，所以，使用 Spring 6 + Jakarta Servlet。
+
+使用上面的配置，只要程序没有直接使用 Servlet API，就可以在 JDK 8 和 OpenJDK 21 之间自由切换。正在做到平稳升级。
+
+== 科技与狠活
+
+文章最后，在整一点科技与狠活。
+
+=== EMT4J
+
+关于 JDK 升级的事项，其实还有很多检查项。理想情况下，最好有工具能自动检查这些项目。关于这个问题，阿里巴巴开发了 Migration Toolkit for Java，现在已经捐给 Eclipse 基金会了，代码在 https://github.com/adoptium/emt4j[adoptium/emt4j: Eclipse Migration Toolkit for Java^]。这个工具还提供了 Maven 插件，所以，可以直接使用这个插件来做检查工作。具体配置如下：
+
+[source%nowrap,xml,{source_attr}]
+----
+<plugin>
+  <groupId>org.eclipse.emt4j</groupId>
+  <artifactId>emt4j-maven-plugin</artifactId>
+  <version>0.8.0</version>
+  <!-- 可以将检查过程绑定到 Maven 构建周期的某个阶段，但不建议。 -->
+  <!-- <executions>-->
+  <!--   <execution>-->
+  <!--     <phase>process-test-classes</phase>-->
+  <!--     <goals>-->
+  <!--       <goal>check</goal>-->
+  <!--     </goals>-->
+  <!--   </execution>-->
+  <!-- </executions>-->
+  <configuration>
+      <!-- 当前版本 -->
+      <fromVersion>8</fromVersion>
+      <!-- 期望升级版本 -->
+      <toVersion>21</toVersion>
+      <outputFile>report.html</outputFile>
+  </configuration>
+</plugin>
+----
+
+然后执行如下命令就可以对应用程序做个全面检查：
+
+[source%nowrap,bash,{source_attr}]
+----
+mvn emt4j:check
+----
+
+在构建目录里找 `report.html` 文件，会有一个个超长的文件，列出成千上百个问题。（D瓜哥检查的一个应用有 2600 行的检查结果。）其实，不用担心，大部分问题可以忽略。但是，你很清楚可能潜在的问题，就像吃西药的时候，看到一大堆不良反应后，吃起来更放心。
+
+=== OpenRewrite
+
+上述工具检查出来的一部分问题，可以用另外“科技与狠活”解决，限于篇幅，这里就不展开了。敬请关注： https://www.diguage.com/post/optimize-code-using-openrewrite/[使用 OpenRewrite 优化代码^]。
+
+== 线上参数
+
+随着 Java 的升级，Java 的启动参数也发生了不小变化。升级到 OpenJDK 21 后，原有的启动参数大概率没办法直接重用。那么，上线的时候，启动参数怎么配置呢？接下来，D瓜哥会分享一下在生产环境中的启动参数。敬请关注： https://www.diguage.com/post/java-21-boot-parameters-in-the-production/[生产环境中 Java 21 启动参数^]。
+
+== 参考资料
+
+. https://openjdk.org/projects/jigsaw/spec/sotms/[The State of the Module System^]
+. https://hibernate.org/validator/releases/7.0/[Hibernate Validator 7.0^]
+. https://stackoverflow.com/a/41265267/951836[reflection - How to solve InaccessibleObjectException ("Unable to make {member} accessible: module {A} does not 'opens {package}' to {B}") on Java 9?^]
+. https://nipafx.dev/java-modules-reflection-vs-encapsulation/[Reflection vs Encapsulation^]
+. https://blog.csdn.net/maiya_yayaya/article/details/132297860#t7[java 8 - java 17 升级指北^]
+. https://www.cnblogs.com/stcweb/articles/15114266.html[module java.base does not "opens java.lang" to unnamed module^]
+. https://stackoverflow.com/a/51286665/951836[java - What is the difference (or relation) between JLS, JSR and JEP?^]

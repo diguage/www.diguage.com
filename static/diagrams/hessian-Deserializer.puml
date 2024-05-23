@@ -1,0 +1,56 @@
+@startuml
+title **Hessian Serializer 类图**
+
+interface Deserializer {
+  + Class<?> getType()
+  + boolean isReadResolve()
+  + Object readObject(AbstractHessianInput in)
+  + Object readList(AbstractHessianInput in, int length)
+  + Object readLengthList(AbstractHessianInput in, int length)
+  + Object readMap(AbstractHessianInput in)
+  + Object[] createFields(int len)
+  + Object createField(String name)
+  + Object readObject(AbstractHessianInput in, Object[] fields)
+  + Object readObject(AbstractHessianInput in, String[] fieldNames)
+}
+
+class AbstractDeserializer implements Deserializer
+
+class AbstractListDeserializer extends AbstractDeserializer
+class ArrayDeserializer extends AbstractListDeserializer
+class CollectionDeserializer extends AbstractListDeserializer
+class EnumerationDeserializer extends AbstractListDeserializer
+class IteratorDeserializer extends AbstractListDeserializer
+
+class BasicDeserializer extends AbstractDeserializer
+class EnumDeserializer extends AbstractDeserializer
+
+abstract class AbstractStringValueDeserializer extends AbstractDeserializer
+class BigDecimalDeserializer extends AbstractStringValueDeserializer
+class FileDeserializer extends AbstractStringValueDeserializer
+class ObjectNameDeserializer extends AbstractStringValueDeserializer
+class StringValueDeserializer extends AbstractStringValueDeserializer
+
+class InputStreamDeserializer extends AbstractDeserializer
+'class MBeanAttributeInfoDeserializer extends AbstractDeserializer
+'class MBeanConstructorInfoDeserializer extends AbstractDeserializer
+'class MBeanInfoDeserializer extends AbstractDeserializer
+'class MBeanNotificationInfoDeserializer extends AbstractDeserializer
+'class MBeanOperationInfoDeserializer extends AbstractDeserializer
+'class MBeanParameterInfoDeserializer extends AbstractDeserializer
+class ObjectDeserializer extends AbstractDeserializer
+'class ObjectInstanceDeserializer extends AbstractDeserializer
+'class SqlDateDeserializer extends AbstractDeserializer
+abstract class ValueDeserializer extends AbstractDeserializer
+
+class AbstractMapDeserializer extends AbstractDeserializer
+class AnnotationDeserializer extends AbstractMapDeserializer
+class BeanDeserializer extends AbstractMapDeserializer
+class ClassDeserializer extends AbstractMapDeserializer
+class JavaDeserializer extends AbstractMapDeserializer
+class StackTraceElementDeserializer extends JavaDeserializer
+class MapDeserializer extends AbstractMapDeserializer
+class UnsafeDeserializer extends AbstractMapDeserializer
+
+footer D瓜哥 · https://www.diguage.com · 出品
+@enduml

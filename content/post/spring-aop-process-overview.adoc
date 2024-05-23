@@ -3,9 +3,9 @@ title: "Spring AOP 处理流程概述"
 date: 2020-06-20T19:16:35+08:00
 draft: false
 keywords: ["Java","Spring"]
-tags: ["Java","设计","架构"]
-categories: ["Java","程序设计"]
-thumbnail: "images/spring-framework/spring-logo.jpg"
+tags: ["Java","设计","架构","Spring"]
+categories: ["程序设计"]
+thumbnail: "images/logo/spring.svg"
 
 weight: 1
 
@@ -15,9 +15,6 @@ weight: 1
 # toc: true
 ---
 
-:source-highlighter: pygments
-:pygments-style: monokai
-:pygments-linenums-mode: table
 
 AOP 是 Spring 框架的最核心的两个功能之一，在前面的 https://www.diguage.com/post/spring-startup-process-overview/[Spring 启动流程概述^] 和 https://www.diguage.com/post/spring-bean-lifecycle-overview/[Spring Bean 生命周期概述^] 两篇文章中，分别介绍了 Spring 启动过程和 Spring Bean 的生命周期，对 IoC 有了一个细致介绍。这里来细致分析一下 Spring AOP 的实现原理和处理流程。
 

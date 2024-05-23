@@ -1,0 +1,13 @@
+---
+title: "《清醒思考的艺术》之读书笔记"
+date: 2021-10-25T12:38:38+08:00
+draft: true
+categories: ["阅读摘要"]
+tags: ["书籍", "方法论"]
+thumbnail: "images/books/the-art-of-thinking-clearly.jpg"
+
+weight: 1
+---
+
+
+https://book.douban.com/subject/26871359/[《清醒思考的艺术》^] 读书笔记，稍后呈上。

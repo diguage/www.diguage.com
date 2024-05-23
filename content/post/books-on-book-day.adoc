@@ -2,18 +2,13 @@
 title: "在世界读书日，推荐书单"
 date: 2020-04-23T20:15:14+08:00
 draft: false
-keywords: ["Java","并发"]
-tags: ["个人提升","心理学","架构","分布式","工作方法","微服务","数据库"]
-categories: ["个人成长","方法论"]
+keywords: ["Java","并发","微服务架构","数据存储","数据库","设计模式","心理学"]
+categories: ["阅读摘要","系统架构","职业发展"]
+tags: ["心理学","分布式","微服务","数据库","设计模式"]
 
 weight: 1
-
-# You can also close(false) or open(true) something for this content.
-# P.S. comment can only be closed
-# comment: false
-# toc: true
-
 ---
+
 
 今天是世界读书日，各种人都在推荐书单。D瓜哥也凑个热闹，水一篇文章，推荐一些书籍。
 
@@ -24,7 +19,7 @@ weight: 1
 
 == https://book.douban.com/subject/1013208/[如何阅读一本书？^]
 
-image::/images/books-on-book-day/how-to-read-a-book.jpg[align=center,width=60%]
+image::/images/books/how-to-read-a-book.jpg[align=center,width=60%]
 
 D瓜哥在年初的时候，刚刚再次重读了这本书。而且，还写了一篇读书笔记： https://www.diguage.com/post/how-to-read-a-book/[《如何阅读一本书？》之读书笔记]。
 
@@ -33,7 +28,7 @@ D瓜哥在年初的时候，刚刚再次重读了这本书。而且，还写了�
 
 == https://book.douban.com/subject/27609489/[远见^]
 
-image::/images/books-on-book-day/the-long-view.jpg[align=center,width=60%]
+image::/images/books/the-long-view.jpg[align=center,width=60%]
 
 D瓜哥在去年年末写的年终总结 https://www.diguage.com/post/goodbye-2019-hello-2020/[“告别 2019，迎接 2020”] 中提到了这本书。考虑这本书的实用性和对自身发展的指导意义，所以决定再次推荐这本书。
 
@@ -50,7 +45,7 @@ D瓜哥在去年年末写的年终总结 https://www.diguage.com/post/goodbye-20
 
 == https://book.douban.com/subject/10785583/[思考，快与慢^]
 
-image::/images/books-on-book-day/thinking-fast-and-slow.jpg[align=center,width=60%]
+image::/images/books/thinking-fast-and-slow.jpg[align=center,width=60%]
 
 这是一本有关心理学方面的书籍。作者丹尼尔•卡尼曼因其与阿莫斯•特沃斯基在决策制定上的研究而荣获了 2002 年度的诺贝尔经济学奖。所以，这本书质量上肯定是有保证的。
 
@@ -59,7 +54,7 @@ image::/images/books-on-book-day/thinking-fast-and-slow.jpg[align=center,width=6
 
 == https://book.douban.com/subject/26831789/[穷查理宝典^]
 
-image::/images/books-on-book-day/poor-charlies-almanack.jpg[align=center,width=60%]
+image::/images/books/poor-charlies-almanack.jpg[align=center,width=60%]
 
 提起查理·芒格，也许有些人不知道是谁。（看这篇文章的读者估计都了解）但是，他的搭档估计是人尽皆知，那就是世界股神沃伦·巴菲特。
 
@@ -68,7 +63,7 @@ image::/images/books-on-book-day/poor-charlies-almanack.jpg[align=center,width=6
 
 == https://book.douban.com/subject/2328458/[社会性动物^]
 
-image::/images/books-on-book-day/the-social-animal.jpg[align=center,width=60%]
+image::/images/books/the-social-animal.jpg[align=center,width=60%]
 
 D瓜哥是去年开始读这本书的，非常抱歉目前还没有读完。
 
@@ -77,7 +72,7 @@ D瓜哥是去年开始读这本书的，非常抱歉目前还没有读完。
 
 == https://book.douban.com/subject/33385402/[事实^]
 
-image::/images/books-on-book-day/factfulness.jpg[align=center,width=60%]
+image::/images/books/factfulness.jpg[align=center,width=60%]
 
 比尔·盖茨也推荐了这本书。我也是最近刚刚开始读这本书。还没有读完。就不做过多评价了。用一个问题，勾引一下你的兴趣：
 
@@ -87,10 +82,12 @@ image::/images/books-on-book-day/factfulness.jpg[align=center,width=60%]
 
 想知道答案，就快点去读这本书吧。
 
+最近更新：D瓜哥终于把这本书读完了：https://www.diguage.com/post/factfulness/[《事实》之读书笔记^]。
+
 
 == https://book.douban.com/subject/26953606/[人类简史^]
 
-image::/images/books-on-book-day/a-brief-history-of-humankind.jpg[align=center,width=60%]
+image::/images/books/a-brief-history-of-humankind.jpg[align=center,width=60%]
 
 坦白讲，这本书D瓜哥才读了一半。但是，作者最近发表的一篇文章： http://www.ruanyifeng.com/blog/2020/03/the-world-after-coronavirus.html[尤瓦尔·赫拉利《冠状病毒之后的世界》]，一个史学家站在历史发展的角度去看待疫情对世界发展的影响。由此可对赫拉利的思想窥得一斑。那么，如果感兴趣，他的成名大作《人类简史》就不得不读了。
 
@@ -101,7 +98,7 @@ image::/images/books-on-book-day/a-brief-history-of-humankind.jpg[align=center,w
 
 == https://book.douban.com/subject/33477229/[上帝掷骰子吗？^]
 
-image::/images/books-on-book-day/did-god-roll-the-dice.jpg[align=center,width=60%]
+image::/images/books/did-god-roll-the-dice.jpg[align=center,width=60%]
 
 这是D瓜哥看过的，最好看的科普书，没有之一。
 
@@ -138,7 +135,7 @@ image::/images/books-on-book-day/did-god-roll-the-dice.jpg[align=center,width=60
 
 == https://book.douban.com/subject/35006892/[程序员修炼之道^]
 
-image::/images/books-on-book-day/the-pragmatic-programmer.jpg[align=center,width=60%]
+image::/images/books/the-pragmatic-programmer.jpg[align=center,width=60%]
 
 虽然这本书的第一版英文评注版在D瓜哥的书架上躺了好长时间了，但是D瓜哥一直没有临幸她。最近出第二版了，还是云风翻译地，就果断入手了一本。读了三分之一了。
 
@@ -147,21 +144,21 @@ image::/images/books-on-book-day/the-pragmatic-programmer.jpg[align=center,width
 
 == https://book.douban.com/subject/2334288/[大话设计模式^]
 
-image::/images/books-on-book-day/big-talk-design-patterns.jpg[align=center,width=60%]
+image::/images/books/big-talk-design-patterns.jpg[align=center,width=60%]
 
 这是D瓜哥推荐的唯一一本国人写的计算机类图书。作者通过一个一个对话故事，循序渐进地推演出每一种设计模式。真是非常浅显易懂。让人百读不厌。类似的书籍还有， https://book.douban.com/subject/2243615/[Head First 设计模式（中文版） (豆瓣)^]。不过，我个人更喜欢《大话设计模式》。
 
 
 == https://book.douban.com/subject/33425123/[微服务架构设计模式^]
 
-image::/images/books-on-book-day/microservices-patterns.jpg[align=center,width=60%]
+image::/images/books/microservices-patterns.jpg[align=center,width=60%]
 
 这本书是去年刚刚出版的书，在如今微服务如火如荼的形势下，可谓非常赶时髦。这本书针对微服务架构中出现的问题，比如服务如何拆分，分布式事务如何实现等等，一一给出了详细而且系统的解决方案。但是，这本书并不是快餐书，是一本值得反复阅读的书。
 
 
 == https://book.douban.com/subject/27154352/[Designing Data-Intensive Applications^]
 
-image::/images/books-on-book-day/designing-data-intensive-applications.jpg[align=center,width=60%]
+image::/images/books/designing-data-intensive-applications.jpg[align=center,width=60%]
 
 这本书可谓一本神书！只看第一部分就能值回书价了。作者是工程和理论的双料王，实力牛叉，书的思路清晰。D瓜哥目前只看完的第一部分，就拿第一部分来实例推荐这本书吧：书的第一部分主要解决的问题是：如何存数据，如何取数据？作者从一个文本文件开始，存的快，读得慢；然后到 B+树，读得快了，但是写的慢；最后到 LSM 结构，终于写的也快了。逐步推进，提出问题，解决问题，然后再发现问题，螺旋上升地演绎数据存储系统的发展。这个思路非常棒！
 

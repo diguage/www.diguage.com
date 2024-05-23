@@ -2,19 +2,14 @@
 title: "使用 Hugo 搭建博客"
 date: 2020-08-01T16:09:43+08:00
 draft: false
-keywords: ["Hugo","博客"]
-tags: ["个人提升","产品"]
-categories: ["个人成长","方法论"]
+keywords: ["Hugo","博客","开发工具","职业发展","产品","Git","Linux"]
+categories: ["开发工具","职业发展"]
+tags: ["产品"]
 thumbnail: "images/building-blog-with-hugo/hugo-logo.svg"
 
 weight: 1
 ---
 
-:source-highlighter: pygments
-:pygments-style: monokai
-:pygments-linenums-mode: table
-:source_attr: indent=0,subs="attributes,verbatim,quotes"
-:image_attr: align=center
 
 一个朋友对D瓜哥的博客感兴趣，觉得很好玩。问我怎么玩，D瓜哥也懒得手把手教了，干脆写篇文章来做个说明吧。也许对其他朋友也有所帮助。
 
@@ -149,7 +144,7 @@ cp themes/jane/exampleSite/config.toml ./
 hugo server
 ----
 
-默认是 `1313` 端口号，在浏览器中直接访问 http://localhost:1314/ 就可以访问到新建的博客了。
+默认是 `1313` 端口号，在浏览器中直接访问 http://localhost:1313/ 就可以访问到新建的博客了。
 
 根据自己的需要，修改根目录下的 `config.toml` 文件，来修改自己站点的配置。
 

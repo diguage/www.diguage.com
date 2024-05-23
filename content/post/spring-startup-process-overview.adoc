@@ -3,9 +3,9 @@ title: "Spring 启动流程概述"
 date: 2020-06-13T00:31:25+08:00
 draft: false
 keywords: ["Java","Spring"]
-tags: ["Java","设计","架构"]
-categories: ["Java","程序设计"]
-thumbnail: "images/spring-framework/spring-logo.jpg"
+tags: ["Java","设计","架构","Spring"]
+categories: ["程序设计"]
+thumbnail: "images/logo/spring.svg"
 
 weight: 1
 
@@ -15,9 +15,6 @@ weight: 1
 # toc: true
 ---
 
-:source-highlighter: pygments
-:pygments-style: monokai
-:pygments-linenums-mode: table
 
 对于 Spring 启动流程和 Bean 的生命周期，总有一些小地方搞的不是很清楚，干脆直接通过修改代码增加日志输出，使用断点单步调试，把整个流程捋顺了一点点的。
 
@@ -32,12 +29,18 @@ weight: 1
 . 执行 `BeanDefinitionRegistryPostProcessor#postProcessBeanDefinitionRegistry` 注册 `BeanDefinition`。有三点需要注意：
 .. 目前只有一个 `ConfigurationClassPostProcessor` 实现类，Spring 中大量的 Bean 都是在这一步被该类注册到容器中的。
 .. 执行顺序是 ① `PriorityOrdered` ② `Ordered` ③ 普通的顺序来执行
-.. 在执行上一步是，如果发现注册了 `BeanDefinitionRegistryPostProcessor` 类型的 Bean，就会在循环里继续调用 `postProcessBeanDefinitionRegistry` 方法。MyBATIS 和 Spring 整合的 `MapperScannerConfigurer` 类就是在这一步执行的。
+.. 在执行上一步时，如果发现注册了 `BeanDefinitionRegistryPostProcessor` 类型的 Bean，就会在循环里继续调用 `postProcessBeanDefinitionRegistry` 方法。MyBATIS 和 Spring 整合的 `MapperScannerConfigurer` 类就是在这一步执行的。
 . 执行 `BeanFactoryPostProcessor#postProcessBeanFactory` 方法。目前只有一个 `ConfigurationClassPostProcessor` 实现类。
 . 注册 `CommonAnnotationBeanPostProcessor` 和 `AutowiredAnnotationBeanPostProcessor` 为 `BeanPostProcessor`。
 . 注册 `ApplicationEventMulticaster`，用于广播事件的。
 . 注册 `ApplicationListener`
 . 预加载以及注册所有非懒加载的 Bean
+
+== 启动时序图
+
+Spring 启动流程的时序图如下：
+
+image::/images/spring-framework/AbstractApplicationContext-refresh.svg[title="AbstractApplicationContext.refresh -- 重塑容器",alt="AbstractApplicationContext.refresh -- 重塑容器",{image_attr}]
 
 
 == 完整启动流程

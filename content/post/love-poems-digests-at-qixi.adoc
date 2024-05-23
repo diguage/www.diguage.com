@@ -10,7 +10,6 @@ thumbnail: "images/love-poems-digests/love.jpg"
 weight: 1
 ---
 
-:image_attr: align=center
 
 今天七夕情人节，选摘几首情诗做个纪念。
 

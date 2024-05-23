@@ -1,0 +1,166 @@
+---
+title: "升级 Maven 插件"
+date: 2023-03-21T17:36:48+08:00
+draft: false
+keywords: ["Java","Spring","依赖管理","JUnit","Maven","Plugin","插件"]
+tags: ["Java","Spring","最佳实践"]
+categories: ["开发工具","软件工程"]
+thumbnail: "images/logos/maven.svg"
+
+weight: 1
+---
+
+D瓜哥在 https://www.diguage.com/post/experience-about-upgrading-java-dependencies/[关于升级 Spring 等依赖的一些经验^] 中，介绍了一些升级 Spring 等依赖的一些经验。在 https://www.diguage.com/post/upgrade-ibatis-mybatis-about-duplicate-key-exception/[升级 iBATIS/MyBATIS 对处理 DuplicateKeyException 的影响^] 中，分析了升级 iBATIS/MyBATIS 对处理 DuplicateKeyException 异常的影响。在升级中，还遇到一些 Maven 插件相关的问题。这里也分享出来，希望对大家有所帮助。
+
+== Properties 文件编码错误
+
+在升级过程中，遇到过 Properties 文件编码错误的问题。可以通过配置对应的编码来解决这个问题。配置如下：
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- D瓜哥 · https://www.diguage.com -->
+<plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-resources-plugin</artifactId>
+    <version>3.3.0</version>
+    <configuration>
+        <propertiesEncoding>ISO-8859-1</propertiesEncoding>
+    </configuration>
+</plugin>
+----
+
+=== 参考资料
+
+* https://maven.apache.org/plugins/maven-resources-plugin/examples/filtering-properties-files.html[Apache Maven Resources Plugin – Filtering Properties Files^]。
+
+
+== 使用 Maven Enforcer 插件检查依赖
+
+私以为“机器可以干的事情，就应该交给机器干”。对于依赖管理，Maven Enforcer 插件就可以对依赖做必要的检查。所以，推荐使用 Maven Enforcer 插件来检查低版本及有安全漏洞的依赖。
+
+详细介绍请参考： https://www.diguage.com/post/use-maven-enforcer-plugin-to-check-dependencies/[使用 Maven Enforcer 插件检查依赖^]
+
+
+[#compile-with-parameters]
+== 字节码文件包含原始参数名称
+
+一些对外发布的依赖，建议将原始参数名称编译到构建结果里。可以通过指定构建参数来完成。
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- D瓜哥 · https://www.diguage.com -->
+<plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-compiler-plugin</artifactId>
+    <version>3.11.0</version>
+    <configuration>
+        <!-- https://docs.oracle.com/javase/8/docs/technotes/tools/windows/javac.html -->
+        <compilerArgs>
+            <arg>-parameters</arg>
+        </compilerArgs>
+        <parameters>true</parameters>
+    </configuration>
+</plugin>
+----
+
+=== 参考资料
+
+* https://maven.apache.org/plugins/maven-compiler-plugin/examples/pass-compiler-arguments.html[Apache Maven Compiler Plugin – Pass Compiler Arguments^]
+
+== 解决测试依赖问题
+
+部分项目可能已经使用了 JUnit 5，但是执行测试代码时，可能报错。可以使用如下配置来解决这个问题：
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- D瓜哥 · https://www.diguage.com -->
+<plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-surefire-plugin</artifactId>
+    <!-- 请注意这个版本，最低要求是 2.22.2 -->
+    <version>3.0.0</version>
+    <dependencies>
+        <!-- https://maven.apache.org/surefire/maven-surefire-plugin/examples/junit-platform.html -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit-jupiter.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+    </dependencies>
+</plugin>
+----
+
+关于 junit-jupiter-engine 与 junit-vintage-engine 的爱恨情仇，可以参考： https://www.liujiajia.me/2021/5/14/why-exclude-junit-vintage-engine-by-default[为什么默认排除 junit-vintage-engine ？^]
+
+比较新版的 Spring 及 Spring Boot 已经将单测切换到 JUnit 5，推荐大家也将测试库切换到 JUnit 5。
+
+=== 参考资料
+
+* https://maven.apache.org/surefire/maven-surefire-plugin/examples/junit-platform.html[Maven Surefire Plugin – Using JUnit 5 Platform^]
+
+== 构建合并插件
+
+部分项目使用 maven-assembly-plugin 来将外部依赖打包成一个完整压缩包。这个插件从 2.X 升级到 3.X 时，配置项发生了变化。最新的配置示例如下：
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- D瓜哥 · https://www.diguage.com -->
+<plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-assembly-plugin</artifactId>
+    <version>3.4.2</version>
+    <configuration>
+        <!-- 从 2.X 升级到 3.X 时，需要按照这个示例修改配置 -->
+        <descriptors>
+            <descriptor>src/main/assembly/assembly.xml</descriptor>
+        </descriptors>
+    </configuration>
+    <executions>
+        <execution>
+            <id>make-assembly</id>
+            <!-- 绑定到package生命周期上-->
+            <phase>package</phase>
+            <goals>
+                <!-- 只执行一次-->
+                <goal>single</goal>
+            </goals>
+        </execution>
+    </executions>
+</plugin>
+----
+
+=== 参考资料
+
+* https://maven.apache.org/plugins/maven-assembly-plugin/usage.html[Apache Maven Assembly Plugin – Usage^]
+
+
+[#src-to-repo]
+== 将源码发布到私服仓库
+
+一些对外发布的依赖，建议将源码也发布到私服仓库，方便外部人排查跟进问题。
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- D瓜哥 · https://www.diguage.com -->
+<plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-source-plugin</artifactId>
+    <version>3.2.1</version>
+    <executions>
+        <execution>
+            <id>attach-sources</id>
+            <phase>package</phase>
+            <goals>
+                <goal>jar-no-fork</goal>
+            </goals>
+        </execution>
+    </executions>
+</plugin>
+----
+
+=== 参考资料
+
+* https://stackoverflow.com/questions/4031987/how-to-upload-sources-to-local-maven-repository[How to upload sources to local Maven repository?^]
+* https://maven.apache.org/plugins/maven-source-plugin/jar-no-fork-mojo.html[Apache Maven Source Plugin – source:jar-no-fork^]
+

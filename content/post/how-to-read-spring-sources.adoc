@@ -2,19 +2,14 @@
 title: "如何阅读 Spring 源码？"
 date: 2020-08-08T07:53:32+08:00
 draft: false
-keywords: ["Java","Spring"]
-tags: ["Java","设计","架构","工作方法"]
-categories: ["Java","程序设计","方法论","个人成长"]
-thumbnail: "images/spring-framework/spring-logo.jpg"
+keywords: ["程序设计","Java","Spring","架构","方法论","源码分析"]
+categories: ["程序设计"]
+tags: ["Java","Spring","架构","方法论","源码分析"]
+thumbnail: "images/logo/spring.svg"
 
 weight: 1
 ---
 
-:source-highlighter: pygments
-:pygments-style: monokai
-:pygments-linenums-mode: table
-:source_attr: indent=0,subs="attributes,verbatim,quotes,macros"
-:image_attr: align=center
 
 昨晚原计划给几个朋友简单介绍一下阅读 Spring 源码的方法。结果，大家因为各种原因没能及时参加。后来，就取消分享了。干脆写一篇文章出来，感兴趣欢迎自取。
 

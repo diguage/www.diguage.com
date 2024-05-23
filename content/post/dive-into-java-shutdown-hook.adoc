@@ -1,0 +1,32 @@
+---
+title: "深入理解 Java Shutdown Hook"
+date: 2024-01-05T08:31:57+08:00
+draft: true
+keywords: ["Java","Spring","程序设计","源码分析"]
+categories: ["程序设计"]
+tags: ["Java","源码分析","Spring"]
+thumbnail: "images/java/spring-and-java.png"
+
+weight: 1
+---
+
+
+// image::/images/[title="",alt="",{image_attr}]
+
+// [source%nowrap,java,{source_attr}]
+// ----
+// // code
+// ----
+
+. Java 对 ShutdownHook 的支持，深入 JVM 代码去看实现
+. Spring 注册 ShutdownHook org.springframework.context.support.AbstractApplicationContext#registerShutdownHook
+. 生命周期处理器： org.springframework.context.LifecycleProcessor
+. 顺带改进一下 https://www.diguage.com/post/the-merging-spring-applications-road/[Spring 应用合并之路^] 的处理方案
+
+在 https://www.diguage.com/post/spring-startup-process-overview/[Spring 启动流程概述^] 中描述了 Spring 启动流程，这里再借用一下里面的流程图：
+
+image::/images/spring-framework/AbstractApplicationContext-refresh.svg[title="AbstractApplicationContext.refresh -- 重塑容器",alt="AbstractApplicationContext.refresh -- 重塑容器",{image_attr}]
+
+通过图来说明，或者
+
+可以考虑写两篇，深入看看 JVM 内部是怎么处理 ShutdownHook 的

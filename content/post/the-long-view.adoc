@@ -4,9 +4,10 @@ date: 2020-08-14T20:58:23+08:00
 draft: false
 tags: ["读书","笔记"]
 categories: ["方法论","个人成长"]
-thumbnail: "images/books-on-book-day/the-long-view.jpg"
+thumbnail: "images/books/the-long-view.jpg"
 weight: 1
 ---
+
 
 最近向一个朋友了解一家公司情况时，聊到职业发展的问题。就随手推荐了《远见：如何规划职业生涯3大阶段》这本书。正好利用这个机会，把以前的读书摘要发布出来。
 

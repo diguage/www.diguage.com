@@ -3,8 +3,8 @@ title: "Spring 扩展点实践：整合 MyBATIS"
 date: 2020-05-28T20:06:46+08:00
 draft: false
 keywords: ["Java","Spring"]
-tags: ["Java","设计","架构","数据库"]
-categories: ["Java","程序设计"]
+tags: ["Java","设计","架构","数据库","Spring"]
+categories: ["程序设计"]
 thumbnail: "images/spring-framework/spring-and-mybatis.jpg"
 
 weight: 1
@@ -14,11 +14,6 @@ weight: 1
 # comment: false
 # toc: true
 ---
-
-:source-highlighter: pygments
-:pygments-style: monokai
-:pygments-linenums-mode: table
-:source_attr: indent=0,subs="attributes,verbatim,quotes,macros"
 
 
 在上一篇文章 https://www.diguage.com/post/spring-extensions-overview/[Spring 扩展点概览及实践^] 中介绍了 Spring 内部存在的扩展点。学以致用，现在来分析一下 Spring 与 MyBATIS 的整合流程。
@@ -244,7 +239,7 @@ do {
 
       //...此处省去 N 行代码
         else if (candidate.isAssignable(ImportBeanDefinitionRegistrar.class)) {
-                      // 很明显，会进入到这个分支
+          // 很明显，会进入到这个分支
           // Candidate class is an ImportBeanDefinitionRegistrar ->
           // delegate to it to register additional bean definitions
           Class<?> candidateClass = candidate.loadClass();

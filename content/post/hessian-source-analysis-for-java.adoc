@@ -1,0 +1,674 @@
+---
+title: "Hessian 源码分析（Java）"
+date: 2022-05-21T09:39:44+08:00
+draft: false
+keywords: ["Hessian","序列化","协议","Java","微服务","架构","程序设计","Dubbo"]
+tags: ["Java","微服务","架构","设计","序列化"]
+categories: ["系统架构","程序设计"]
+thumbnail: "images/common/best-architecture.png"
+
+weight: 1
+---
+
+
+前面通过几篇文章，解释并实践了一下 Hessian 的序列化协议。文章目录如下：
+
+. https://www.diguage.com/post/hessian-serialization-protocol/[Hessian 2.0 序列化协议（中文版）^] -- Hessian 序列化协议的中文翻译版。根据后面的“协议解释与实战”系列文章，增加了协议内容错误提示。
+. https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/[Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数^] -- 介绍布尔型数据、日期类型、浮点类型数据和整数类型数据等四种类型的数据的处理。
+. https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-2/[Hessian 协议解释与实战（二）：长整型、二进制数据与 Null^] -- 介绍长整数类型数据、二进制数据和 `null` 等三种类型的数据的处理。
+. https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-3/[Hessian 协议解释与实战（三）：字符串^] -- 专门介绍了关于字符串的处理。由于字符串需要铺垫的基础知识比较多，处理细节也有繁琐，所以单独成篇来介绍。
+. https://www.diguage.com/post/hessian-source-analysis-for-java/[Hessian 源码分析（Java）^] -- 开始第四篇分析之前，先来介绍一下 Hessian 的源码实现。方便后续展开说明。
+. https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-4/[Hessian 协议解释与实战（四）：数组与集合^] -- 铺垫了一些关于实例对象的处理，重点介绍关于数组和集合的相关处理。
+. https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-5/[Hessian 协议解释与实战（五）：对象与映射^] -- 重点介绍关于对象与映射的相关处理。
+. https://www.diguage.com/post/hessian-vs-msgpack-vs-json/[Hessian、Msgpack 和 JSON 实例对比^] -- 用实例对比 JSON、Hessian 和 MessagePack 的区别。
+. https://www.diguage.com/post/schema-evolution-in-avro-protobuf-thrift[Avro、ProtoBuf、Thrift 的模式演进之路^] -- 翻译的 Martin Kleppmann 的文章，重点对比了 Avro、ProtoBuf、Thrift 的序列化处理思路。
+
+'''
+
+该系列第四篇文章准备详细介绍一下 Hessian 对对象、链表以及 `Map` 等处理。但是，越调试代码，越发觉得应该先对 Hessian 的实现做一个源码分析。于是，就有了本文。
+
+这里有几点需要声明一下：
+
+. 在上面“解释与实战”系列文章中提到的代码就不再重复说明。
+. 通过“解释与实战”系列文章，大家应该可以领略到，处理序列化有大量的细节。但是，本文并不打算涉及。本文重点是介绍 Hessian 的 Java 实现的架构蓝图。相当于给指明一条路，沿着这条路，大家就可以探索 Hessian 的各种细节。
+. 本文的介绍，全部基于 Hessian 4.0.60 的源码。由于没有找到 Hessian 的仓库，D瓜哥从 Hessian 的网站下，下载了源码包，解压后发布在了 GitHub 上： https://github.com/diguage/hessian[Hessian -- The source code of Hessian Library.^]。
+
+== 主要流程
+
+作为一个序列化框架，最主要的功能就是序列化和反序列化。所以，这两个流程至关重要。
+
+=== 序列化流程
+
+在“解释与实战”系列文章，都是通过调用 `Hessian2Output` 类中的各种 `write` 方法来完成实验的。在研究针对对象的序列化时，通过调试 `Hessian2Output.writeObject(Object object)` 发现，任意类型的序列化，都可以通过调用该方法来实现：在底层，根据需要格式化对象的类型信息，分发到不同的 `Serializer` 实现类来完成。那么，我们只要研究 `Hessian2Output.writeObject(Object object)` 方法的流程就了解序列化的整体流程。直接上流程图：
+
+image::/images/marshal/Hessian2Output-writeObject.svg[{image_attr}]
+
+从整个流程，我们可以看出：
+
+. 可以通过设置 `SerializerFactory` 来定制 `Serializer` 的创建；
+. 可以向 `SerializerFactory` 添加自定义的 `Serializer` 实现，来完成对指定类型的自定义序列化格式。
+. 在官方实现中，已经内置了多种 `Serializer` 实现：
+.. `RemoteSerializer`
+.. `InetAddressSerializer`
+.. `WriteReplaceSerializer`
+.. `MapSerializer`
+.. `CollectionSerializer`
+.. `ArraySerializer`
+.. `ThrowableSerializer`
+.. `InputStreamSerializer`
+.. `IteratorSerializer`
+.. `CalendarSerializer`
+.. `EnumerationSerializer`
+.. `EnumSerializer`
+.. `AnnotationSerializer`
+. 在序列化对象时，对于对象的每个字段，逐个递归调用 `Hessian2Output.writeObject(Object object)` 方法，来完成序列化操作。
+
+接下来，看一下反序列化的流程。
+
+=== 反序列化流程
+
+以前做实验，都是研究序列化操作，没有针对反序列化做实验。但是处理过程应该与序列化类似，整个流程在 `Hessian2Input.readObject()`。流程如下：
+
+image::/images/marshal/Hessian2Input-readObject.svg[{image_attr}]
+
+从流程图来看：
+
+. 感觉反序列化的流程比序列化的流程要复杂不少！
+. 先读取标志位，再根据标志位来触发不同流程的处理。当然，根据“解释与实战”系列文章应该也知道，有些标志位和数据是混装的，所以，这里的标志位也可能是数据。
+. 跟序列化相似，反序列化也是通过递归调用来推进反序列化的进行的。
+. 内置的反序列化器和序列化器竟然不是一一对应的，有些意外：
+.. `CollectionDeserializer`
+.. `MapDeserializer`
+.. `IteratorDeserializer`
+.. `AnnotationDeserializer`
+.. `ObjectDeserializer`
+.. `ArrayDeserializer`
+.. `EnumerationDeserializer`
+.. `EnumDeserializer`
+.. `ClassDeserializer`
+
+基本流程已经了解了，我们来看一下其中一些重要“参与者”。
+
+== 主要“参与者”
+
+从上面的流程图中，可以看出主要逻辑涉及到如下几个类及其子类：
+
+. `AbstractHessianOutput`
+. `AbstractHessianInput`
+. `AbstractSerializerFactory`
+. `Serializer`
+. `Deserializer`
+
+下面对这些类，做一些简要概述：
+
+=== `AbstractHessianOutput`
+
+`AbstractHessianOutput` 类是 Hessian 序列化的基础，主要实现有两个：
+
+. `Hessian2Output` -- 支持 Hessian 2 协议。协议细节，请看 https://www.diguage.com/post/hessian-serialization-protocol/[Hessian 2.0 序列化协议（中文版）^]。
+. `HessianOutput` -- 支持 Hessian 1 协议。这个现在没见多少案例，本文不涉及。
+
+image::/images/marshal/hessian-AbstractHessianOutput.svg[{image_attr}]
+
+`AbstractHessianOutput` 类主要作用是定义了一些列的 `writeXXX` 方法。这些方法在 `Hessian2Output` 得到了实现。针对 Java 基本类型以及字符串等的序列化实现，都在 `Hessian2Output` 类中。将在下文 <<hessian-serializer>> 中提到的用于处理 Java 基本类型以及字符串等的序列化的 `BasicSerializer`，其实是在内部通过类型来分别调用了 `Hessian2Output` 类中的相关方法来实现的。
+
+==== `AbstractHessianInput`
+
+如果说 `AbstractHessianOutput` 类是 Hessian 序列化的基础，那么 `AbstractHessianInput` 就是 Hessian 反序列化的基础。同样，它的主要实现也有两个：
+
+. `Hessian2Input` -- 支持 Hessian 2 协议。协议细节，请看 https://www.diguage.com/post/hessian-serialization-protocol/[Hessian 2.0 序列化协议（中文版）^]。
+. `HessianInput` -- 支持 Hessian 1 协议。这个现在没见多少案例，本文不涉及。
+
+image::/images/marshal/hessian-AbstractHessianInput.svg[{image_attr}]
+
+与 `AbstractHessianOutput` 相反， `AbstractHessianInput` 主要作用是定义了一些列的 `readXXX` 方法。这些方法在 `Hessian2Input` 得到了实现。针对 Java 基本类型以及字符串等的序列化实现，都在 `Hessian2Output` 类中。
+
+=== `AbstractSerializerFactory`
+
+`AbstractSerializerFactory` 及其子类主要负责控制序列化规则和管理 `Serializer`。
+
+image::/images/marshal/hessian-AbstractSerializerFactory.svg[{image_attr}]
+
+
+[#hessian-serializer]
+=== `Serializer`
+
+`Serializer` 是 Hessian 的一个扩展点，可以通过增加相关其子类和 <<hessian-deserializer>> 的子类来自定义一些类型的序列化方法，比如 Java Time API 的实例对象。可以说 `Serializer` 是 Hessian 序列化中最重要的类也不为过。`Serializer` 的子类也非常多：
+
+. `AbstractSerializer`
+. `AnnotationSerializer`
+. `ArraySerializer`
+. `BasicSerializer` -- `null`、 八种基本类型、 `String`、`StringBuilder`、 `Date`、 `Number`、 `Object`、 八种基本类型数组、 `String` 数组、 `Object` 数组等都是通过该类完成序列化。实际上，关于 `null`、 八种基本类型、 `String`、`StringBuilder`、 `Date` 等类型的处理，它是通过调用 `Hessian2Output` 提供的相关方法来完成的。
+. `ByteArraySerializer`
+. `BeanSerializer`
+. `CalendarSerializer`
+. `ClassSerializer`
+. `CollectionSerializer`
+. `EnumerationSerializer`
+. `EnumSerializer`
+. `InetAddressSerializer`
+. `InputStreamSerializer`
+. `IteratorSerializer`
+. `JavaSerializer`
+. `JavaUnsharedSerializer`
+. `LocaleSerializer`
+. `MapSerializer`
+. `ObjectHandleSerializer`
+. `RemoteSerializer`
+. `SqlDateSerializer`
+. `StringValueSerializer`
+. `UnsafeSerializer`
+. `UnsafeUnsharedSerializer`
+
+由于类型太多，一些不是很重要的类没有画在类图中。
+
+****
+全部展示在类图里，类图就太过细长，看不清楚了。
+****
+
+image::/images/marshal/hessian-Serializer.svg[{image_attr}]
+
+处理实例对象的序列化主要有 `JavaSerializer` 和 `BeanSerializer`。这两者的区别如下：
+
+* `JavaSerializer` 是通过反射获取实例对象的属性进行序列化。排除 `static` 和 `transient` 属性，对其他所有的属性进行递归序列化处理。
+* `BeanSerializer` 是遵循 POJI bean 的约定，扫描实例的所有方法，发现同时存在 Getter 和 Setter 方法的属性才进行序列化，它并不直接直接操作所有的属性。注意： [.red]#`BeanSerializer` 将会无法处理 Getter 方法是以 `is` 开头的 `boolean` 属性，因为 `BeanSerializer` 只认以 `get` 开头的方法。#
+
+[#hessian-deserializer]
+=== `Deserializer`
+
+与 `Serializer` 相似，`Deserializer` 也是 Hessian 的一个扩展点，可以通过增加相关其子类和 <<hessian-serializer>> 的子类来自定义一些类型的序列化方法。 `Deserializer` 的子类也非常多：
+
+. `AbstractDeserializer`
+. `AbstractListDeserializer`
+. `ArrayDeserializer`
+. `CollectionDeserializer`
+. `EnumerationDeserializer`
+. `IteratorDeserializer`
+. `BasicDeserializer`
+. `EnumDeserializer`
+. `AbstractStringValueDeserializer`
+. `BigDecimalDeserializer`
+. `FileDeserializer`
+. `ObjectNameDeserializer`
+. `StringValueDeserializer`
+. `InputStreamDeserializer`
+. `MBeanAttributeInfoDeserializer`
+. `MBeanConstructorInfoDeserializer`
+. `MBeanInfoDeserializer`
+. `MBeanNotificationInfoDeserializer`
+. `MBeanOperationInfoDeserializer`
+. `MBeanParameterInfoDeserializer`
+. `ObjectDeserializer`
+. `ObjectInstanceDeserializer`
+. `SqlDateDeserializer`
+. `ValueDeserializer`
+. `AbstractMapDeserializer`
+. `AnnotationDeserializer`
+. `BeanDeserializer`
+. `ClassDeserializer`
+. `JavaDeserializer`
+. `StackTraceElementDeserializer`
+. `MapDeserializer`
+. `UnsafeDeserializer`
+
+image::/images/marshal/hessian-Deserializer.svg[{image_attr}]
+
+[#hessian-architecture]
+== 架构
+
+上面单独介绍了一些类，多少有些“杂乱无章”。这里展示一张各个类之间关系的架构图，帮助大家理清各个类之间的联系：
+
+image::/images/marshal/hessian-architecture.svg[{image_attr}]
+
+== 扩展机制
+
+上文提到了 Hessian 的扩展机制： `Serializer` 和 `Deserializer` 是 Hessian 的一个扩展点。那么，怎么来将这些实现类“注入”到 Hessian 框架中呢？
+
+Hessian 的扩展机制中大致可以分为三种，下面依次介绍。
+
+[#hessian-serializers-and-deserializers]
+=== `serializers` 与 `deserializers` 配置文件机制
+
+Hessian 的这种扩展机制与 Java 的 https://en.wikipedia.org/wiki/Service_provider_interface[Service Provider Interface^] 机制相似，都是通过配置文件来“注入”自定义扩展的。
+
+为了便于说明，这里假设是 Maven 项目。
+
+首先，在 `src/main/resources` 目录下，创建 `META-INF/hessian/serializers` 文件，文件内容是，每行一句 `className=com.example.SerializerImp`。这里展示一下 Hessian 4.0.66 内置的内容：
+
+[source%nowrap,java,{source_attr}]
+----
+com.caucho.hessian.io.HessianRemoteObject=com.caucho.hessian.io.RemoteSerializer
+com.caucho.burlap.io.BurlapRemoteObject=com.caucho.hessian.io.RemoteSerializer
+java.io.File=com.caucho.hessian.io.StringValueSerializer
+java.math.BigDecimal=com.caucho.hessian.io.StringValueSerializer
+java.util.Locale=com.caucho.hessian.io.LocaleSerializer
+javax.management.ObjectName=com.caucho.hessian.io.StringValueSerializer
+----
+
+其次，在 `src/main/resources` 目录下，创建 `META-INF/hessian/deserializers` 文件，文件内容是，每行一句 `className=com.example.DeserializerImp`。这里展示一下 Hessian 4.0.66 内置的内容：
+
+[source%nowrap,java,{source_attr}]
+----
+java.io.File=com.caucho.hessian.io.FileDeserializer
+java.math.BigDecimal=com.caucho.hessian.io.BigDecimalDeserializer
+javax.management.ObjectName=com.caucho.hessian.io.ObjectNameDeserializer
+----
+
+这样， Hessian 会自动加载这些配置文件来完成配置。 [.red]#有些文章显示，需要修改 Hessian 依赖内置的配置文件，重新打包 Hessian 的依赖才可用这种方式。但是，D瓜哥亲测，配置文件直接放在自己项目中也是可以假装到这些配置的。不需要重新打包 Hessian 依赖。#
+
+=== “同包”类定义
+
+这里还是需要实现目标对象的序列化（`com.caucho.hessian.io.Serializer`）和反序列化接口（`com.caucho.hessian.io.Deserializer`）。但是有一些限制条件：
+
+. 序列化实现类的类名必须为 `model.getClass().getName() + HessianSerializer`
+. 反序列化实现类的类名必须为 `model.getClass().getName() + HessianDeserializer`
+. 同时必须和目标类的包路径完全一致。
+
+示例如下：
+
+.模型类
+[source%nowrap,java,{source_attr}]
+----
+package com.diguage;
+
+/**
+ * 客户
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ */
+public class Customer {
+    public String id;
+}
+----
+
+.模型自定义序列化
+[source%nowrap,java,{source_attr}]
+----
+package com.diguage;
+
+import com.caucho.hessian.io.AbstractHessianOutput;
+import com.caucho.hessian.io.Serializer;
+
+import java.io.IOException;
+
+/**
+ * 客户序自定义列化
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ */
+public class CustomerHessianSerializer implements Serializer {
+    @Override
+    public void writeObject(Object obj, AbstractHessianOutput out) throws IOException {
+        out.writeString("123");
+    }
+}
+----
+
+.模型自定义序列化测试
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 客户自定义序列化测试
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ */
+@Test
+public void testCustom() throws Throwable {
+    Customer customer = new Customer();
+    customer.id = "456";
+    objectTo(customer);
+}
+
+
+// -- 输出结果 ------------------------------------------------
+== Object: com.diguage.Customer  ==
+== object: json length=12 ==
+{"id":"456"}
+== object: hessian result ==
+.... 0 ~ 10 ....
+   3 0x03 00000011 
+  49 0x31 00110001 1
+  50 0x32 00110010 2
+  51 0x33 00110011 3
+----
+
+测试是符合逾期的。
+
+=== 自定义的 `AbstractSerializerFactory`
+
+观察 <<hessian-architecture>> 类图可以看出，可以通过实现自定义的 `AbstractSerializerFactory` 来完成自定义序列化器和反序列化器实现类的注入工作。示例如下：
+
+
+.自定义 SerializerFactory
+[source%nowrap,java,{source_attr}]
+----
+package com.diguage.marshal.hession;
+
+import com.caucho.hessian.io.*;
+
+/**
+ * 自定义 SerializerFactory
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ */
+public class GuageSerializerFactory extends AbstractSerializerFactory {
+    @Override
+    public Serializer getSerializer(Class cl) throws HessianProtocolException {
+        return new StringValueSerializer();
+    }
+
+    @Override
+    public Deserializer getDeserializer(Class cl) throws HessianProtocolException {
+        return new StringValueDeserializer(cl);
+    }
+}
+----
+
+WARNING: 注意：这里只是单纯地测试方便。实际这样写有很大问题！而且该方式并不能支持示例代码的反序列化操作！还请慎重！
+
+.模型自定义序列化测试
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 客户序自定义列化测试
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ */
+@Test
+public void testSerializerFactory() throws IOException {
+    int id = 1;
+    String name = "diguage";
+    User value = new User(id, name);
+
+    GuageSerializerFactory customSerializerFactory = new GuageSerializerFactory();
+
+    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+    SerializerFactory serializerFactory = new SerializerFactory();
+    serializerFactory.setAllowNonSerializable(true);
+    serializerFactory.addFactory(customSerializerFactory);
+    Hessian2Output out = new Hessian2Output(bos);
+    out.setSerializerFactory(serializerFactory);
+    out.writeObject(value);
+    out.close();
+    byte[] result = bos.toByteArray();
+
+    System.out.println("\n== Object: " + value.getClass().getName() + "  ==");
+    String json = toJson(value);
+    System.out.println("== object: json length=" + json.length() + " ==");
+    System.out.println(json);
+    System.out.println("== object: hessian result ==");
+
+    printBytes(result);
+}
+
+
+// -- 输出结果 ------------------------------------------------
+== Object: com.diguage.User  ==
+== object: json length=54 ==
+{"id":1,"name":"diguage"}
+== object: hessian result ==
+.... 0 ~ 53 ....
+  67 0x43 01000011 C
+  16 0x10 00010000 
+  99 0x63 01100011 c
+ 111 0x6F 01101111 o
+ 109 0x6D 01101101 m
+  46 0x2E 00101110 .
+ 100 0x64 01100100 d
+ 105 0x69 01101001 i
+ 103 0x67 01100111 g
+ 117 0x75 01110101 u
+  97 0x61 01100001 a
+ 103 0x67 01100111 g
+ 101 0x65 01100101 e
+  46 0x2E 00101110 .
+  85 0x55 01010101 U
+ 115 0x73 01110011 s
+ 101 0x65 01100101 e
+ 114 0x72 01110010 r
+-111 0x91 10010001
+   5 0x05 00000101 
+ 118 0x76 01110110 v
+  97 0x61 01100001 a
+ 108 0x6C 01101100 l
+ 117 0x75 01110101 u
+ 101 0x65 01100101 e
+  96 0x60 01100000 `
+  26 0x1A 00011010 
+  85 0x55 01010101 U
+ 115 0x73 01110011 s
+ 101 0x65 01100101 e
+ 114 0x72 01110010 r
+ 123 0x7B 01111011 {
+ 105 0x69 01101001 i
+ 100 0x64 01100100 d
+  61 0x3D 00111101 =
+  49 0x31 00110001 1
+  44 0x2C 00101100 ,
+  32 0x20 00100000
+ 110 0x6E 01101110 n
+  97 0x61 01100001 a
+ 109 0x6D 01101101 m
+ 101 0x65 01100101 e
+  61 0x3D 00111101 =
+  39 0x27 00100111 '
+ 100 0x64 01100100 d
+ 105 0x69 01101001 i
+ 103 0x67 01100111 g
+ 117 0x75 01110101 u
+  97 0x61 01100001 a
+ 103 0x67 01100111 g
+ 101 0x65 01100101 e
+  39 0x27 00100111 '
+ 125 0x7D 01111101 }
+----
+
+测试结果也符合逾期。
+
+三个扩展方式各有优缺，看着自己需要来决定选用哪种。
+
+== 一些新发现
+
+在梳理 Hessian 的代码实现，以及查阅资料时，有一些新的发现，有两点特别说明一下：
+
+=== 对 `enum` 的支持
+
+对于 `enum` 的序列化和反序列化，主要是 `EnumSerializer` 和 `EnumDeserializer` 来完成的。在序列化时，只是将其“name”序列化到结果中了，别没有序列化其属性信息。反序列化时，是根据“name”，调用其 `valueOf` 方法来查出其对应的实例。这里就有一个问题： [.red]#如果服务端升级版本，新增了一个枚举值，那么在低版本的客户端就不能识别，反序列化就会抛异常。这是一个不兼容的过程！#
+
+下面的代码对这种情况做了验证：
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 测试 enum 进行 Hessian 序列化
+ *
+ * @author D瓜哥 · https://www.diguage.com/
+ */
+@Test
+public void testEnumOut() throws Throwable {
+    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+    Hessian2Output out = getHessian2Output(bos);
+
+    // 测试序列化时，去掉这行代码的注释
+    // 测试反序列化时，将这行代码注释掉
+    // out.writeObject(Color.Green);
+    out.close();
+    byte[] result = bos.toByteArray();
+
+    String base64Hessian = Base64.getEncoder()
+                                 .encodeToString(result);
+
+    System.out.println("\n== Color: " + base64Hessian + " ==");
+    printBytes(result);
+}
+
+/**
+ * 测试 enum 新增枚举的 Hessian 反序列化
+ *
+ * @author D瓜哥 · https://www.diguage.com/
+ */
+@Test
+public void testEnumIn() throws Throwable {
+    String base64 = "QzAtY29tLmRpZ3VhZ2UubWFyc2hhbC5oZ" +
+        "XNzaW9uLkhlc3NpYW5UZXN0JENvbG9ykQRuYW1lYAVHcmVlbg==";
+    byte[] bytes = Base64.getDecoder().decode(base64);
+    ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
+    Hessian2Input hessian = getHessian2Input(bis);
+    Object object = hessian.readObject();
+    System.out.println(object);
+}
+
+/**
+ * @author D瓜哥 · https://www.diguage.com/
+ */
+public enum Color {
+    Red("red", 0),
+    // 测试序列化时，去掉这行代码的注释
+    // 测试反序列化时，将这行代码注释掉
+    // Green("green", 1),
+    Blue("blue", 2);
+
+    private String colorName;
+    private int colorCode;
+
+    Color(String name, int code) {
+        this.colorName = name;
+        this.colorCode = code;
+    }
+}
+
+// -- 序列化的输出结果 --
+== Color: QzAtY29tLmRpZ3VhZ2UubWFyc2hhbC5oZXNzaW9uL
+          khlc3NpYW5UZXN0JENvbG9ykQRuYW1lYAVHcmVlbg== ==
+// 为了排版，将结果的 Base64 字符串从中间分行，实际中间没有任何换行和空格。
+.... 0 ~ 61 ....
+  67 0x43 01000011 C 
+  48 0x30 00110000 0 
+  45 0x2D 00101101 - 
+  99 0x63 01100011 c 
+ 111 0x6F 01101111 o 
+ 109 0x6D 01101101 m 
+  46 0x2E 00101110 . 
+ 100 0x64 01100100 d 
+ 105 0x69 01101001 i 
+ 103 0x67 01100111 g 
+ 117 0x75 01110101 u 
+  97 0x61 01100001 a 
+ 103 0x67 01100111 g 
+ 101 0x65 01100101 e 
+  46 0x2E 00101110 . 
+ 109 0x6D 01101101 m 
+  97 0x61 01100001 a 
+ 114 0x72 01110010 r 
+ 115 0x73 01110011 s 
+ 104 0x68 01101000 h 
+  97 0x61 01100001 a 
+ 108 0x6C 01101100 l 
+  46 0x2E 00101110 . 
+ 104 0x68 01101000 h 
+ 101 0x65 01100101 e 
+ 115 0x73 01110011 s 
+ 115 0x73 01110011 s 
+ 105 0x69 01101001 i 
+ 111 0x6F 01101111 o 
+ 110 0x6E 01101110 n 
+  46 0x2E 00101110 . 
+  72 0x48 01001000 H 
+ 101 0x65 01100101 e 
+ 115 0x73 01110011 s 
+ 115 0x73 01110011 s 
+ 105 0x69 01101001 i 
+  97 0x61 01100001 a 
+ 110 0x6E 01101110 n 
+  84 0x54 01010100 T 
+ 101 0x65 01100101 e 
+ 115 0x73 01110011 s 
+ 116 0x74 01110100 t 
+  36 0x24 00100100 $ 
+  67 0x43 01000011 C 
+ 111 0x6F 01101111 o 
+ 108 0x6C 01101100 l 
+ 111 0x6F 01101111 o 
+ 114 0x72 01110010 r 
+-111 0x91 10010001 
+   4 0x04 00000100  
+ 110 0x6E 01101110 n 
+  97 0x61 01100001 a 
+ 109 0x6D 01101101 m 
+ 101 0x65 01100101 e 
+  96 0x60 01100000 ` 
+   5 0x05 00000101  
+  71 0x47 01000111 G 
+ 114 0x72 01110010 r 
+ 101 0x65 01100101 e 
+ 101 0x65 01100101 e 
+ 110 0x6E 01101110 n <1>
+----
+<1> 从这里可以看出：对 `enum` 的序列化，只是将其“name”进行了序列化，并不包含属性值。
+
+
+=== 日志打印
+
+在研究 Hessian 代码时，Hessian 也会打印一些日志。为了减少其外部依赖，Hessian 使用了 Java 内置在 JDK 中的日志框架：
+
+.Hessian 的代码
+[source%nowrap,java,{source_attr}]
+----
+import java.util.logging.*;
+
+public class Hessian2Input
+  extends AbstractHessianInput
+  implements Hessian2Constants
+{
+  private static final Logger log
+    = Logger.getLogger(Hessian2Input.class.getName());
+}
+----
+
+所以，使用 slf4j 打印日志时，一定要处理这些日志：
+
+[source%nowrap,xml,{source_attr}]
+----
+<!-- 在 pom.xml 中增加相关依赖 -->
+<dependency>
+    <groupId>org.slf4j</groupId>
+    <artifactId>jul-to-slf4j</artifactId>
+    <version>${slf4j.version}</version>
+    <scope>runtime</scope>
+</dependency>
+
+<!-- 在 logback.xml 中增加相关配置 -->
+<contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator">
+    <resetJUL>true</resetJUL>
+</contextListener>
+----
+
+这样 JDK 日志框架打印的日志就会被输出到 `logback.xml` 配置的位置了。相关原理介绍，请看 https://www.slf4j.org/api/org/slf4j/bridge/SLF4JBridgeHandler.html[SLF4JBridgeHandler^]。
+
+=== 对 `BigDecimal` 的支持
+
+在做实验的时候，发现一个问题： `BigDecimal` 对象不能正常地进行序列化。搜了一下这个问题，网上有大量讨论，据说在最新版 Hessian 4.0.66 中已经解决了。经过反复折腾才发现，是因为我是直接使用 https://github.com/diguage/hessian[Hessian 源码^] 来测试，但是因为源码中没有在 <<hessian-serializers-and-deserializers>> 中描述的配置文件导致的。从 Maven 仓库中下载的最新依赖是有这两个配置文件的。
+
+一句话来阐述对 `BigDecimal` 的支持：就是把 `BigDecimal` 处理成字符串来进行序列化；反序列化时，读取字符串，再调用 `BigDecimal` 的 `public BigDecimal(String val)` 构造函数来创建实例。这样的处理方式还挺普遍，在 https://msgpack.org/index.html[MessagePack^] 的实现中，也是这样处理的。
+
+== 一些个人思考
+
+针对 Hessian 的设计，D瓜哥觉得有几个地方的设计值得商榷：
+
+. 在处理 Java 对象时，在 `UnsafeSerializer` 和 `JavaSerializer` 的实现类中，还分别有一个抽象类 `FieldSerializer`，其实现类用于处理实例对象的各个属性。私以为，这样的设计有些复杂并且不够统计了。不如直接使用全局的 `Serializer` 更统一和方便。
+. 在处理字符串和字节数组长度时，对长度的编码并没有使用 Hessian 对 `int` 的处理，而是使用了 `int` 本身后十六位的编码。这里感觉也不够统一。私以为，直接使用 Hessian 的编码方式更统一一些。
+. 在对字符串进行编码时，又重新实现了一遍 UTF-8，感觉也有些繁琐，不如直接使用 UTF-8 编码更简单省事，而且编码效率应该也会更好。
+. `Set` 尤其是 `HashSet` 也是一种常用的数据结构，也应该分配一个前置标志符，来提高编码效率。
+
+== 未完待续
+
+在研究 Hessian 源码时，发现了 Dubbo 魔改版的 Hessian 开源在了 GitHub 上： https://github.com/apache/dubbo-hessian-lite[apache/dubbo-hessian-lite: Hessian Lite for Apache Dubbo^]。简单翻看了一下代码，结构和 Hessian 提供的源码几乎一模一样，只是修改了一下包名。看 PR 记录，有 30 多个。看来一些小细节应该有所改动。以后有机会对比一下两者的差异，看看从这些改动中能否发现一些值得学习或者注意的知识点。
+
+== 参考资料
+
+. https://developer.aliyun.com/article/14698[hessian序列化源码分析^]
+. https://rebootcat.com/2016/11/18/Hessian%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90%E2%80%94%E2%80%94java/[Hessian源码分析(java)^]
+. https://paper.seebug.org/1131/[Hessian 反序列化及相关利用链^]
+. https://zhuanlan.zhihu.com/p/32838906[经历400多天打磨，HSF的架构和性能有哪些新突破？^]
+. https://yyhan.github.io/2017/06/13/hessian-%E5%BA%8F%E5%88%97%E5%8C%96BigDecimal%E9%97%AE%E9%A2%98/[hessian 序列化BigDecimal问题^]
+. https://www.jianshu.com/p/431cbc4f61fa[Hessian序列化BigDecimal字段数据丢失^]

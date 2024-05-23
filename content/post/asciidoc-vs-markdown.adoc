@@ -1,0 +1,726 @@
+---
+title: "文档技术方案选型：AsciiDoc vs Markdown"
+date: 2022-02-13T19:56:09+08:00
+draft: false
+keywords: ["AsciiDoc","Markdown","开发工具","文档","wkhtmltopdf","PDF","Linux"]
+categories: ["开发工具","逸闻趣事","软件工程","个人成长"]
+tags: ["产品","团队建设","最佳实践","笔记"]
+thumbnail: "images/website/markdown-vs-asciidoc.jpg"
+
+weight: 1
+---
+
+// = 文档技术方案选型：AsciiDoc vs Markdown
+// D瓜哥 <https://www.diguage.com/>
+// {docdate}
+// :toc:
+// :doctype: book
+// :icons: font
+// :docinfo:
+// :toc-title: 目录
+// :toclevels: 4
+// :sectnumlevels: 4
+
+
+D瓜哥在前面的文章 https://www.diguage.com/post/building-blog-with-hugo/[使用 Hugo 搭建博客^] 中介绍了如何用 Hugo 搭建个人博客。部门准备系统地整理一下各个小组的文档。恰好 D瓜哥 对写文档非常感兴趣，正好写个材料分享一下血泪经验。
+
+// :sectnums:
+
+== 编辑进化之路
+
+=== 第一代：WordPress
+
+image::/images/website/wordpress.png[{image_attr}]
+
+缺点：写作和排版割裂，排版耗时且繁琐
+
+=== 第二代：MarkDown
+
+image::/images/website/markdown.png[{image_attr}]
+
+缺点：方言众多，工具链不够完整。
+
+> 现在已经改观很多。
+
+=== 第三代：AsciiDoc
+
+image::/images/website/asciidoc.png[{image_attr}]
+
+== 轻量级标记语言的优点
+
+=== 思路与格式融为一体
+
+在整理文档时，随手加入格式管理，不需要为格式分心，也无须浪费时间调整排版。
+
+=== 代码高亮
+
+AsciiDoc 与 MarkDown 都支持
+
+[source,java,{source_attr}]
+----
+/**
+ * @author D瓜哥 · https://www.diguage.com/
+ */
+public class Main {
+    public static void main(String[] args) {
+        System.out.println("Hello, D瓜哥！");
+    }
+}
+----
+
+=== 文本格式
+
+* 文本格式，天然跨平台，支持性好，方便编辑与管理。
+* 结合 Git，支持版本管理。
+
+=== 生态完善
+
+==== Markdown
+
+. https://gohugo.io/[Hugo: The world’s fastest framework for building websites^] -- Hugo 使用 https://github.com/yuin/goldmark[yuin/goldmark: A markdown parser written in Go.^] 来做转换工作。也支持 AsciiDoc，不过需要挑选比较合适的主题： https://themes.gohugo.io/[Hugo Themes^]。
+
+==== AsciiDoc
+
+. https://antora.org/[Antora^] -- The multi-repository documentation site generator for tech writers who  writing in AsciiDoc.
+. https://docs.asciidoctor.org/diagram-extension/latest/[Asciidoctor Diagram^] -- 支持多种文本画图工具。
+. https://docs.asciidoctor.org/epub3-converter/latest/[Asciidoctor EPUB3 Documentation^] -- 可以直接将 AsciiDoc 文档转化成 EPUB 电子书。
+. https://asciidoctor.org/docs/asciidoctor-pdf/[Asciidoctor PDF^] -- 可以直接将 AsciiDoc 文档转化成 PDF 文档。
+. 常见插件的支持：Maven、IntelliJ IDEA、VS Code 等。
+
+
+== 语法对比
+
+.A selection of AsciiDoc language features compared to Markdown
+[cols="1,2,2"]
+|===
+|Language Feature |Markdown |AsciiDoc
+
+|Bold (constrained)
+a|
+[source,markdown]
+----
+**bold**
+----
+a|
+[source]
+----
+*bold*
+----
+
+|Bold (unconstrained)
+a|
+[source,markdown]
+----
+**b**old
+----
+a|
+[source]
+----
+**b**old
+----
+
+|Italic (constrained)
+a|
+[source,markdown]
+----
+*italic*
+----
+a|
+[source]
+----
+_italic_
+----
+
+|Italic (unconstrained)
+|_n/a_
+a|
+[source]
+----
+__i__talic
+----
+
+|Monospace (constrained)
+a|
+[source,markdown]
+----
+`monospace`
+----
+a|
+[source]
+----
+`monospace`
+----
+
+|Monospace (unconstrained)
+a|
+[source,markdown]
+----
+`m`onospace
+----
+a|
+[source]
+----
+``m``onospace
+----
+
+|Literal monospace
+a|
+[source,markdown]
+----
+`http://localhost:8080`
+`/issue/{id}`
+----
+a|
+[source]
+----
+`+http://localhost:8080+`
+`+/issue/{id}+`
+----
+
+|Link with label
+a|
+[source,markdown]
+----
+[Asciidoctor](https://asciidoctor.org)
+----
+a|
+[source]
+----
+https://asciidoctor.org[Asciidoctor]
+----
+
+|Relative link
+a|
+[source,markdown]
+----
+[user guide](user-guide.html)
+----
+a|
+[source]
+----
+link:user-guide.html[user guide]
+xref:user-guide.adoc[user guide]
+----
+
+|File link
+a|
+[source,markdown]
+----
+[get the PDF]({% raw %}{{ site.url }}{% endraw %}/assets/mydoc.pdf)
+----
+a|
+[source]
+----
+link:{site-url}/assets/mydoc.pdf[get the PDF]
+----
+
+|Cross reference
+a|
+[source,markdown]
+----
+See [Usage](#_usage).
+
+<h2 id="_usage">Usage</h2>
+----
+a|
+[source]
+----
+See <<_usage>>.
+
+== Usage
+----
+
+|Block ID (aka anchor)
+a|
+[source,markdown]
+----
+<h2 id="usage">Usage</h2>
+----
+a|
+[source]
+----
+[#usage]
+== Usage
+----
+
+|Inline anchor
+|_n/a_
+a|
+[source]
+----
+. [[step-1]]Download the software
+----
+
+|Inline image w/ alt text
+a|
+[source,markdown]
+----
+![Logo](/images/logo.png)
+----
+a|
+[source]
+----
+image:logo.png[Logo]
+----
+
+|Block image w/ alt text
+|_n/a_
+a|
+[source]
+----
+image::/logo.png[Logo]
+----
+
+|Section heading*
+a|
+[source,markdown]
+----
+## Heading 2
+----
+a|
+[source]
+----
+== Heading 2
+----
+
+|Blockquote*
+a|
+[source,markdown]
+----
+> Quoted text.
+>
+> Another paragraph in quote.
+----
+a|
+[source]
+----
+____
+Quoted text.
+
+Another paragraph in quote.
+____
+----
+
+|Literal block
+a|
+[source,markdown]
+----
+    $ gem install asciidoctor
+----
+a|
+.Indented (by 1 or more spaces)
+[source]
+----
+ $ gem install asciidoctor
+----
+
+.Delimited
+[source]
+----
+....
+$ gem install asciidoctor
+....
+----
+
+|Code block*
+a|
+[source,markdown]
+----
+```java
+public class Person {
+  private String name;
+  public Person(String name) {
+    this.name = name;
+  }
+}
+```
+----
+a|
+[source]
+....
+[source,java]
+----
+public class Person {
+  private String name;
+  public Person(String name) {
+    this.name = name;
+  }
+}
+----
+....
+
+|Unordered list
+a|
+[source,markdown]
+----
+* apples
+* orange
+  * temple
+  * navel
+* bananas
+----
+a|
+[source]
+----
+* apples
+* oranges
+** temple
+** navel
+* bananas
+----
+|Ordered list
+a|
+[source,markdown]
+----
+1. first
+2. second
+3. third
+----
+a|
+[source]
+----
+. first
+. second
+. third
+----
+
+|Thematic break (aka horizontal rule)*
+a|
+[source,markdown]
+----
+***
+
+* * *
+
+---
+
+- - -
+
+___
+
+_ _ _
+----
+a|
+[source]
+----
+'''
+----
+
+|Typographic quotes (aka "`smart quotes`")
+|Enabled through an extension switch, but offer little control in how they are applied.
+a|
+[source]
+----
+The `'90s popularized a new form of music known as "`grunge`" rock.
+It'll turn out to have an impact that extended well beyond music.
+----
+
+|Document header
+a|
+.Slapped on as "`front matter`"
+[source,markdown]
+----
+---
+layout: docs
+title: Writing posts
+prev_section: defining-frontmatter
+next_section: creating-pages
+permalink: /docs/writing-posts/
+---
+----
+a|
+.Native support!
+[source]
+----
+= Writing posts
+:page-layout: base
+:showtitle:
+:prev_section: defining-frontmatter
+:next_section: creating-pages
+----
+
+|Admonitions
+|_n/a_
+a|
+[source]
+----
+TIP: You can add line numbers to source listings by adding the word `numbered` in the attribute list after the language name.
+----
+
+|Sidebars
+|_n/a_
+a|
+[source]
+----
+.Lightweight Markup
+****
+Writing languages that let you type less and express more.
+****
+----
+
+|Block titles
+|_n/a_
+a|
+[source]
+----
+.Grocery list
+* Milk
+* Eggs
+* Bread
+----
+
+|Includes
+|_n/a_
+a|
+[source]
+----
+\include::intro.adoc[]
+----
+
+|URI reference
+a|
+[source,markdown]
+----
+Go to the [home page][home].
+
+[home]: https://example.org
+----
+a|
+[source]
+----
+:home: https://example.org
+
+Go to the {home}[home page].
+----
+
+|Custom CSS classes
+|_n/a_
+a|
+[source]
+----
+[.path]_Gemfile_
+----
+|===
+
+
+
+== AsciiDoc 的亮点
+
+AsciiDoc 与 MarkDown 差别很小，AsciiDoc 几乎完全兼容 MarkDown 的语法。
+
+=== 支持图表：PlantUML
+
+
+image::/images/website/asciidoc-plantuml.png[{image_attr}]
+
+https://plantuml.com/zh/[PlantUML：使用简单的文字描述画UML图^]
+
+
+=== 支持图表：SeqDiag
+
+image::/images/website/asciidoc-seqdiag.png[{image_attr}]
+
+http://blockdiag.com/en/seqdiag/index.html[SeqDiag - simple sequence-diagram image generator^]
+
+=== 更多图表
+
+image::/images/website/asciidoctor-diagram-kroki-cheatsheet.jpeg[{image_attr}]
+
+
+其他图表支持见： 
+
+* https://docs.asciidoctor.org/diagram-extension/latest/[Asciidoctor Diagram^]
+* https://kroki.io/[Kroki! -- 在线预览工具^]
+
+=== 支持“文档分段”
+
+[source]
+----
+= 如何一夜暴富？
+
+\include::chapter-01.adoc[leveloffset=+1]
+
+\include::chapter-02.adoc[leveloffset=+1]
+
+\include::chapter-03.adoc[leveloffset=+1]
+----
+
+优点：各个文档相互独立，方便协作。
+
+=== 支持自动生成目录
+
+只需要添加几条设置就可以自动生成目录，而且可以控制目录层级以及目录的位置（页头，左侧或者右侧等）。
+
+=== 自动导入代码
+
+可以自动带入代码以及代码段，方便后期维护（只需要修改代码，文档中的内容自动修改）。
+
+=== 总结
+
+如果说 MarkDown 是排版的小学生，那么 AsciiDoc 则是排版的大学生。
+
+image::/images/website/markdown-vs-asciidoc-catalog.png[{image_attr}]
+
+* https://docs.asciidoctor.org/asciidoc/latest/[AsciiDoc Language Documentation^]
+* https://spec.commonmark.org/0.30/[CommonMark Spec^]
+
+
+== 产品文档解决方案
+
+可选方案一共三种：
+
+. Antora
+. Hugo
+. AsciiDoctor
+
+=== Antora
+
+image::/images/common/antora-logo.png[float="right"]
+
+==== 简介
+
+https://antora.org/[Antora^]: The multi-repository documentation site generator for tech writers who  writing in AsciiDoc.
+
+优点::
+. 专门的技术文档解决方案
+. 支持多仓库
+. 基于 AsciiDoc，功能强大
+
+//
+
+示例， https://docs.asciidoctor.org/[Asciidoctor Documentation^]::
+
+* 文档展示： https://docs.asciidoctor.org/[Asciidoctor Documentation Site^]
+* 仓库管理： https://github.com/asciidoctor/docs.asciidoctor.org[docs.asciidoctor.org^]
+
+==== Quickstart: Playbook
+
+.antora-playbook.yml
+[source,yaml]
+----
+site:
+  title: Antora Docs
+  start_page: component-b::index.adoc 
+content:
+  sources: 
+  - url: https://gitlab.com/antora/demo/demo-component-a.git
+    branches: HEAD
+  - url: https://gitlab.com/antora/demo/demo-component-b.git
+    branches: [v2.0, v1.0]
+    start_path: docs
+ui: 
+  bundle:
+    url: https://gitlab.com/antora/antora-ui-default/-/jobs/artifacts/HEAD/raw/build/ui-bundle.zip?job=bundle-stable
+    snapshot: true
+----
+
+==== Quickstart: Standard File and Directory Set
+
+[source,yaml]
+----
+📒 repository 
+  📄 antora.yml ------ 配置
+  📂 modules --------- 必选目录
+    📂 ROOT ---------- 可选目录，
+      📁 attachments - 附件
+      📁 examples ---- 示例
+      📁 images ------ 图片
+      📁 pages ------- 文档
+      📁 partials ---- 片段文档
+      📄 nav.adoc  --- 菜单
+    📂 named-module -- 其他模块目录 
+      📁 pages
+      📄 nav.adoc 
+  📁 packages -------- 不处理（非 modules 子目录都不处理）
+----
+
+详细介绍： https://docs.antora.org/antora/latest/standard-directories/[Antora Docs: Standard File and Directory Set^]
+
+=== Hugo
+
+==== 简介
+
+https://gohugo.io/[Hugo^]: The world’s fastest framework for building websites. 
+
+image::/images/website/hugo-logo.svg[{image_attr}]
+
+https://kubernetes.io/docs/home/[Kubernetes^] 的文档 就是基于 Hugo 来发布的。
+
+==== Quickstart
+
+[source]
+----
+$ tree diguage.com
+diguage.com
+├── archetypes
+│   └── default.md
+├── config.toml # 配置文件
+├── content     # 以后的文章就放在这个目录下
+├── data
+├── layouts
+├── static      # 这里存放静态资源文件，比如 CSS、JS 以及图片
+└── themes      # 这里存放主题
+----
+
+==== 主题推荐：Docsy
+
+https://www.docsy.dev/[Docsy^] is a theme for the Hugo static site generator that’s specifically designed for technical documentation sets. 
+
+该注意由 Google 开发，Kubernetes 使用的主题。支持文档和博客。
+
+=== AsciiDoctor
+
+可以直接使用 AsciiDoctor 来编写，自己写命令行来处理。
+
+优点：
+
+. 上手容易；
+. AsciiDoctor 生态支持最好；
+. 可以一键导出 HTML、PDF 和 ePub 等格式。
+
+示例：
+
+. https://notes.diguage.com/mysql/[MySQL 学习笔记^Alpha^^]
+. https://notes.diguage.com/design-patterns/[深入学习设计模式 ^Alpha^^]
+
+=== 发布方式
+
+通过命令行将文档转化成 HTML，申请一台服务器，使用 Nginx 发布成网页即可。示例如下：
+
+. https://docs.asciidoctor.org/[Asciidoctor Documentation^]
+. https://kubernetes.io/docs/home/[Kubernetes Documentation^]
+. https://notes.diguage.com/mysql/[MySQL 学习笔记Alpha^]
+
+如果需要 PDF 文档，可以再将网页转化成 PDF： https://wkhtmltopdf.org/[WK**<html>**TO**pdf**^]。
+
+如果使用 AsciiDoctor，则可以直接使用工具链生成 PDF 出来，示例： https://github.com/diguage/jdk-source-analysis[JDK 源码分析^]，配置好插件，支持一键导出成 PDF。
+
+== 以终为始
+
+=== 你的选择
+
+* [ ] Antora
+* [ ] Hugo
+* [ ] AsciiDoctor
+* [ ] Confluence
+
+
+
+// == 溯源历史
+
+// === Markdown
+
+// It was developed in 2004 by John Gruber in collaboration with Aaron Swartz. Gruber wrote the first markdown-to-html converter in Perl, and it soon became widely used in websites. 
+
+// John Gruber’s canonical description of Markdown’s syntax does not specify the syntax unambiguously.
+
+// In the absence of a spec, early implementers consulted the original Markdown.pl code to resolve these ambiguities. But Markdown.pl was quite buggy.
+
+
+// === AsciiDoc
+
+// https://asciidoc-py.github.io/index.html[AsciiDoc^] was created in 2002 by Stuart Rackham, who published tools (‘asciidoc’ and ‘a2x’), written in the Python programming language to convert plain-text, ‘human readable’ files to commonly used published document formats.
+
+// A Ruby implementation called https://asciidoctor.org/[‘Asciidoctor’^], released in 2013, is in use by GitHub and GitLab.
+
+// The AsciiDoc format is currently under standardization procedure by the Eclipse Foundation: https://projects.eclipse.org/proposals/asciidoc-language[AsciiDoc Language^].

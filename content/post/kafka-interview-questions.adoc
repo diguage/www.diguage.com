@@ -4,7 +4,7 @@ date: 2020-07-01T18:08:51+08:00
 draft: false
 keywords: ["Java","Kafa"]
 tags: ["Java","设计","架构","分布式"]
-categories: ["Java","程序设计","分布式"]
+categories: ["程序设计","分布式"]
 thumbnail: "images/kafka/kafka-logo.png"
 
 weight: 1
@@ -14,6 +14,7 @@ weight: 1
 # comment: false
 # toc: true
 ---
+
 
 Kafka 是由 LinkedIn 开发的一个分布式的消息系统，使用 Scala 编写，它以可水平扩展和高吞吐率而被广泛使用。Kafka 本身设计也非常精巧，有很多关键的知识点需要注意。在面试中，也常常被问到。整理篇文章，梳理一下自己的知识点。
 

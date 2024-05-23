@@ -1,0 +1,115 @@
+---
+title: "如何实现 GC 的高吞吐量？"
+date: 2024-01-05T09:24:33+08:00
+draft: false
+keywords: ["Java","JVM", "ZGC", "调优"]
+tags: ["Java", "GC", "翻译"]
+categories: ["系统架构","性能优化"]
+thumbnail: "images/high-gc-throughput/Parallelism-in-ConcurrentHashMap-1.png"
+
+weight: 1
+---
+
+三四十年前，开发人员负责释放在应用程序中创建的对象。业务应用程序相当复杂，有不同的工作流、用例和场景。即使开发人员在某个场景中少释放一个对象，对象也会在内存中累积，造成内存泄漏。Java 于 1995 年推出时，承诺自动进行垃圾回收。它将删除对象的责任从开发人员转移到了 Java 虚拟机（JVM），从而彻底改变了内存管理。整个行业都积极拥抱了这一创新理念，因为开发人员不再需要操心手动内存管理。从那时起，自动垃圾回收已成为所有现代编程语言的默认功能。
+
+在本篇文章中，我们将探讨垃圾回收过程中的一个关键性能指标："GC 吞吐量"。我们将了解它的含义、在 Java 应用程序中的重要性以及它对整体性能的影响。此外，我们还将深入探讨提高 GC 吞吐量的可行策略，为现代软件开发释放其优势。
+
+
+== 什么是垃圾回收吞吐量？
+
+每当运行自动垃圾回收事件时，应用程序都会停顿，以识别内存中未引用的对象并将其释放。在停顿期间，不会处理任何客户请求。垃圾回收吞吐量请求应用程序处理客户请求的时间占多大比例，垃圾回收活动的时间占多大比例。例如，如果有人说他的应用程序的 GC 吞吐量是 98%，这意味着他的应用程序有 98% 的时间用于处理客户请求，其余 2% 的时间用于处理垃圾回收活动。  高 GC 吞吐量是可取的，因为它表明应用程序有效地利用了系统资源，从而减少了停顿，提高了整体性能。相反，GC 吞吐量低会导致垃圾回收停顿时间增加，影响应用程序的响应速度，造成性能瓶颈。监控和优化 GC 吞吐量对于确保应用程序的顺利执行和响应速度至关重要。在下一节中，我们将探讨查找应用程序 GC 吞吐量的方法，并了解如何解释结果以优化 Java 应用程序性能。继续…
+
+
+== 如何找到应用程序的 GC 吞吐量？
+
+垃圾回收日志是研究 GC 性能的最佳来源。如果你的应用程序运行在 JVM 上，你可以通过 https://www.diguage.com/post/how-to-do-gc-log-analysis/[如何进行 GC 日志分析^] 文章中提到的 JVM 参数启用 GC 日志。启用 GC 日志后，让应用程序处理流量至少一天，以观察高流量和低流量时段各自的运行情况。之后，可以将生成的 GC 日志文件上传到 GC 日志分析工具，以获得有价值的分析结果。一些常用的 GC 日志分析工具包括 https://gceasy.io/[GCeasy^]、 https://www.ibm.com/support/pages/java-sdk[IBM GC & Memory visualizer^] 和 https://github.com/mgm3746/garbagecat[Google Garbage cat^] 等。这些工具将报告 GC 吞吐量以及其他重要的 GC 指标。下面是 GCeasy 工具的摘录，展示了包括 GC 吞吐量在内的各种 GC 关键性能指标 (KPI) 报告。
+
+image::/images/high-gc-throughput/gceasy-key-performance-indicators.png[title="GCeasy 工具报告的 GC 吞吐量",alt="GCeasy 工具报告的 GC 吞吐量",{image_attr}]
+
+
+== 垃圾收集吞吐量下降的原因
+
+垃圾收集吞吐量下降的原因可分为三类：
+
+. 性能问题
+. 错误的 GC 调优
+. 资源匮乏
+
+让我们在本节中逐一详细分析。
+
+:sectnums:
+
+=== Performance Problems
+
+当应用程序出现性能问题时，GC 吞吐量就会下降。以下是导致应用程序性能下降的潜在原因。
+
+==== 内存泄漏
+
+image::/images/high-gc-throughput/gceasy-heap-usage-1.png[title="由于内存泄漏而重复运行GC事件",alt="由于内存泄漏而重复运行GC事件",{image_attr}]
+
+当应用程序出现内存泄漏时，垃圾回收事件会不断重复运行，但却无法有效回收内存。在上图中，你可以注意到右角的红色三角形群，这表明 GC 事件在重复运行。然而，内存利用率并没有降低，这是内存泄漏的典型迹象。在这种情况下，GC 事件消耗了应用程序的大部分时间，导致 GC 吞吐量和整体性能显著下降。要排除内存泄漏故障，下面这个视频片段也许很有帮助： https://youtu.be/SuguH8YBl5g[Troubleshooting OutOfMemoryError - Heap dump, Eclipse MAT^]。
+
+==== 持续的 GC 停顿
+
+image::/images/high-gc-throughput/gceasy-heap-usage-2.png[title="由于高流量而重复运行GC事件",alt="由于高流量而重复运行GC事件",{image_attr}]
+
+在一天中的高峰时段或运行批处理进程时，您的应用程序可能会遇到高流量。因此，GC 事件可能会连续运行，以清理应用程序创建的对象。上图显示了连续运行的 GC 事件（注意上图中的红色箭头）。这种情况会导致该时间段内 GC 吞吐量急剧下降。要解决这个问题，可以参考博文： https://www.diguage.com/post/eliminate-consecutive-full-gcs/[消除连续的 Full GC^]。
+
+==== 频繁创建对象
+
+低效的编程实践会导致 https://www.diguage.com/post/memory-wasted-by-spring-boot-application/[应用程序不必要地创建大量对象^]。对象创建速率的增加会迫使垃圾回收器频繁运行，从而对 GC 吞吐量造成负面影响。要解决这个问题，可以使用 https://heaphero.io/[HeapHero^]、YourKit 或 jProfiler 等内存剖析器对应用程序进行剖析，找出创建对象过多的区域，并相应地优化或减少对象的使用。
+
+==== 大且长寿的对象
+
+大型长寿对象对垃圾回收（GC）吞吐量和整体应用程序性能有显著影响。这些对象会消耗大量内存，并在堆中长时间存在，从而挑战 GC 的回收效率。要减轻这种影响，可以从如下方面考虑：
+
+* *对象池化*：通过对象池重复使用对象，最大限度地减少分配和 GC。
+* *优化大小*：创建适当大小的对象，避免不必要的开销。
+* *弱引用*：对可以主动收集的对象使用弱引用。
+* *堆外存储*：利用堆外内存处理大型或长寿数据。
+
+
+=== 错误的 GC 调优
+
+导致应用程序 GC 吞吐量下降的另一个重要原因是不正确的垃圾回收（GC）调整。导致这一问题的因素有很多：
+
+==== 错误的 GC 算法选择
+
+截至 2023 年，OpenJDK 平台提供了七种垃圾回收算法，包括 Serial、Parallel、CMS、G1 GC、 https://www.diguage.com/post/java-zgc-algorithm-tuning/[ZGC^]、Shenandoah 和 Epsilon。选择合适的 GC 算法至关重要，应根据应用流量、模式、对象创建速率和性能目标等因素来确定。选择错误的 GC 算法会大大降低应用程序的 GC 吞吐量。有关 GC 调整的全面介绍，请参阅本视频讲座。
+
+==== 缺乏(或不正确)GC调优
+
+不正确地配置 JVM 参数或未能适当地调整应用程序也会导致 GC 吞吐量下降。正确的 GC 调整对于使 JVM 的行为符合应用程序的要求至关重要。有关 GC 调整的详细概述，可以观看这个深入浅出的视频讲座： https://youtu.be/6G0E4O5yxks[GC Tuning & Troubleshooting Crash Course^]。
+
+==== 错误的分代大小
+
+JVM 内存被划分为多个内部区域，包括新生代、老年代、元空间和本地内存。这些区域大小配置不当会导致 GC 吞吐量降低。举例说明， https://www.diguage.com/post/gc-tuning-success-story-reducing-young-gen-size/[优化新生代内存大小^] 可显著提高应用程序的 GC 吞吐量。
+
+
+=== 资源匮乏
+
+系统和应用程序级资源不足会导致应用程序的垃圾回收（GC）吞吐量下降。
+
+==== 堆大小不足
+
+分配的堆大小不足（由 `-Xmx` 参数控制），再加上对象创建量的增加，会导致更频繁的 GC 事件。频繁的 GC 活动会导致 GC 吞吐量下降。为解决这一问题，可通过增加堆大小来满足应用程序的内存需求，从而确保 https://www.diguage.com/post/large-or-small-memory-size-for-my-app/[堆大小适当^]。
+
+==== GC 线程不足
+
+垃圾回收线程数量不足会导致 GC 事件长久时间的停顿。GC 线程的数量由 JVM 参数 `-XX:ConcGCThreads=<num>` 和  `-XX:ParallelGCThreads=<num>` 决定。分配足够数量的 GC 线程对提高 GC 吞吐量和减少停顿至关重要。
+
+==== 系统资源不足
+
+应用程序中 CPU 周期稀缺或 I/O 活动频繁都会大大降低 GC 性能。确保托管应用程序的服务器、虚拟机（VM）或容器有足够的 CPU 可用性至关重要。此外，尽量减少 I/O 活动也有助于保持最佳的 GC 吞吐量。
+
+==== 过时的 JDK
+
+JDK 开发团队不断改进 GC 性能。在过时的 JDK 版本上运行将无法受益于最新的改进和增强。为了最大限度地提高 GC 吞吐量，建议您保持 JDK 的最新版本。您可以访问 https://openjdk.org/[OpenJDK^] 来查看最新的 JDK 版本信息。
+
+:!sectnums:
+
+== 总结
+
+在 Java 应用程序开发领域，优化垃圾回收（GC）吞吐量对于实现最高性能至关重要。从测量到影响因素，我们探索了 GC 吞吐量的细微差别。通过对 GCeasy、IBM GC & Memory Visualizer、HP Jmeter 等工具的深入了解，我们学会了识别和解决影响吞吐量的问题，无论是内存泄漏还是调优不当。当继续编码之旅，愿这些策略能释放 Java 应用程序的全部潜能，提供功能强大、反应灵敏和高效的软件体验。
+
+原文： https://blog.gceasy.io/2023/05/31/how-to-aim-for-high-gc-throughput/[How to aim for High GC Throughput^]。

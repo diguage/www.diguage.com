@@ -1,0 +1,479 @@
+---
+title: "日志最佳实践探究"
+date: 2021-07-14T10:52:58+08:00
+draft: false
+keywords: ["软件工程","系统架构","开发工具",]
+categories: ["软件工程","系统架构","开发工具"]
+tags: ["架构","源码分析","最佳实践"]
+thumbnail: "images/logging/java-logging-icon.png"
+
+weight: 1
+---
+
+
+加入公司以来，参与了很多个项目的开发维护；也排查处理过很多线上问题；为了写 Mock 测试，也专门去日志系统上扒拉过不少日志等等。在整个过程中，对日志的认识有了不少更深刻的认识和体会。也发现不少问题。这里先从存在的问题展开论述。
+
+== 日志存在的问题
+
+从个人的眼光上来看，当前的系统存在如下问题：
+
+. 必要日志没有打印出来，导致在追踪问题或测试代码时，带来不必要的麻烦。比如查看一个接口的返回值用于 Mock 测试；再比如 RPC 调用报错，返回值以及错误信息没有打印到日志中，不知道具体错误原因是什么。
+. 日志抽取中日志路径配置错误，导致日志重复收集，带来不必要的处理和存储成本。
+. 日志代码不规范，导致不必要的性能消耗；或者大促时，日志降级不生效。
+. 日志框架繁多，造成造成冲突，遗漏部分日志。
+. 日志配置不规范，不利于日志的采集和清洗。
+. 日志和调用链路物理隔离，查看一个请求的整个调用链路上的日志非常不方便，不利于问题的快速排查和定位。
+
+_大家的系统中，存在什么样的日志问题？欢迎留言交流讨论。_
+
+针对这些问题，我觉得有些地方值得发力一下。然后，做了一些探索，总结一下，以备后续使用。
+
+== 日志最佳实践探索
+
+对于日志的使用，相信所有的开发人员都比较清楚，网上也有大量资料，相关日志框架的官方文档，也写的非常详尽，这里就不再赘述。
+
+本文从一个角度对日志规范进行探究：**在排查问题时，能否通过日志来尽快地了解系统运行状态，定位问题原因？**另外，由于 Java 的日志框架特别多，有一些比较容易迷惑的问题，尝试做出一点总结。
+
+系统运行后，不严格地说，再去观察系统运行状态，就类似于在黑夜中行走。此时，向你扔过来一块板砖🧱，那么，事后如何追责呢？
+
+image::/images/logging/throw-bug.jpg[{image_attr}]
+
+请问：你能否成功躲开这块叫做 Bug 的板砖🧱？
+
+日志用来记录用户操作、系统运行状态等，是一个系统的重要组成部分。然而，由于日志通常不属于系统的核心功能，但是在日志对于排查问题，有无可替代的作用，理应得到所有开发人员的重视（不重视，怎么甩锅？！）！
+
+[quote, Geshan Manandhar, Logging best practices]
+____
+If dog is a man's best friend,  +
+logs are software engineer's best friend.
+____
+
+好的日志可以帮助系统的开发和运维人员：
+
+. 了解线上系统的运行状态
+. 快速准确定位线上问题
+. 发现系统瓶颈
+. 预警系统潜在风险
+. 挖掘产品最大价值
+. 可以将一个流程完整串起来（比如orderId）
+. ……
+
+image::/images/logging/bug-goto-land.jpg[{image_attr}]
+
+不好的日志导致：
+
+. 对系统的运行状态一知半解，甚至一无所知
+. 系统出现问题无法定位，或者需要花费巨大的时间和精力
+. 无法发现系统瓶颈，不知优化从何做起
+. 无法基于日志对系统运行过程中的错误和潜在风险进行监控和报警
+. 对挖掘用户行为和提升产品价值毫无帮助
+. ……
+
+
+日志从功能来说，可分为诊断日志、统计日志、审计日志。统计日志一般由运维组负责；而审计日志，一般是需要通过代码来实现。这里重点来说说诊断日志。
+
+诊断日志， 典型的有：
+
+* 请求入口和出口
+* 外部服务调用和返回
+* 资源消耗操作: 如读写文件等
+* 容错行为： 如云硬盘的副本修复操作
+* 程序异常： 如数据库无法连接
+* 后台操作：定期执行删除的线程
+* 启动、关闭、配置加载
+
+好的日志就像好的文章一样，绝不是一遍就可以写好的，而需要在实际的运维过程中，结合线上问题的定位，不断地进行优化。最关键的一点是，**团队要重视日志优化这件事情，不要让日志的质量持续降低（当项目变大时，项目的代码也存在一样的问题，越写越乱）。**
+
+此处有以下几个比较好的实践：
+
+. 在定位问题的过程中完善日志，如果定位问题花费了很长时间，那就说明系统日志还存在问题，需要进一步完善和优化；
+. 需要思考是否可以通过优化日志，来提前预判该问题是否可能发生（如某种资源耗尽而导致的错误，可以对资源的使用情况进行记录）
+. 定义好整个团队记录日志的规范，保证每个开发记录的日志格式统一；特别需要说明的是，对于DEBUG/TRACE级别的日志，也需要定义好清晰的格式，而不是由开发人员自由发挥；
+. 整个团队（包括开发，运维和测试）定期对记录的日志内容进行Review；
+. 开发做运维，通过在查问题的过程来优化日志记录的方式；
+. 运维或测试在日志中发现的问题，都需要及时向开发人员反映；
+
+== 日志框架选型
+
+
+=== slf4j + logback
+
+==== Jar 包选择
+
+
+image::/images/logging/slf4j-bridging-legacy-apis.png[{image_attr},title="Slf4j 桥接其他日志框架",alt="Slf4j 桥接其他日志框架"]
+
+
+.基于 slf4j + logback 的日志框架依赖
+[source,xml,{source_attr}]
+----
+<properties>
+    <slf4j.version>1.7.30</slf4j.version>
+    <log4j.version>2.13.3</log4j.version>
+</properties>
+ 
+<dependencies>
+    <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>${slf4j.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>ch.qos.logback</groupId>
+        <artifactId>logback-classic</artifactId>
+        <version>1.2.3</version>
+    </dependency>
+    <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>log4j-over-slf4j</artifactId>
+        <version>${slf4j.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>jcl-over-slf4j</artifactId>
+        <version>${slf4j.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>jul-to-slf4j</artifactId>
+        <version>${slf4j.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-to-slf4j</artifactId>
+        <version>${log4j.version}</version>
+    </dependency>
+</dependencies>
+----
+
+
+.logback 日志配置
+[source,xml,{source_attr}]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration> 
+    <!-- 日志文件目录 -->
+    <property name="log.location" value="/export/Logs/《《APP_NAME》》"/>
+    <!-- 日志样式 -->
+    <property name="log.pattern" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{80}[%L] - %msg%n"/>
+
+    <!-- 将 JUL 的日志级别映射为 logback 的日志级别 -->
+    <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator">
+        <resetJUL>true</resetJUL>
+    </contextListener>
+ 
+    <!-- 控制台 -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder charset="UTF-8">
+            <pattern>${log.pattern}</pattern>
+        </encoder>
+    </appender>
+ 
+    <!-- 如果使用 Spring Boot 发布应用，则需要配置该 Appender。 -->
+    <!-- 如果使用 Tomcat 发布应用，则不需要配置该 Appender。 -->
+    <appender name="CATALINA" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- 如果配置了该 Appender，则在 digger 中只需要添加该日志文件路径即可。 -->
+        <file>${log.location}/catalina.log</file>
+        <append>true</append>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${log.location}/catalina.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy
+                    class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>100MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>100</maxHistory>
+        </rollingPolicy>
+        <encoder charset="UTF-8">
+            <pattern>${log.pattern}</pattern>
+        </encoder>
+    </appender>
+ 
+    <appender name="APP" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.location}/app.log</file>
+        <append>true</append>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${log.location}/app.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>30GB</totalSizeCap>
+        </rollingPolicy>
+
+        <encoder charset="UTF-8">
+            <pattern>${log.pattern}</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="com.xxx" level="WARN"/>
+
+    <root level="INFO">
+        <!-- 下面三选一即可。 -->
+        <!-- 如果使用 Tomcat 发布，如果想要 Tomcat 的日志，则使用则留下 CONSOLE。 -->
+        <!-- 如果使用 Tomcat 发布，如果不想要 Tomcat 的日志，则使用则留下 APP。 -->
+        <!-- 如果使用 Spring Boot 发布，则留下 CATALINA； -->
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="APP"/>
+        <appender-ref ref="CATALINA"/>
+    </root>
+</configuration>
+----
+
+
+=== slf4j + log4j 2
+
+
+==== log4j 2 的优势
+
+==== Jar 包选择
+
+
+image::/images/logging/log4j2-whichjar.png[{image_attr},title="log4j 2 桥接其他日志框架",alt="log4j 2 桥接其他日志框架"]
+
+
+.基于 slf4j + log4j 2 的日志框架依赖
+[source,xml,{source_attr}]
+----
+<properties>
+    <slf4j.version>1.7.30</slf4j.version>
+    <log4j.version>2.13.3</log4j.version>
+</properties>
+ 
+ 
+<dependencies>
+    <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>${slf4j.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-1.2-api</artifactId>
+        <version>${log4j.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-slf4j-impl</artifactId>
+        <version>${log4j.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-jcl</artifactId>
+        <version>${log4j.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-jul</artifactId>
+        <version>${log4j.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-core</artifactId>
+        <version>${log4j.version}</version>
+    </dependency>
+</dependencies>
+----
+
+
+
+.logback 日志配置
+[source,xml,{source_attr}]
+----
+// TODO
+----
+
+
+== 典型代码评审
+
+
+[source,java,{source_attr}]
+----
+// 错误示例：无论日志是否打印出来，都会执行 toJson 操作，但是 toJson 耗时很高。
+log.info("响应结果: {}", toJson(proceed));
+
+
+// 正确示例
+if (log.isInfoEnabled()) {
+    log.info("响应结果:{}", toJson(proceed));
+}
+---- 
+
+[source,java,{source_attr}]
+----
+// 错误实例：手动提前异常消息
+log.error("error param: {}, result: {}, exception: {}", 
+               toJson(param), toJson(result), exception.getMessage());
+ 
+ 
+// 正确实例
+log.error("error param: {}, result: {}", 
+               toJson(paramDto), toJson(result), exception);
+----
+
+
+[source,java,{source_attr}]
+----
+// 错误示例：无意义前缀
+log.info("##### 昵称: {}", name));
+
+
+// 正确示例
+log.info("昵称: {}", name));
+---- 
+
+
+== 日志参数拼接方法
+
+[source,java,{source_attr}]
+----
+package org.slf4j.helpers;
+ 
+import java.text.MessageFormat;
+import java.util.HashMap;
+import java.util.Map;
+ 
+final public class MessageFormatter {
+    static final char DELIM_START = '{';
+    static final char DELIM_STOP = '}';
+    static final String DELIM_STR = "{}";
+    private static final char ESCAPE_CHAR = '\\';
+ 
+ 
+    // 日志参数拼接的最终实现   
+    final public static FormattingTuple arrayFormat(final String messagePattern, final Object[] argArray, Throwable throwable) {
+ 
+        if (messagePattern == null) {
+            return new FormattingTuple(null, argArray, throwable);
+        }
+ 
+        if (argArray == null) {
+            return new FormattingTuple(messagePattern);
+        }
+ 
+        int i = 0;
+        int j;
+        // use string builder for better multicore performance
+        StringBuilder sbuf = new StringBuilder(messagePattern.length() + 50);
+ 
+        int L;
+        for (L = 0; L < argArray.length; L++) {
+ 
+            j = messagePattern.indexOf(DELIM_STR, i);
+ 
+            if (j == -1) {
+                // no more variables
+                if (i == 0) { // this is a simple string
+                    return new FormattingTuple(messagePattern, argArray, throwable);
+                } else { // add the tail string which contains no variables and return
+                    // the result.
+                    sbuf.append(messagePattern, i, messagePattern.length());
+                    return new FormattingTuple(sbuf.toString(), argArray, throwable);
+                }
+            } else {
+                if (isEscapedDelimeter(messagePattern, j)) {
+                    if (!isDoubleEscaped(messagePattern, j)) {
+                        L--; // DELIM_START was escaped, thus should not be incremented
+                        sbuf.append(messagePattern, i, j - 1);
+                        sbuf.append(DELIM_START);
+                        i = j + 1;
+                    } else {
+                        // The escape character preceding the delimiter start is
+                        // itself escaped: "abc x:\\{}"
+                        // we have to consume one backward slash
+                        sbuf.append(messagePattern, i, j - 1);
+                        deeplyAppendParameter(sbuf, argArray[L], new HashMap<Object[], Object>());
+                        i = j + 2;
+                    }
+                } else {
+                    // normal case
+                    sbuf.append(messagePattern, i, j);
+                    // 判断需要拼接，这调用工具方法，进行参数拼接
+                    deeplyAppendParameter(sbuf, argArray[L], new HashMap<Object[], Object>());
+                    i = j + 2;
+                }
+            }
+        }
+        // append the characters following the last {} pair.
+        sbuf.append(messagePattern, i, messagePattern.length());
+        return new FormattingTuple(sbuf.toString(), argArray, throwable);
+    }
+ 
+    // special treatment of array values was suggested by 'lizongbo'
+    private static void deeplyAppendParameter(StringBuilder sbuf, Object o, Map<Object[], Object> seenMap) {
+        if (o == null) {
+            sbuf.append("null");
+            return;
+        }
+        if (!o.getClass().isArray()) {
+            // 简单对象直接拼接
+            safeObjectAppend(sbuf, o);
+        } else {
+            // check for primitive array types because they
+            // unfortunately cannot be cast to Object[]
+            if (o instanceof boolean[]) {
+                booleanArrayAppend(sbuf, (boolean[]) o);
+            } else if (o instanceof byte[]) {
+                byteArrayAppend(sbuf, (byte[]) o);
+            } else if (o instanceof char[]) {
+                charArrayAppend(sbuf, (char[]) o);
+            } else if (o instanceof short[]) {
+                shortArrayAppend(sbuf, (short[]) o);
+            } else if (o instanceof int[]) {
+                intArrayAppend(sbuf, (int[]) o);
+            } else if (o instanceof long[]) {
+                longArrayAppend(sbuf, (long[]) o);
+            } else if (o instanceof float[]) {
+                floatArrayAppend(sbuf, (float[]) o);
+            } else if (o instanceof double[]) {
+                doubleArrayAppend(sbuf, (double[]) o);
+            } else {
+                objectArrayAppend(sbuf, (Object[]) o, seenMap);
+            }
+        }
+    }
+ 
+    // 基于 append 来实现日志参数拼接
+    private static void safeObjectAppend(StringBuilder sbuf, Object o) {
+        try {
+            String oAsString = o.toString();
+            sbuf.append(oAsString);
+        } catch (Throwable t) {
+            Util.report("SLF4J: Failed toString() invocation on an object of type [" + o.getClass().getName() + "]", t);
+            sbuf.append("[FAILED toString()]");
+        }
+ 
+    }
+}
+----
+
+== 增加 `TraceId` + `SpanId`
+
+了解了一下内部的分布式追踪框架，可以获得到分布式追踪的信息，这样就可以从中取出 `TraceId`；另外，研究了一下 logback 的日志处理，可以发现可以通过继承 `MessageConverter` 来完成定制化。大概代码如下：
+
+[source,java,{source_attr}]
+----
+public class TraceMessageConverter extends MessageConverter {
+    @Override
+    public String convert(ILoggingEvent event) {
+        // 获取 span
+        long traceId = span.getTraceId();
+        long spanId = span.getSpanId();
+        String msg = super.convert(event);
+        return "traceId=" + traceId + ", spanId=" + spanId + ", " + msg;
+    }
+}
+----
+
+这样的话，如果能打通分布式追踪系统和日志系统的关联，就可以将分布式追踪和日志关联起来了，方便排查问题。
+
+
+== 参考资料
+
+. https://zhuanlan.zhihu.com/p/27363484[最佳日志实践（v2.0）^]
+. https://www.scalyr.com/blog/the-10-commandments-of-logging/[Logging Best Practices: The 13 You Should Know | Scalyr^]
+. https://www.slideshare.net/geshan/logging-best-practices[Logging best practices^] -- PPT 很赞。需要科学上网。
+. http://www.slf4j.org/legacy.html[slf4j: Log4j Bridge^]
+. http://logging.apache.org/log4j/log4j-2.11.2/faq.html#which_jars[log4j2: Which JAR files do I need?^]
+. https://segmentfault.com/a/1190000020894316[初探Logback：学会看懂Logback配置文件 - SegmentFault 思否^]
+. https://www.jianshu.com/p/546e9aace657[Java日志记录最佳实践 - 简书^]
+. https://mp.weixin.qq.com/s/6IzKu0_yG-4S619qmQE1pQ[日志规范多重要，这篇文章告诉你！^]
+. https://logging.apache.org/log4j/2.x/performance.html[log4j2: Performance^]
+

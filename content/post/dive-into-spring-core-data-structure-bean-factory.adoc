@@ -2,22 +2,14 @@
 title: "深入剖析 Spring 核心数据结构：BeanFactory"
 date: 2020-06-26T15:30:08+08:00
 draft: false
-keywords: ["Java","Spring"]
-tags: ["Java","设计","架构"]
-categories: ["Java","程序设计"]
-thumbnail: "images/spring-framework/spring-logo.jpg"
+keywords: ["Java","Spring","程序设计","源码分析", "数据结构"]
+categories: ["程序设计"]
+tags: ["Java","源码分析","Spring", "数据结构"]
+thumbnail: "images/logo/spring.svg"
 
 weight: 1
-
-# You can also close(false) or open(true) something for this content.
-# P.S. comment can only be closed
-# comment: false
-# toc: true
 ---
 
-:source-highlighter: pygments
-:pygments-style: monokai
-:pygments-linenums-mode: table
 
 在 https://www.diguage.com/post/dive-into-spring-core-data-structure-bean-definition/[深入剖析 Spring 核心数据结构：BeanDefinition^] 中，介绍了 `BeanDefinition`。网上很多文章介绍 `BeanDefinition` 的 API，D瓜哥却要反其道而行之，从内部属性来分析一下。下面我们开始。
 

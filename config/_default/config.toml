@@ -8,9 +8,8 @@ buildFuture = true
 paginate = "10" # Number of posts per page
 theme = "mainroad"
 disqusShortname = "" # Enable comments by entering your Disqus shortname
-googleAnalytics = "UA-32893826-1" # Enable Google Analytics by entering your tracking id
-baiduAnalytics = "ae7f1fd4c53f019313f5a1db9b0d4803" # Enable Google Analytics by entering your tracking id
-pygmentsUseClasses = true
+googleAnalytics = "G-1MMT2NLEL4" # Enable Google Analytics by entering your tracking id
+ignoreFiles = ['\.crdownload']
 
 [Author]
   name = "D瓜哥"
@@ -28,15 +27,16 @@ pygmentsUseClasses = true
   post_navigation = true
   post_meta = ["author","date", "categories"] # Order of post meta information
   dateformat = "2006-01-02"
-  customCSS = ["css/highlighter-pygments-monokai.css","css/asciidoctor.css"] # Include custom CSS files
+  customCSS = ["css/asciidoctor.css", "css/rouge-monokai.css"] # Include custom CSS files
   customJS = [] # Include custom JS files
+  baiduAnalytics = "e56e7dd0a120b414f5741f4c5e5218ea" # Enable Baidu Analytics by entering your tracking id
 
 [Params.sidebar]
   home = "right"   # Configure layout for home page
   list = "right"   # Configure layout for list pages
   single = "right" # Configure layout for single pages
   # Enable widgets in given order
-  widgets = ["search", "recent", "categories", "taglist", "social", "toc"]
+  widgets = ["search", "wechat", "recent", "categories", "taglist", "social", "toc"]
 
 [Params.widgets]
   recent_num = 20 # Set the number of articles in the "Recent articles" widget
@@ -65,3 +65,26 @@ pygmentsUseClasses = true
   weight = 40
   identifier = "categories"
   url = "/categories/"
+
+[security]
+  [security.exec]
+    allow = ['^dart-sass-embedded$', '^go$', '^npx$', '^postcss$', '^asciidoctor']
+
+# https://gohugo.io/content-management/formats/
+[markup]
+  [markup.asciidocExt]
+    backend = 'html5'
+    extensions = ["asciidoctor-comment-links"]
+    safeMode = 'unsafe'
+    sectionNumbers = false
+    trace = false
+    verbose = false
+    lang = "zh_CN"
+    [markup.asciidocExt.attributes]
+      icons = "font"
+      source-highlighter = "rouge"
+      rouge-style = "monokai"
+      # https://docs.asciidoctor.org/asciidoc/latest/subs/apply-subs-to-blocks/
+      source_attr = "indent=0"
+      image_attr = "align=center,width=95%"
+      "figure-caption" = "图"

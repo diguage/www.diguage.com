@@ -4,7 +4,7 @@ date: 2020-04-18T12:39:22+08:00
 draft: false
 tags: ["个人提升","工作方法","读书"]
 categories: ["个人成长","方法论"]
-thumbnail: "images/books-on-book-day/the-pragmatic-programmer.jpg"
+thumbnail: "images/books/the-pragmatic-programmer.jpg"
 
 weight: 1
 // toc: true
@@ -15,6 +15,7 @@ weight: 1
 # toc: true
 
 ---
+
 
 计算机行业是一个发展非常迅速的行业，技术可谓是日新月异。同样，书籍也是更迭不断。书龄在二十年以上的书，少之又少。如果还能一直保持畅销，那绝对是凤毛麟角。而 https://book.douban.com/subject/35006892/[《程序员修炼之道》^] 绝对算是这些神品中不可或缺的一本。
 
