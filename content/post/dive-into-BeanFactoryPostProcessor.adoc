@@ -1,0 +1,139 @@
+---
+title: "深入研究 BeanFactoryPostProcessor"
+date: 2024-05-26T16:18:55+08:00
+draft: false
+keywords: ["Java","Spring","扩展"]
+tags: ["Java","设计","架构","Spring"]
+categories: ["程序设计"]
+thumbnail: "images/logo/spring.svg"
+# aliases: "/old/path/"
+
+weight: 1
+---
+
+D瓜哥在 https://www.diguage.com/post/spring-extensions-overview/[Spring 扩展点概览及实践^] 中概要性地介绍了一下 Spring 的核心扩展点。里面也提到了 `BeanFactoryPostProcessor` 和 `BeanDefinitionRegistryPostProcessor`，但仅仅提了一句，没有深入研究。在 https://www.diguage.com/post/spring-extensions-and-mybatis/[Spring 扩展点实践：整合 MyBATIS^] 中，由于 `MapperScannerConfigurer` 实现了 `BeanDefinitionRegistryPostProcessor` 接口，也只是简单介绍了一些作用，又一次没有深入研究。
+
+最近，在开发一个插件时，遇到了一个问题：**利用 `BeanFactoryPostProcessor` 对一些特定 `BeanDefinition` 设置属性，但生成的 Bean 却没有相关的属性值。**由此，对 `BeanFactoryPostProcessor` 做了一些研究。记录一下，以备不时之需。
+
+
+== Spring 启动流程简介
+
+在 https://www.diguage.com/post/spring-startup-process-overview/[Spring 启动流程概述^] 中，D瓜哥对 Spring 的启动流程做了比较详细的介绍。同时画了一张启动流程图，如下：
+
+image::/images/spring-framework/AbstractApplicationContext-refresh.svg[title="AbstractApplicationContext.refresh -- 重塑容器",alt="AbstractApplicationContext.refresh -- 重塑容器",{image_attr}]
+
+从该图中可以明显看到，如果需要对 Spring 的 `BeanDefinition` 做些修改，那么，就需要通过实现 `BeanFactoryPostProcessor` 接口，来对 Spring 做些扩展。坦白讲，为了上述流程图只展示了一个非常概要性的流程。如果深入一下 `invokeBeanFactoryPostProcessors` 方法的细节，会发现这又是一番天地。
+
+== `BeanFactoryPostProcessor` 调用详解
+
+D瓜哥把 `invokeBeanFactoryPostProcessors` 方法的流程图也画了出来，细节如下：
+
+image::/images/spring-framework/AbstractApplicationContext-invokeBeanFactoryPostProcessors.svg[title="BeanDefinitionRegistryPostProcessor & BeanFactoryPostProcessor 调用过程",alt="BeanDefinitionRegistryPostProcessor & BeanFactoryPostProcessor 调用过程",{image_attr}]
+
+从这张流程图上可以看出 `BeanFactoryPostProcessor` 的调用过程，比在 https://www.diguage.com/post/spring-startup-process-overview/[Spring 启动流程概述^] 中介绍的要复杂很多：
+
+. 首先，执行 `BeanDefinitionRegistryPostProcessor#postProcessBeanDefinitionRegistry` 方法，顺序如下：
++
+关于 `BeanDefinitionRegistryPostProcessor` 的处理流程，D瓜哥在 https://www.diguage.com/post/spring-extensions-overview/#bean-factory-post-processor[Spring 扩展点概览及实践：BeanDefinitionRegistryPostProcessor^] 中有更详细的描述，不了解的朋友请参考那篇文章的介绍。
++
+.. 用户手动添加的 `BeanDefinitionRegistryPostProcessor` 实现类；
+.. 实现 `PriorityOrdered` 接口的 `BeanDefinitionRegistryPostProcessor` 实现类；
+.. 实现 `Ordered` 接口的 `BeanDefinitionRegistryPostProcessor` 实现类；
+.. 剩余所有的 `BeanDefinitionRegistryPostProcessor` 实现类；而且是双重循环执行，只要发现有新加入的 `BeanDefinitionRegistryPostProcessor` 实例，就再循环调用一遍这些新实例。
+. 然后，执行 `BeanFactoryPostProcessor#postProcessBeanFactory` 方法。顺序如下：
+.. 实现 `BeanDefinitionRegistryPostProcessor` 接口的类；由于 `BeanDefinitionRegistryPostProcessor` 接口继承了 `BeanFactoryPostProcessor` 接口，所以，一个 `BeanDefinitionRegistryPostProcessor` 实例，也是一个 `BeanFactoryPostProcessor` 实例。
+.. 用户手动添加的 `BeanFactoryPostProcessor` 实现类；
+.. 实现 `PriorityOrdered` 接口的 `BeanFactoryPostProcessor` 实现类；
+.. 实现 `Ordered` 接口的 `BeanFactoryPostProcessor` 实现类；
+.. 剩余所有的 `BeanFactoryPostProcessor` 实现类；（注：这步不排序，其余都需要对其实例进行排序。）
+
+[#app-exec]
+== 程序执行过程
+
+下面看一个普通项目执行过程中的实际运行情况。请注意看 `RecorderBeanFactoryPostProcessor` 和 `PropertySourcesFactoryPostProcessor` 的位置。这也是文章开头提到的不生效问题的关键原因所在。
+
+=== 1.b 实现 `PriorityOrdered` 接口的 `BeanDefinitionRegistryPostProcessor` 实现类
+
+image::/images/spring-framework/BeanFactoryPostProcessor-1.jpg[title="实现 PriorityOrdered 接口的 BeanDefinitionRegistryPostProcessor 实现类",alt="实现 PriorityOrdered 接口的 BeanDefinitionRegistryPostProcessor 实现类",{image_attr}]
+
+该截图对应上面的 1.b 节的内容：执行的是实现 `PriorityOrdered` 接口的 `BeanDefinitionRegistryPostProcessor` 实现类的 `postProcessBeanDefinitionRegistry` 方法。
+
+=== 1.c 实现 `Ordered` 接口的 `BeanDefinitionRegistryPostProcessor` 实现类
+
+image::/images/spring-framework/BeanFactoryPostProcessor-2.jpg[title="实现 Ordered 接口的 BeanDefinitionRegistryPostProcessor 实现类",alt="实现 Ordered 接口的 BeanDefinitionRegistryPostProcessor 实现类",{image_attr}]
+
+该截图对应上面的 1.c 节的内容：执行的是实现 `Ordered` 接口的 `BeanDefinitionRegistryPostProcessor` 实现类的 `postProcessBeanDefinitionRegistry` 方法。
+
+=== 1.d 剩余所有的 `BeanDefinitionRegistryPostProcessor` 实现类
+
+image::/images/spring-framework/BeanFactoryPostProcessor-3.jpg[title="剩余所有的 BeanDefinitionRegistryPostProcessor 实现类",alt="剩余所有的 BeanDefinitionRegistryPostProcessor 实现类",{image_attr}]
+
+该截图对应上面的 1.d 节的内容：执行的剩余的 `BeanDefinitionRegistryPostProcessor` 实现类的 `postProcessBeanDefinitionRegistry` 方法。由于这个过程中，还在不断的向容器注册 `BeanDefinition`，如果有新加入的 `BeanDefinitionRegistryPostProcessor` 实现类，就需要再循环一遍去执行一次。所以，这里是双重循环。
+
+=== 2.a 所有实现 `BeanDefinitionRegistryPostProcessor` 接口的类
+
+image::/images/spring-framework/BeanFactoryPostProcessor-4.jpg[title="所有实现 BeanDefinitionRegistryPostProcessor 接口的类",alt="所有实现 BeanDefinitionRegistryPostProcessor 接口的类",{image_attr}]
+
+该截图对应上面的 2.a 节的内容：执行所有实现 `BeanDefinitionRegistryPostProcessor` 接口的类的 `postProcessBeanFactory` 方法。
+
+=== 2.c 实现 `PriorityOrdered` 接口的 `BeanFactoryPostProcessor` 实现类
+
+image::/images/spring-framework/BeanFactoryPostProcessor-5.jpg[title="实现 PriorityOrdered 接口的 BeanFactoryPostProcessor 实现类",alt="实现 PriorityOrdered 接口的 BeanFactoryPostProcessor 实现类",{image_attr}]
+
+=== 2.d 实现 `Ordered` 接口的 `BeanFactoryPostProcessor` 实现类
+
+image::/images/spring-framework/BeanFactoryPostProcessor-6.jpg[title="实现 Ordered 接口的 BeanFactoryPostProcessor 实现类",alt="实现 Ordered 接口的 BeanFactoryPostProcessor 实现类",{image_attr}]
+
+=== 2.e 剩余所有的 `BeanFactoryPostProcessor` 实现类
+
+image::/images/spring-framework/BeanFactoryPostProcessor-7.jpg[title="剩余所有的 BeanFactoryPostProcessor 实现类",alt="剩余所有的 BeanFactoryPostProcessor 实现类",{image_attr}]
+
+== 关键 `BeanFactoryPostProcessor` 实现类的继承关系
+
+从上面 <<app-exec>> 中可以看到：由于 `PropertySourcesFactoryPostProcessor` 实现了 `PriorityOrdered` 接口，而 `RecorderBeanFactoryPostProcessor` 没有，那么，Spring 执行过程中就会先执行 `PropertySourcesFactoryPostProcessor`，然后再执行 `RecorderBeanFactoryPostProcessor`，而 `PropertySourcesFactoryPostProcessor` 的执行会导致一些 Bean 被初始化，那么再执行 `RecorderBeanFactoryPostProcessor` 时，所以修改了这些 Bean 对应的 `BeanDefinition` 中关于 Bean 的定义，但由于实例已经被创建出来了，所以这些新增的属性就无法生效了。解决问题的方法也很简单：让 `RecorderBeanFactoryPostProcessor` 也实现 `PriorityOrdered` 接口并给予更高的优先级。来个类图，一目了然：
+
+image::/images/spring-framework/spring-BeanFactoryPostProcessor.svg[title="BeanFactoryPostProcessor 继承关系",alt="BeanFactoryPostProcessor 继承关系",{image_attr}]
+
+== 优化后的执行结果
+
+image::/images/spring-framework/BeanFactoryPostProcessor-8.jpg[title="优化后的执行结果",alt="优化后的执行结果",{image_attr}]
+
+从该图上可以清楚看到：优化后的 `RecorderBeanFactoryPostProcessor` 比 `PropertySourcesFactoryPostProcessor` 可以更早的执行，这样就可以防止部分 Bean 被提前创建出来。
+
+== 分享两个小技巧
+
+通过上面的分析，想必大家多问题的原因和解决办法了然于胸。最后，再给大家分享两个小技巧。
+
+=== 配置参数
+
+在D瓜哥的场景中，让 `RecorderBeanFactoryPostProcessor` 也实现 `PriorityOrdered` 接口并给予更高的优先级，那么，原来在 `RecorderBeanFactoryPostProcessor` 中使用的 `@Value("#{com.diguage.token}")` 注解不能正确解析了，直接把整个字符串没有经过占位符解析就完整传递进来了。经过多次尝试发现，可以让 `RecorderBeanFactoryPostProcessor` 实现 `EnvironmentAware` 接口，这样就可以获得 `Environment` 对象，然后从该对象中获取配置参数。
+
+对于配置参数的设置，可以通过 `-Dcom.diguage.token=www.diguage.com` 的方式，传递给 `java` 命令，这样在程序中就可以获取该值。
+
+关于 Spring 中占位符的解析和处理，请看： https://www.diguage.com/post/placeholder-in-spring-1/[Spring 对占位符的处理（一）：XML 中的 Bean^] 等文章。
+
+=== 打印 Bean 创建日志
+
+Spring 中 Bean 的创建入口在 `AbstractAutowireCapableBeanFactory` 中。可以将该类的日志级别设置为 `TRACE` 就可以看到创建日志了。
+
+.Logback 配置
+[source%nowrap,xml,{source_attr}]
+----
+<configuration>
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>
+        %d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} -%kvp- %msg%n
+     </pattern>
+    </encoder>
+  </appender>
+
+  <!-- 创建 Bean 的日志在该类中打印 -->
+  <logger name="org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory"
+          level="TRACE"/>
+
+  <root level="INFO">
+    <appender-ref ref="STDOUT" />
+  </root>
+</configuration>
+----

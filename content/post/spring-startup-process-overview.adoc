@@ -50,9 +50,12 @@ image::/images/spring-framework/AbstractApplicationContext-refresh.svg[title="Ab
 . 调用 `prepareBeanFactory`，准备 `BeanFactory`，添加必要的 Bean；添加 `ApplicationContextAwareProcessor`、`ApplicationListenerDetector` 处理器；注册环境相关的 Bean。
 . 下面通过 `AbstractApplicationContext#invokeBeanFactoryPostProcessors` 方法，开始执行 `BeanDefinitionRegistryPostProcessor` 和 `BeanFactoryPostProcessor` 相关的方法。这个方法流程起始也很简单：
 +
-目前，除了用户自定义的 `BeanDefinitionRegistryPostProcessor` 和 `BeanFactoryPostProcessor` 外，Spring 内置的，只有 `ConfigurationClassPostProcessor` 一个类。所以，把这个类的实现摸清楚了，`AbstractApplicationContext#invokeBeanFactoryPostProcessors` 就可以跳过了。
+目前，除了用户自定义的 `BeanDefinitionRegistryPostProcessor` 和 `BeanFactoryPostProcessor` 外，Spring 内置的，只有 `ConfigurationClassPostProcessor` 一个类。所以，把这个类的实现摸清楚了，`AbstractApplicationContext#invokeBeanFactoryPostProcessors` 就可以跳过了。关于 `BeanFactoryPostProcessor` 调用过程，请看： https://www.diguage.com/post/dive-into-beanfactorypostprocessor/[深入研究 BeanFactoryPostProcessor^]。
 +
 .. 首先，执行 `BeanDefinitionRegistryPostProcessor#postProcessBeanDefinitionRegistry` 方法，顺序如下：
++
+关于 `BeanDefinitionRegistryPostProcessor` 的处理流程，D瓜哥在 https://www.diguage.com/post/spring-extensions-overview/#bean-factory-post-processor[Spring 扩展点概览及实践：BeanDefinitionRegistryPostProcessor^] 中有更详细的描述，不了解的朋友请参考那篇文章的介绍。
++
 ... 用户手动添加的 `BeanDefinitionRegistryPostProcessor`；
 ... 实现 `PriorityOrdered` 接口的 `BeanDefinitionRegistryPostProcessor`；
 ... 实现 `Ordered` 接口的 `BeanDefinitionRegistryPostProcessor`；

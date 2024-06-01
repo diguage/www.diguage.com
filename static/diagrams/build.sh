@@ -1,44 +1,43 @@
 #!/usr/bin/env bash
+#
+# 生成图片
+#
 
 # get base dir
-baseDir=$(cd $(dirname $BASH_SOURCE) && pwd)
+baseDir=$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 echo "baseDir=${baseDir}"
 
-params="-tsvg -SdefaultFontSize=18 -StitleFontSize=36 -SfooterFontSize=20 -StitleFontName='Source Han Sans SC' -SnoteFontName='Source Han Serif SC' -SfooterFontName='Source Han Serif SC' "
-echo ${params}
+## 声明一个数字变量，可以带引号
+declare -a files=($(ls -l *.puml | awk '{print $9}'))
 
-echo "start to convert ${baseDir}/Hessian2Output-writeObject.diag"
-seqdiag -Tsvg ${baseDir}/Hessian2Output-writeObject.diag
-cp -f ${baseDir}/Hessian2Output-writeObject.svg ${baseDir}/../images/marshal/
+# 获取数组长度
+arraylength=${#files[@]}
+echo "arraylength=$arraylength"
 
-echo "start to convert ${baseDir}/Hessian2Input-readObject.diag"
-seqdiag -Tsvg ${baseDir}/Hessian2Input-readObject.diag
-cp -f ${baseDir}/Hessian2Input-readObject.svg ${baseDir}/../images/marshal/
+# 遍历数组，获取下标以及各个元素
+for (( i=1; i<${arraylength}+1; i++  ));
+do
+    echo $i  ": " ${files[$i-1]}
+done
 
-echo "start to convert ${baseDir}/hessian-AbstractSerializerFactory.puml"
-plantuml ${params} ${baseDir}/hessian-AbstractSerializerFactory.puml
-cp -f ${baseDir}/hessian-AbstractSerializerFactory.svg ${baseDir}/../images/marshal/
+read -p "请跟上面的数字选择需要构建的简历 [1] : " index
+index=${index:-1} # 默认值
 
-echo "start to convert ${baseDir}/hessian-AbstractHessianOutput.puml"
-plantuml ${params} ${baseDir}/hessian-AbstractHessianOutput.puml
-cp -f ${baseDir}/hessian-AbstractHessianOutput.svg ${baseDir}/../images/marshal/
+if [[ "$index" -gt "$arraylength"  || "$index" -lt "1" ]]; then
+  echo "输入错误，请重新开始！"
+  exit 0
+fi
 
-echo "start to convert ${baseDir}/hessian-AbstractHessianInput.puml"
-plantuml ${params} ${baseDir}/hessian-AbstractHessianInput.puml
-cp -f ${baseDir}/hessian-AbstractHessianInput.svg ${baseDir}/../images/marshal/
+origin_file_name=${files[$index-1]}
 
-echo "start to convert ${baseDir}/hessian-Serializer.puml"
-plantuml ${params} ${baseDir}/hessian-Serializer.puml
-cp -f ${baseDir}/hessian-Serializer.svg ${baseDir}/../images/marshal/
-
-echo "start to convert ${baseDir}/hessian-Deserializer.puml"
-plantuml ${params} ${baseDir}/hessian-Deserializer.puml
-cp -f ${baseDir}/hessian-Deserializer.svg ${baseDir}/../images/marshal/
-
-echo "start to convert ${baseDir}/hessian-architecture.puml"
-plantuml ${params} ${baseDir}/hessian-architecture.puml
-cp -f ${baseDir}/hessian-architecture.svg ${baseDir}/../images/marshal/
-
-echo "start to convert ${baseDir}/hessian-bytecode.puml"
-plantuml ${params} ${baseDir}/hessian-bytecode.puml
-cp -f ${baseDir}/hessian-bytecode.svg ${baseDir}/../images/marshal/
+echo "start to convert ${baseDir}/${origin_file_name}"
+plantuml -tsvg \
+         -SdefaultFontSize=18 \
+         -StitleFontSize=36 \
+         -SfooterFontSize=20 \
+         -StitleFontName='Source Han Sans SC' \
+         -SnoteFontName='Source Han Serif SC' \
+         -SfooterFontName='Source Han Serif SC' \
+         -SdefaultMonospacedFontName='JetBrains Mono' \
+         -v \
+         "${baseDir}/${origin_file_name}"
