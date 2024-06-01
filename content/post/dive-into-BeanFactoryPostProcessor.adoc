@@ -1,6 +1,6 @@
 ---
 title: "深入研究 BeanFactoryPostProcessor"
-date: 2024-05-26T16:18:55+08:00
+date: 2024-06-01T16:18:55+08:00
 draft: false
 keywords: ["Java","Spring","扩展"]
 tags: ["Java","设计","架构","Spring"]
