@@ -34,7 +34,9 @@ echo "start to convert ${baseDir}/${origin_file_name}"
 plantuml -tsvg \
          -SdefaultFontSize=18 \
          -StitleFontSize=36 \
-         -SfooterFontSize=20 \
+         -SheaderFontSize=20 \
+         -SfooterFontSize=28 \
+         -SfooterFontColor='#e22d30' \
          -StitleFontName='Source Han Sans SC' \
          -SnoteFontName='Source Han Serif SC' \
          -SfooterFontName='Source Han Serif SC' \

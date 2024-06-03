@@ -1,8 +1,7 @@
 @startuml
-
-title **""BeanDefinitionRegistryPostProcessor & BeanFactoryPostProcessor"" 调用过程**
 header D瓜哥 · ""https://www.diguage.com""
 
+title **""BeanDefinitionRegistryPostProcessor & BeanFactoryPostProcessor"" 调用过程**
 
 actor Actor
 participant AbstractApplicationContext << (A,#AADCDF) >>

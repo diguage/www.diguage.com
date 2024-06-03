@@ -1,4 +1,6 @@
 @startuml
+header D瓜哥 · ""https://www.diguage.com""
+
 title **压测接口依赖关系**
 
 actor 用户 #FF6666
@@ -34,5 +36,5 @@ database "MySQL数据库" #006A84
 "压测接口" ---> "接口-D" : 同步调用
 "压测接口" ---> "MySQL数据库" : 同步查询
 
-footer D瓜哥 · https://www.diguage.com · 出品
+footer D瓜哥 · ""https://www.diguage.com"" · 出品
 @enduml

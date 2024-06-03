@@ -1,10 +1,12 @@
 @startuml
+header D瓜哥 · ""https://www.diguage.com""
+
 title **Hessian 字节码映射**
 
 label l [
 {{json
 {
-  "<color:D4312C>0x00": "<color:D4312C>string：+0个字符    　D瓜哥 · https://www.diguage.com · 出品",
+  "<color:D4312C>0x00": "<color:D4312C>string：+0个字符",
   "<color:D4312C>0x01": "<color:D4312C>string：+1个字符",
   "<color:D4312C>0x02": "<color:D4312C>string：+2个字符",
   "<color:D4312C>0x03": "<color:D4312C>string：+3个字符",
@@ -95,7 +97,7 @@ label l [
   "<color:CA2B79>0x58": "<color:CA2B79>集合：[8, ]个元素（ArrayList）",
   "<color:F87E25>0x59": "<color:F87E25>long： [-2³¹, -262145] 和 [262144, 2³¹-1]，+4个字节",
   "0x5A": "结束标志符",
-  "<color:0B9EF5>0x5B": "<color:0B9EF5>double：0.0",
+  "<color:0B9EF5>0x5B": "<color:0B9EF5>double：0.0　　　　　D瓜哥 · \"\"https://www.diguage.com\"\" · 出品",
   "<color:0B9EF5>0x5C": "<color:0B9EF5>double：1.0",
   "<color:0B9EF5>0x5D": "<color:0B9EF5>double：[-128.0, 127.0] 浮点数，+1个字节",
   "<color:0B9EF5>0x5E": "<color:0B9EF5>double：[-32768.0, 32767.0] 浮点数，+1个字节",
@@ -150,7 +152,7 @@ label l [
   "<color:21D5C3>0x8D": "<color:21D5C3>int: -3",
   "<color:21D5C3>0x8E": "<color:21D5C3>int: -2",
   "<color:21D5C3>0x8F": "<color:21D5C3>int: -1",
-  "<color:21D5C3>0x90": "<color:21D5C3>int: 0   　　　　D瓜哥 · https://www.diguage.com · 出品",
+  "<color:21D5C3>0x90": "<color:21D5C3>int: 0",
   "<color:21D5C3>0x91": "<color:21D5C3>int: 1",
   "<color:21D5C3>0x92": "<color:21D5C3>int: 2",
   "<color:21D5C3>0x93": "<color:21D5C3>int: 3",
@@ -176,7 +178,7 @@ label l [
   "<color:21D5C3>0xA7": "<color:21D5C3>int: 23",
   "<color:21D5C3>0xA8": "<color:21D5C3>int: 24",
   "<color:21D5C3>0xA9": "<color:21D5C3>int: 25",
-  "<color:21D5C3>0xAA": "<color:21D5C3>int: 26",
+  "<color:21D5C3>0xAA": "<color:21D5C3>int: 26　　　　　　　　D瓜哥 · \"\"https://www.diguage.com\"\" · 出品",
   "<color:21D5C3>0xAB": "<color:21D5C3>int: 27",
   "<color:21D5C3>0xAC": "<color:21D5C3>int: 28",
   "<color:21D5C3>0xAD": "<color:21D5C3>int: 29",
@@ -230,7 +232,7 @@ label l [
   "<color:F87E25>0xDD": "<color:F87E25>long: -3",
   "<color:F87E25>0xDE": "<color:F87E25>long: -2",
   "<color:F87E25>0xDF": "<color:F87E25>long: -1",
-  "<color:F87E25>0xE0": "<color:F87E25>long: 0   　　　D瓜哥 · https://www.diguage.com · 出品",
+  "<color:F87E25>0xE0": "<color:F87E25>long: 0",
   "<color:F87E25>0xE1": "<color:F87E25>long: 1",
   "<color:F87E25>0xE2": "<color:F87E25>long: 2",
   "<color:F87E25>0xE3": "<color:F87E25>long: 3",
@@ -266,5 +268,5 @@ label l [
 }}
 ]
 
-footer D瓜哥 · https://www.diguage.com · 出品
+footer D瓜哥 · ""https://www.diguage.com"" · 出品
 @enduml

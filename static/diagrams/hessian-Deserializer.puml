@@ -1,4 +1,6 @@
 @startuml
+header D瓜哥 · ""https://www.diguage.com""
+
 title **Hessian Serializer 类图**
 
 interface Deserializer {
@@ -52,5 +54,5 @@ class StackTraceElementDeserializer extends JavaDeserializer
 class MapDeserializer extends AbstractMapDeserializer
 class UnsafeDeserializer extends AbstractMapDeserializer
 
-footer D瓜哥 · https://www.diguage.com · 出品
+footer D瓜哥 · ""https://www.diguage.com"" · 出品
 @enduml

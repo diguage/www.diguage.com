@@ -112,6 +112,7 @@ jobs:
           
           cd public/images
           wget https://github.com/diguage/open-fonts/releases/download/latest/SourceCodePro-Semibold.otf 1>/dev/null 2>&1 &
+          BASEDIR=$( pwd )/
           
           # 异步加水印
           # JPG
