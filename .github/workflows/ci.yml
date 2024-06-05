@@ -97,38 +97,81 @@ jobs:
             rm -rf $f;
             mv $fn $f
           done
+          
+#      - name: setup-docker 🐳
+#        uses: docker-practice/actions-setup-docker@v1
 
       - name: Add Watermark to Images 🎖
         run: |
-          # sudo add-apt-repository -y ppa:strukturag/libheif
-          # sudo add-apt-repository -y ppa:strukturag/libde265
-          # sudo apt update -y
-          # sudo apt install -y libheif-dev
-          # sudo apt install -y libde265-dev
-          
-          # sudo apt update -y # 不再重复执行
-          sudo apt install imagemagick
-          # t=$(mktemp) && wget 'https://dist.1-2.dev/imei.sh' -qO "$t" && sudo bash "$t" && rm "$t"
-          
           cd public/images
           wget https://github.com/diguage/open-fonts/releases/download/latest/SourceCodePro-Semibold.otf 1>/dev/null 2>&1 &
+          docker pull dpokidov/imagemagick:latest-ubuntu
           BASEDIR=$( pwd )/
+          images=()
+          # https://stackoverflow.com/a/9612560
+          find ${BASEDIR} -name "*.jp*g" -print0 | while read -d $'\0' file
+          do
+              # echo "file=$file, parent=${parent}, fileBaseName=${fileBaseName}, fileName=${fileName}, extension=${extension}"
+              for item in 'goodbye-2019-hello-2020' 'wx-jikerizhi-qrcode.jpg' 'wxpay.jpg' 'avatar.jpg' '-mark.jpg' '-mark.jpeg' ;
+              do
+                  # https://stackoverflow.com/a/229606
+                  if [[ "${file}" == *"${item}"* ]]; then
+                      echo "continued: $file"
+                      # https://linuxize.com/post/bash-break-continue/
+                      # https://blog.csdn.net/focus_lyh/article/details/112319193
+                      continue 2
+                  fi
+              done
           
-          # 异步加水印
-          # JPG
-          find . -type f -name "*.jpg" | grep -v "goodbye-2019-hello-2020\|wx-jikerizhi-qrcode.jpg\|wx-jikerizhi.jpg\|wxpay.jpg\|avatar.jpg" | sed "s/.jpg$//g" | xargs -I {} convert -compress JPEG2000 -strip -thumbnail 960 -quality 75 -font ./SourceCodePro-Semibold.otf -pointsize 30 -gravity southeast -fill "#DE282A" -draw 'text 15,18 "https://www.diguage.com"' {}.jpg {}-mark.jpg 1>/dev/null 2>&1 &
-          # JPEG
-          find . -type f -name "*.jpeg" | sed "s/.jpeg$//g" | xargs -I {} convert -compress JPEG2000 -strip -thumbnail 960 -quality 75 -font ./SourceCodePro-Semibold.otf -pointsize 30 -gravity southeast -fill "#DE282A" -draw 'text 15,18 "https://www.diguage.com"' {}.jpeg {}-mark.jpeg 1>/dev/null 2>&1 &
-          echo "$(date +%T) wait for adding watermark"
+              # https://stackoverflow.com/a/1951523
+              images+=("$file")
+          
+              # https://stackoverflow.com/a/965072
+              fileBaseName=$(basename -- "$file")
+              extension="${fileBaseName##*.}"
+              fileName="${fileBaseName%.*}"
+              # https://unix.stackexchange.com/a/39545
+              parent=$(dirname "${file}")
+              # echo "file=$file, parent=${parent}, fileBaseName=${fileBaseName}, fileName=${fileName}, extension=${extension}"
+          
+              markFileBaseName="${fileName}-mark.${extension}"
+              
+              echo "start to convert ${fileBaseName} -> ${markFileBaseName}"
+              
+              # By default, container will run convert command
+              docker run --rm -v ${parent}:/imgs -v ${BASEDIR}:/fonts dpokidov/imagemagick:latest-ubuntu -compress JPEG2000 -strip -thumbnail 960 -quality 75 -font /fonts/SourceCodePro-Semibold.otf -pointsize 30 -gravity southeast -fill "#DE282A" -draw 'text 15,18 "https://www.diguage.com"' "/imgs/${fileBaseName}" "/imgs/${markFileBaseName}" &>/dev/null &
+          done
           
           # 等待水印加完后再执行后续操作
           wait
-          echo "$(date +%T) finish adding watermark"
-          find . -type f -name "*.jpg" | grep -v "goodbye-2019-hello-2020\|wx-jikerizhi-qrcode.jpg\|wx-jikerizhi.jpg\|wxpay.jpg\|avatar.jpg" | grep -v "\-mark.jpg" | xargs -I {} rm -f {} \;
-          find . -type f -name "*-mark.jpg" | sed "s/-mark.jpg//g" | xargs -I {} mv {}-mark.jpg {}.jpg
-          find . -type f -name "*.jpeg" | grep -v "\-mark.jpeg" | xargs -I {} rm -f {} \;
-          find . -type f -name "*-mark.jpeg" | sed "s/-mark.jpeg//g" | xargs -I {} mv {}-mark.jpeg {}.jpeg
           
+          # https://stackoverflow.com/a/9612560
+          for file in "${images[@]}"
+          do
+              # https://stackoverflow.com/a/965072
+              fileBaseName=$(basename -- "$file")
+              extension="${fileBaseName##*.}"
+              fileName="${fileBaseName%.*}"
+              # https://unix.stackexchange.com/a/39545
+              parent=$(dirname "${file}")
+              # echo "file=$file, parent=${parent}, fileBaseName=${fileBaseName}, fileName=${fileName}, extension=${extension}"
+          
+              markFileBaseName="${fileName}-mark.${extension}"
+              
+              if [ -f "${parent}/${markFileBaseName}" ]; then
+                  rm -rf "${file}"
+          
+                  mv "${parent}/${markFileBaseName}" "${file}"
+          
+                  echo "marked ${file}"
+                  
+                  # 删除多余的图片
+                  if [ -f "${parent}/${fileName}.png" ]; then
+                      rm -rf "${parent}/${fileName}.png"
+                  fi
+              fi
+          done
+
           # TODO PNG 加完水印，文件增大很多
           # find . -type f -name "*.png" | sed "s/.png$//g" | xargs -I {} convert -depth 24 -define png:compression-filter=1 -define png:compression-level=9 -define png:compression-strategy=2 -font ./SourceCodePro-Semibold.otf -pointsize 30 -gravity southeast -fill "#DE282A" -draw 'text 15,18 "https://www.diguage.com"' {}.png {}-mark.png
           # find . -type f -name "*.png" | grep -v "\-mark.png" | xargs -I {} rm -f {} \;
