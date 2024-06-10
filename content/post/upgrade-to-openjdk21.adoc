@@ -550,7 +550,7 @@ D瓜哥分享一个小技巧：可以使用 Maven 的 `profile` 机制，让其�
 ----
 <1> 开发机使用 JDK 8，所以，使用 Spring 5 + Servlet；正式环境使用 OpenJDK 21，所以，使用 Spring 6 + Jakarta Servlet。
 
-使用上面的配置，只要程序没有直接使用 Servlet API，就可以在 JDK 8 和 OpenJDK 21 之间自由切换。正在做到平稳升级。
+使用上面的配置，只要程序没有直接使用 Servlet API，就可以在 JDK 8 和 OpenJDK 21 之间自由切换。真正做到平稳升级。
 
 == 科技与狠活
 
