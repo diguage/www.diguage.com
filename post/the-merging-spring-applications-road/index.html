@@ -1,0 +1,314 @@
+<!doctype html><html class=no-js lang=zh-cn><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><meta http-equiv=X-UA-Compatible content="IE=edge"><title>Spring 应用合并之路 - "地瓜哥"博客网</title>
+<script>(function(e,t){e[t]=e[t].replace("no-js","js")})(document.documentElement,"className")</script><meta name=keywords content="Java,Spring,Java,设计,架构,微服务,分布式,Spring,程序设计"><meta name=description content><meta property="og:url" content="https://www.diguage.com/post/the-merging-spring-applications-road/"><meta property="og:site_name" content='"地瓜哥"博客网'><meta property="og:title" content="Spring 应用合并之路"><meta property="og:description" content="公司最近一年在推进降本增效，在用尽各种手段之后，发现应用太多，每个应用都做跨机房容灾部署，则最少需要 4 台机器（称为容器更合适）。那么，将相近应用做一个合并，减少维护项目，提高机器利用率就是一个可选方案。
+经过前后三次不同的折腾，最后探索出来一个可行方案。记录一下，分享出来，希望对有相关需求的研发童鞋有所帮助。下面按照四种可能的方案，分别做介绍。另外，为了方便做演示，专门整了两个演示项目：
+diguage/merge-demo-boot — 合并项目，下面简称为 boot。
+diguage/merge-demo-web — 被合并项目，下面简称为 web。
+Jar 包引用 这个方式，可能是给人印象最容易的方式。仔细思考一下，从维护性的角度来看，这个方式反而是最麻烦的方式，理由如下：
+web 项目每次更新，都需要重新打包发布新版； boot 项目也需要跟着更新发布。拉一次屎，脱两次裤子。属实麻烦。
+还需要考虑 web 项目的加载问题，类似下面要描述的，是否共用容器：
+共用容器 — 这是最容器想到的方式。但是这种方式，需要解决 Bean 冲突的问题。
+不共用容器 — 这种方式需要处理 web 容器如何加载的问题。默认应该是无法识别。
+基于这些考虑，这种方式直接被抛弃了。
+仓库合并，公用一套容器 这是第一次尝试使用的方案。也是遇到问题最多的方案。
+将两个仓库做合并。
+将 web 仓库的地址配置到 boot 项目里： git remote add web git@github.com:diguage/merge-demo-web.git；
+在 boot 项目里，切出来一个分支： git switch -c web；
+将 web 分支的提交清空： git update-ref -d HEAD，然后做一次提交；
+将 web 项目的代码克隆到 web 分支上： git pull --rebase --allow-unrelated-histories web master；注意，这里需要加 --allow-unrelated-histories 参数，以允许不相干的仓库进行合并。"><meta property="og:locale" content="zh_cn"><meta property="og:type" content="article"><meta property="article:section" content="post"><meta property="article:published_time" content="2023-12-23T20:38:47+08:00"><meta property="article:modified_time" content="2023-12-24T22:21:03+08:00"><meta property="article:tag" content="Java"><meta property="article:tag" content="设计"><meta property="article:tag" content="架构"><meta property="article:tag" content="微服务"><meta property="article:tag" content="分布式"><meta property="article:tag" content="Spring"><meta name=twitter:card content="summary"><meta name=twitter:title content="Spring 应用合并之路"><meta name=twitter:description content="公司最近一年在推进降本增效，在用尽各种手段之后，发现应用太多，每个应用都做跨机房容灾部署，则最少需要 4 台机器（称为容器更合适）。那么，将相近应用做一个合并，减少维护项目，提高机器利用率就是一个可选方案。
+经过前后三次不同的折腾，最后探索出来一个可行方案。记录一下，分享出来，希望对有相关需求的研发童鞋有所帮助。下面按照四种可能的方案，分别做介绍。另外，为了方便做演示，专门整了两个演示项目：
+diguage/merge-demo-boot — 合并项目，下面简称为 boot。
+diguage/merge-demo-web — 被合并项目，下面简称为 web。
+Jar 包引用 这个方式，可能是给人印象最容易的方式。仔细思考一下，从维护性的角度来看，这个方式反而是最麻烦的方式，理由如下：
+web 项目每次更新，都需要重新打包发布新版； boot 项目也需要跟着更新发布。拉一次屎，脱两次裤子。属实麻烦。
+还需要考虑 web 项目的加载问题，类似下面要描述的，是否共用容器：
+共用容器 — 这是最容器想到的方式。但是这种方式，需要解决 Bean 冲突的问题。
+不共用容器 — 这种方式需要处理 web 容器如何加载的问题。默认应该是无法识别。
+基于这些考虑，这种方式直接被抛弃了。
+仓库合并，公用一套容器 这是第一次尝试使用的方案。也是遇到问题最多的方案。
+将两个仓库做合并。
+将 web 仓库的地址配置到 boot 项目里： git remote add web git@github.com:diguage/merge-demo-web.git；
+在 boot 项目里，切出来一个分支： git switch -c web；
+将 web 分支的提交清空： git update-ref -d HEAD，然后做一次提交；
+将 web 项目的代码克隆到 web 分支上： git pull --rebase --allow-unrelated-histories web master；注意，这里需要加 --allow-unrelated-histories 参数，以允许不相干的仓库进行合并。"><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link rel=dns-prefetch href=//fonts.googleapis.com><link rel=dns-prefetch href=//fonts.gstatic.com><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Open+Sans:400,400i,700"><link rel=stylesheet href=/css/style.min.css><link rel=stylesheet href=/css/asciidoctor.css><link rel=stylesheet href=/css/rouge-monokai.css><link rel="shortcut icon" href=/favicon.ico><script async src="https://www.googletagmanager.com/gtag/js?id=G-1MMT2NLEL4"></script><script>var dnt,doNotTrack=!1;if(!1&&(dnt=navigator.doNotTrack||window.doNotTrack||navigator.msDoNotTrack,doNotTrack=dnt=="1"||dnt=="yes"),!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-1MMT2NLEL4")}</script><script id=baidu_analytics>var _hmt=_hmt||[];(function(){var e,t=document.createElement("script");t.src="https://hm.baidu.com/hm.js?e56e7dd0a120b414f5741f4c5e5218ea",e=document.getElementsByTagName("script")[0],e.parentNode.insertBefore(t,e)})()</script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css></head><body class=body><div class="container container--outer"><header class=header><div class="container header__container"><div class=logo><a class=logo__link href=/ title='"地瓜哥"博客网' rel=home><div class="logo__item logo__text"><div class=logo__title>"地瓜哥"博客网</div><div class=logo__tagline>分享技术带来的喜悦 — https://www.diguage.com/</div></div></a></div><nav class=menu><button class=menu__btn aria-haspopup=true aria-expanded=false tabindex=0>
+<span class=menu__btn-title tabindex=-1>菜单</span></button><ul class=menu__list><li class=menu__item><a class=menu__link href=/><span class=menu__text>首页</span></a></li><li class=menu__item><a class=menu__link href=/categories/><span class=menu__text>分类</span></a></li><li class=menu__item><a class=menu__link href=/about/><span class=menu__text>关于</span></a></li><li class=menu__item><a class=menu__link href=/archives/><span class=menu__text>归档</span></a></li></ul></nav></div></header><div class="wrapper flex"><div class=primary><main class=main role=main><article class=post><header class=post__header><h1 class=post__title>Spring 应用合并之路</h1><div class="post__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2023-12-23T20:38:47+08:00>2023-12-23</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/ rel=category>程序设计</a></span></div></div></header><figure class="post__thumbnail thumbnail"><img class=thumbnail__image src=/images/banner/merge.jpeg alt="Spring 应用合并之路"></figure><div class="content post__content clearfix"><div class=paragraph><p>公司最近一年在推进降本增效，在用尽各种手段之后，发现应用太多，每个应用都做跨机房容灾部署，则最少需要 4 台机器（称为容器更合适）。那么，将相近应用做一个合并，减少维护项目，提高机器利用率就是一个可选方案。</p></div><div class=paragraph><p>经过前后三次不同的折腾，最后探索出来一个可行方案。记录一下，分享出来，希望对有相关需求的研发童鞋有所帮助。下面按照四种可能的方案，分别做介绍。另外，为了方便做演示，专门整了两个演示项目：</p></div><div class=ulist><ul><li><p><a href=https://github.com/diguage/merge-demo-boot target=_blank rel=noopener>diguage/merge-demo-boot</a> — 合并项目，下面简称为 <code>boot</code>。</p></li><li><p><a href=https://github.com/diguage/merge-demo-web target=_blank rel=noopener>diguage/merge-demo-web</a> — 被合并项目，下面简称为 <code>web</code>。</p></li></ul></div><div class=sect1><h2 id=_jar_包引用>Jar 包引用</h2><div class=sectionbody><div class=paragraph><p>这个方式，可能是给人印象最容易的方式。仔细思考一下，从维护性的角度来看，这个方式反而是最麻烦的方式，理由如下：</p></div><div class="olist arabic"><ol class=arabic><li><p><code>web</code> 项目每次更新，都需要重新打包发布新版； <code>boot</code> 项目也需要跟着更新发布。拉一次屎，脱两次裤子。属实麻烦。</p></li><li><p>还需要考虑 <code>web</code> 项目的加载问题，类似下面要描述的，是否共用容器：</p><div class="olist loweralpha"><ol class=loweralpha type=a><li><p>共用容器 — 这是最容器想到的方式。但是这种方式，需要解决 Bean 冲突的问题。</p></li><li><p>不共用容器 — 这种方式需要处理 <code>web</code> 容器如何加载的问题。默认应该是无法识别。</p></li></ol></div></li></ol></div><div class=paragraph><p>基于这些考虑，这种方式直接被抛弃了。</p></div></div></div><div class=sect1><h2 id=_仓库合并公用一套容器>仓库合并，公用一套容器</h2><div class=sectionbody><div class=paragraph><p>这是第一次尝试使用的方案。也是遇到问题最多的方案。</p></div><div class="olist arabic"><ol class=arabic><li><p>将两个仓库做合并。</p><div class="olist loweralpha"><ol class=loweralpha type=a><li><p>将 <code>web</code> 仓库的地址配置到 <code>boot</code> 项目里： <code>git remote add web <a href=mailto:git@github.com>git@github.com</a>:diguage/merge-demo-web.git</code>；</p></li><li><p>在 <code>boot</code> 项目里，切出来一个分支： <code>git switch -c web</code>；</p></li><li><p>将 <code>web</code> 分支的提交清空： <code>git update-ref -d HEAD</code>，然后做一次提交；</p></li><li><p>将 <code>web</code> 项目的代码克隆到 <code>web</code> 分支上： <code>git pull --rebase --allow-unrelated-histories web master</code>；注意，这里需要加 <code>--allow-unrelated-histories</code> 参数，以允许不相干的仓库进行合并。</p></li><li><p>从 <code>boot</code> 项目的 <code>master</code> 分支上，切出来一个合并分支： <code>git switch -c merge</code>；</p></li><li><p>将 <code>web</code> 项目向 <code>boot</code> 项目合并： <code>git merge --allow-unrelated-histories web</code>；注意，这里需要加 <code>--allow-unrelated-histories</code> 参数，以允许不相干的仓库进行合并。</p></li><li><p>处理代码冲突，完成合并即可。</p></li></ol></div></li><li><p>配置文件的合并于归整。为了防止同名配置文件冲突，需要把 <code>web</code> 项目的配置文件调整到一个文件夹下，这里设定为 <code>web</code> 目录。然后，需要把 <code>web</code> 项目的配置文件，让 <code>boot</code> 可以加载到。这个调整相对简单，只需要一个注解即可 <code>@ImportResource({"classpath:web/spring-cfg.xml"})</code>。</p></li><li><p>调整完配置文件，接着遇到的问题就是上面提到的 Bean 冲突的问题。由于两个项目都访问相同的数据库， Dao 及 Service 层很多很多类都是同名的。另外，在 <code>web</code> 项目里，Dao 是基于 iBATIS 开发的，而在 <code>boot</code> 项目里，DAO 是基于 MyBATIS 开发的。所以，只能给 <code>web</code> 项目的相关代码做重命名（严谨一点是给 Spring Bean 的 <code>beanName</code> 做重命名操作）。这又带来了新问题：原来的项目里，注入方式是根据名称注入的，就需要改动大量的代码，给相关的 Bean 变量做重命名操作。这无形中增加了很多的复杂度和不确定性。</p></li></ol></div><div class=paragraph><p>经过不断折腾，这种方式被迫放弃。</p></div></div></div><div class=sect1><h2 id=_仓库合并spring_boot_父子容器>仓库合并，Spring Boot 父子容器</h2><div class=sectionbody><div class=paragraph><p>在经过上述方式折腾后，就想到了另外一个方案：可以考虑使用父子容器的方式来搞。接着就查到了这篇文章： <a href=https://www.baeldung.com/spring-boot-context-hierarchy target=_blank rel=noopener>Context Hierarchy with the Spring Boot Fluent Builder API</a>。感觉这种方式挺不错，就尝试了一下。</p></div><div class="olist arabic"><ol class=arabic><li><p>代码合并及文件调整，跟上述步骤类似，这个后面就不再赘述。</p></li><li><p>按照文章中的介绍，使用父子容器的方式来加载两个项目。</p><div class=openblock><div class=content><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code data-lang=java><span class=kn>package</span> <span class=nn>com.diguage.demo.boot</span><span class=o>;</span>
+
+<span class=kn>import</span> <span class=nn>org.springframework.boot.WebApplicationType</span><span class=o>;</span>
+<span class=kn>import</span> <span class=nn>org.springframework.boot.builder.SpringApplicationBuilder</span><span class=o>;</span>
+<span class=kn>import</span> <span class=nn>org.springframework.context.annotation.ComponentScan</span><span class=o>;</span>
+<span class=kn>import</span> <span class=nn>org.springframework.context.annotation.Configuration</span><span class=o>;</span>
+<span class=kn>import</span> <span class=nn>org.springframework.context.annotation.ImportResource</span><span class=o>;</span>
+
+<span class=cm>/**
+ * @author D瓜哥 · <a href=https://www.diguage.com target=_blank>https://www.diguage.com</a>
+ */</span>
+<span class=kd>public</span> <span class=kd>class</span> <span class=nc>DemoBootApplication</span> <span class=o>{</span>
+
+    <span class=kd>public</span> <span class=kd>static</span> <span class=kt>void</span> <span class=nf>main</span><span class=o>(</span><span class=nc>String</span><span class=o>[]</span> <span class=n>args</span><span class=o>)</span> <span class=o>{</span>
+        <span class=k>new</span> <span class=nf>SpringApplicationBuilder</span><span class=o>()</span>
+                <span class=o>.</span><span class=na>parent</span><span class=o>(</span><span class=nc>BootConfig</span><span class=o>.</span><span class=na>class</span><span class=o>).</span><span class=na>web</span><span class=o>(</span><span class=nc>WebApplicationType</span><span class=o>.</span><span class=na>NONE</span><span class=o>)</span>
+                <span class=o>.</span><span class=na>child</span><span class=o>(</span><span class=nc>WebConfig</span><span class=o>.</span><span class=na>class</span><span class=o>)</span>
+                <span class=c1>// 如果有第三个项目，可以作为子容器的兄弟容器加载。</span>
+                <span class=c1>// .sibling(SiblingConfig.class)</span>
+                <span class=o>.</span><span class=na>run</span><span class=o>(</span><span class=n>args</span><span class=o>);</span>
+    <span class=o>}</span>
+
+    <span class=nd>@Configuration</span>
+    <span class=nd>@ImportResource</span><span class=o>({</span><span class=s>&#34;classpath:spring-cfg.xml&#34;</span><span class=o>})</span>
+    <span class=nd>@ComponentScan</span><span class=o>(</span><span class=n>basePackages</span> <span class=o>=</span> <span class=s>&#34;com.diguage.demo.boot&#34;</span><span class=o>)</span>
+    <span class=kd>public</span> <span class=kd>static</span> <span class=kd>class</span> <span class=nc>BootConfig</span> <span class=o>{</span>
+    <span class=o>}</span>
+
+    <span class=nd>@Configuration</span>
+    <span class=nd>@ImportResource</span><span class=o>({</span><span class=s>&#34;classpath:web/spring-cfg.xml&#34;</span><span class=o>})</span>
+    <span class=kd>public</span> <span class=kd>static</span> <span class=kd>class</span> <span class=nc>WebConfig</span> <span class=o>{</span>
+    <span class=o>}</span>
+<span class=o>}</span></code></pre></div></div></div></div></li></ol></div><div class=paragraph><p>原以为，这种方式属于父子两个容器，即使有同名的 Bean 应该也没有影响。但是，经过实践才发现，上面这个猜测是错误的。Spring Boot 在启动的时候，它背后做了检查，如果两个容器有同名的 Bean，它也会报错。也会带来像上述方式那样的大量重命名。折腾一两天，最后还是放弃了这种寄予厚望的方式。</p></div><div class="admonitionblock tip"><table><tbody><tr><td class=icon><i class="fa icon-tip" title=Tip></i></td><td class=content>Spring Boot 背后是否做了检查，这个是根据报错信息的猜测，没有翻看代码，所以这个猜测有一定的不确定性。有机会翻一下代码，查看一下具体原因。</td></tr></tbody></table></div></div></div><div class=sect1><h2 id=_仓库合并独立容器>仓库合并，独立容器</h2><div class=sectionbody><div class=paragraph><p>在经历了上面的尝试，在同事为啥不搞两个独立的容器提醒下，决定抛开 Spring Boot 内置的父子容器方案，完全自己实现父子容器。</p></div><div class=sect2><h3 id=_如何加载_web_项目>如何加载 <code>web</code> 项目？</h3><div class=paragraph><p>现在的难题只有一个：如何加载 <code>web</code> 项目？加载完成后，如何持续持有 <code>web</code> 项目？经过思考后，可以创建一个 <code>boot</code> 项目的 Spring Bean，在该 Bean 中加载并持有 <code>web</code> 项目的容器。由于 Spring Bean 默认是单例的，并且会伴随 Spring 容器长期存活，就可以保证 <code>web</code> 容器持久存活。结合 <a href=https://www.diguage.com/post/spring-extensions-overview/ target=_blank rel=noopener>Spring 扩展点概览及实践</a> 中介绍的 Spring 扩展点，有两个地方可以利用：</p></div><div class="olist arabic"><ol class=arabic><li><p>可以利用 <code>ApplicationContextAware</code> 获取 <code>boot</code> 容器的 <code>ApplicationContext</code> 实例，这样就可以实现自己实现的父子容器；</p></li><li><p>可以利用 <code>ApplicationListener</code> 获取 <code>ContextRefreshedEvent</code> 事件，该事件表示容器已经完成初始化，可以提供服务。在监听到该事件后，来进行 <code>web</code> 容器的加载。</p></li></ol></div><div class=paragraph><p>思路确定后，代码实现就很简单了：</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code data-lang=java><span class=kn>package</span> <span class=nn>com.diguage.demo.boot.config</span><span class=o>;</span>
+
+<span class=kn>import</span> <span class=nn>org.slf4j.Logger</span><span class=o>;</span>
+<span class=kn>import</span> <span class=nn>org.slf4j.LoggerFactory</span><span class=o>;</span>
+<span class=kn>import</span> <span class=nn>org.springframework.beans.BeansException</span><span class=o>;</span>
+<span class=kn>import</span> <span class=nn>org.springframework.context.ApplicationContext</span><span class=o>;</span>
+<span class=kn>import</span> <span class=nn>org.springframework.context.ApplicationContextAware</span><span class=o>;</span>
+<span class=kn>import</span> <span class=nn>org.springframework.context.ApplicationEvent</span><span class=o>;</span>
+<span class=kn>import</span> <span class=nn>org.springframework.context.ApplicationListener</span><span class=o>;</span>
+<span class=kn>import</span> <span class=nn>org.springframework.context.event.ContextRefreshedEvent</span><span class=o>;</span>
+<span class=kn>import</span> <span class=nn>org.springframework.context.support.ClassPathXmlApplicationContext</span><span class=o>;</span>
+<span class=kn>import</span> <span class=nn>org.springframework.stereotype.Component</span><span class=o>;</span>
+
+<span class=cm>/**
+ * @author D瓜哥 · <a href=https://www.diguage.com target=_blank>https://www.diguage.com</a>
+ */</span>
+<span class=nd>@Component</span>
+<span class=kd>public</span> <span class=kd>class</span> <span class=nc>WebLoaderListener</span> <span class=kd>implements</span> <span class=nc>ApplicationContextAware</span><span class=o>,</span>
+        <span class=nc>ApplicationListener</span><span class=o>&lt;</span><span class=nc>ApplicationEvent</span><span class=o>&gt;</span> <span class=o>{</span>
+    <span class=kd>private</span> <span class=kd>static</span> <span class=kd>final</span> <span class=nc>Logger</span> <span class=n>logger</span> <span class=o>=</span> <span class=nc>LoggerFactory</span><span class=o>.</span><span class=na>getLogger</span><span class=o>(</span><span class=nc>WebLoaderListener</span><span class=o>.</span><span class=na>class</span><span class=o>);</span>
+
+    <span class=cm>/**
+     * 父容器，加载 boot 项目
+     */</span>
+    <span class=kd>private</span> <span class=kd>static</span> <span class=nc>ApplicationContext</span> <span class=n>parentContext</span><span class=o>;</span>
+
+    <span class=cm>/**
+     * 子容器，加载 web 项目
+     */</span>
+    <span class=kd>private</span> <span class=kd>static</span> <span class=nc>ApplicationContext</span> <span class=n>childContext</span><span class=o>;</span>
+
+    <span class=nd>@Override</span>
+    <span class=kd>public</span> <span class=kt>void</span> <span class=nf>setApplicationContext</span><span class=o>(</span><span class=nc>ApplicationContext</span> <span class=n>ctx</span><span class=o>)</span> <span class=kd>throws</span> <span class=nc>BeansException</span> <span class=o>{</span>
+        <span class=nc>WebLoaderListener</span><span class=o>.</span><span class=na>parentContext</span> <span class=o>=</span> <span class=n>ctx</span><span class=o>;</span>
+    <span class=o>}</span>
+
+    <span class=nd>@Override</span>
+    <span class=kd>public</span> <span class=kt>void</span> <span class=nf>onApplicationEvent</span><span class=o>(</span><span class=nc>ApplicationEvent</span> <span class=n>event</span><span class=o>)</span> <span class=o>{</span>
+        <span class=n>logger</span><span class=o>.</span><span class=na>info</span><span class=o>(</span><span class=s>&#34;receive application event: {}&#34;</span><span class=o>,</span> <span class=n>event</span><span class=o>);</span>
+        <span class=k>if</span> <span class=o>(</span><span class=n>event</span> <span class=k>instanceof</span> <span class=nc>ContextRefreshedEvent</span><span class=o>)</span> <span class=o>{</span>
+            <span class=nc>WebLoaderListener</span><span class=o>.</span><span class=na>childContext</span> <span class=o>=</span> <span class=k>new</span> <span class=nc>ClassPathXmlApplicationContext</span><span class=o>(</span>
+                    <span class=k>new</span> <span class=nc>String</span><span class=o>[]{</span><span class=s>&#34;classpath:web/spring-cfg.xml&#34;</span><span class=o>},</span>
+                    <span class=nc>WebLoaderListener</span><span class=o>.</span><span class=na>parentContext</span><span class=o>);</span>
+        <span class=o>}</span>
+    <span class=o>}</span>
+<span class=o>}</span></code></pre></div></div></div><div class=sect2><h3 id=_容器重复加载的问题>容器重复加载的问题</h3><div class=paragraph><p>这次自己实现的父子容器，如同设想的那样，没有同名 Bean 的检查，省去了很多麻烦。但是，观察日志，会发现 <code>com.diguage.demo.boot.config.WebLoaderListener#onApplicationEvent</code> 方法被两次执行，也就是监听到了两次 <code>ContextRefreshedEvent</code> 事件，导致 <code>web</code> 容器会被加载两次。由于项目的 RPC 服务不能重复注册，第二次加载抛出异常，导致启动失败。</p></div><div class=paragraph><p>最初，怀疑是 <code>web</code> 容器，加载了 <code>WebLoaderListener</code>，但是跟踪代码，没有发现 <code>childContext</code> 容器中有 <code>WebLoaderListener</code> 的相关 Bean。</p></div><div class=paragraph><p>昨天做了个小实验，又调试了一下 Spring 的源代码，发现了其中的奥秘。直接贴代码吧：</p></div><div class=listingblock><div class=title>SPRING/spring-context/src/main/java/org/springframework/context/support/AbstractApplicationContext.java</div><div class=content><pre class="rouge highlight nowrap"><code data-lang=java><span class=cm>/**
+ * Publish the given event to all listeners.
+ * &lt;p&gt;This is the internal delegate that all other {@code publishEvent}
+ * methods refer to. It is not meant to be called directly but rather serves
+ * as a propagation mechanism between application contexts in a hierarchy,
+ * potentially overridden in subclasses for a custom propagation arrangement.
+ * @param event the event to publish (may be an {@link ApplicationEvent}
+ * or a payload object to be turned into a {@link PayloadApplicationEvent})
+ * @param typeHint the resolved event type, if known.
+ * The implementation of this method also tolerates a payload type hint for
+ * a payload object to be turned into a {@link PayloadApplicationEvent}.
+ * However, the recommended way is to construct an actual event object via
+ * {@link PayloadApplicationEvent#PayloadApplicationEvent(Object, Object, ResolvableType)}
+ * instead for such scenarios.
+ * @since 4.2
+ * @see ApplicationEventMulticaster#multicastEvent(ApplicationEvent, ResolvableType)
+ */</span>
+<span class=kd>protected</span> <span class=kt>void</span> <span class=nf>publishEvent</span><span class=o>(</span><span class=nc>Object</span> <span class=n>event</span><span class=o>,</span> <span class=nd>@Nullable</span> <span class=nc>ResolvableType</span> <span class=n>typeHint</span><span class=o>)</span> <span class=o>{</span>
+    <span class=nc>Assert</span><span class=o>.</span><span class=na>notNull</span><span class=o>(</span><span class=n>event</span><span class=o>,</span> <span class=s>&#34;Event must not be null&#34;</span><span class=o>);</span>
+    <span class=nc>ResolvableType</span> <span class=n>eventType</span> <span class=o>=</span> <span class=kc>null</span><span class=o>;</span>
+
+    <span class=c1>// Decorate event as an ApplicationEvent if necessary</span>
+    <span class=nc>ApplicationEvent</span> <span class=n>applicationEvent</span><span class=o>;</span>
+    <span class=k>if</span> <span class=o>(</span><span class=n>event</span> <span class=k>instanceof</span> <span class=nc>ApplicationEvent</span> <span class=n>applEvent</span><span class=o>)</span> <span class=o>{</span>
+        <span class=n>applicationEvent</span> <span class=o>=</span> <span class=n>applEvent</span><span class=o>;</span>
+        <span class=n>eventType</span> <span class=o>=</span> <span class=n>typeHint</span><span class=o>;</span>
+    <span class=o>}</span>
+    <span class=k>else</span> <span class=o>{</span>
+        <span class=nc>ResolvableType</span> <span class=n>payloadType</span> <span class=o>=</span> <span class=kc>null</span><span class=o>;</span>
+        <span class=k>if</span> <span class=o>(</span><span class=n>typeHint</span> <span class=o>!=</span> <span class=kc>null</span> <span class=o>&amp;&amp;</span> <span class=nc>ApplicationEvent</span><span class=o>.</span><span class=na>class</span><span class=o>.</span><span class=na>isAssignableFrom</span><span class=o>(</span><span class=n>typeHint</span><span class=o>.</span><span class=na>toClass</span><span class=o>()))</span> <span class=o>{</span>
+            <span class=n>eventType</span> <span class=o>=</span> <span class=n>typeHint</span><span class=o>;</span>
+        <span class=o>}</span>
+        <span class=k>else</span> <span class=o>{</span>
+            <span class=n>payloadType</span> <span class=o>=</span> <span class=n>typeHint</span><span class=o>;</span>
+        <span class=o>}</span>
+        <span class=n>applicationEvent</span> <span class=o>=</span> <span class=k>new</span> <span class=nc>PayloadApplicationEvent</span><span class=o>&lt;&gt;(</span><span class=k>this</span><span class=o>,</span> <span class=n>event</span><span class=o>,</span> <span class=n>payloadType</span><span class=o>);</span>
+    <span class=o>}</span>
+
+    <span class=c1>// Determine event type only once (for multicast and parent publish)</span>
+    <span class=k>if</span> <span class=o>(</span><span class=n>eventType</span> <span class=o>==</span> <span class=kc>null</span><span class=o>)</span> <span class=o>{</span>
+        <span class=n>eventType</span> <span class=o>=</span> <span class=nc>ResolvableType</span><span class=o>.</span><span class=na>forInstance</span><span class=o>(</span><span class=n>applicationEvent</span><span class=o>);</span>
+        <span class=k>if</span> <span class=o>(</span><span class=n>typeHint</span> <span class=o>==</span> <span class=kc>null</span><span class=o>)</span> <span class=o>{</span>
+            <span class=n>typeHint</span> <span class=o>=</span> <span class=n>eventType</span><span class=o>;</span>
+        <span class=o>}</span>
+    <span class=o>}</span>
+
+    <span class=c1>// Multicast right now if possible - or lazily once the multicaster is initialized</span>
+    <span class=k>if</span> <span class=o>(</span><span class=k>this</span><span class=o>.</span><span class=na>earlyApplicationEvents</span> <span class=o>!=</span> <span class=kc>null</span><span class=o>)</span> <span class=o>{</span>
+        <span class=k>this</span><span class=o>.</span><span class=na>earlyApplicationEvents</span><span class=o>.</span><span class=na>add</span><span class=o>(</span><span class=n>applicationEvent</span><span class=o>);</span>
+    <span class=o>}</span>
+    <span class=k>else</span> <span class=nf>if</span> <span class=o>(</span><span class=k>this</span><span class=o>.</span><span class=na>applicationEventMulticaster</span> <span class=o>!=</span> <span class=kc>null</span><span class=o>)</span> <span class=o>{</span>
+        <span class=k>this</span><span class=o>.</span><span class=na>applicationEventMulticaster</span><span class=o>.</span><span class=na>multicastEvent</span><span class=o>(</span><span class=n>applicationEvent</span><span class=o>,</span> <span class=n>eventType</span><span class=o>);</span>
+    <span class=o>}</span>
+
+    <span class=c1>// Publish event via parent context as well...</span>
+    <span class=c1>// 如果有父容器，则也将事件发布给父容器。</span>
+    <span class=k>if</span> <span class=o>(</span><span class=k>this</span><span class=o>.</span><span class=na>parent</span> <span class=o>!=</span> <span class=kc>null</span><span class=o>)</span> <span class=o>{</span>
+        <span class=k>if</span> <span class=o>(</span><span class=k>this</span><span class=o>.</span><span class=na>parent</span> <span class=k>instanceof</span> <span class=nc>AbstractApplicationContext</span> <span class=n>abstractApplicationContext</span><span class=o>)</span> <span class=o>{</span>
+            <span class=n>abstractApplicationContext</span><span class=o>.</span><span class=na>publishEvent</span><span class=o>(</span><span class=n>event</span><span class=o>,</span> <span class=n>typeHint</span><span class=o>);</span>
+        <span class=o>}</span>
+        <span class=k>else</span> <span class=o>{</span>
+            <span class=k>this</span><span class=o>.</span><span class=na>parent</span><span class=o>.</span><span class=na>publishEvent</span><span class=o>(</span><span class=n>event</span><span class=o>);</span>
+        <span class=o>}</span>
+    <span class=o>}</span>
+<span class=o>}</span></code></pre></div></div><div class=paragraph><p>在 <code>publishEvent</code> 方法的最后，如果父容器不为 <code>null</code> 的情况下，则也会向父容器广播容器的相关事件。</p></div><div class=paragraph><p>看到这里就清楚了，不是 <code>web</code> 容器持有了 <code>WebLoaderListener</code> 这个 Bean，而是 <code>web</code> 容器主动向父容器广播了 <code>ContextRefreshedEvent</code> 事件。</p></div></div><div class=sect2><h3 id=_容器销毁>容器销毁</h3><div class=paragraph><p>除了上述问题，还有一个问题需要思考：如何销毁 <code>web</code> 容器？如果不能销毁容器，会有一些意想不到的问题。比如，注册中心的 RPC 提供方不能及时销毁等等。</p></div><div class=paragraph><p>这里的解决方案也比较简单：同样基于事件监听，Spring 容器销毁会有 <code>ContextClosedEvent</code> 事件，在 <code>WebLoaderListener</code> 中监听该事件，然后调用 <code>AbstractApplicationContext#close</code> 方法就可以完成 Spring 容器的销毁工作。</p></div></div><div class=sect2><h3 id=_父子容器加载及销毁>父子容器加载及销毁</h3><div class=paragraph><p>结合上面的所有论述，完整的代码如下：</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code data-lang=java><span class=kn>package</span> <span class=nn>com.diguage.demo.boot.config</span><span class=o>;</span>
+
+<span class=kn>import</span> <span class=nn>org.slf4j.Logger</span><span class=o>;</span>
+<span class=kn>import</span> <span class=nn>org.slf4j.LoggerFactory</span><span class=o>;</span>
+<span class=kn>import</span> <span class=nn>org.springframework.beans.BeansException</span><span class=o>;</span>
+<span class=kn>import</span> <span class=nn>org.springframework.context.ApplicationContext</span><span class=o>;</span>
+<span class=kn>import</span> <span class=nn>org.springframework.context.ApplicationContextAware</span><span class=o>;</span>
+<span class=kn>import</span> <span class=nn>org.springframework.context.ApplicationEvent</span><span class=o>;</span>
+<span class=kn>import</span> <span class=nn>org.springframework.context.ApplicationListener</span><span class=o>;</span>
+<span class=kn>import</span> <span class=nn>org.springframework.context.event.ContextClosedEvent</span><span class=o>;</span>
+<span class=kn>import</span> <span class=nn>org.springframework.context.event.ContextRefreshedEvent</span><span class=o>;</span>
+<span class=kn>import</span> <span class=nn>org.springframework.context.support.AbstractApplicationContext</span><span class=o>;</span>
+<span class=kn>import</span> <span class=nn>org.springframework.context.support.ClassPathXmlApplicationContext</span><span class=o>;</span>
+<span class=kn>import</span> <span class=nn>org.springframework.stereotype.Component</span><span class=o>;</span>
+
+<span class=kn>import</span> <span class=nn>java.util.Objects</span><span class=o>;</span>
+
+<span class=cm>/**
+ * 基于事件监听的 web 项目加载器
+ *
+ * @author D瓜哥 · <a href=https://www.diguage.com target=_blank>https://www.diguage.com</a>
+ */</span>
+<span class=nd>@Component</span>
+<span class=kd>public</span> <span class=kd>class</span> <span class=nc>WebLoaderListener</span> <span class=kd>implements</span> <span class=nc>ApplicationContextAware</span><span class=o>,</span>
+        <span class=nc>ApplicationListener</span><span class=o>&lt;</span><span class=nc>ApplicationEvent</span><span class=o>&gt;</span> <span class=o>{</span>
+    <span class=kd>private</span> <span class=kd>static</span> <span class=kd>final</span> <span class=nc>Logger</span> <span class=n>logger</span> <span class=o>=</span> <span class=nc>LoggerFactory</span><span class=o>.</span><span class=na>getLogger</span><span class=o>(</span><span class=nc>WebLoaderListener</span><span class=o>.</span><span class=na>class</span><span class=o>);</span>
+
+    <span class=cm>/**
+     * 父容器，加载 boot 项目
+     */</span>
+    <span class=kd>private</span> <span class=kd>static</span> <span class=nc>ApplicationContext</span> <span class=n>parentContext</span><span class=o>;</span>
+
+    <span class=cm>/**
+     * 子容器，加载 web 项目
+     */</span>
+    <span class=kd>private</span> <span class=kd>static</span> <span class=nc>ClassPathXmlApplicationContext</span> <span class=n>childContext</span><span class=o>;</span>
+
+    <span class=nd>@Override</span>
+    <span class=kd>public</span> <span class=kt>void</span> <span class=nf>setApplicationContext</span><span class=o>(</span><span class=nc>ApplicationContext</span> <span class=n>ctx</span><span class=o>)</span> <span class=kd>throws</span> <span class=nc>BeansException</span> <span class=o>{</span>
+        <span class=nc>WebLoaderListener</span><span class=o>.</span><span class=na>parentContext</span> <span class=o>=</span> <span class=n>ctx</span><span class=o>;</span>
+    <span class=o>}</span>
+
+    <span class=cm>/**
+     * 事件监听
+     *
+     * @author D瓜哥 · <a href=https://www.diguage.com target=_blank>https://www.diguage.com</a>
+     */</span>
+    <span class=nd>@Override</span>
+    <span class=kd>public</span> <span class=kt>void</span> <span class=nf>onApplicationEvent</span><span class=o>(</span><span class=nc>ApplicationEvent</span> <span class=n>event</span><span class=o>)</span> <span class=o>{</span>
+        <span class=n>logger</span><span class=o>.</span><span class=na>info</span><span class=o>(</span><span class=s>&#34;receive application event: {}&#34;</span><span class=o>,</span> <span class=n>event</span><span class=o>);</span>
+        <span class=k>if</span> <span class=o>(</span><span class=n>event</span> <span class=k>instanceof</span> <span class=nc>ContextRefreshedEvent</span> <span class=n>refreshedEvent</span><span class=o>)</span> <span class=o>{</span>
+            <span class=nc>ApplicationContext</span> <span class=n>context</span> <span class=o>=</span> <span class=n>refreshedEvent</span><span class=o>.</span><span class=na>getApplicationContext</span><span class=o>();</span>
+            <span class=k>if</span> <span class=o>(</span><span class=nc>Objects</span><span class=o>.</span><span class=na>equals</span><span class=o>(</span><span class=nc>WebLoaderListener</span><span class=o>.</span><span class=na>parentContext</span><span class=o>,</span> <span class=n>context</span><span class=o>))</span> <span class=o>{</span>
+                <span class=c1>// 加载 web 容器</span>
+                <span class=nc>WebLoaderListener</span><span class=o>.</span><span class=na>childContext</span> <span class=o>=</span> <span class=k>new</span> <span class=nc>ClassPathXmlApplicationContext</span><span class=o>(</span>
+                        <span class=k>new</span> <span class=nc>String</span><span class=o>[]{</span><span class=s>&#34;classpath:web/spring-cfg.xml&#34;</span><span class=o>},</span>
+                        <span class=nc>WebLoaderListener</span><span class=o>.</span><span class=na>parentContext</span><span class=o>);</span>
+            <span class=o>}</span>
+        <span class=o>}</span> <span class=k>else</span> <span class=k>if</span> <span class=o>(</span><span class=n>event</span> <span class=k>instanceof</span> <span class=nc>ContextClosedEvent</span><span class=o>)</span> <span class=o>{</span>
+            <span class=c1>// 处理容器销毁事件</span>
+            <span class=k>if</span> <span class=o>(</span><span class=nc>Objects</span><span class=o>.</span><span class=na>nonNull</span><span class=o>(</span><span class=nc>WebLoaderListener</span><span class=o>.</span><span class=na>childContext</span><span class=o>))</span> <span class=o>{</span>
+                <span class=kd>synchronized</span> <span class=o>(</span><span class=nc>WebLoaderListener</span><span class=o>.</span><span class=na>class</span><span class=o>)</span> <span class=o>{</span>
+                    <span class=k>if</span> <span class=o>(</span><span class=nc>Objects</span><span class=o>.</span><span class=na>nonNull</span><span class=o>(</span><span class=nc>WebLoaderListener</span><span class=o>.</span><span class=na>childContext</span><span class=o>))</span> <span class=o>{</span>
+                        <span class=nc>AbstractApplicationContext</span> <span class=n>ctx</span> <span class=o>=</span> <span class=nc>WebLoaderListener</span><span class=o>.</span><span class=na>childContext</span><span class=o>;</span>
+                        <span class=nc>WebLoaderListener</span><span class=o>.</span><span class=na>childContext</span> <span class=o>=</span> <span class=kc>null</span><span class=o>;</span>
+                        <span class=n>ctx</span><span class=o>.</span><span class=na>close</span><span class=o>();</span>
+                    <span class=o>}</span>
+                <span class=o>}</span>
+            <span class=o>}</span>
+        <span class=o>}</span>
+    <span class=o>}</span>
+<span class=o>}</span></code></pre></div></div></div></div></div><div class=sect1><h2 id=_参考资料>参考资料</h2><div class=sectionbody><div class="olist arabic"><ol class=arabic><li><p><a href=https://www.diguage.com/post/spring-extensions-overview/ target=_blank rel=noopener>Spring 扩展点概览及实践 - "地瓜哥"博客网</a></p></li><li><p><a href=https://www.baeldung.com/spring-boot-context-hierarchy target=_blank rel=noopener>Context Hierarchy with the Spring Boot Fluent Builder API</a></p></li><li><p><a href=https://stackoverflow.com/questions/6632191/how-to-revert-initial-git-commit target=_blank rel=noopener>How to revert initial git commit?</a></p></li></ol></div></div></div></div><footer class=post__footer><div class="post__tags tags clearfix"><svg class="tags__badge icon icon-tag" width="16" height="16" viewBox="0 0 32 32"><path d="M32 19c0 1-1 2-1 2L21 31s-1 1-2 1-2-1-2-1L2 16c-1-1-1.4-2-1.4-2S0 12.5.0 11V3C0 1.5.8.8.8.8S1.5.0 3 0h8c1.5.0 3 .6 3 .6S15 1 16 2l15 15s1 1 1 2zM7 10a3 3 0 100-6 3 3 0 000 6z"/></svg><ul class=tags__list><li class=tags__item><a class="tags__link btn" href=/tags/java/ rel=tag>Java</a></li><li class=tags__item><a class="tags__link btn" href=/tags/%E8%AE%BE%E8%AE%A1/ rel=tag>设计</a></li><li class=tags__item><a class="tags__link btn" href=/tags/%E6%9E%B6%E6%9E%84/ rel=tag>架构</a></li><li class=tags__item><a class="tags__link btn" href=/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/ rel=tag>微服务</a></li><li class=tags__item><a class="tags__link btn" href=/tags/%E5%88%86%E5%B8%83%E5%BC%8F/ rel=tag>分布式</a></li><li class=tags__item><a class="tags__link btn" href=/tags/spring/ rel=tag>Spring</a></li></ul></div></footer></article></main><div class=clearfix><h3>看在D瓜哥码字的辛苦上，请友情支持一下，D瓜哥感激不尽，😜</h3><table><tr><td><img alt=微信打赏码 src=/images/wxpay.jpg></td><td><img alt=支付宝打赏码 src=/images/alipay.png></td></tr></table></div><br><div class=clearfix><h3>欢迎关注D瓜哥的微信公众号，在公众号可以获取我的微信二维码：</h3><img alt=微信公众号 src=/images/wx-jikerizhi.jpg></div><div class="admonitionblock tip"><table><tbody><tr><td class=icon><i class="fa icon-tip" title=Tip></i></td><td class=content><strong>公众号的微信号是: <code>jikerizhi</code></strong>。如果图片加载不出来，可以直接通过搜索公众号的微信号来查找D瓜哥的公众号。</td></tr></tbody></table></div><div class="authorbox clearfix"><figure class=authorbox__avatar><a target=_blank href=/about/><img alt="D瓜哥 avatar" src=/images/avatar.jpg class=avatar height=110 width=110></a></figure><div class=authorbox__header><span class=authorbox__name>关于 D瓜哥</span></div><div class=authorbox__description>厨艺界最好的码农，挨踢界最棒的厨师。<ul><li><a target=_blank href=https://wordpress.diguage.com/>旧版“地瓜哥”博客网</a></li><li><a target=_blank href=https://notes.diguage.com/mysql/>MySQL 学习笔记<sup>Alpha</sup></a></li><li><a target=_blank href=https://diguage.github.io/jdk-source-analysis/>JDK 源码分析<sup>Alpha</sup></a></li></ul></div></div><nav class="pager flex"><div class="pager__item pager__item--prev"><a class=pager__link href=/post/install-software-for-new-mac/ rel=prev><span class=pager__subtitle>«&#8201;上一篇</span><p class=pager__title>新 Mac 安装软件脚本</p></a></div><div class="pager__item pager__item--next"><a class=pager__link href=/post/java-zgc-algorithm-tuning/ rel=next><span class=pager__subtitle>下一篇&#8201;»</span><p class=pager__title>Java ZGC 调优</p></a></div></nav><section class=comments><div id=SOHUCS sid=/post/the-merging-spring-applications-road/></div><script type=text/javascript>(function(){if(window.location.hostname==="localhost")return;var n,e="cyuuTeBp3",t="prod_2906c47c31e735e0ed518282fec489a6",s=window.innerWidth||document.documentElement.clientWidth;s<960?window.document.write('<script id="changyan_mobile_js" charset="utf-8" type="text/javascript" src="https://changyan.sohu.com/upload/mobile/wap-js/changyan_mobile.js?client_id='+e+"&conf="+t+'"><\/script>'):(n=function(e,t){var s=document.getElementsByTagName("head")[0]||document.head||document.documentElement,n=document.createElement("script");n.setAttribute("type","text/javascript"),n.setAttribute("charset","UTF-8"),n.setAttribute("src",e),typeof t=="function"&&(window.attachEvent?n.onreadystatechange=function(){var e=n.readyState;(e==="loaded"||e==="complete")&&(n.onreadystatechange=null,t())}:n.onload=t),s.appendChild(n)},n("https://changyan.sohu.com/upload/changyan.js",function(){window.changyan.api.config({appid:e,conf:t})}))})()</script></section></div><aside class=sidebar><div class="widget-search widget"><form class=widget-search__form role=search method=get action=https://google.com/search><label><input class=widget-search__field type=search placeholder=搜索… name=q aria-label=搜索…>
+</label><input class=widget-search__submit type=submit value=Search>
+<input type=hidden name=sitesearch value=https://www.diguage.com/></form></div><div class="widget-wechat widget"><h4 class=widget__title>微信公众号</h4><img alt=微信公众号 class=center src=/images/wx-jikerizhi-qrcode.jpg></div><div class="widget-wechat widget"><h4 class=widget__title>知识星球</h4><img alt=微信公众号 class=center src=/images/zhishixingqiu.png></div><div class="widget-recent widget"><h4 class=widget__title>近期文章</h4><div class=widget__content><ul class=widget__list><li class=widget__item><a class=widget__link href=/post/dive-into-beanfactorypostprocessor/>深入研究 BeanFactoryPostProcessor</a></li><li class=widget__item><a class=widget__link href=/post/java-21-boot-parameters-in-the-production/>生产环境中 Java 21 启动参数</a></li><li class=widget__item><a class=widget__link href=/post/optimize-code-using-openrewrite/>使用 OpenRewrite 优化代码</a></li><li class=widget__item><a class=widget__link href=/post/upgrade-to-openjdk21/>OpenJDK 21 升级指南</a></li><li class=widget__item><a class=widget__link href=/post/gc-performance-real-qps/>JVM GC 性能测试（三）：真实流量</a></li><li class=widget__item><a class=widget__link href=/post/gc-performance-incremental-qps/>JVM GC 性能测试（二）：递增流量</a></li><li class=widget__item><a class=widget__link href=/post/gc-performance-same-qps/>JVM GC 性能测试（一）：相同流量</a></li><li class=widget__item><a class=widget__link href=/post/gc-performance-comparison-method/>JVM GC 性能对比方法</a></li><li class=widget__item><a class=widget__link href=/post/jvm-anatomy-quarks-02-transparent-huge-pages/>JVM 剖析花园：2 - 透明大页</a></li><li class=widget__item><a class=widget__link href=/post/jvm-anatomy-quarks-01-lock-coarsening-for-loops/>JVM 剖析花园：1 - 锁粗化及循环</a></li><li class=widget__item><a class=widget__link href=/post/memory-wasted-by-spring-boot-application/>Spring Boot 应用程序浪费的内存</a></li><li class=widget__item><a class=widget__link href=/post/gc-tuning-success-story-reducing-young-gen-size/>GC 调优成功案例：减少新生代的大小</a></li><li class=widget__item><a class=widget__link href=/post/large-or-small-memory-size-for-my-app/>应用程序的内存是大还是小？</a></li><li class=widget__item><a class=widget__link href=/post/how-to-aim-for-high-gc-throughput/>如何实现 GC 的高吞吐量？</a></li><li class=widget__item><a class=widget__link href=/post/java-zgc-algorithm-tuning/>Java ZGC 调优</a></li><li class=widget__item><a class=widget__link href=/post/the-merging-spring-applications-road/>Spring 应用合并之路</a></li><li class=widget__item><a class=widget__link href=/post/install-software-for-new-mac/>新 Mac 安装软件脚本</a></li><li class=widget__item><a class=widget__link href=/post/placeholder-in-spring-1/>Spring 对占位符的处理（一）：XML 中的 Bean</a></li><li class=widget__item><a class=widget__link href=/post/tips-for-interface-maintainability/>关于接口可维护性的一些建议</a></li><li class=widget__item><a class=widget__link href=/post/intro-to-versions-maven-plugin/>Versions Maven 插件简介</a></li></ul></div></div><div class="widget-categories widget"><h4 class=widget__title>分类</h4><div class=widget__content><ul class=widget__list><li class=widget__item><a class=widget__link href=/categories/%E4%B8%AA%E4%BA%BA%E6%88%90%E9%95%BF/>个人成长</a></li><li class=widget__item><a class=widget__link href=/categories/%E5%88%86%E5%B8%83%E5%BC%8F/>分布式</a></li><li class=widget__item><a class=widget__link href=/categories/%E5%BC%80%E5%8F%91%E5%B7%A5%E5%85%B7/>开发工具</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/>性能优化</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/>操作系统</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%95%B0%E6%8D%AE%E5%AD%98%E5%82%A8/>数据存储</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%96%87%E5%AD%A6/>文学</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%96%B9%E6%B3%95%E8%AE%BA/>方法论</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/>程序设计</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%AE%97%E6%B3%95/>算法</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/>系统架构</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%BB%8F%E6%B5%8E%E9%87%91%E8%9E%8D/>经济金融</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/>编程语言</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%BD%91%E7%BB%9C/>网络</a></li><li class=widget__item><a class=widget__link href=/categories/%E8%81%8C%E4%B8%9A%E5%8F%91%E5%B1%95/>职业发展</a></li><li class=widget__item><a class=widget__link href=/categories/%E8%BD%AF%E4%BB%B6%E5%B7%A5%E7%A8%8B/>软件工程</a></li><li class=widget__item><a class=widget__link href=/categories/%E9%80%B8%E9%97%BB%E8%B6%A3%E4%BA%8B/>逸闻趣事</a></li><li class=widget__item><a class=widget__link href=/categories/%E9%98%85%E8%AF%BB%E6%91%98%E8%A6%81/>阅读摘要</a></li></ul></div></div><div class="widget-taglist widget"><h4 class=widget__title>标签</h4><div class=widget__content><a class="widget-taglist__link widget__link btn" href=/tags/gc/ title=GC>GC (9)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/http/ title=HTTP>HTTP (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/java/ title=Java>Java (60)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/jvm/ title=JVM>JVM (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/kpi/ title=KPI>KPI (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/kubernetes/ title=Kubernetes>Kubernetes (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/linux/ title=Linux>Linux (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/okr/ title=OKR>OKR (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/redis/ title=Redis>Redis (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/shell/ title=Shell>Shell (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/spring/ title=Spring>Spring (25)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/tcp/ title=TCP>TCP (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/udp/ title=UDP>UDP (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/zookeeper/ title=ZooKeeper>ZooKeeper (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E4%B8%AA%E4%BA%BA%E6%8F%90%E5%8D%87/ title=个人提升>个人提升 (9)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E4%B9%A6%E7%B1%8D/ title=书籍>书籍 (15)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E4%BA%A7%E5%93%81/ title=产品>产品 (7)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%80%BA%E5%88%B8/ title=债券>债券 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%88%86%E5%B8%83%E5%BC%8F/ title=分布式>分布式 (12)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%88%86%E6%B2%BB/ title=分治>分治 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/ title=动态规划>动态规划 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9B%A2%E9%98%9F%E5%BB%BA%E8%AE%BE/ title=团队建设>团队建设 (6)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9B%A2%E9%98%9F%E6%96%87%E5%8C%96/ title=团队文化>团队文化 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9F%BA%E9%87%91/ title=基金>基金 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%AD%98%E5%82%A8/ title=存储>存储 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%B7%A5%E4%BD%9C%E6%96%B9%E6%B3%95/ title=工作方法>工作方法 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%B9%B6%E5%8F%91/ title=并发>并发 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%BA%8F%E5%88%97%E5%8C%96/ title=序列化>序列化 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/ title=微服务>微服务 (16)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%BF%83%E7%90%86%E5%AD%A6/ title=心理学>心理学 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95/ title=性能测试>性能测试 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%8A%95%E8%B5%84%E7%90%86%E8%B4%A2/ title=投资理财>投资理财 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/ title=数据库>数据库 (8)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/ title=数据结构>数据结构 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%96%B9%E6%B3%95%E8%AE%BA/ title=方法论>方法论 (13)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%97%85%E8%A1%8C/ title=旅行>旅行 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5/ title=最佳实践>最佳实践 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%9E%B6%E6%9E%84/ title=架构>架构 (38)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%A0%91/ title=树>树 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%B2%9F%E9%80%9A%E6%8A%80%E5%B7%A7/ title=沟通技巧>沟通技巧 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/ title=源码分析>源码分析 (8)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%90%86%E8%B4%A2/ title=理财>理财 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%94%9F%E6%B4%BB/ title=生活>生活 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%AC%94%E8%AE%B0/ title=笔记>笔记 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%AE%97%E6%B3%95/ title=算法>算法 (8)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BB%8F%E6%B5%8E/ title=经济>经济 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BC%96%E7%A0%81/ title=编码>编码 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BD%91%E7%BB%9C/ title=网络>网络 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BF%BB%E8%AF%91/ title=翻译>翻译 (7)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%82%A1%E7%A5%A8/ title=股票>股票 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%84%91%E5%9B%BE/ title=脑图>脑图 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%8A%82%E6%97%A5/ title=节日>节日 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%8B%B1%E8%AF%AD/ title=英语>英语 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%99%9A%E6%8B%9F%E6%9C%BA/ title=虚拟机>虚拟机 (9)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AE%BA%E6%96%87/ title=论文>论文 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AE%BE%E8%AE%A1/ title=设计>设计 (33)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/ title=设计模式>设计模式 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AF%97%E6%AD%8C/ title=诗歌>诗歌 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AF%BB%E4%B9%A6/ title=读书>读书 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%80%92%E5%BD%92/ title=递归>递归 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%87%91%E8%9E%8D/ title=金融>金融 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1/ title=面向对象>面向对象 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%A2%86%E5%9F%9F%E9%A9%B1%E5%8A%A8%E8%AE%BE%E8%AE%A1/ title=领域驱动设计>领域驱动设计 (3)</a></div></div><div class="widget-social widget"><h4 class="widget-social__title widget__title">社交</h4><div class="widget-social__content widget__content"><div class="widget-social__item widget__item"><a class="widget-social__link widget__link btn" title=Twitter rel="noopener noreferrer" href=https://twitter.com/diguage target=_blank><svg class="widget-social__link-icon icon icon-twitter" width="24" height="24" viewBox="0 0 384 312"><path d="m384 36.9c-14.1 6.3-29.3 10.5-45.2 12.4 16.3-9.7 28.8-25.2 34.6-43.6-15.2 9-32.1 15.6-50 19.1-14.4-15.2-34.9-24.8-57.5-24.8-43.5.0-78.8 35.3-78.8 78.8.0 6.2.7 12.2 2 17.9-65.5-3.3-123.5-34.6-162.4-82.3C20 26 16.1 39.6 16.1 54c0 27.3 13.9 51.4 35 65.6-12.9-.4-25.1-4-35.7-9.9v1c0 38.2 27.2 70 63.2 77.2-6.6 1.8-13.6 2.8-20.8 2.8-5.1.0-10-.5-14.8-1.4 10 31.3 39.1 54.1 73.6 54.7-27 21.1-60.9 33.7-97.8 33.7-6.4.0-12.6-.4-18.8-1.1C34.9 299 76.3 312 120.8 312c144.9.0 224.1-120 224.1-224.1.0-3.4-.1-6.8-.2-10.2 15.4-11.1 28.7-25 39.3-40.8z"/></svg>
+<span>Twitter</span></a></div><div class="widget-social__item widget__item"><a class="widget-social__link widget__link btn" title=GitHub rel="noopener noreferrer" href=https://github.com/diguage target=_blank><svg class="widget-social__link-icon icon icon-github" width="24" height="24" viewBox="0 0 384 374"><path d="m192 0C85.9.0.0 85.8.0 191.7c0 84.7 55 156.6 131.3 181.9 9.6 1.8 13.1-4.2 13.1-9.2.0-4.6-.2-16.6-.3-32.6-53.4 11.6-64.7-25.7-64.7-25.7-8.7-22.1-21.3-28-21.3-28-17.4-11.9 1.3-11.6 1.3-11.6 19.3 1.4 29.4 19.8 29.4 19.8 17.1 29.3 44.9 20.8 55.9 15.9 1.7-12.4 6.7-20.8 12.2-25.6-42.6-4.8-87.5-21.3-87.5-94.8.0-20.9 7.5-38 19.8-51.4-2-4.9-8.6-24.3 1.9-50.7.0.0 16.1-5.2 52.8 19.7 15.3-4.2 31.7-6.4 48.1-6.5 16.3.1 32.7 2.2 48.1 6.5 36.7-24.8 52.8-19.7 52.8-19.7 10.5 26.4 3.9 45.9 1.9 50.7 12.3 13.4 19.7 30.5 19.7 51.4.0 73.7-44.9 89.9-87.7 94.6 6.9 5.9 13 17.6 13 35.5.0 25.6-.2 46.3-.2 52.6.0 5.1 3.5 11.1 13.2 9.2C329 348.2 384 276.4 384 191.7 384 85.8 298 0 192 0z"/></svg>
+<span>GitHub</span></a></div><div class="widget-social__item widget__item"><a class="widget-social__link widget__link btn" title=Email href=mailto:leejun119@gmail.com><svg class="widget-social__link-icon icon icon-mail" width="24" height="24" viewBox="0 0 416 288"><path d="m0 16v256 16h16 384 16v-16V16 0h-16H16 0zm347 16-139 92.5L69 32zM199 157.5l9 5.5 9-5.5L384 46v210H32V46z"/></svg>
+<span>leejun119@gmail.com</span></a></div></div></div></aside></div><footer class=footer><div class="container footer__container flex"><div class=footer__copyright>&copy; 2024 "地瓜哥"博客网.
+<span class=footer__copyright-credits>基于 <a href=https://gohugo.io/ rel="nofollow noopener" target=_blank>Hugo</a> 引擎和 <a href=https://github.com/Vimux/Mainroad/ rel="nofollow noopener" target=_blank>Mainroad</a> 主题</span>
+<span><a href=https://beian.miit.gov.cn/ target=_target>京ICP备14046450号-4</a></span></div></div></footer></div><script async defer src=/js/menu.js></script></body></html>

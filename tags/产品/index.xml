@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>产品 on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/%E4%BA%A7%E5%93%81/</link><description>Recent content in 产品 on "地瓜哥"博客网</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Tue, 23 Aug 2022 13:15:09 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/%E4%BA%A7%E5%93%81/index.xml" rel="self" type="application/rss+xml"/><item><title>文档技术方案选型：AsciiDoc vs Markdown</title><link>https://www.diguage.com/post/asciidoc-vs-markdown/</link><pubDate>Sun, 13 Feb 2022 19:56:09 +0800</pubDate><guid>https://www.diguage.com/post/asciidoc-vs-markdown/</guid><description>D瓜哥在前面的文章 使用 Hugo 搭建博客 中介绍了如何用 Hugo 搭建个人博客。部门准备系统地整理一下各个小组的文档。恰好 D瓜哥 对写文档非常感兴趣，正好写个材料分享一下血泪经验。
+编辑进化之路 第一代：WordPress 缺点：写作和排版割裂，排版耗时且繁琐
+第二代：MarkDown 缺点：方言众多，工具链不够完整。
+现在已经改观很多。
+第三代：AsciiDoc 轻量级标记语言的优点 思路与格式融为一体 在整理文档时，随手加入格式管理，不需要为格式分心，也无须浪费时间调整排版。
+代码高亮 AsciiDoc 与 MarkDown 都支持
+/** * @author D瓜哥 · https://www.diguage.com/ */ public class Main { public static void main(String[] args) { System.out.println(&amp;#34;Hello, D瓜哥！&amp;#34;); } } 文本格式 文本格式，天然跨平台，支持性好，方便编辑与管理。
+结合 Git，支持版本管理。
+生态完善 Markdown Hugo: The world’s fastest framework for building websites — Hugo 使用 yuin/goldmark: A markdown parser written in Go. 来做转换工作。也支持 AsciiDoc，不过需要挑选比较合适的主题： Hugo Themes。</description></item><item><title>优化网站</title><link>https://www.diguage.com/post/optimize-websites/</link><pubDate>Mon, 07 Feb 2022 11:44:17 +0800</pubDate><guid>https://www.diguage.com/post/optimize-websites/</guid><description>前几年应大势所趋，使用 Let’s Encrypt 给所有网站都上了 HTTPS。因为去年年中把博客托管到 GitHub 上了，导致一起申请 HTTPS 证书的站点无法按时更新证书。所以，所有证书都过期了。前几天有朋友发消息问我，Byte Buddy 的中文文档是不是我搞的？正好借机把证书更新了一下。
+此后不久，无意间查看了一下网站服务器的操作系统和 Nginx 版本，发现竟然是 Ubuntu 16.04 + Nginx 1.12。Ubuntu 16.04 都”过期“了，正好得空升级一下。
+升级操作系统 以前没有升级过操作系统大版本，正好借此机会练手：
+# 升级操作系统版本执行，先做一下常规升级 sudo apt-get update sudo apt-get upgrade sudo reboot # 检查可以升级的版本 sudo do-release-upgrade -c # 开始升级 sudo do-release-upgrade 升级完成后，检查操作系统版本：
+$ cat /etc/os-release NAME=&amp;#34;Ubuntu&amp;#34; VERSION=&amp;#34;20.04.3 LTS (Focal Fossa)&amp;#34; ID=ubuntu ID_LIKE=debian PRETTY_NAME=&amp;#34;Ubuntu 20.04.3 LTS&amp;#34; VERSION_ID=&amp;#34;20.04&amp;#34; HOME_URL=&amp;#34;https://www.ubuntu.com/&amp;#34; SUPPORT_URL=&amp;#34;https://help.ubuntu.com/&amp;#34; BUG_REPORT_URL=&amp;#34;https://bugs.launchpad.net/ubuntu/&amp;#34; PRIVACY_POLICY_URL=&amp;#34;https://www.ubuntu.com/legal/terms-and-policies/privacy-policy&amp;#34; VERSION_CODENAME=focal UBUNTU_CODENAME=focal 有几点需要注意：
+LTS 版本升级，只能一步一步升级，从 16.04 升级到 18.04，再从 18.</description></item><item><title>使用 Hugo 搭建博客</title><link>https://www.diguage.com/post/building-blog-with-hugo/</link><pubDate>Sat, 01 Aug 2020 16:09:43 +0800</pubDate><guid>https://www.diguage.com/post/building-blog-with-hugo/</guid><description>一个朋友对D瓜哥的博客感兴趣，觉得很好玩。问我怎么玩，D瓜哥也懒得手把手教了，干脆写篇文章来做个说明吧。也许对其他朋友也有所帮助。
+潮起潮落 D瓜哥早在 2012年就使用 WordPress 搭建了一个博客： &amp;#34;地瓜哥&amp;#34;博客网—分享技术带来的喜悦，WordPress 不亏是全世界最流行的开源 CMS 系统，各种插件可以满足非常对的需求。当年D瓜哥还想研究一下它的源代码，可惜对 PHP（对，就是那个拍黄片的）无感，没有坚持下去。
+但是，在熟悉了 MarkDown、 Asciidoctor（D瓜哥是 AsciiDoctor 的死忠粉，坚决支持它的发展） 等轻量级标记语言后，愈发觉得 WordPress 太繁琐：写作一个小时，排版发布一小时。实在是太浪费时间了。
+先尝试了一下 Antora，之所以选它，是因为它是 AsciiDoctor 的作者发起的项目，对 AsciiDoctor 的支持性非常好。尝试了一段时间后，发现它更适合写产品说明书，更适合像阿里云等这种对外提供产品，需要提供在线产品说明书的情况。不适合做个人博客。
+去年，经过多次测试后（主要测试对 AsciiDoctor 的支持性），发现现在D瓜哥用的这个主题对 AsciiDoctor 支持得不错，随后下定决心切换到了 Hugo。
+Hugo 简介 关于 Hugo 的介绍，直接转摘维基百科的介绍了：
+Hugo 是一个用 Go 编写的静态网站生成器，2013由 Steve Francia 原创，自 v0.14 (2015年) 由 Bjørn Erik Pedersen 主力开发，并由全球各地的开发者和用户提交贡献。Hugo 以 Apache License 2.0 许可的开放源代码项目。
+Hugo 一般只需几秒钟就能生成一个网站（每页少于 1 毫秒），被称为“世界上最快的网站构建框架”，也使 Hugo 大受欢迎，成为最热门的静态网站生成器之一，被广泛采用。例如，2015年7月，Netlify 推出专为 Hugo 而设的网站托管服务，而2017年，Smashing Magazine 推出重新设计的官方网站，从原来的 WordPress 迁移到基于 Hugo 的 JAMstack 解决方案。</description></item><item><title>OKR 学习笔记 - 未来展望</title><link>https://www.diguage.com/post/okr-notes-future-vision/</link><pubDate>Tue, 22 Oct 2019 00:00:00 +0800</pubDate><guid>https://www.diguage.com/post/okr-notes-future-vision/</guid><description>29 | 他们落地 OKR 都失败了，原因出在哪儿？ 为何这家初创公司落地 OKR 失败了？ 拿 OKR 当 KPI 用，只是通过 OKR 看结果，而忽略了 OKR 执行过程中的跟踪与复盘，最终导致 OKR 没用对，KPI 也没用好。
+对于初创公司而言，生存固然重要，但成长也不可忽视，OKR 既能实现目标，又能关注成长。
+为何这家传统企业落地 OKR 失败了？ 为何这家互联网公司落地 OKR 失败了？ 总结 没有充分理解 OKR 的核心概念，更没有真正体会到 OKR 的精髓，容易将 OKR 当 KPI 用。
+当正确理解 OKR 后，就应该快速落地，并及时跟踪落地效果，持续收集员工反馈。
+OKR 的本质就是简单，所以没必要让 OKR 落地变得复杂，无需与流程和制度相绑定。
+30 | 用什么工具，能加强OKR落地效果？ OKR 初步落地，用什么工具？ 与“表格”相比，我更倾向于“看板”，不是电子看板，而是实体看板，需要将它固定在墙上，而且办公区域内，越多的同事看到它越好。
+看板使得 OKR 的价值发挥到了极致。
+第一，OKR 看板让文化变得公开透明。
+第二，OKR 看板能激励自己努力执行。
+第三，OKR 看板能影响他人改变行为。
+OKR 看板才是初步落地 OKR 的必备神器。
+OKR 初见成效，用什么工具？ 每周工作结束后，在公司范围内发布“OKR 周报”，在周报中列出本周在 OKR 中要完成进度的人和事，写得越具体越好。</description></item><item><title>OKR 学习笔记 - 管理心经</title><link>https://www.diguage.com/post/okr-notes-management-scripture/</link><pubDate>Mon, 21 Oct 2019 18:44:00 +0800</pubDate><guid>https://www.diguage.com/post/okr-notes-management-scripture/</guid><description>15 | 技术团队真的是“成本中心”吗？如何改变这一现状？ 如何体现技术团队的价值？ 要回答技术团队如何产生价值的问题，首先要让同事们知道工程师们每天到底在做什么。
+除了在技术团队核心工作方面来体现价值以外，你还需要在日常的项目中体现技术团队的价值。
+如何使用 OKR 体现项目价值？ Why：为何我们要做这个项目，这个项目主要是为了解决什么问题？
+What：对于项目所解决的问题而言，它所能产生的价值到底有多大？
+How：项目上线后，是否能够有效地去验证项目的价值？如何验证？
+技术团队所交付项目的价值。
+如何持续地体现技术团队价值？ 不要告诉工程师们应该做些什么，更不要告诉他们应该怎么去做，而要告诉他们为什么要做。
+O 的完成率是其下每个 KR 完成率的平均值。
+对于曾经做过的项目所产生的价值，你还需要阶段性地向你的上级领导汇报，从而建立领导和你之间的信任，这同样也能体现技术团队的价值。
+总结 一些技巧：
+项目 OKR 无需你一个人来制定，你需要与协作伙伴们共同来完成。
+通过“引导式”提问方法，让你的伙伴们认可通过 OKR 来验证项目价值的方法。
+持续体现技术团队价值，通过定期向大家同步项目 OKR 完成率，这个方法值得尝试。
+16 | 大家都说“向上管理”很重要，你想学一些“套路”吗？ 向下管理指的是管理自己的团队等； 向上管理指的是与自己的领导有效沟通； 横向管理指的是与自己的跨部门同事进行工作协同。
+向上管理，到底管理的是什么？ 问题 为何与自己的领导一言不合，就会选择离职呢？其根本原因还是在于自己和领导之间的沟通出现了问题。
+实质 向上管理，管理的其实是领导对你的期望。
+难点 员工想要的是更深层次理解领导的想法和要求，领导想要的是让员工能尽可能地按照自己的想法和要求去执行。
+如何让双方的沟通变得更加有效？ 案例展示 老板参加阿里回来，要求996。
+案例分析 如果你现在已经掌握了 OKR 使用方法，那么就能将其上升到“OKR 思维”层面了，建立与领导之间的有效沟通，从而实现向上管理。
+如何使用“OKR 思维”进行向上管理？ OKR 应该是一种思维，当你需要进行向上管理时，OKR 是你和领导的“共同语言”。
+总结 做一名“被领导者”，需要发挥自己的智慧，充分挖掘出领导对你的期望。
+产品经理管理的是用户对产品的期望，你需要管理的是领导对你的期望。
+OKR 是一种管理思维，只要双方认可 OKR 的价值，就能快速达成共识。
+17 | 跨部门协同费劲，沟通效率低，如何粉碎“部门墙”？ 企业内部之间存在一堵无形的“墙”，它阻碍着跨部门协同，阻碍着各部门之间信息传递和工作交流，我们称这堵墙为“部门墙”，正是由于“部门墙”的产生，才导致公司缺乏执行效率，战略无法迅速落地。
+为何公司变大了，部门墙也变厚了？ 部门墙使部门协同会变得越来越弱，导致出现“各人自扫门前雪，休管他人瓦上霜”的“本位主义”现象。</description></item><item><title>OKR 学习笔记 - 操作指南</title><link>https://www.diguage.com/post/okr-notes-operation-guide/</link><pubDate>Sun, 20 Oct 2019 18:44:00 +0800</pubDate><guid>https://www.diguage.com/post/okr-notes-operation-guide/</guid><description>08 | 如何轻松制定OKR？方法原来如此简单 你制定的 O 对不对？ O 是 OKR 中“What”的层面，它解决了“做什么”的问题。
+O 最核心的特性就一定在于它对组织、团队、个人所能提供的价值上：
+对于组织目标而言，当一位 CEO 制定组织目标时，他需要结合企业战略规划来制定 OKR，他所制定的 O 就必须具备商业价值。
+如果你是团队负责人，那么你一定要考虑：怎样的 O 能帮助你的团队产生价值。
+综上所述，在制定 O 时，你需要注意以下三条核心原则：
+O 要有实际价值，你要深度思考。
+O 要能激励人心，你要善于表达。
+O 要短期可实现，你要脚踏实地。
+分享三条注意事项：
+O 尽可能要以动词形式开头。例如：打造……、建设……、实现……。
+O 用通俗易懂的语言来表达。一定不要写一些自认为“高大上”的词汇，除非大家理解上都可以达成一致。
+O 最好能附上一句目标描述。建议为 O 增加一句话描述，就“为何我要写这个目标？”这一问题，来向大家讲解。
+你制定的 KR 好不好？ KR 是针对 OKR 中“How”的层面，它解决了具体“怎么做”的问题。
+具体数字
+数字范围
+“里程碑”事件
+不得不承认一个事实：恰到好处制定 KR 这件事本身就有一定挑战性。我的建议是，制定 KR 的挑战，你跳一跳就能够得着，后面再不断给自己提更高的要求。
+关于制定 KR，你需要遵循的三条核心原则，我按照重要程度依次列出来：
+KR 要支撑目标，需要与 O 直接关联。
+KR 用数据说话，需要通过数据去度量。
+KR 具备挑战性，难易度设置需要恰到好处。
+除了 KR 制定的三条核心原则以外，我也想告诉你关于 KR 的三点注意事项：</description></item><item><title>OKR 学习笔记 - 快速入门</title><link>https://www.diguage.com/post/okr-notes-quickstart/</link><pubDate>Sat, 19 Oct 2019 18:44:00 +0800</pubDate><guid>https://www.diguage.com/post/okr-notes-quickstart/</guid><description>01 | 你想要快速理解OKR吗？看这篇文章就够了 越来越火的 OKR 究竟是什么？ OKR 是一款目标管理工具，它由 Objectives（目标）和 Key Results（关键结果）两部分构成。同时，OKR 也被称为“目标与关键结果工作法”，简称为“OKR 工作法”。OKR 是融合了一系列框架、方法和哲学后的产物，它起源于 Intel，发展于 Google。
+可以把 OKR 中的 O 想象成一个你想要去的最终目的地，它时刻为你指明前进的方向，此外，可以把 KR 想象成一个带有距离标记的路标，它时刻告诉你距离目的地还有多远。
+OKR 是一种融入了人性的科学管理框架。OKR 绝不是一款简单的目标管理工具，它充满了人性和智慧。
+你为什么需要 OKR？ OKR 使方向更加聚焦 OKR 恰恰能够解决短期目标的实现问题，让目标更加聚焦，让行动脚踏实地，通过完成 KR 从而实现 O，这也正是 OKR 的基本原理。
+为了让目标更加聚焦，因此在制定 O 的时候就需要考虑“做减法”，不要贪多求广，在资源有限的前提下，我们只有集中优势“兵力”，才能逐个歼灭“敌人”。
+OKR 使沟通更加透明 《孙子兵法》云“上下同欲者胜”。
+CEO 首先制定“公司 OKR”，即组织目标，并将组织目标与部门负责人沟通。
+部门负责人再去制定“部门 OKR”，即团队目标，并将团队目标与组织目标对齐，与 CEO 确认后再与员工沟通。
+各个员工充分理解了团队目标后，再去制定自己的“员工 OKR”，即个人目标，并将个人目标与团队目标对齐，并与团队负责人确认。
+OKR 使激励更加有效 除了金钱等物质激励以外，最有效的激励方式莫过于“成长”和“认可”，而且精神激励往往比物质激励产生的激励效果更持久。
+如何更有效地使用 OKR？ 对于 O，你需要做到以下三点：
+方向明确：目标不能太抽象，也不能含混不清，要让每个人都能看得懂。
+目标对齐：下级要对齐上级的目标，即向上对齐，平级还要相互对齐，即水平对齐。
+时间限制：目标需要有时间边界，不能遥遥无期，而且时间边界要恰到好处。
+对于 KR，你同样需要做到三点：
+有挑战性：关键结果要有挑战性，拒绝平庸，拒绝不切实际，要做到“跳一跳，就能够得着”。
+容易度量：无法度量的关键结果是没有任何意义的，宁可抛弃。
+不是任务：关键结果需要对目标产生直接影响，它不是日常任务，也不是行动计划。
+总地来说，制定 OKR 需要遵循“SMART 原则”，你需要尽可能满足以下五个要求：</description></item></channel></rss>
