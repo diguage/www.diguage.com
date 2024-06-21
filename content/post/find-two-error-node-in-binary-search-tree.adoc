@@ -1,0 +1,70 @@
+---
+title: "题解：找到二叉搜索树中两个错误的节点"
+date: 2020-06-21T17:57:19+08:00
+draft: true
+keywords: ["算法","二叉树","二叉搜索树","Morris"]
+tags: ["树"]
+categories: ["算法"]
+thumbnail: "images/common/tree.jpg"
+# aliases: "/old/path/"
+
+weight: 1
+---
+
+== 题目描述
+
+一棵二叉树原本是二叉搜索树，但是其中有两个节点调换了位置，使得这棵二叉树不再是二叉搜索树，请按升序输出这两个错误节点的值。(每个节点的值各不相同)
+
+== 思路分析
+
+一棵二叉搜索树，如果是中序遍历，那么，其序列正好是一个升序序列。如果序列中间出现了降序，那么就是树中错误的节点。这里有两种情况需要考虑：
+
+. 如果两个节点正好相邻，那么降序的两个节点就是题目要求的节点。
+. 如果两个节点不相邻，就会出现两次降序。很容易想到，“大”的元素跑前面，“小”的元素跑后面。在进行比较的时候，第一个降序时，前面大的元素是错误节点；第二次降序时，则是后面小的元素是错误节点。
+
+有了上面的分析，就可以写代码了。
+
+== 解题代码
+
+中序遍历，可以用栈，也可以使用 Morris 遍历。前面正好学习了一下 Morris（详情请看： https://www.diguage.com/post/morris-tree-traversal/[神奇的 Morris 树遍历^]），借此机会练练手：
+
+[source%nowrap,java,{source_attr}]
+----
+public static TreeNode[] getErrs(TreeNode head) {
+    TreeNode[] result = new TreeNode[2];
+    TreeNode curr = head;
+    TreeNode mostRight = null;
+    TreeNode prior = null;
+    while (curr != null) {
+        mostRight = curr.left;
+        if (mostRight != null) {
+            while (mostRight.right != null && mostRight.right != curr) {
+                mostRight = mostRight.right;
+            }
+            if (mostRight.right == null) {
+                mostRight.right = curr;
+                curr = curr.left;
+                continue;
+            } else {
+                mostRight.right = null;
+            }
+        }
+        if (prior != null) {
+            if (prior.val > curr.val) {
+                if (result[0] == null) {
+                    result[0] = curr;
+                    result[1] = prior;
+                } else {
+                    result[0] = curr;
+                }
+            }
+        }
+        prior = curr;
+        curr = curr.right;
+    }
+    return result;
+}
+----
+
+
+得益于 Morris 的优秀本质，这个解法的时间复杂度是： O(n)，空间复杂度是： O(1)。
