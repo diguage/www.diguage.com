@@ -30,6 +30,11 @@ weight: 1
 
 [source%nowrap,java,{source_attr}]
 ----
+/**
+ * 基于 Morris 的中根遍历
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ */
 public static TreeNode[] getErrs(TreeNode head) {
     TreeNode[] result = new TreeNode[2];
     TreeNode curr = head;

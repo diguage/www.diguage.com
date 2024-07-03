@@ -1,0 +1,74 @@
+---
+title: "题解：538.把二叉搜索树转换为累加树"
+date: 2020-07-03T14:56:24+08:00
+draft: false
+keywords: ["算法","二叉树","二叉搜索树","Morris", "LeetCode"]
+tags: ["树"]
+categories: ["算法"]
+thumbnail: "images/common/tree.jpg"
+# aliases: "/old/path/"
+
+weight: 1
+---
+
+== 题目描述
+
+题目是 LeetCode 的第 538 题： https://leetcode.com/problems/convert-bst-to-greater-tree/description/[把二叉搜索树转换为累加树^]。
+
+给出二叉搜索树的根节点，该树的节点值各不相同，请你将其转换为累加树（Greater Sum Tree），使每个节点 `node` 的新值等于原树中大于或等于 `node.val` 的值之和。
+
+提醒一下，二叉搜索树满足下列约束条件：
+
+* 节点的左子树仅包含键 小于 节点键的节点。
+* 节点的右子树仅包含键 大于 节点键的节点。
+* 左右子树也必须是二叉搜索树。
+
+== 思路分析
+
+一棵二叉搜索树，如果是中根遍历，那么，其序列正好是一个升序序列。但，题目要求的是大于等于自身的节点值之和。正常的中根遍历是“左中右”，反过来“右中左”，就是降序序列，累计求和就符合题目要求了。
+
+== 解题代码
+
+中序遍历，可以用栈，也可以使用 Morris 遍历。在 https://www.diguage.com/post/find-two-error-node-in-binary-search-tree/[题解：找到二叉搜索树中两个错误的节点^] 中就是用了 Morris 遍历。网上也很少有反向的 Morris 中根遍历。正好练习一下。
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * 基于 Morris 的倒序中根遍历
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ */
+public TreeNode convertBST(TreeNode root) {
+  int sum = 0;
+  // 反向 Morris
+  TreeNode cur = root;
+  TreeNode mostLeft = null;
+  while (cur != null) {
+    // 向右转
+    mostLeft = cur.right;
+    if (mostLeft != null) {
+      // 寻找最左边的节点
+      while (mostLeft.left != null && mostLeft.left != cur) {
+        mostLeft = mostLeft.left;
+      }
+      if (mostLeft.left == null) {
+        // 第一次访问，将最左节点的左子树指向当前节点
+        mostLeft.left = cur;
+        cur = cur.right;
+        continue;
+      } else {
+        // 第二次访问，掐断中间建立的连接
+        mostLeft.left = null;
+      }
+    }
+    // 计算累加和
+    sum += cur.val;
+    cur.val = sum;
+    cur = cur.left;
+  }
+  return root;
+}
+----
+
+
+得益于 Morris 的优秀本质，这个解法的时间复杂度是： O(n)，空间复杂度是： O(1)。
