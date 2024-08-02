@@ -1,0 +1,146 @@
+---
+title: "单调栈实践（一）：入门"
+date: 2020-08-01T11:32:47+08:00
+draft: false
+keywords: ["算法", "数据结构", "Stack", "Monotonic Stack", "单调栈", "LeetCode"]
+tags: ["栈"]
+categories: ["算法"]
+thumbnail: "images/portraits/donald-knuth.jpg"
+# aliases: "/old/path/"
+
+weight: 1
+---
+
+最近刷 LeetCode 算法题中，遇到了一些需要单调栈的题目，就顺便学习了一下单调栈。分享出来，以备后续深入学习。
+
+学习单调栈之前，先了解一些栈。
+
+== 栈 Stack
+
+栈是一个众所周知的线性数据结构，它遵循先入后出（First In Last Out，简称 FILO）或后入先出（Last In First Out，简称 LIFO）的访问顺序。操作示意图如下：
+
+image::/images/data-structure/stack.gif[title="入栈与出栈",alt="入栈与出栈",{image_attr}]
+
+== 单调栈 Monotonic Stack
+// image::/images/data-structure/monotonic-stack.jpeg[title="单调栈",alt="单调栈",{image_attr}]
+
+单调栈是一种特殊的栈，添加了一些限制条件：内部元素只能是递增或递减的顺序存储；添加元素时，如果新元素不符合单调性，则将其内部元素弹出，直到符合添加时，才添加元素。根据元素顺序，又可分为单调递增栈和单调递减栈。操作示意图如下：
+
+image::/images/data-structure/monotonically-increasing-stack.svg[title="单调递增栈",alt="单调递增栈",{image_attr}]
+
+image::/images/data-structure/monotonically-decreasing-stack.svg[title="单调递减栈",alt="单调递减栈",{image_attr}]
+
+[#monotonic-stack-pseudocode]
+=== 代码示例
+
+在写代码时，一般基于 `Deque` 来实现，通常用到以下四个方法：
+
+* `deque.isEmpty()`：如果 `deque` 不包含任何元素，则返回 `true`，否则返回 `false`。因为要栈顶元素在满足要求的时候要弹出，所以需要进行空栈判断。有些场景，可能栈一定不会空的时候，就不需要该方法进行空栈判断。
+* `deque.push(e)`：将元素 `e` 入栈。
+* `deque.pop()`：将栈顶元素弹出，并返回当前弹出的栈顶元素。
+* `deque.peek()`：获取栈顶元素，不弹出。
+
+[source%nowrap,java,{source_attr}]
+----
+// 定义一个单调栈
+Deque<Integer> stack = new LinkedList<>();
+// 第一个元素，直接添加
+stack.push(0); // 这里存的是数组下标
+for (int i = 1; i < nums.length; i++) {
+    // 单调递增栈这里就是大于，即 nums[i] > nums[deque.peek()]
+    if (nums[i] < nums[stack.peek()]) {
+        stack.push(i);
+    } else if (nums[i] == nums[stack.peek()]) {
+        stack.push(i);
+        // 此处除了入栈，在有些场景下，还有可能有其他操作
+        // ..............
+    } else {
+        // 循环比较，直到遇到当前元素小于栈顶的元素情况，跳出循环
+        // 单调递增栈，这里是小于，即nums[i] < nums[deque.peek()]
+        while (!stack.isEmpty() && nums[i] > nums[stack.peek()]) {
+            //主要逻辑
+            // ............
+            // ............
+            // 弹出栈顶元素
+            stack.pop();
+        }
+        stack.push(i);
+    }
+}
+----
+
+== 应用： LeetCode 155. 最小栈
+
+来看一个 LeetCode 算法提： https://leetcode.com/problems/min-stack/description/[LeetCode 155. 最小栈^]，D瓜哥愿意称之为单调栈入门最佳试题。
+
+____
+设计一个支持 `push`，`pop`，`top` 操作，并能在常数时间内检索到最小元素的栈。
+
+实现 `MinStack` 类:
+
+* `MinStack()` 初始化堆栈对象。
+* `void push(int val)` 将元素 `val` 推入堆栈。
+* `void pop()` 删除堆栈顶部的元素。
+* `int top()` 获取堆栈顶部的元素。
+* `int getMin()` 获取堆栈中的最小元素。
+____
+
+对于该题目来讲， `void push(int val)`， `void pop()`， `int top()` 等三个操作就是常规的栈操作，正如 <<monotonic-stack-pseudocode>> 中所述，直接使用 `Deque` 就可以完成。麻烦的是 `int getMin()` 如何在常数时间内完成？
+
+计算机中，无非就是“时间换空间”或者“空间换时间”。格局打开，既然常规的栈无法满足要求，那么这里就可以考虑“空间换时间”了。解决思路也很简单：**再使用一个辅助栈，在辅助栈中存入当前栈的最小值：添加元素时，如果元素比辅助栈顶元素小，则添加；否则，添加辅助栈的当前栈顶元素。**
+
+[source%nowrap,java,{source_attr}]
+----
+import java.util.Deque;
+import java.util.LinkedList;
+import java.util.Stack;
+
+/**
+ * LeetCode 155. 最小栈
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ * @since 2024-07-31 16:09:25
+ */
+class MinStack {
+  private Deque<Integer> stack = new LinkedList<>();    // <1>
+  private Deque<Integer> minStack = new LinkedList<>(); // <1>
+
+  public void push(int x) {
+    stack.push(x);
+    if (minStack.isEmpty()) {
+      minStack.push(x);
+    } else {
+      if (x < minStack.peek()) {
+        minStack.push(x);
+      } else {
+        minStack.push(minStack.peek());
+      }
+    }
+  }
+
+  public void pop() {
+    stack.pop();
+    minStack.pop();
+  }
+
+  public int top() {
+    return stack.peek();
+  }
+
+  public int getMin() {
+    return minStack.peek();
+  }
+}
+----
+<1> 根据 https://www.diguage.com/post/dive-into-java-code-block/[深入理解 Java 代码块^] 可知：构造函数外面的代码块会被编译到构造函数中。由于此类没有声明构造函数，则编译器会生成无参构造函数。该代码就会被编译到无参构造函数中，也符合题目要求。
+
+该题的答题方案中，辅助栈就是一个单调递减栈：后面入栈的元素始终小于等于当前栈顶元素。虽然与 <<monotonic-stack-pseudocode>> 相比，这个代码略显“简陋”，但优点是如意理解，没有太多的弯弯绕绕。
+
+本篇到此为止。在下一篇文章中： https://www.diguage.com/post/monotonic-stack-in-practice-2/[单调栈实践（二）：应用^] 中，将为大家介绍更多的应用示例。敬请关注。
+
+== 参考资料
+
+. https://medium.com/@joshalphonse/stacks-queues-97037b3c01c6[Stacks & Queues. Data Structures can be cool.^]
+. https://www.quantamagazine.org/computer-scientist-donald-knuth-cant-stop-telling-stories-20200416/[The Computer Scientist Who Can’t Stop Telling Stories^]
+. https://www.designgurus.io/course-play/grokking-the-coding-interview/doc/introduction-to-monotonic-stack[Introduction to Monotonic Stack^]
+. https://blog.csdn.net/weixin_50348837/article/details/136304458[深入理解单调栈算法，这一篇就够了^]
