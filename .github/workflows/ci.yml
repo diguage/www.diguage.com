@@ -8,6 +8,13 @@ jobs:
     # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idruns-on
     runs-on: ubuntu-latest
     steps:
+      # https://github.com/actions/setup-node
+      - name: Setup Node.js 🕸
+        uses: actions/setup-node@v4
+        with:
+          # https://github.com/nvm-sh/nvm#long-term-support
+          node-version: 'lts/*'
+
       # https://github.com/actions/checkout
       - name: Checkout 🛎️
         uses: actions/checkout@v4
@@ -15,23 +22,18 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
+      # https://github.com/peaceiris/actions-hugo
       - name: Setup Hugo 🐯
         uses: peaceiris/actions-hugo@v3
         with:
           hugo-version: 'latest'
           extended: true
 
+      # https://github.com/ruby/setup-ruby
       - name: Setup Ruby 💎
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: 3.3
-
-      # https://github.com/actions/setup-node
-      - name: Setup Node.js 🕸
-        uses: actions/setup-node@v4
-        with:
-          # https://github.com/nvm-sh/nvm#long-term-support
-          node-version: 'lts/*'
 
       - name: Install AsciiDoctor 🐶
         run: |
@@ -139,6 +141,7 @@ jobs:
           cd public/archives/
           for i in {1..147} ; do echo "<meta http-equiv=\"refresh\" content=\"0;url=https://wordpress.diguage.com/archives/${i}.html\">" > ${i}.html; done
 
+      # https://github.com/Burnett01/rsync-deployments
       - name: Rsync Deploy 🏹
         uses: Burnett01/rsync-deployments@7.0.1
         with:
@@ -150,6 +153,7 @@ jobs:
           remote_user: ${{ secrets.DEPLOY_USER }}
           remote_key: ${{ secrets.DEPLOY_KEY }}
 
+      # https://github.com/appleboy/ssh-action
       - name: Change Files Mod 🔐
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -161,6 +165,7 @@ jobs:
             cd ${{ secrets.DEPLOY_PATH }}
             sudo chmod -R 777 *
 
+      # https://github.com/JamesIves/github-pages-deploy-action
       - name: Deploy 🚀
         continue-on-error: true
         uses: JamesIves/github-pages-deploy-action@v4
