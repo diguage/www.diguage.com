@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>并发 on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/%E5%B9%B6%E5%8F%91/</link><description>Recent content in 并发 on "地瓜哥"博客网</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Mon, 05 Sep 2022 21:30:31 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/%E5%B9%B6%E5%8F%91/index.xml" rel="self" type="application/rss+xml"/><item><title>HikariCP 源码分析 -- FastList</title><link>https://www.diguage.com/post/hikari-cp-source-analysis-fast-list/</link><pubDate>Sun, 02 Aug 2020 15:06:02 +0800</pubDate><guid>https://www.diguage.com/post/hikari-cp-source-analysis-fast-list/</guid><description>在前面的文章 HikariCP 源码分析 — ConcurrentBag 中，D瓜哥分析了一下 HikariCP 中一个非常重要的数据结构 ConcurrentBag。
+今天，继续再介绍 HikariCP 中另一个很关键的数据结构： FastList。
+FastList 本身的实现非常简单，要理解它的奥秘，就需要结合 Java 原生集合类的 ArrayList 来比较性地看。
+构造函数 先来对比一下两者的构造函数。先来看看 FastList：
+FastList public final class FastList&amp;lt;T&amp;gt; implements List&amp;lt;T&amp;gt;, RandomAccess, Serializable { private static final long serialVersionUID = -4598088075242913858L; private final Class&amp;lt;?&amp;gt; clazz; private T[] elementData; private int size; /** * Construct a FastList with a default size of 32. * @param clazz the Class stored in the collection */ @SuppressWarnings(&amp;#34;unchecked&amp;#34;) public FastList(Class&amp;lt;?</description></item><item><title>HikariCP 源码分析 -- ConcurrentBag</title><link>https://www.diguage.com/post/hikari-cp-source-analysis-concurrent-bag/</link><pubDate>Wed, 06 May 2020 17:12:55 +0800</pubDate><guid>https://www.diguage.com/post/hikari-cp-source-analysis-concurrent-bag/</guid><description>以前无意间搜资料了解到 HikariCP，一下子就被它的简洁代码和卓越性能吸引住了。以前也有翻过它的代码，但是不是很系统，最近再次翻阅，正好做些笔记，方便以后学习。
+D瓜哥最近在学习 Java 并发知识。那就从 HikariCP 自定义的并发集合 ConcurrentBag 开始学习。
+在 HikariCP 的 Wiki 中，有 Down the Rabbit Hole · ConcurrentBag 的章节来专门介绍 ConcurrentBag：
+ConcurrentBag 的灵感借鉴自 C# .NET 的 ConcurrentBag 类。但是实现却是完全不同的。这里的 ConcurrentBag 有如下特性：
+A lock-free design
+ThreadLocal caching
+Queue-stealing
+Direct hand-off optimizations
+下面，通过代码来对此做个说明。
+在 ConcurrentBag 类的定义中，声明了集合元素必须是 IConcurrentBagEntry 的子类。先来看看这个接口的定义：
+public interface IConcurrentBagEntry { int STATE_NOT_IN_USE = 0; int STATE_IN_USE = 1; int STATE_REMOVED = -1; int STATE_RESERVED = -2; boolean compareAndSet(int expectState, int newState); void setState(int newState); int getState(); } 接下来，看一下成员变量：</description></item><item><title>推荐几本 Java 并发编程的书</title><link>https://www.diguage.com/post/java-concurrent-books/</link><pubDate>Wed, 25 Mar 2020 16:32:12 +0800</pubDate><guid>https://www.diguage.com/post/java-concurrent-books/</guid><description>最近，D瓜哥的一个小伙伴向我抱怨，Java 并发是个大坑，问我怎么看？我回答，当然是用眼睛看啊…
+D瓜哥觉得，想学好 Java 并发，最重要的还是啃书。幸运的是，Java 中还是有不少关于并发的优秀书籍可以看。正好利用这个机会，把看过的、个人认为还不错的书推荐一波。没有看过的就不多言了。
+Java并发编程实战 如果只选一本书来深入研究并发，那肯定是这本书。
+Java并发编程实战 (豆瓣) — 这本书是必看的。JDK 中 JUC 就是这本书的作者们写的。虽然书名含有 Java 一次，但是，里面更多是原理性的东西，各种语言都适用。只是例子少了一些。这本书需要多读几遍。（据说翻译不行，推荐看英文版）
+放个英文版图片镇楼：
+Java并发编程的艺术 Java并发编程的艺术 (豆瓣) — 这本书也不错，讲了很多源码方面的内容，非常棒。另外，在讲解 Double Lock 方面的知识时，涉及了很多 Java Memory Model 方面的知识，可以先看看 深入理解Java虚拟机（第3版）(豆瓣) 最后两章的内容，来提前补充一下这么方面的知识。
+实战Java高并发程序设计 实战Java高并发程序设计（第2版） (豆瓣) — 这本书也不错，针对 Java 8 写的，Java 8 中的很多新知识都有涉猎，例子也很全面。广度和深度，得到了兼顾，非常棒。
+Java编程思想 Java编程思想（第4版）(豆瓣) — 虽然这本书已经出来十余年了，但是依然经典。第 21 章 并发，用大量的例子和陈述来介绍并发。非常棒。美中不足，是针对 Java 5 编写的，现在已经 Java 8 了。不过，作者又出了一本书，可以理解成升级版。
+On Java 8 On Java 8 (豆瓣) — 这是《Java编程思想》的姊妹版和升级版。Bruce Eckel 的写书功底和对语言的理解毋庸置疑。目前中文版还没有正式版，网上已经有热心网友做起来搬运工，感兴趣自行 Google。
+Java 9 并发编程实战 Java 9 并发编程实战 (豆瓣) — 入门的话，这本书是不错的选择。每个特性一个例子，整本书大概 80% 的篇幅都是代码。所以，一定也不用担心有读书压力。</description></item></channel></rss>

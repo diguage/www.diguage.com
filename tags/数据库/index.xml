@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>数据库 on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/</link><description>Recent content in 数据库 on "地瓜哥"博客网</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Fri, 22 Sep 2023 17:01:30 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/index.xml" rel="self" type="application/rss+xml"/><item><title>升级 iBATIS/MyBATIS 对处理 DuplicateKeyException 的影响</title><link>https://www.diguage.com/post/upgrade-ibatis-mybatis-about-duplicate-key-exception/</link><pubDate>Thu, 23 Feb 2023 11:21:23 +0800</pubDate><guid>https://www.diguage.com/post/upgrade-ibatis-mybatis-about-duplicate-key-exception/</guid><description>在 关于升级 Spring 等依赖的一些经验 中，分享了一些开源依赖的升级经验。部分小伙伴质疑升级 iBATIS/MyBATIS 会影响对 DuplicateKeyException 异常的处理。这篇文章就从源码分析/代码更新的就角度来分析一下升级相关依赖是否会对 DuplicateKeyException 异常的处理带来实质性的影响。
+由于主要的技术栈涉及 MySQL 驱动、iBATIS、MyBATIS、Spring 周边等。所以，本文仅分析涉及的这些依赖。
+D瓜哥使用 MySQL: Employees Sample Database 搭建了一个 Spring + MyBATIS + MySQL Connector/J 的测试环境。连续插入两条一样的数据，单步调试，在 com.mysql.jdbc.MysqlIO#sendCommand 方法中，就可以观察到如下异常：
+图 1. MySQL Error 1062 从这里可以明显看出，MySQL 驱动返回的异常中， venderCode 编码是 1062。
+顺着这个线，往上走，到 org.apache.ibatis.session.defaults.DefaultSqlSession#update(java.lang.String, java.lang.Object) 方法中，可以看到，
+图 2. MyBATIS wrap Exception 在这里，会将 SQLException 包装成 PersistenceException，这也是 MyBATIS 对外暴露的统一的异常类。
+继续往上走，就到了 org.mybatis.spring.SqlSessionTemplate.SqlSessionInterceptor#invoke 方法：
+图 3. MyBATIS translateException 在 SqlSessionInterceptor#invoke 方法的异常处理中，将 PersistenceException 异常通过 org.springframework.dao.support.PersistenceExceptionTranslator#translateExceptionIfPossible 方法，将异常转换成 DataAccessException 对象。 DataAccessException 类是 Spring 数据访问的异常类基类。</description></item><item><title>关于升级 Spring 等依赖的一些经验</title><link>https://www.diguage.com/post/experience-about-upgrading-java-dependencies/</link><pubDate>Sun, 28 Aug 2022 09:19:59 +0800</pubDate><guid>https://www.diguage.com/post/experience-about-upgrading-java-dependencies/</guid><description>到公司后，熟悉了一些项目后，发现大部分项目的依赖都比较陈旧，比如某些项目还在使用 Spring 3.x 的版本。所以，在进行需求开发时，也顺手把一些项目的依赖给升级了一下。周五，一个小伙伴问我关于升级 Spring 的经验。正好趁此机会，把一些经验总结一下。
+下面的描述以 Java 8 为准，没有在其他版本 Java 上试验过。参考时，请慎重。描述的原则如下：
+尽量选择还在维护中的版本，而不是已经 End of Life 的过时版。这样有问题可以及时反馈并得到修复。
+Java 8 是目标版本，所以，一定要兼容 Java 8。
+Spring Framework 升级 Spring Framework 从 3.2.6.RELEASE 开始提供 BOM。可以利用 BOM 简化 Spring 依赖声明：
+&amp;lt;!-- D瓜哥 · https://www.diguage.com --&amp;gt; &amp;lt;dependencyManagement&amp;gt; &amp;lt;dependencies&amp;gt; &amp;lt;dependency&amp;gt; &amp;lt;groupId&amp;gt;org.springframework&amp;lt;/groupId&amp;gt; &amp;lt;artifactId&amp;gt;spring-framework-bom&amp;lt;/artifactId&amp;gt; &amp;lt;version&amp;gt;5.3.25&amp;lt;/version&amp;gt; &amp;lt;type&amp;gt;pom&amp;lt;/type&amp;gt; &amp;lt;scope&amp;gt;import&amp;lt;/scope&amp;gt; &amp;lt;/dependency&amp;gt; &amp;lt;/dependencies&amp;gt; &amp;lt;/dependencyManagement&amp;gt; 这样，就不需要重复声明 Spring 依赖的版本，直接使用即可。 Spring Framework Bom 保证了 Spring 自身依赖的版本统一。
+这里，关于 Spring 的升级，还有几点需要说明：
+从 Spring 3.X 升级到 Spring 4.X+ 后，原来的 MappingJacksonHttpMessageConverter 已经被删除了；直接使用 MappingJackson2HttpMessageConverter 即可。</description></item><item><title>关于 MySQL 新版连接驱动时区对齐问题的研究</title><link>https://www.diguage.com/post/research-on-timezone-of-mysql-new-connection-driver/</link><pubDate>Wed, 07 Jul 2021 10:23:41 +0800</pubDate><guid>https://www.diguage.com/post/research-on-timezone-of-mysql-new-connection-driver/</guid><description>在一个项目开量验证过程中，发现 createDate 字段不正确，比正确时间晚了十四个小时。调研发现，这是一个非常典型的问题。现在把定位问题的思路和解决办法给大家做个分享。
+首先，检查数据库配置，查询线上生产环境配置，结果如下：
+图 1. MySQL 变量 同时，检查线上生产环境 MySQL 版本，为问题复现做准备：
+图 2. MySQL 版本 从数据库配置上来说，基本正常，没有发现什么问题。（持续运行了这么长时间，有问题应该早就发现了。）
+其次，检查数据库连接配置，正式环境的链接配置如下：
+jdbc:mysql://&amp;lt;host&amp;gt;:3306/&amp;lt;schema&amp;gt;?createDatabaseIfNotExist=true &amp;amp;characterEncoding=utf-8&amp;amp;useUnicode=true&amp;amp;connectTimeout=2000 &amp;amp;socketTimeout=2000&amp;amp;autoReconnect=true 数据库连接也没有问题。
+第三，询问 SA 线上服务器时区配置，回复上是 CST，这个和数据库对应，没有问题。
+图 3. 与 SA 沟通 配置检查正常，那么只好在本地搭建环境，重现问题，再寻求解决方案。由于项目是基于 Spring Boot 2.3.7.RELEASE 开发的，相关依赖也尽量使用 Spring Boot 指定版本的，所以，很快把开发环境搭好了。
+在配置服务器环境时，遇到一点小小的问题：我一直以为有个时区名称叫 CST，就在网上去查怎么设置，结果徒劳半天也没有找到。后来上开发机检查开发机时区配置，发现是 Asia/Shanghai。将测试服务器设置为该时区，数据库内部查询时区，显示和服务器一直。
+调试代码中，发现 MySQL 连接驱动的代码中，有配置时区的相关代码，如下：
+com.mysql.cj.protocol.a.NativeProtocol#configureTimezone /** * Configures the client&amp;#39;s timezone if required. * * @throws CJException * if the timezone the server is configured to use can&amp;#39;t be * mapped to a Java timezone.</description></item><item><title>HikariCP 源码分析 -- FastList</title><link>https://www.diguage.com/post/hikari-cp-source-analysis-fast-list/</link><pubDate>Sun, 02 Aug 2020 15:06:02 +0800</pubDate><guid>https://www.diguage.com/post/hikari-cp-source-analysis-fast-list/</guid><description>在前面的文章 HikariCP 源码分析 — ConcurrentBag 中，D瓜哥分析了一下 HikariCP 中一个非常重要的数据结构 ConcurrentBag。
+今天，继续再介绍 HikariCP 中另一个很关键的数据结构： FastList。
+FastList 本身的实现非常简单，要理解它的奥秘，就需要结合 Java 原生集合类的 ArrayList 来比较性地看。
+构造函数 先来对比一下两者的构造函数。先来看看 FastList：
+FastList public final class FastList&amp;lt;T&amp;gt; implements List&amp;lt;T&amp;gt;, RandomAccess, Serializable { private static final long serialVersionUID = -4598088075242913858L; private final Class&amp;lt;?&amp;gt; clazz; private T[] elementData; private int size; /** * Construct a FastList with a default size of 32. * @param clazz the Class stored in the collection */ @SuppressWarnings(&amp;#34;unchecked&amp;#34;) public FastList(Class&amp;lt;?</description></item><item><title>Spring 扩展点实践：整合 MyBATIS</title><link>https://www.diguage.com/post/spring-extensions-and-mybatis/</link><pubDate>Thu, 28 May 2020 20:06:46 +0800</pubDate><guid>https://www.diguage.com/post/spring-extensions-and-mybatis/</guid><description>在上一篇文章 Spring 扩展点概览及实践 中介绍了 Spring 内部存在的扩展点。学以致用，现在来分析一下 Spring 与 MyBATIS 的整合流程。
+示例程序 为了方便分析源码，先根据官方文档 mybatis-spring – MyBatis-Spring | Getting Started 搭建起一个简单实例。
+数据库方面，直接使用功能了 MySQL 示例数据库： MySQL : Employees Sample Database，需要的话，自行下载。
+package com.diguage.truman.mybatis; import com.mysql.cj.jdbc.Driver; import com.zaxxer.hikari.HikariDataSource; import org.apache.ibatis.session.Configuration; import org.junit.jupiter.api.Test; import org.mybatis.spring.SqlSessionFactoryBean; import org.mybatis.spring.annotation.MapperScan; import org.springframework.beans.factory.annotation.Autowired; import org.springframework.context.annotation.AnnotationConfigApplicationContext; import org.springframework.context.annotation.Bean; import javax.sql.DataSource; /** * @author D瓜哥, https://www.diguage.com/ * @since 2020-05-29 17:11 */ public class MybatisTest { @Test public void test() { AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(); context.</description></item><item><title>HikariCP 源码分析 -- ConcurrentBag</title><link>https://www.diguage.com/post/hikari-cp-source-analysis-concurrent-bag/</link><pubDate>Wed, 06 May 2020 17:12:55 +0800</pubDate><guid>https://www.diguage.com/post/hikari-cp-source-analysis-concurrent-bag/</guid><description>以前无意间搜资料了解到 HikariCP，一下子就被它的简洁代码和卓越性能吸引住了。以前也有翻过它的代码，但是不是很系统，最近再次翻阅，正好做些笔记，方便以后学习。
+D瓜哥最近在学习 Java 并发知识。那就从 HikariCP 自定义的并发集合 ConcurrentBag 开始学习。
+在 HikariCP 的 Wiki 中，有 Down the Rabbit Hole · ConcurrentBag 的章节来专门介绍 ConcurrentBag：
+ConcurrentBag 的灵感借鉴自 C# .NET 的 ConcurrentBag 类。但是实现却是完全不同的。这里的 ConcurrentBag 有如下特性：
+A lock-free design
+ThreadLocal caching
+Queue-stealing
+Direct hand-off optimizations
+下面，通过代码来对此做个说明。
+在 ConcurrentBag 类的定义中，声明了集合元素必须是 IConcurrentBagEntry 的子类。先来看看这个接口的定义：
+public interface IConcurrentBagEntry { int STATE_NOT_IN_USE = 0; int STATE_IN_USE = 1; int STATE_REMOVED = -1; int STATE_RESERVED = -2; boolean compareAndSet(int expectState, int newState); void setState(int newState); int getState(); } 接下来，看一下成员变量：</description></item><item><title>在世界读书日，推荐书单</title><link>https://www.diguage.com/post/books-on-book-day/</link><pubDate>Thu, 23 Apr 2020 20:15:14 +0800</pubDate><guid>https://www.diguage.com/post/books-on-book-day/</guid><description>今天是世界读书日，各种人都在推荐书单。D瓜哥也凑个热闹，水一篇文章，推荐一些书籍。
+在前一段时间，D瓜哥已经写了一个书单： 推荐几本 Java 并发编程的书。为了避免重复，上一个书单中推荐过的书籍，这次就不再重复推荐了。
+每年十二个月，D瓜哥就推荐 12 本书，每个月读一本想必压力也不算大。
+如何阅读一本书？ D瓜哥在年初的时候，刚刚再次重读了这本书。而且，还写了一篇读书笔记： 《如何阅读一本书？》之读书笔记。
+如果喜欢读书，那么这本书绝对应该是首先阅读的第一本书。一句话总结一下：用检视阅读的方法来快速筛选出你关注主题的书籍；用分析阅读的方法来吸收一本书的精华；用主题阅读的办法来对多本同一主题的书去伪存真，加工再输出。
+远见 D瓜哥在去年年末写的年终总结 “告别 2019，迎接 2020” 中提到了这本书。考虑这本书的实用性和对自身发展的指导意义，所以决定再次推荐这本书。
+在这本书中，作者将职业生涯分为：强势开局、聚焦长板和实现持续的影响力三个阶段。
+在强势开局阶段，就像要开始一个汽车拉力赛，要努力加添燃料。
+在聚焦长板阶段，要努力提高自己的核心竞争力，创造自己的制高点。
+在实现持续的影响力阶段，则要优化长尾效应，让自己持续保持领先。
+对于职业生涯有追求的小伙伴，尤其是在读大学生，一定要去尽早认真读一读这本书。
+思考，快与慢 这是一本有关心理学方面的书籍。作者丹尼尔•卡尼曼因其与阿莫斯•特沃斯基在决策制定上的研究而荣获了 2002 年度的诺贝尔经济学奖。所以，这本书质量上肯定是有保证的。
+这本书主要是介绍认知心理学的。作者在书中，把人的认知分为系统一和系统二。系统一是那种不需要思考的，已经固化在我们基因中的反应，比如看见危险会跑路等；而系统二，则是需要深入思考才能有所收获的事情，比如在新税法下，计算个人应该缴纳的个人所得税。两个系统相辅相成，时刻影响着我们的生活，但我们却有些熟视无睹。
+穷查理宝典 提起查理·芒格，也许有些人不知道是谁。（看这篇文章的读者估计都了解）但是，他的搭档估计是人尽皆知，那就是世界股神沃伦·巴菲特。
+虽然这本书不是查理·芒格书写的，里面的精华部分，却都是查理的演讲稿。通过这些演讲，你可以看到一个睿智的老人，如何在循循善诱地向你传授他的思维方法。查理给我们介绍了他的思维模型：逆向思维，多元思维模型，打造自己的核心圈，避免嫉妒效应，内部积分卡（用我们古人的话说就是反求诸己）等等。
+社会性动物 D瓜哥是去年开始读这本书的，非常抱歉目前还没有读完。
+这本书是讲述社会心理学的，讲述在这个社会中，人与人之间是如何相互影响的。举一个典型的例子：你思考过吗，什么样的广告最能打动你吗？
+事实 比尔·盖茨也推荐了这本书。我也是最近刚刚开始读这本书。还没有读完。就不做过多评价了。用一个问题，勾引一下你的兴趣：
+问题：在全世界所有的低收入国家里面，有多少百分比的女孩能够上完小学？
+选项：A. 20% B. 40% C. 60%
+想知道答案，就快点去读这本书吧。
+最近更新：D瓜哥终于把这本书读完了：https://www.diguage.com/post/factfulness/[《事实》之读书笔记^]。
+人类简史 坦白讲，这本书D瓜哥才读了一半。但是，作者最近发表的一篇文章： 尤瓦尔·赫拉利《冠状病毒之后的世界》，一个史学家站在历史发展的角度去看待疫情对世界发展的影响。由此可对赫拉利的思想窥得一斑。那么，如果感兴趣，他的成名大作《人类简史》就不得不读了。
+最近因为疫情影响，在网上看到各种五毛的无脑言论，怼天怼地，仿佛中国要征服世界，征服宇宙一样，真是让人呵呵…
+未来几十年时间里，中国未来寻求自身发展，还需要融入到整个世界经济中，在全世界产业链中，力争上游，占领高附加值的产业，比如芯片，5G，大飞机等等。怼这个，怼那个，只能让自己像二战时期的纳粹德国和日本，让自己四面树敌，最后被全世界群殴。
+上帝掷骰子吗？ 这是D瓜哥看过的，最好看的科普书，没有之一。
+你知道爱因斯坦因为发表相对论，革了物理学的命；但是你知道吗？爱因斯坦也因为自己的顽固守旧阻碍过量子物理的发展。你知道普朗克首次提出量子的概念；但是，你了解吗？普朗克却是非常坚决地反对量子物理的发展。你了解薛定谔的猫到底是怎么回事吗？这些料都可以在这本书中读到。
+作者通过各种各样的故事展示了量子物理学从无到有，颠覆整个经典物理，然后又重塑整个现代物理的过程。整个故事可谓波澜壮阔，跌宕起伏。
+另外，从这本书中，我希望大家能读出科学的味道。曾经跟一个朋友在讨论，到底什么是科学？我举两个例子来说明：
+关于光本质的三次论战 现在，上过高中物理的人都了解，光具有波粒二象性。说得更直白一些，光即是波，也是粒子。围绕光到底是波，还是粒子在历史上，曾经有过三次论战，参与论战的也不乏大家耳熟能详的物理大咖。
+第一次的主角是牛顿牛爵爷，通过观察光的直线传播和反射现象，牛顿将光解释为粒子。考虑到牛顿在当时已经是成绩斐然的世界知名物理学家，他的观点在当时得到了广泛的认可。这是第一次论战。
+第二次论战的主角是托马斯·杨，这位主角想必学过高中物理的童鞋，想必对双缝干涉实验都有印象。双缝干涉实验是高中物理中非常重要的一个实验，而且操作也很简单。双缝干涉实验就是托马斯·杨发明的。托马斯·杨完成了双缝干涉实验，有力地证明了光的波动性质。然后，大家开始普遍接受光的波动性学说。
+你以为这就完了吗？然而并没有，最后踢出临门一脚的是又一个大名鼎鼎的物理学家：爱因斯坦。1905年，爱因斯坦发表论文，对于光电效应给出解释。他把光解释为即是波，也是粒子。至此，这个长达近三百年的争论才得以盖棺论定。爱因斯坦也因为这篇论文，获得了 1921 年度的诺贝尔物理学奖。
+牛顿的经典力学 学过初中物理的童鞋，相关对牛顿运动三定理都很了解。从 1687 年，牛顿发表《自然哲学的数学原理》，在书中详细阐述了牛顿运动三定律。至此，两百多年时间里，《自然哲学的数学原理》几乎奠定了经典物理的基础。可谓无往不胜。
+但是，在计算水星轨道时，总是出现微小的偏差。物理学家不断尝试来解决这个问题，却一直未能如愿。直道 1915 年爱因斯坦发表广义相对论，才正确地解释了水星近日点的反常进动。后来，经过广义相对论的进一步的发展，人们发现，牛顿运动定律只是在低速情况下，广义相对论的特例。</description></item><item><title>只要一部计算机，就可以创造出无限的世界</title><link>https://www.diguage.com/post/computer-create-world/</link><pubDate>Tue, 21 Apr 2009 00:00:00 +0800</pubDate><guid>https://www.diguage.com/post/computer-create-world/</guid><description>曾经写给学弟学妹的一封信。我觉得还行，发出来，希望对刚学计算机专业的朋友有所帮助。当然，如果哪位朋友有更好的想法，也请留言，大家讨论讨论。原文如下：
+致师弟师妹的一封信 各位朋友：
+大家好！
+从本周开始，我必须专心为我的前程奋斗了。很可惜不能和大家一起学习了。这封信就算是我和大家的一个告别吧。
+首先，感谢史老师给我提供这个和大家一起学习和交流的机会，让我和大家一起度过了一段特殊而愉快的时光。
+其次，我应该感谢大家。由于本人水平有限，也许我没能让大家从我这里学到太多知识，但是大家却让我学会了很多东西，锻炼了我很多方面的能力。单凭这一点，我就应该感谢大家。同时，很多人把我当朋友，更使我感激不尽。
+再次，在这短暂而又宝贵的大学时光里，大家走的路应该和我的基本一样。我以一个过来人的身份，和大家分享一下我的学习经验吧，希望可以让大家少走甚至不走弯路。
+先说一点我们所学科目的情况吧。
+Linux：一定要动手敲指令。在我们一年半的学习时光里，我认为Linux是我们所学的所有实践性学科里面最简单的一科了！只要把指令记好用熟就行了！另外，指令不需要背，用多了自然就记住了。（相信95%的同学都知道cd是什么意思吧！为什么呢？因为用它的次数多！）多提一点，一定要多尝试！
+Java或者C#或者PHP（由于个人比较喜欢Java，所以，一下描述Java的地方，你可以同样换成C#或在PHP等）：这是我们大家必须要下苦功夫学好的课！而且一定一定要学精！它们在我们的课程体系结构中的作用，就像是地基对于这个房子的作用！根基不好，房子很难建高的！即使建好也是豆腐渣工程。毕竟“空中楼阁”只存在于我们的想象中。它们是学习JSP、ASP.NET、J2EE、“游戏开发”、网页开发等等的基础，Java或者C#或者PHP学不会，这些课很难学好！（我这里有Java的教学视频，感兴趣的同学可以来我寝室拷贝。也可以上网下载：http://www.verycd.com/topics/93279/（请下载J2SE的））
+数据库：重点是关系模型、 SQL语句以及后面的数据库设计。做动态网站的技术、做桌面程序，甚至做手机应用等，都会用到数据库！以后工作中数据模型设计、数据查询等都要求有比较扎实的数据库基础才行。
+数据结构：我个人认为学习数据结构就是学习一种解决问题的思想。其实，类库已经实现了我们所学的所有的数据结构，到时会用就行了！
+现在NBA正在进行季后赛，就用乔丹的一句话，作为所有学科的一个共同的建议送给大家：
+I can accept failure, but I can’t accept not trying.
+— Michael Jordan 其实学习就是不断尝试，不断总结，不断进取的一个过程。我可以用我的尝试告你一个正确的结果，但是自己尝试出来的结果印象更加深刻！
+再说一点我的个人的学习感触吧。我个人认为，这些比我们大家在学校学到知识更为重要！知识马上就会过时，但是学习的方法却可以带领我们走的更远。
+一、享受学习。如果我们把学习当成像玩游戏、听音乐一样的娱乐活动时，我想这会给我们一种全新的感觉。Study hard，have fun，make history！ By Jeff Bezos &amp;amp; Joy Lee （努力学习，乐在其中，并创造历史！—Jeff Bezos（Amazon.com的创办者兼CEO，Joy Lee就是我。(*__*) 嘻嘻…… 这句话是我从他的一句话里改编过来的！））
+其实，学计算机学科非常有趣！Linux里面，几行指令，我们就可以顺利的让鼠标在两个操作系统自由转换！Java里面几行，几十行代码就有一个漂亮的窗口！C#里面随便一个拖拽，也是一个不错的窗口！“只要一部计算机，就可以创造出无限的世界。”（出自蔡学镛《写程序，好好玩》，《Java夜未眠》里面的一篇，本书是本很搞笑的编程感触散文集，推荐看看。）加油吧！相信你行！
+二、坚持不懈。任何事情都不是可以一蹴而就的，都需要我们坚持！再送给大家一句话：失败只有一种，那就是半途而废！
+三、舍我其谁的豪迈和霸气。“Horse’s，Gosling能创造出来Java，我就不信我学不会！一个破Java，我还不放到眼里呢！！”，“别人能创造出来，我就不相信我学不会？！”不过，也要给大家提醒一句：“战略上，藐视敌人；战术上，重视敌人”！一定要下功夫学习才行！
+四、信心。一定要相信自己的能力！你是独一无二，无可替代的！信心能让你从一个更高的角度看待你的学习！能给你一种驾驭知识的成就感！这种感觉能让你从学习中找到乐趣！
+五、行动！上面的大道理，我们大家都懂！但是，谁实际做到呢？伟大与平凡的区别也许就在于这一点吧。我以我自己的高中、大学对比来看，行动与否结果绝对是不一样的！只想不做，最多是个空想家！所以，大家一定要“坚持不懈的行动”！
+最后，送给大家一句话：你充满了潜能，但你的努力还远远不够！再次怀念我们共同的学习时光！
+祝大家学有所成！
+D瓜哥</description></item></channel></rss>

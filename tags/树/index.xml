@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>树 on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/%E6%A0%91/</link><description>Recent content in 树 on "地瓜哥"博客网</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Wed, 03 Jul 2024 15:12:59 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/%E6%A0%91/index.xml" rel="self" type="application/rss+xml"/><item><title>题解：538.把二叉搜索树转换为累加树</title><link>https://www.diguage.com/post/convert-bst-to-greater-tree/</link><pubDate>Fri, 03 Jul 2020 14:56:24 +0800</pubDate><guid>https://www.diguage.com/post/convert-bst-to-greater-tree/</guid><description>题目描述 题目是 LeetCode 的第 538 题： 把二叉搜索树转换为累加树。
+给出二叉搜索树的根节点，该树的节点值各不相同，请你将其转换为累加树（Greater Sum Tree），使每个节点 node 的新值等于原树中大于或等于 node.val 的值之和。
+提醒一下，二叉搜索树满足下列约束条件：
+节点的左子树仅包含键 小于 节点键的节点。
+节点的右子树仅包含键 大于 节点键的节点。
+左右子树也必须是二叉搜索树。
+思路分析 一棵二叉搜索树，如果是中根遍历，那么，其序列正好是一个升序序列。但，题目要求的是大于等于自身的节点值之和。正常的中根遍历是“左中右”，反过来“右中左”，就是降序序列，累计求和就符合题目要求了。
+解题代码 中序遍历，可以用栈，也可以使用 Morris 遍历。在 题解：找到二叉搜索树中两个错误的节点 中就是用了 Morris 遍历。网上也很少有反向的 Morris 中根遍历。正好练习一下。
+/** * 基于 Morris 的倒序中根遍历 * * @author D瓜哥 · https://www.diguage.com */ public TreeNode convertBST(TreeNode root) { int sum = 0; // 反向 Morris TreeNode cur = root; TreeNode mostLeft = null; while (cur != null) { // 向右转 mostLeft = cur.</description></item><item><title>题解：找到二叉搜索树中两个错误的节点</title><link>https://www.diguage.com/post/find-two-error-node-in-binary-search-tree/</link><pubDate>Sun, 21 Jun 2020 17:57:19 +0800</pubDate><guid>https://www.diguage.com/post/find-two-error-node-in-binary-search-tree/</guid><description>题目描述 一棵二叉树原本是二叉搜索树，但是其中有两个节点调换了位置，使得这棵二叉树不再是二叉搜索树，请按升序输出这两个错误节点的值。(每个节点的值各不相同)
+思路分析 一棵二叉搜索树，如果是中序遍历，那么，其序列正好是一个升序序列。如果序列中间出现了降序，那么就是树中错误的节点。这里有两种情况需要考虑：
+如果两个节点正好相邻，那么降序的两个节点就是题目要求的节点。
+如果两个节点不相邻，就会出现两次降序。很容易想到，“大”的元素跑前面，“小”的元素跑后面。在进行比较的时候，第一个降序时，前面大的元素是错误节点；第二次降序时，则是后面小的元素是错误节点。
+有了上面的分析，就可以写代码了。
+解题代码 中序遍历，可以用栈，也可以使用 Morris 遍历。前面正好学习了一下 Morris（详情请看： 神奇的 Morris 树遍历），借此机会练练手：
+/** * 基于 Morris 的中根遍历 * * @author D瓜哥 · https://www.diguage.com */ public static TreeNode[] getErrs(TreeNode head) { TreeNode[] result = new TreeNode[2]; TreeNode curr = head; TreeNode mostRight = null; TreeNode prior = null; while (curr != null) { mostRight = curr.left; if (mostRight != null) { while (mostRight.right != null &amp;amp;&amp;amp; mostRight.right !</description></item></channel></rss>
