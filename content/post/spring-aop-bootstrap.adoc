@@ -89,7 +89,7 @@ public Object postProcessBeforeInstantiation(Class<?> beanClass, String beanName
 
 == `AnnotationAwareAspectJAutoProxyCreator#postProcessAfterInitialization`
 
-在 http://localhost:1313/post/spring-bean-lifecycle-overview/[Spring Bean 生命周期概述] 中已经强调过了：绝大部分的 AOP 代理生成都是在 `postProcessAfterInitialization` 方法中完成的。来看一下这个方法：
+在 https://www.diguage.com/post/spring-bean-lifecycle-overview/[Spring Bean 生命周期概述] 中已经强调过了：绝大部分的 AOP 代理生成都是在 `postProcessAfterInitialization` 方法中完成的。来看一下这个方法：
 
 [source%nowrap,java,indent=0,highlight=7]
 ----
