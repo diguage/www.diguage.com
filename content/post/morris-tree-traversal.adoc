@@ -1,6 +1,6 @@
 ---
 title: "神奇的 Morris 树遍历"
-date: 2020-06-21T18:27:03+08:00
+date: 2020-08-14T18:27:03+08:00
 draft: false
 keywords: ["Morris","二叉树", "算法"]
 tags: ["树"]
