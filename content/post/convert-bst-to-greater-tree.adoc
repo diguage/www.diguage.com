@@ -72,3 +72,5 @@ public TreeNode convertBST(TreeNode root) {
 
 
 得益于 Morris 的优秀本质，这个解法的时间复杂度是： O(n)，空间复杂度是： O(1)。
+
+关于 Morris 树遍历的更多介绍，请看： https://www.diguage.com/post/morris-tree-traversal/[神奇的 Morris 树遍历^]。

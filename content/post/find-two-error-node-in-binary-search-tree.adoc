@@ -35,7 +35,7 @@ weight: 1
  *
  * @author D瓜哥 · https://www.diguage.com
  */
-public static TreeNode[] getErrs(TreeNode head) {
+public TreeNode[] getErrs(TreeNode head) {
     TreeNode[] result = new TreeNode[2];
     TreeNode curr = head;
     TreeNode mostRight = null;

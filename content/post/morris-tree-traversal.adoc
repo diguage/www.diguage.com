@@ -1,7 +1,7 @@
 ---
 title: "神奇的 Morris 树遍历"
 date: 2020-06-21T18:27:03+08:00
-draft: true
+draft: false
 keywords: ["Morris","二叉树", "算法"]
 tags: ["树"]
 categories: ["算法"]
@@ -11,10 +11,229 @@ thumbnail: "images/common/tree.jpg"
 weight: 1
 ---
 
+无论是在计算机课上，还是在网上，对数据结构有一定了解的童鞋，应该都对树的遍历不陌生。常见的遍历方式有如下两种：
 
-// image::/images/[title="",alt="",{image_attr}]
+* 基于栈的遍历：需要额外的空间复杂度。实现略复杂。
+* 基于递归的遍历：实现简单。空间复杂度上，与栈类似，只是这里的栈维护是由系统自动完成的。
 
-// [source%nowrap,java,{source_attr}]
-// ----
-// // code
-// ----
+在看左程云的《程序员代码面试指南》时，里面介绍了一种只需 O(1) 的额外空间复杂度的遍历方法：Morris 树遍历。感觉非常神奇。这里给大家介绍一下。
+
+Morris 树遍历的神奇之处在于，它充分利用了树里面大量的空闲节点（比如叶子节点的左右子树节点就为空，可以利用起来）来建立起必要的连接，推动遍历的进行。核心思想非常简单：找出当前节点左子树的最右节点，此时最右节点的右子树为空，将最右节点的右子树指向当前节点。然后左移，递归完成所有相关连接。没有左子树时，则向右移动，依次完成上述操作。我们来结合图来说明。如图：
+
+image::/images/data-structure/morris-tree-traversal.svg[title="Morris 树遍历",alt="Morris 树遍历",{image_attr}]
+
+如上图所示，当访问根节点 `4` 时，它的左子树的最右节点就是 `3`，将 `3` 的右子树指向当前节点 `4`，如线条 `⑥` 所示。向左启动，建立起 `1` 到 `2` 的连接 `④`。再向左移动到 `1`，`1` 没有左子树，则向右移动，此时就利用上了刚刚建立起的连接 `④`。依次类推，即可完成遍历。在遍历过程中，也需要把建立的临时连接给取消掉。
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * Morris 树遍历
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ */
+public void morris(TreeNode head) {
+	TreeNode curr = head;
+	TreeNode mostRight = null;
+	while (curr != null) {
+		// 当前节点左子树的最右节点，当然是从左子树开始了
+		mostRight = curr.left;
+		if (mostRight != null) {
+			// 左子树不为空，则找出左子树的最右节点
+			while (mostRight.right != null
+					// 由于需要建立最右节点到当前节点的连接，所以，需要判断是否已建立连接来打破死循环
+					&& mostRight.right != curr) {
+				mostRight = mostRight.right;
+			}
+			if (mostRight.right == null) {
+				// 最右节点的右子树为空，则第一次访问，那么建立起连接
+				mostRight.right = curr;
+				curr = curr.left;
+				continue;
+			} else {
+				// 最右节点的右子树不为空，则第二次访问，打破连接，恢复原貌
+				mostRight.right = null;
+			}
+		}
+		// 最子树为空，则向右移动
+		curr = curr.right;
+	}
+}
+----
+
+根据代码，结合图示，很容易得到 Morris 遍历的结果： `4`、`2`、`1`、`2`^2^、`3`、`4`^2^、`6`、`5`、`6`^2^、`7`。分析这个结果可以发现：**有左子树的节点都会被访问两次。**
+
+== 前根遍历
+
+那么该树的前根遍历是什么呢？这个也很容易得出：`4`、`2`、`1`、`3`、`6`、`5`、`7`。如何从 Morris 遍历中，得到前根遍历的结果呢？对比两边的结果，可以很容易发现：将访问两次的元素，只在第一次访问时输出；只访问一次的原始直接输出即可。代码如下：
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * Morris 树前根遍历
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ */
+public void morrisPre(TreeNode head) {
+	TreeNode curr = head;
+	TreeNode mostRight = null;
+	while (curr != null) {
+		// 当前节点左子树的最右节点，当然是从左子树开始了
+		mostRight = curr.left;
+		if (mostRight != null) {
+			// 左子树不为空，则找出左子树的最右节点
+			while (mostRight.right != null
+					// 由于需要建立最右节点到当前节点的连接，所以，需要判断是否已建立连接来打破死循环
+					&& mostRight.right != curr) {
+				mostRight = mostRight.right;
+			}
+			if (mostRight.right == null) {
+				// 最右节点的右子树为空，则第一次访问，那么建立起连接
+				mostRight.right = curr;
+				// 第一次访问时，即输出
+				System.out.print(curr.val + " ");
+				curr = curr.left;
+				continue;
+			} else {
+				// 最右节点的右子树不为空，则第二次访问，打破连接，恢复原貌
+				mostRight.right = null;
+			}
+		} else {
+			// 前面内容已经分析过：有左子树的节点就会被访问两次
+			// 那么没有左子树的节点，就自会访问一次，访问到时直接输出即可。
+			System.out.print(curr.val + " ");
+		}
+		// 最子树为空，则向右移动
+		curr = curr.right;
+	}
+}
+----
+
+== 中根遍历
+
+图示中的树，是一棵二叉搜索树，它的中根遍历就是： `1`、`2`、`3`、`4`、`5`、`6`、`7`。对比 Morris 遍历结果，只需要将访问两次的元素在第二次访问时输出即可。代码如下：
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * Morris 树中根遍历
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ */
+public void morrisIn(TreeNode head) {
+	TreeNode curr = head;
+	TreeNode mostRight = null;
+	while (curr != null) {
+		// 当前节点左子树的最右节点，当然是从左子树开始了
+		mostRight = curr.left;
+		if (mostRight != null) {
+			// 左子树不为空，则找出左子树的最右节点
+			while (mostRight.right != null
+					// 由于需要建立最右节点到当前节点的连接，所以，需要判断是否已建立连接来打破死循环
+					&& mostRight.right != curr) {
+				mostRight = mostRight.right;
+			}
+			if (mostRight.right == null) {
+				// 最右节点的右子树为空，则第一次访问，那么建立起连接
+				mostRight.right = curr;
+				curr = curr.left;
+				continue; // 第一次访问时，循环在这里直接中断 // <1>
+			} else {
+				// 最右节点的右子树不为空，则第二次访问，打破连接，恢复原貌
+				mostRight.right = null;
+			}
+		}
+		// 由于上面的 continue 中断循环，执行到这里的节点只剩下两种情况了：
+		// 要么是没有左子树，要么是有左子树的节点被第二次访问
+		System.out.print(curr.val + " "); // <2>
+		// 最子树为空，则向右移动
+		curr = curr.right;
+	}
+}
+----
+<1> 第一次访问时，`continue` 将代码中断
+<2> 能走到这里的，要么是没有左子树，要么是有左子树的节点被第二次访问
+
+Morris 树中根遍历在 https://www.diguage.com/post/find-two-error-node-in-binary-search-tree/[题解：找到二叉搜索树中两个错误的节点^] 已经实际使用过了，感兴趣请移步。
+
+另外，在 https://www.diguage.com/post/convert-bst-to-greater-tree/[题解：538.把二叉搜索树转换为累加树^] 中，利用镜像原理，使用 Morris 遍历，倒序做树的中根遍历，这在网上的很少见，感兴趣欢迎了解。
+
+== 后根遍历
+
+树的后根遍历是： `1`、`3`、`2`、`5`、`7`、`6`、`4`。相对于前根遍历和后根遍历，只需要做微调就可以完成。Morris 的后根遍历就要麻烦很多。具体如下：
+
+. 对于只能访问一次的节点（即没有左子树的节点），直接跳过，不输出。
+. 对于可以访问两次的任意节点（即有左子树的节点），在第二次访问时，逆序输出 `curr` 左子树的右边界。
+. 遍历完成后，逆序输出整棵树的右边界。
+
+直接上代码吧：
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * Morris 树后根遍历
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ */
+public void morrisPost(TreeNode head) {
+	TreeNode curr = head;
+	TreeNode mostRight = null;
+	while (curr != null) {
+		// 当前节点左子树的最右节点，当然是从左子树开始了
+		mostRight = curr.left;
+		if (mostRight != null) {
+			// 左子树不为空，则找出左子树的最右节点
+			while (mostRight.right != null
+					// 由于需要建立最右节点到当前节点的连接，所以，需要判断是否已建立连接来打破死循环
+					&& mostRight.right != curr) {
+				mostRight = mostRight.right;
+			}
+			if (mostRight.right == null) {
+				// 最右节点的右子树为空，则第一次访问，那么建立起连接
+				mostRight.right = curr;
+				curr = curr.left;
+				continue;
+			} else {
+				// 最右节点的右子树不为空，则第二次访问，打破连接，恢复原貌
+				mostRight.right = null;
+				// 在第二次访问时，逆序输出 `curr` 左子树的右边界。
+				printEdge(curr.left);
+			}
+		}
+		// 最子树为空，则向右移动
+		curr = curr.right;
+	}
+	// 遍历完成后，逆序输出整棵树的右边界。
+	printEdge(head);
+}
+
+/**
+ * 打印边界
+ */
+public void printEdge(TreeNode head) {
+	// 将树的右边界当做一个链接，左反转操作
+	TreeNode tail = reverseEdge(head);
+	TreeNode curr = tail;
+	while (curr != null) {
+		System.out.print(curr.val + " ");
+		curr = curr.right;
+	}
+	reverseEdge(tail); // 再次反转，恢复原貌
+}
+
+/**
+ * 反转右子树
+ */
+public TreeNode reverseEdge(TreeNode head) {
+	TreeNode pre = null;
+	TreeNode next = null;
+	while (head != null) {
+		next = head.right;
+		head.right = pre;
+		pre = head;
+		head = next;
+	}
+	return pre;
+}
+----
+
+关于 Morris 树遍历，大家还有什么妙用？欢迎留言讨论。
