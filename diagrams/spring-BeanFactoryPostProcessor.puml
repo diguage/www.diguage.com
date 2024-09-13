@@ -1,0 +1,53 @@
+@startuml
+title **BeanFactoryPostProcessor 继承关系**
+header D瓜哥 · ""https://www.diguage.com""
+
+interface BeanFactoryPostProcessor {
+  + void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory)
+}
+
+interface BeanDefinitionRegistryPostProcessor extends BeanFactoryPostProcessor {
+  + void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry)
+}
+
+class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPostProcessor, PriorityOrdered
+
+abstract class PropertyResourceConfigurer extends PropertiesLoaderSupport implements BeanFactoryPostProcessor, PriorityOrdered {
+    - order = Ordered.LOWEST_PRECEDENCE
+}
+
+abstract class PlaceholderConfigurerSupport extends PropertyResourceConfigurer
+
+class PreferencesPlaceholderConfigurer <<Deprecated>>
+
+class PreferencesPlaceholderConfigurer extends PropertyPlaceholderConfigurer
+
+class PropertyOverrideConfigurer extends PropertyResourceConfigurer
+
+class "PropertyPlaceholderConfigurer" as PropertyPlaceholderConfigurer <<Deprecated>>
+
+class PropertyPlaceholderConfigurer extends PlaceholderConfigurerSupport
+
+class PropertySourcesPlaceholderConfigurer extends PlaceholderConfigurerSupport
+
+PreferencesPlaceholderConfigurer .left[#red].> PropertySourcesPlaceholderConfigurer : 推荐
+PropertyPlaceholderConfigurer .left[#red].> PropertySourcesPlaceholderConfigurer : 推荐
+
+class PropertySourcesFactoryPostProcessor implements BeanFactoryPostProcessor, PriorityOrdered {
+    - order = Ordered.LOWEST_PRECEDENCE
+}
+
+class "RecorderBeanFactoryPostProcessor" as RecorderBeanFactoryPostProcessor1 <<待优化版>>
+class "RecorderBeanFactoryPostProcessor" as RecorderBeanFactoryPostProcessor2 <<优化版>>
+
+class RecorderBeanFactoryPostProcessor1 implements BeanFactoryPostProcessor
+class RecorderBeanFactoryPostProcessor2 implements BeanFactoryPostProcessor, PriorityOrdered {
+   - order = Ordered.HIGHEST_PRECEDENCE
+}
+
+RecorderBeanFactoryPostProcessor1 .right[#red].> RecorderBeanFactoryPostProcessor2: 优化
+
+BeanDefinitionRegistryPostProcessor .right[#hidden].> RecorderBeanFactoryPostProcessor1
+
+footer D瓜哥 · ""https://www.diguage.com"" · 出品
+@enduml
