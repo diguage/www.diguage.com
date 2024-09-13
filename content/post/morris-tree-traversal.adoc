@@ -32,31 +32,31 @@ image::/images/data-structure/morris-tree-traversal.svg[title="Morris 树遍历"
  * @author D瓜哥 · https://www.diguage.com
  */
 public void morris(TreeNode head) {
-	TreeNode curr = head;
-	TreeNode mostRight = null;
-	while (curr != null) {
-		// 当前节点左子树的最右节点，当然是从左子树开始了
-		mostRight = curr.left;
-		if (mostRight != null) {
-			// 左子树不为空，则找出左子树的最右节点
-			while (mostRight.right != null
-					// 由于需要建立最右节点到当前节点的连接，所以，需要判断是否已建立连接来打破死循环
-					&& mostRight.right != curr) {
-				mostRight = mostRight.right;
-			}
-			if (mostRight.right == null) {
-				// 最右节点的右子树为空，则第一次访问，那么建立起连接
-				mostRight.right = curr;
-				curr = curr.left;
-				continue;
-			} else {
-				// 最右节点的右子树不为空，则第二次访问，打破连接，恢复原貌
-				mostRight.right = null;
-			}
-		}
-		// 最子树为空，则向右移动
-		curr = curr.right;
-	}
+  TreeNode curr = head;
+  TreeNode mostRight = null;
+  while (curr != null) {
+    // 当前节点左子树的最右节点，当然是从左子树开始了
+    mostRight = curr.left;
+    if (mostRight != null) {
+      // 左子树不为空，则找出左子树的最右节点
+      while (mostRight.right != null
+          // 由于需要建立最右节点到当前节点的连接，所以，需要判断是否已建立连接来打破死循环
+          && mostRight.right != curr) {
+        mostRight = mostRight.right;
+      }
+      if (mostRight.right == null) {
+        // 最右节点的右子树为空，则第一次访问，那么建立起连接
+        mostRight.right = curr;
+        curr = curr.left;
+        continue;
+      } else {
+        // 最右节点的右子树不为空，则第二次访问，打破连接，恢复原貌
+        mostRight.right = null;
+      }
+    }
+    // 最子树为空，则向右移动
+    curr = curr.right;
+  }
 }
 ----
 
@@ -74,37 +74,37 @@ public void morris(TreeNode head) {
  * @author D瓜哥 · https://www.diguage.com
  */
 public void morrisPre(TreeNode head) {
-	TreeNode curr = head;
-	TreeNode mostRight = null;
-	while (curr != null) {
-		// 当前节点左子树的最右节点，当然是从左子树开始了
-		mostRight = curr.left;
-		if (mostRight != null) {
-			// 左子树不为空，则找出左子树的最右节点
-			while (mostRight.right != null
-					// 由于需要建立最右节点到当前节点的连接，所以，需要判断是否已建立连接来打破死循环
-					&& mostRight.right != curr) {
-				mostRight = mostRight.right;
-			}
-			if (mostRight.right == null) {
-				// 最右节点的右子树为空，则第一次访问，那么建立起连接
-				mostRight.right = curr;
-				// 第一次访问时，即输出
-				System.out.print(curr.val + " ");
-				curr = curr.left;
-				continue;
-			} else {
-				// 最右节点的右子树不为空，则第二次访问，打破连接，恢复原貌
-				mostRight.right = null;
-			}
-		} else {
-			// 前面内容已经分析过：有左子树的节点就会被访问两次
-			// 那么没有左子树的节点，就自会访问一次，访问到时直接输出即可。
-			System.out.print(curr.val + " ");
-		}
-		// 最子树为空，则向右移动
-		curr = curr.right;
-	}
+  TreeNode curr = head;
+  TreeNode mostRight = null;
+  while (curr != null) {
+    // 当前节点左子树的最右节点，当然是从左子树开始了
+    mostRight = curr.left;
+    if (mostRight != null) {
+      // 左子树不为空，则找出左子树的最右节点
+      while (mostRight.right != null
+          // 由于需要建立最右节点到当前节点的连接，所以，需要判断是否已建立连接来打破死循环
+          && mostRight.right != curr) {
+        mostRight = mostRight.right;
+      }
+      if (mostRight.right == null) {
+        // 最右节点的右子树为空，则第一次访问，那么建立起连接
+        mostRight.right = curr;
+        // 第一次访问时，即输出
+        System.out.print(curr.val + " ");
+        curr = curr.left;
+        continue;
+      } else {
+        // 最右节点的右子树不为空，则第二次访问，打破连接，恢复原貌
+        mostRight.right = null;
+      }
+    } else {
+      // 前面内容已经分析过：有左子树的节点就会被访问两次
+      // 那么没有左子树的节点，就自会访问一次，访问到时直接输出即可。
+      System.out.print(curr.val + " ");
+    }
+    // 最子树为空，则向右移动
+    curr = curr.right;
+  }
 }
 ----
 
@@ -120,34 +120,34 @@ public void morrisPre(TreeNode head) {
  * @author D瓜哥 · https://www.diguage.com
  */
 public void morrisIn(TreeNode head) {
-	TreeNode curr = head;
-	TreeNode mostRight = null;
-	while (curr != null) {
-		// 当前节点左子树的最右节点，当然是从左子树开始了
-		mostRight = curr.left;
-		if (mostRight != null) {
-			// 左子树不为空，则找出左子树的最右节点
-			while (mostRight.right != null
-					// 由于需要建立最右节点到当前节点的连接，所以，需要判断是否已建立连接来打破死循环
-					&& mostRight.right != curr) {
-				mostRight = mostRight.right;
-			}
-			if (mostRight.right == null) {
-				// 最右节点的右子树为空，则第一次访问，那么建立起连接
-				mostRight.right = curr;
-				curr = curr.left;
-				continue; // 第一次访问时，循环在这里直接中断 // <1>
-			} else {
-				// 最右节点的右子树不为空，则第二次访问，打破连接，恢复原貌
-				mostRight.right = null;
-			}
-		}
-		// 由于上面的 continue 中断循环，执行到这里的节点只剩下两种情况了：
-		// 要么是没有左子树，要么是有左子树的节点被第二次访问
-		System.out.print(curr.val + " "); // <2>
-		// 最子树为空，则向右移动
-		curr = curr.right;
-	}
+  TreeNode curr = head;
+  TreeNode mostRight = null;
+  while (curr != null) {
+    // 当前节点左子树的最右节点，当然是从左子树开始了
+    mostRight = curr.left;
+    if (mostRight != null) {
+      // 左子树不为空，则找出左子树的最右节点
+      while (mostRight.right != null
+          // 由于需要建立最右节点到当前节点的连接，所以，需要判断是否已建立连接来打破死循环
+          && mostRight.right != curr) {
+        mostRight = mostRight.right;
+      }
+      if (mostRight.right == null) {
+        // 最右节点的右子树为空，则第一次访问，那么建立起连接
+        mostRight.right = curr;
+        curr = curr.left;
+        continue; // 第一次访问时，循环在这里直接中断 // <1>
+      } else {
+        // 最右节点的右子树不为空，则第二次访问，打破连接，恢复原貌
+        mostRight.right = null;
+      }
+    }
+    // 由于上面的 continue 中断循环，执行到这里的节点只剩下两种情况了：
+    // 要么是没有左子树，要么是有左子树的节点被第二次访问
+    System.out.print(curr.val + " "); // <2>
+    // 最子树为空，则向右移动
+    curr = curr.right;
+  }
 }
 ----
 <1> 第一次访问时，`continue` 将代码中断
@@ -175,64 +175,64 @@ Morris 树中根遍历在 https://www.diguage.com/post/find-two-error-node-in-bi
  * @author D瓜哥 · https://www.diguage.com
  */
 public void morrisPost(TreeNode head) {
-	TreeNode curr = head;
-	TreeNode mostRight = null;
-	while (curr != null) {
-		// 当前节点左子树的最右节点，当然是从左子树开始了
-		mostRight = curr.left;
-		if (mostRight != null) {
-			// 左子树不为空，则找出左子树的最右节点
-			while (mostRight.right != null
-					// 由于需要建立最右节点到当前节点的连接，所以，需要判断是否已建立连接来打破死循环
-					&& mostRight.right != curr) {
-				mostRight = mostRight.right;
-			}
-			if (mostRight.right == null) {
-				// 最右节点的右子树为空，则第一次访问，那么建立起连接
-				mostRight.right = curr;
-				curr = curr.left;
-				continue;
-			} else {
-				// 最右节点的右子树不为空，则第二次访问，打破连接，恢复原貌
-				mostRight.right = null;
-				// 在第二次访问时，逆序输出 `curr` 左子树的右边界。
-				printEdge(curr.left);
-			}
-		}
-		// 最子树为空，则向右移动
-		curr = curr.right;
-	}
-	// 遍历完成后，逆序输出整棵树的右边界。
-	printEdge(head);
+  TreeNode curr = head;
+  TreeNode mostRight = null;
+  while (curr != null) {
+    // 当前节点左子树的最右节点，当然是从左子树开始了
+    mostRight = curr.left;
+    if (mostRight != null) {
+      // 左子树不为空，则找出左子树的最右节点
+      while (mostRight.right != null
+          // 由于需要建立最右节点到当前节点的连接，所以，需要判断是否已建立连接来打破死循环
+          && mostRight.right != curr) {
+        mostRight = mostRight.right;
+      }
+      if (mostRight.right == null) {
+        // 最右节点的右子树为空，则第一次访问，那么建立起连接
+        mostRight.right = curr;
+        curr = curr.left;
+        continue;
+      } else {
+        // 最右节点的右子树不为空，则第二次访问，打破连接，恢复原貌
+        mostRight.right = null;
+        // 在第二次访问时，逆序输出 `curr` 左子树的右边界。
+        printEdge(curr.left);
+      }
+    }
+    // 最子树为空，则向右移动
+    curr = curr.right;
+  }
+  // 遍历完成后，逆序输出整棵树的右边界。
+  printEdge(head);
 }
 
 /**
  * 打印边界
  */
 public void printEdge(TreeNode head) {
-	// 将树的右边界当做一个链接，左反转操作
-	TreeNode tail = reverseEdge(head);
-	TreeNode curr = tail;
-	while (curr != null) {
-		System.out.print(curr.val + " ");
-		curr = curr.right;
-	}
-	reverseEdge(tail); // 再次反转，恢复原貌
+  // 将树的右边界当做一个链接，左反转操作
+  TreeNode tail = reverseEdge(head);
+  TreeNode curr = tail;
+  while (curr != null) {
+    System.out.print(curr.val + " ");
+    curr = curr.right;
+  }
+  reverseEdge(tail); // 再次反转，恢复原貌
 }
 
 /**
  * 反转右子树
  */
 public TreeNode reverseEdge(TreeNode head) {
-	TreeNode pre = null;
-	TreeNode next = null;
-	while (head != null) {
-		next = head.right;
-		head.right = pre;
-		pre = head;
-		head = next;
-	}
-	return pre;
+  TreeNode pre = null;
+  TreeNode next = null;
+  while (head != null) {
+    next = head.right;
+    head.right = pre;
+    pre = head;
+    head = next;
+  }
+  return pre;
 }
 ----
 
