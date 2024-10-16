@@ -280,6 +280,8 @@ nacos.core.param.check.enabled=true
 
 操作细节见 https://nacos.io/zh-cn/docs/monitor-guide.html[Nacos 监控手册^]。
 
+最后，在提醒一句：常用软件的 Grafana 监控面板不需要自己配置，可以在 https://grafana.com/grafana/dashboards/[Grafana dashboards^] 页面搜索，选择合适的面板，下载 JSON 导入即可。
+
 NOTE: 在 https://github.com/micrometer-metrics/micrometer-samples/tree/main/micrometer-samples-boot3-database[Micrometer - Spring Boot 3 DataBase Sample^] 中看到，可以将配置文件直接挂载到 Grafana 中，这样应该就无需配置。但是，尝试后，数据不通，后续还要再研究一下怎么优化。
 
 == 业务应用接入
