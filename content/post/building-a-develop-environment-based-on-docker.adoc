@@ -17,7 +17,7 @@ weight: 1
 // ----
 
 
-最近想玩一下 Spring Cloud 以及相关周边的部署、监控等开源解决方案。由于组件众多，以及为了便于迁移，所以计划基于 Docker 及 Docker Compose 搭建一套相关的开发环境。记录一下，方便有相同需求的朋友借鉴。
+去年，很多同事要换 Mac 本，所以，写了 https://www.diguage.com/post/install-software-for-new-mac/[新 Mac 安装软件脚本^]，方便大家一键换机。最近想玩一下 Spring Cloud 以及相关周边的部署、监控等开源解决方案。由于组件众多及为了便于迁移和共享，计划基于 Docker 及 Docker Compose 搭建一套相关的开发环境。记录一下，方便有相同需求的朋友借鉴。
 
 TIP: 最新版的 Docker 在下载镜像时，会先访问一下 Docker 的官方站点。由于国内众所周知的网络情况，访问 Docker 官方站点总失败。所以，即使配置了国内 Docker 镜像站点也会失败。只需要将 Docker 软件回滚到 4.30.0 即可。（Mac 下验证有效，其他操作系统待进一步验证。）
 
