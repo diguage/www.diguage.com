@@ -1,0 +1,434 @@
+---
+title: "基于 Docker 搭建开发环境"
+date: 2024-10-16T21:48:11+08:00
+draft: false
+keywords: ["Docker", "MySQL", "Spring", "Prometheus", "NACOS", "Grafana"]
+tags: ["Java", "数据库", "Redis"]
+categories: ["开发工具","系统架构"]
+thumbnail: "images/logos/docker.svg"
+weight: 1
+---
+
+// image::/images/[title="",alt="",{image_attr}]
+
+// [source%nowrap,java,{source_attr}]
+// ----
+// // code
+// ----
+
+
+最近想玩一下 Spring Cloud 以及相关周边的部署、监控等开源解决方案。由于组件众多，以及为了便于迁移，所以计划基于 Docker 及 Docker Compose 搭建一套相关的开发环境。记录一下，方便有相同需求的朋友借鉴。
+
+TIP: 最新版的 Docker 在下载镜像时，会先访问一下 Docker 的官方站点。由于国内众所周知的网络情况，访问 Docker 官方站点总失败。所以，即使配置了国内 Docker 镜像站点也会失败。只需要将 Docker 软件回滚到 4.30.0 即可。（Mac 下验证有效，其他操作系统待进一步验证。）
+
+== MySQL
+
+开发中，最常用的应该就是数据库了。所以，先来搞 MySQL 数据库。
+
+创建如下目录结构，并添加相关相关文件：
+
+[source%nowrap,bash,{source_attr}]
+----
+$ tree
+.
+├── README.adoc
+├── clean.sh
+├── data
+│   └── mysql
+│       └── .gitkeep
+├── docker
+│   ├── config
+│   │   └── mysql
+│   │       └── init.sql
+│   ├── env
+│   │   └── mysql.env
+│   └── images
+│       └── mysql.dockerfile
+└── docker-compose.yml
+----
+
+先来看一下  `docker-compose.yml` 文件的内容：
+
+.`docker-compose.yml`
+[source%nowrap,yaml,{source_attr}]
+----
+services:
+  mysql:
+    container_name: mysql
+    build:
+      context: .
+      dockerfile: ./docker/images/mysql.dockerfile
+    image: example/mysql:8.4
+    env_file:
+      - ./docker/env/mysql.env
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+----
+
+由于 MySQL 的官方镜像只是提供了数据库软件，需要将初始化脚本在数据库内执行一遍。所以，基于 `mysql:8.4` 重新构建私有镜像。
+
+.`./docker/images/mysql.dockerfile`
+[source%nowrap,yaml,{source_attr}]
+----
+FROM mysql:8.4
+ADD ./docker/config/mysql/init.sql /docker-entrypoint-initdb.d/mysql-init.sql # <1>
+RUN chown -R mysql:mysql /docker-entrypoint-initdb.d/*.sql
+EXPOSE 3306
+CMD ["mysqld", "--character-set-server=utf8mb4", "--collation-server=utf8mb4_0900_ai_ci"]
+----
+<1> 特别说明一下：由于 `docker-compose.yml` 中将构建上下文 `context` 设置成了“当前目录”，那么构建文件中的目录必须使用以 `docker-compose.yml` 文件所在目录的相对路径。
+
+通过 `./docker/env/mysql.env` 文件设置一下 `root` 用户的密码：
+
+.`./docker/env/mysql.env`
+[source%nowrap,{source_attr}]
+----
+MYSQL_ROOT_PASSWORD=123456
+LANG=C.UTF-8
+----
+
+如果有多个组件依赖 MySQL，还可以通过初始化脚本给各个组件创建不同的数据库、账户和密码。示例初始化脚本如下：
+
+.`./docker/config/mysql/init.sql`
+[source%nowrap,sql,{source_attr}]
+----
+-- https://stackoverflow.com/a/52899915
+
+-- create databases
+CREATE DATABASE IF NOT EXISTS `diguage`;
+
+-- create root user and grant rights
+-- https://stackoverflow.com/a/16592722
+CREATE USER IF NOT EXISTS 'diguage'@'%' IDENTIFIED BY '123456';
+GRANT ALL ON diguage.* TO 'diguage'@'%';
+
+FLUSH PRIVILEGES;
+----
+
+== NACOS
+
+Nacos /nɑ:kəʊs/ 是 Dynamic Naming and Configuration Service的首字母简称，一个由阿里巴巴推出的，更易于构建云原生应用的动态服务发现、配置管理和服务管理平台。
+
+. 在 `./docker/config/mysql/init.sql` 文件中增加初始化数据库、账户和密码的 SQL 语句。
++
+--
+[source%nowrap,sql,{source_attr}]
+----
+CREATE USER IF NOT EXISTS 'nacos'@'%' IDENTIFIED BY '123456';
+GRANT ALL ON nacos.* TO 'nacos'@'%';
+----
+--
++
+. 添加数据库初始化脚本 `./docker/config/nacos/mysql-schema.sql` 到 `docker/images/mysql.dockerfile` 中。
++
+--
+[source%nowrap,{source_attr}]
+----
+# https://raw.githubusercontent.com/alibaba/nacos/develop/distribution/conf/mysql-schema.sql
+# 在文件头加一句 SQL:  use nacos;
+ADD ./docker/config/nacos/mysql-schema.sql /docker-entrypoint-initdb.d/nacos-mysql.sql
+----
+--
++
+. 添加必要的环境变量配置文件 `./docker/env/nacos.env`。
++
+--
+[source%nowrap,{source_attr}]
+----
+PREFER_HOST_MODE=hostname
+MODE=standalone
+SPRING_DATASOURCE_PLATFORM=mysql
+MYSQL_SERVICE_HOST=mysql
+MYSQL_SERVICE_DB_NAME=nacos
+MYSQL_SERVICE_PORT=3306
+MYSQL_SERVICE_USER=nacos
+MYSQL_SERVICE_PASSWORD=123456
+MYSQL_SERVICE_DB_PARAM=characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useUnicode=true&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+NACOS_AUTH_IDENTITY_KEY=2222
+NACOS_AUTH_IDENTITY_VALUE=2xxx
+NACOS_AUTH_TOKEN=SecretKey012345678901234567890123456789012345678901234567890123456789
+----
+--
++
+. `docker-compose.yml` 的内容最后一起给出。下同，不在赘述。
+
+== Prometheus
+
+部署好 NACOS，下面来部署一下 Prometheus，并且用 Prometheus 来监控 NACOS。
+
+. 增加配置文件： `./docker/config/prometheus/prometheus.yml`。
++
+--
+[source%nowrap,yaml,{source_attr}]
+----
+# my global config
+global:
+  scrape_interval: 5s # Set the scrape interval to every 5 seconds. Default is every 1 minute.
+  evaluation_interval: 5s # Evaluate rules every 5 seconds. The default is every 1 minute.
+  # scrape_timeout is set to the global default (10s).
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # - alertmanager:9093
+
+# Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
+rule_files:
+# - "first_rules.yml"
+# - "second_rules.yml"
+
+# A scrape configuration containing exactly one endpoint to scrape:
+# Here it's Prometheus itself.
+scrape_configs:
+  # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
+  - job_name: 'prometheus'
+
+    # metrics_path defaults to '/metrics'
+    # scheme defaults to 'http'.
+
+    static_configs:
+      - targets: [ 'localhost:9090' ]
+
+  - job_name: 'nacos' # <1>
+    metrics_path: '/nacos/actuator/prometheus'
+    static_configs:
+      - targets: [ 'nacos:8848' ]
+----
+<1> 接入新应用需要的配置
+--
++
+. 由于 NACOS 官方镜像内置的配置文件没有开启 Prometheus 监控。所以，需要增加一个配置文件，并将其挂载到容器里：`./docker/config/nacos/application.properties:/home/nacos/conf/application.properties`
++
+--
+[source%nowrap,{source_attr}]
+----
+# spring
+server.servlet.contextPath=${SERVER_SERVLET_CONTEXTPATH:/nacos}
+server.contextPath=/nacos
+server.port=${NACOS_APPLICATION_PORT:8848}
+server.tomcat.accesslog.max-days=30
+server.tomcat.accesslog.pattern=%h %l %u %t "%r" %s %b %D %{User-Agent}i %{Request-Source}i
+server.tomcat.accesslog.enabled=${TOMCAT_ACCESSLOG_ENABLED:false}
+server.error.include-message=ALWAYS
+# default current work dir
+server.tomcat.basedir=file:.
+#*************** Config Module Related Configurations ***************#
+### Deprecated configuration property, it is recommended to use `spring.sql.init.platform` replaced.
+#spring.datasource.platform=${SPRING_DATASOURCE_PLATFORM:}
+spring.sql.init.platform=${SPRING_DATASOURCE_PLATFORM:}
+nacos.cmdb.dumpTaskInterval=3600
+nacos.cmdb.eventTaskInterval=10
+nacos.cmdb.labelTaskInterval=300
+nacos.cmdb.loadDataAtStart=false
+db.num=${MYSQL_DATABASE_NUM:1}
+db.url.0=jdbc:mysql://${MYSQL_SERVICE_HOST}:${MYSQL_SERVICE_PORT:3306}/${MYSQL_SERVICE_DB_NAME}?${MYSQL_SERVICE_DB_PARAM:characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useSSL=false}
+db.user.0=${MYSQL_SERVICE_USER}
+db.password.0=${MYSQL_SERVICE_PASSWORD}
+## DB connection pool settings
+db.pool.config.connectionTimeout=${DB_POOL_CONNECTION_TIMEOUT:30000}
+db.pool.config.validationTimeout=10000
+db.pool.config.maximumPoolSize=20
+db.pool.config.minimumIdle=2
+### The auth system to use, currently only 'nacos' and 'ldap' is supported:
+nacos.core.auth.system.type=${NACOS_AUTH_SYSTEM_TYPE:nacos}
+### worked when nacos.core.auth.system.type=nacos
+### The token expiration in seconds:
+nacos.core.auth.plugin.nacos.token.expire.seconds=${NACOS_AUTH_TOKEN_EXPIRE_SECONDS:18000}
+### The default token:
+nacos.core.auth.plugin.nacos.token.secret.key=${NACOS_AUTH_TOKEN:}
+### Turn on/off caching of auth information. By turning on this switch, the update of auth information would have a 15 seconds delay.
+nacos.core.auth.caching.enabled=${NACOS_AUTH_CACHE_ENABLE:false}
+nacos.core.auth.enable.userAgentAuthWhite=${NACOS_AUTH_USER_AGENT_AUTH_WHITE_ENABLE:false}
+nacos.core.auth.server.identity.key=${NACOS_AUTH_IDENTITY_KEY:}
+nacos.core.auth.server.identity.value=${NACOS_AUTH_IDENTITY_VALUE:}
+## spring security config
+### turn off security
+nacos.security.ignore.urls=${NACOS_SECURITY_IGNORE_URLS:/,/error,/**/*.css,/**/*.js,/**/*.html,/**/*.map,/**/*.svg,/**/*.png,/**/*.ico,/console-fe/public/**,/v1/auth/**,/v1/console/health/**,/actuator/**,/v1/console/server/**}
+# metrics for elastic search
+management.endpoints.web.exposure.include=*  # <1>
+management.metrics.export.elastic.enabled=false
+management.metrics.export.influx.enabled=false
+nacos.naming.distro.taskDispatchThreadCount=10
+nacos.naming.distro.taskDispatchPeriod=200
+nacos.naming.distro.batchSyncKeyCount=1000
+nacos.naming.distro.initDataRatio=0.9
+nacos.naming.distro.syncRetryDelay=5000
+nacos.naming.data.warmup=true
+nacos.console.ui.enabled=true
+nacos.core.param.check.enabled=true
+----
+<1> 新增配置。
+--
+
+== Grafana
+
+在监控可视化方面，Grafana 还是更胜一筹。下面以 NACOS 为例，看看如何基于 Prometheus 的监控数据来做监控和报警。
+
+配置方面很简单，只需要将 Grafana 加入到 `docker-compose.yml` 即可。启动后，主要是在 UI 页面进行操作。
+
+. 添加 Prometheus 类型的 Data Source。
+. 添加监控面板，将 https://github.com/nacos-group/nacos-template/blob/master/nacos-grafana.json[模板] 导入即可。
+
+操作细节见 https://nacos.io/zh-cn/docs/monitor-guide.html[Nacos 监控手册^]。
+
+NOTE: 在 https://github.com/micrometer-metrics/micrometer-samples/tree/main/micrometer-samples-boot3-database[Micrometer - Spring Boot 3 DataBase Sample^] 中看到，可以将配置文件直接挂载到 Grafana 中，这样应该就无需配置。但是，尝试后，数据不通，后续还要再研究一下怎么优化。
+
+== 业务应用接入
+
+将业务应用接入到 Prometheus，就需要业务应用将相关监控数据暴露出来。Spring Boot 已经有相关 Starter，可以直接使用。步骤如下：
+
+. 添加相关依赖
++
+--
+[source%nowrap,xml,{source_attr}]
+----
+<!-- spring-boot-actuator依赖 -->
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-actuator</artifactId>
+</dependency>
+<!-- prometheus依赖 -->
+<dependency>
+    <groupId>io.micrometer</groupId>
+    <artifactId>micrometer-registry-prometheus</artifactId>
+</dependency>
+----
+--
++
+. 添加相关配置，暴露监测数据端口。配置完成后，启动应用即可在 http://localhost:8081/actuator/prometheus 中看到相关监控数据。
++
+--
+[source%nowrap,{source_attr}]
+----
+# application.properties 添加以下配置用于暴露指标
+spring.application.name=diguage-order
+
+management.server.port=8081
+management.endpoints.web.exposure.include=*
+management.metrics.tags.application=${spring.application.name}
+----
+--
++
+. 在 `./docker/config/prometheus/prometheus.yml` 中配置拉取任务：
++
+--
+[source%nowrap,yaml,{source_attr}]
+----
+- job_name: 'diguage-order'
+  metrics_path: '/actuator/prometheus'
+  static_configs:
+    - targets: [ 'diguage-order:8848' ] # <1>
+----
+<1>这里的域名与 `docker-compose.yml` 中配置的名称相对应。
+--
++
+. 将应用打包，接入到 `docker-compose.yml` 中，即可一起启动接入到系统中。
+
+== 待优化事项
+
+还有一些值得完善和深入研究的话题，列出来，后续再优化：
+
+. 目前需要把业务应用打包后配置到 `docker-compose.yml` 才能启动接入到这套监控体系。如何把网络暴露出来，可以让 IDE 运行中的应用接入到这套监控体系？
+. 目前如果有新增的应用或服务器，需要手动配置才能接入到 Prometheus 中，如何做到自动接入？
+. 如何通过配置文件，直接配置好 Grafana 而不是需要手动操作配置？
+. 如何在应用中接入 OpenTelemetry + Jaeger 监控？
+. Spring Boot 内置的监控数据是一个 OpenMetrics 标准的实现。深入学习一下。
+
+这些问题，后续研究后再分享，敬请关注。
+
+== 完整的 `docker-compose.yml`
+
+最后，把 `docker-compose.yml` 文件完整展示一下：
+
+[source%nowrap,yaml,{source_attr}]
+----
+services:
+  # mysql -h127.0.0.1 -uroot -p123456
+  mysql:
+    container_name: mysql
+    build:
+      context: .
+      dockerfile: ./docker/images/mysql.dockerfile
+    image: example/mysql:8.4
+    env_file:
+      - ./docker/env/mysql.env
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+
+  # Nacos: http://127.0.0.1:8848/nacos/
+  # http://localhost:8848/nacos/actuator/prometheus
+  nacos:
+    image: nacos/nacos-server:${NACOS_VERSION:-latest}
+    container_name: nacos
+    env_file:
+      - ./docker/env/nacos.env
+    volumes:
+      - ./docker/config/nacos/application.properties:/home/nacos/conf/application.properties
+      - /tmp/logs/nacos/:/home/nacos/logs
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: always
+
+  # Prometheus: http://localhost:9090/
+  prometheus:
+    image: prom/prometheus:${PROMETHEUS_VERSION:-latest}
+    container_name: prometheus
+    restart: always
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    volumes:
+      - ./docker/config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - 9090:9090
+    depends_on:
+      - nacos
+
+  # Grafana: http://localhost:3000/
+  # admin/admin
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:${GRAFANA_VERSION:-latest}
+    ports:
+      - 3000:3000
+    restart: on-failure
+----
+
+相关配置已经推送到 GitHub： https://github.com/diguage/develop-env[diguage/develop-env: 基于 Docker 的开发环境^]，感兴趣欢迎围观。
+
+
+== 参考资料
+
+. https://github.com/nacos-group/nacos-docker/tree/master[nacos-group/nacos-docker^] -- example/standalone-mysql-5.7.yaml
+. https://dev.mysql.com/doc/refman/8.4/en/charset-mysql.html[Character Sets and Collations in MySQL 8.4^]
+. https://www.cnblogs.com/sparkdev/p/9573248.html[Dockerfile 中的 COPY 与 ADD 命令^]
+. https://blog.csdn.net/wmq880204/article/details/80591096[创建MySQL用户 赋予某指定库表的权限_grant all privileges on 指定表权限^]
+. https://blog.csdn.net/u014796999/article/details/53559747[mysql刷新权限命令_sql给guest用户设置查询、更新权限^]
+. https://nacos.io/en-us/docs/v2/guide/admin/monitor-guide.html[Nacos monitor guide^]
+. https://blog.csdn.net/qq_32605245/article/details/134545714[最全docker之docker-compose.yml详解_docker-compose.yml^]
+. https://www.cnblogs.com/johnnyzen/p/17785405.html[Docker Compose 基础教程（概念/基础操作）^]
+. https://help.aliyun.com/zh/prometheus/use-cases/connect-spring-boot-applications-to-managed-service-for-prometheus[如何将SpringBoot应用接入Prometheus监控_可观测监控 Prometheus 版(Prometheus)^]
+
+
+
+
+
