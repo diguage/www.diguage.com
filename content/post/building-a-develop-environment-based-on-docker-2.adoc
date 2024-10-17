@@ -1,0 +1,343 @@
+---
+title: "基于 Docker 搭建开发环境（二）：EFK 日志套件"
+date: 2024-10-17T22:42:11+08:00
+draft: false
+keywords: ["Docker", "Elasticsearch", "Kibana", "Fluentd", "NACOS"]
+tags: ["Java", "架构", "分布式"]
+categories: ["开发工具","系统架构"]
+thumbnail: "images/logos/docker-compose.jpg"
+aliases: "/post/building-a-develop-environment-based-on-docker/"
+weight: 1
+---
+
+*基于 Docker 搭建开发环境系列*:
+
+. https://www.diguage.com/post/building-a-develop-environment-based-on-docker-1/[基于 Docker 搭建开发环境（一）：数据库+监控^]
+. https://www.diguage.com/post/building-a-develop-environment-based-on-docker-2/[基于 Docker 搭建开发环境（二）：EFK 日志套件^]
+. https://www.diguage.com/post/building-a-develop-environment-based-on-docker-3/[基于 Docker 搭建开发环境（三）：链路追踪^]
+
+在上一篇文章 https://www.diguage.com/post/building-a-develop-environment-based-on-docker-1/[基于 Docker 搭建开发环境（一）：数据库+监控^] 中，介绍了一下如何使用 Docker 搭建起 MySQL + NACOS + Prometheus + Grafana 集成数据库、注册中心+配置管理、监控的开发环境。这篇文章来介绍一下如何在原来的基础上接入 Elasticsearch + Fluentd + Kibana 套件，并且将 NACOS 的日志接入到 Elasticsearch 里。
+
+== Elasticsearch
+
+由于 Elasticsearch 8+ 的版本修改了安全策略，不允许 Kibana 使用超级管理员 `elastic` 连接 Elasticsearch，这里选用 7.x 版本做演示。
+
+还有一点需要提醒，在设置 Elasticsearch 的超级管理员 `elastic` 的账户密码时，如果密码是全部的阿拉伯数字，那么需要用双引号或者单引号括起来。
+
+在测试中，还遇到一个磁盘过载导致的只读问题。解决方式如下：
+
+. `curl -X GET "localhost:9200/_cat/allocation?v&pretty"` 查看磁盘使用情况
+. 解除只读状态
++
+--
+[source%nowrap,bash,{source_attr}]
+----
+$ curl -X PUT "localhost:9200/test/_settings" -H 'Content-Type: application/json' -d'
+{
+  "index.blocks.read_only_allow_delete": null
+}
+'
+----
+--
++
+. 调整磁盘使用阈值
++
+--
+[source%nowrap,bash,{source_attr}]
+----
+$ curl -X PUT "localhost:9200/_cluster/settings" -H 'Content-Type: application/json' -d'
+{
+  "persistent": {
+    "cluster.routing.allocation.disk.watermark.flood_stage": "97%", <1>
+    "cluster.routing.allocation.disk.watermark.high": "90%", <2>
+    "cluster.routing.allocation.disk.watermark.low": "85%",  <3>
+    "cluster.info.update.interval": "1m" <4>
+  }
+}
+'
+----
+<1> 当磁盘使用超过这个百分比时，索引会被设置为只读。
+<2> 当磁盘使用超过这个百分比时，Elasticsearch 会尝试将分片迁移到磁盘使用较少的节点。
+<3> 当磁盘使用超过这个百分比时，会触发分片的重新分配。
+<4> 更新磁盘使用信息的间隔时间。
+--
+
+== Kibana
+
+配置好 Elasticsearch 的网址、账户、密码就可以启动访问了。
+
+在网上见到别人把 Kibana 整的很精美的监控图表，不知道是怎么搞的？回头再研究研究。
+
+== Fluentd
+
+安装 Fluentd，通过 Fluentd 把 NACOS 和业务应用的日志传输到 Elasticsearch。目前先把 NACOS 的日志接入到 Elasticsearch。
+
+这里需要一个配置文件，用于知名日志的来源及去向：
+
+.`./docker/config/fluentd/fluent.conf`
+[source%nowrap,{source_attr}]
+----
+<source>
+  @type monitor_agent
+  port 9880  # HTTP 监控端口，默认为 9880
+</source>
+
+<source> # <1>
+  @type tail
+  path "/var/log/nacos/nacos.log"    # NACOS 的日志路径
+  pos_file "/fluentd/log/nacos.pos"  # 记录日志读取进度
+  tag "nacos.*"
+  <parse>
+    @type "none" # 如果 NACOS 日志是纯文本格式，可以选择 `none` 或其他解析方式
+  </parse>
+</source>
+
+<match nacos.**> # <2>
+  @type elasticsearch
+  host "elasticsearch"    # Elasticsearch 的服务名
+  port 9200
+  logstash_format true    # 格式化为 logstash 格式
+  logstash_prefix "nacos" # 索引前缀
+  include_tag_key true
+  flush_interval 5s
+  <buffer>
+    flush_interval 5s
+  </buffer>
+</match>
+----
+<1> 读取日志
+<2> 日志发送目的地
+
+接入成功后，`curl http://localhost:9200/nacos*/_search?pretty` 验证 NACOS 日志接入到 Elasticsearch。
+
+下面重点介绍一下遇到的几个问题：
+
+=== 插件缺失导致的启动失败
+
+由于需求将日志输送到 Elasticsearch，这就需要 fluent-plugin-elasticsearch 插件。容器中，默认是没有安装的，启动时就会导致失败。
+
+两种解决办法：
+
+. 使用上篇问 https://www.diguage.com/post/building-a-develop-environment-based-on-docker-1/[基于 Docker 搭建开发环境（一）：数据库+监控^] 中 MySQL 的类似办法，基于官方镜像，在里面装上插件，再打包一个新镜像。
+. 在 `docker-compose.yml` 中通过 `command` 指令，运行 Fluentd 时安装 fluent-plugin-elasticsearch 插件。
+
+为了简单起见，直接选择第二种方案。安装命令是： `command: ["sh", "-c", "gem install fluent-plugin-elasticsearch --no-document && fluentd -c /fluentd/etc/fluent.conf"]`。
+
+=== 由于权限导致的安装失败
+
+配置上述命令后，启动就遇到了该错误： `ERROR:  While executing gem ... (Gem::FilePermissionError)  You don't have write permissions for the /usr/lib/ruby/gems/3.2.0 directory.`。
+
+这是由于默认以 `fluent` 运行的，该用户对 `/usr/lib/ruby/gems/3.2.0` 没有写权限。所以，在安装插件时，就会报错。
+
+解决方案： 通过在 `docker-compose.yml` 中增加 `user: root` 配置，使用 `root` 来运行容器。
+
+=== 健康检查
+
+尝试了三种方案：
+
+. 启用 `monitor_agent` 插件，监控 `9880` 端口。失败！
+. 使用 `nc` 检查 Fluentd 监听的 `24224` 端口。失败！
+. 最后通过使用 `test: [ "CMD-SHELL", "pgrep fluentd || exit 1" ]` 来查看 Fluentd 的进程方式。成功！
+
+
+== 完整 `docker-compose.yml`
+
+按照惯例，再把最新的完整 `docker-compose.yml` 文件展示一下：
+
+[source%nowrap,yaml,{source_attr}]
+----
+services:
+  # mysql -h127.0.0.1 -uroot -p123456
+  mysql:
+    container_name: mysql
+    build:
+      context: .
+      dockerfile: ./docker/images/mysql.dockerfile
+    image: example/mysql:8.4
+    environment:
+      - TZ=Asia/Shanghai  # 设置时区为上海时间
+    env_file:
+      - ./docker/env/mysql.env
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
+      interval: 30s  # 每 30 秒检查一次
+      timeout: 10s   # 请求超时时间为 10 秒
+      retries: 5     # 如果检查失败，最多重试 5 次
+      start_period: 60s  # 等待 60 秒后再开始进行 healthcheck
+
+  # Nacos: http://127.0.0.1:8848/nacos/
+  # http://localhost:8848/nacos/actuator/prometheus
+  # http://localhost:8848/nacos/actuator/health
+  nacos:
+    image: nacos/nacos-server:${NACOS_VERSION:-latest}
+    container_name: nacos
+    environment:
+      - TZ=Asia/Shanghai  # 设置时区为上海时间
+    env_file:
+      - ./docker/env/nacos.env
+    volumes:
+      - ./docker/config/nacos/application.properties:/home/nacos/conf/application.properties
+      - nacos_log:/home/nacos/logs # <1>
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+    restart: on-failure
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8848/nacos/actuator/health" ]
+      interval: 30s  # 每 30 秒检查一次
+      timeout: 10s   # 请求超时时间为 10 秒
+      retries: 5     # 如果检查失败，最多重试 5 次
+      start_period: 60s  # 等待 60 秒后再开始进行 healthcheck
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  # Prometheus: http://localhost:9090/
+  # http://localhost:9090/-/healthy
+  prometheus:
+    image: prom/prometheus:${PROMETHEUS_VERSION:-latest}
+    container_name: prometheus
+    environment:
+      - TZ=Asia/Shanghai  # 设置时区为上海时间
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    volumes:
+      - ./docker/config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - 9090:9090
+    restart: on-failure
+    healthcheck:
+      test: [ "CMD-SHELL", "wget --spider -q http://localhost:9090/-/healthy || exit 1" ]
+      interval: 30s  # 每 30 秒检查一次
+      timeout: 10s   # 请求超时时间为 10 秒
+      retries: 5     # 如果检查失败，最多重试 5 次
+      start_period: 60s  # 等待 60 秒后再开始进行 healthcheck
+    depends_on:
+      - nacos
+
+  # Grafana: http://localhost:3000/
+  # admin/admin
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:${GRAFANA_VERSION:-latest}
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - TZ=Asia/Shanghai  # 设置时区为上海时间
+    volumes:
+      - ./data/grafana:/var/lib/grafana  # 将主机目录映射到 Grafana 容器内的 /var/lib/grafana
+    ports:
+      - 3000:3000
+    restart: on-failure
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:3000/api/health" ]
+      interval: 30s  # 每 30 秒检查一次
+      timeout: 10s   # 请求超时时间为 10 秒
+      retries: 5     # 如果检查失败，最多重试 5 次
+      start_period: 60s  # 等待 60 秒后再开始进行 healthcheck
+    depends_on:
+      - prometheus
+
+  # ElasticSearch http://localhost:9200/
+  # http://localhost:9200/_cluster/health
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTICSEARCH_VERSION:-7.17.24}
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - ELASTIC_PASSWORD='123456'  # 设置 elastic 用户的默认密码 <2>
+      - TZ=Asia/Shanghai  # 设置时区为上海时间
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - ./data/elasticsearch:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -fsSL http://localhost:9200/_cluster/health || exit 1" ]
+      interval: 30s  # 每 30 秒检查一次
+      timeout: 10s   # 请求超时时间为 10 秒
+      retries: 5     # 如果检查失败，最多重试 5 次
+      start_period: 60s  # 等待 60 秒后再开始进行 healthcheck
+
+  # Kibana http://localhost:5601
+  # http://localhost:5601/api/status
+  kibana:
+    image: docker.elastic.co/kibana/kibana:${KIBANA_VERSION:-7.17.24}
+    container_name: kibana
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD='123456' # <2>
+      - TZ=Asia/Shanghai  # 设置时区为上海时间
+    ports:
+      - "5601:5601"
+    restart: on-failure
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:5601/api/status" ]
+      interval: 30s  # 每 30 秒检查一次
+      timeout: 10s   # 请求超时时间为 10 秒
+      retries: 5     # 如果检查失败，最多重试 5 次
+      start_period: 60s  # 等待 60 秒后再开始进行 healthcheck
+    depends_on:
+      - elasticsearch
+
+  # Fluentd http://localhost:9880/api/plugins.json 插件的安装情况
+  fluentd:
+    image: fluentd:${FLUENTD_VERSION:-latest}
+    container_name: fluentd
+    user: root  # 使用 root 用户安装插件 <3>
+    ports:
+      - "24224:24224"
+      - "9880:9880"  # 开启监控端口
+    volumes:
+      - ./docker/config/fluentd/fluent.conf:/fluentd/etc/fluent.conf  # 挂载 Fluentd 配置文件
+      - ./data/fluentd:/fluentd/log  # 持久化 Fluentd 数据目录
+      - nacos_log:/var/log/nacos  # 挂载 NACOS 日志目录 <1>
+    environment:
+      FLUENT_ELASTICSEARCH_HOST: elasticsearch
+      FLUENT_ELASTICSEARCH_PORT: 9200
+    # command: ["sh", "-c", "gem install fluent-plugin-elasticsearch --no-document && fluentd -c /fluentd/etc/fluent.conf"]
+    command: [ "sh", "-c", "gem install fluent-plugin-elasticsearch --no-document && chown -R fluent /usr/lib/ruby/gems && fluentd -c /fluentd/etc/fluent.conf" ]
+    healthcheck:
+      test: [ "CMD-SHELL", "pgrep fluentd || exit 1" ]
+      interval: 30s  # 每 30 秒检查一次
+      timeout: 10s   # 请求超时时间为 10 秒
+      retries: 5     # 如果检查失败，最多重试 5 次
+      start_period: 60s  # 等待 60 秒后再开始进行 healthcheck
+    depends_on:
+      - elasticsearch
+
+volumes:
+  nacos_log:  # <1>
+----
+<1> 把 NACOS 的日志目录同时挂载到 Fluentd，以便读取并发送到 Elasticsearch 中。
+<2> 纯数字的密码要用引号括起来，并且和 Elasticsearch 中设置的密码相对应。
+<3> 使用 `root` 用户运行容器。
+
+相关配置已经推送到 GitHub： https://github.com/diguage/develop-env[diguage/develop-env: 基于 Docker 的开发环境^]，感兴趣欢迎围观。
+
+== 参考资料
+
+. https://cloud.tencent.com/developer/article/1770741[一文读懂开源日志管理方案 ELK 和 EFK 的区别^]
+. https://logz.io/blog/fluentd-Logstash/[Fluentd vs Logstash: A Comparison of Log Collectors^]
+. https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html[Install Elasticsearch with Docker^]
+. https://cloud.tencent.com/developer/article/2353706[你居然还去服务器上捞日志，搭个日志收集系统难道不香么！^]
+. https://elk-docker.readthedocs.io/[Elasticsearch, Logstash, Kibana (ELK) Docker image documentation^]
+. https://elastic.ac.cn/guide/en/elasticsearch/reference/current/docker.html[使用 Docker 安装 Elasticsearch | Elasticsearch 指南^]
+. https://logz.io/blog/kibana-tutorial/[Kibana Tutorial: Getting Started | Logz.io^]
+. https://work.haufegroup.io/log-aggregation/[Log Aggregation with Fluentd, Elasticsearch and Kibana^]
+. https://www.toberoot.com/linux/2_excellent_tools/fluentd/fluentd_config.html[Fluentd 配置^]
+. https://docs.fluentd.org/configuration/config-file[Config File Syntax^]
+
+
+
+
+

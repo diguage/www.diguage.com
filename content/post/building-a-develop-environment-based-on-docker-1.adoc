@@ -3,9 +3,9 @@ title: "基于 Docker 搭建开发环境（一）：数据库+监控"
 date: 2024-10-16T21:48:11+08:00
 draft: false
 keywords: ["Docker", "MySQL", "Spring", "Prometheus", "NACOS", "Grafana"]
-tags: ["Java", "数据库", "Redis"]
+tags: ["Java", "数据库", "架构"]
 categories: ["开发工具","系统架构"]
-thumbnail: "images/logos/docker.svg"
+thumbnail: "images/logos/docker-compose.jpg"
 aliases: "/post/building-a-develop-environment-based-on-docker/"
 weight: 1
 ---
@@ -13,7 +13,7 @@ weight: 1
 *基于 Docker 搭建开发环境系列*:
 
 . https://www.diguage.com/post/building-a-develop-environment-based-on-docker-1/[基于 Docker 搭建开发环境（一）：数据库+监控^]
-. https://www.diguage.com/post/building-a-develop-environment-based-on-docker-2/[基于 Docker 搭建开发环境（二）：日志套件^]
+. https://www.diguage.com/post/building-a-develop-environment-based-on-docker-2/[基于 Docker 搭建开发环境（二）：EFK 日志套件^]
 . https://www.diguage.com/post/building-a-develop-environment-based-on-docker-3/[基于 Docker 搭建开发环境（三）：链路追踪^]
 
 去年，很多同事要换 Mac 本，所以，写了 https://www.diguage.com/post/install-software-for-new-mac/[新 Mac 安装软件脚本^]，方便大家一键换机。最近想玩一下 Spring Cloud 以及相关周边的部署、监控等开源解决方案。由于组件众多及为了便于迁移和共享，计划基于 Docker 及 Docker Compose 搭建一套相关的开发环境。记录一下，方便有相同需求的朋友借鉴。
@@ -343,7 +343,7 @@ management.metrics.tags.application=${spring.application.name}
   static_configs:
     - targets: [ 'diguage-order:8848' ] # <1>
 ----
-<1>这里的域名与 `docker-compose.yml` 中配置的名称相对应。
+<1> 这里的域名与 `docker-compose.yml` 中配置的名称相对应。
 --
 +
 . 将应用打包，接入到 `docker-compose.yml` 中，即可一起启动接入到系统中。
@@ -447,6 +447,8 @@ services:
 . https://blog.csdn.net/qq_32605245/article/details/134545714[最全docker之docker-compose.yml详解_docker-compose.yml^]
 . https://www.cnblogs.com/johnnyzen/p/17785405.html[Docker Compose 基础教程（概念/基础操作）^]
 . https://help.aliyun.com/zh/prometheus/use-cases/connect-spring-boot-applications-to-managed-service-for-prometheus[如何将SpringBoot应用接入Prometheus监控_可观测监控 Prometheus 版(Prometheus)^]
+. https://www.infrastack.cn/?p=48[从零开始：使用Prometheus与Grafana搭建监控系统^]
+. https://blog.csdn.net/zhang24360/article/details/125357297[Nacos监控中心篇（一）Prometheus+Grafana的配置_nacos 对接granfa^]
 
 
 
