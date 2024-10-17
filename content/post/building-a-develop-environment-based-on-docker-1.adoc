@@ -1,21 +1,20 @@
 ---
-title: "基于 Docker 搭建开发环境"
+title: "基于 Docker 搭建开发环境（一）：数据库+监控"
 date: 2024-10-16T21:48:11+08:00
 draft: false
 keywords: ["Docker", "MySQL", "Spring", "Prometheus", "NACOS", "Grafana"]
 tags: ["Java", "数据库", "Redis"]
 categories: ["开发工具","系统架构"]
 thumbnail: "images/logos/docker.svg"
+aliases: "/post/building-a-develop-environment-based-on-docker/"
 weight: 1
 ---
 
-// image::/images/[title="",alt="",{image_attr}]
+*基于 Docker 搭建开发环境系列*:
 
-// [source%nowrap,java,{source_attr}]
-// ----
-// // code
-// ----
-
+. https://www.diguage.com/post/building-a-develop-environment-based-on-docker-1/[基于 Docker 搭建开发环境（一）：数据库+监控^]
+. https://www.diguage.com/post/building-a-develop-environment-based-on-docker-2/[基于 Docker 搭建开发环境（二）：日志套件^]
+. https://www.diguage.com/post/building-a-develop-environment-based-on-docker-3/[基于 Docker 搭建开发环境（三）：链路追踪^]
 
 去年，很多同事要换 Mac 本，所以，写了 https://www.diguage.com/post/install-software-for-new-mac/[新 Mac 安装软件脚本^]，方便大家一键换机。最近想玩一下 Spring Cloud 以及相关周边的部署、监控等开源解决方案。由于组件众多及为了便于迁移和共享，计划基于 Docker 及 Docker Compose 搭建一套相关的开发环境。记录一下，方便有相同需求的朋友借鉴。
 
@@ -112,6 +111,14 @@ GRANT ALL ON diguage.* TO 'diguage'@'%';
 FLUSH PRIVILEGES;
 ----
 
+登录验证：
+
+[source%nowrap,bash,{source_attr}]
+----
+$ mysql -h127.0.0.1 -uroot -p123456
+----
+
+
 == NACOS
 
 Nacos /nɑ:kəʊs/ 是 Dynamic Naming and Configuration Service的首字母简称，一个由阿里巴巴推出的，更易于构建云原生应用的动态服务发现、配置管理和服务管理平台。
@@ -158,6 +165,8 @@ NACOS_AUTH_TOKEN=SecretKey012345678901234567890123456789012345678901234567890123
 --
 +
 . `docker-compose.yml` 的内容最后一起给出。下同，不在赘述。
+
+验证网页： http://127.0.0.1:8848/nacos/ ，监控数据见： http://localhost:8848/nacos/actuator/prometheus
 
 == Prometheus
 
@@ -269,6 +278,8 @@ nacos.core.param.check.enabled=true
 <1> 新增配置。
 --
 
+验证网页： http://localhost:9090/
+
 == Grafana
 
 在监控可视化方面，Grafana 还是更胜一筹。下面以 NACOS 为例，看看如何基于 Prometheus 的监控数据来做监控和报警。
@@ -283,6 +294,8 @@ nacos.core.param.check.enabled=true
 最后，在提醒一句：常用软件的 Grafana 监控面板不需要自己配置，可以在 https://grafana.com/grafana/dashboards/[Grafana dashboards^] 页面搜索，选择合适的面板，下载 JSON 导入即可。
 
 NOTE: 在 https://github.com/micrometer-metrics/micrometer-samples/tree/main/micrometer-samples-boot3-database[Micrometer - Spring Boot 3 DataBase Sample^] 中看到，可以将配置文件直接挂载到 Grafana 中，这样应该就无需配置。但是，尝试后，数据不通，后续还要再研究一下怎么优化。
+
+验证网页： http://localhost:3000/ ， 账户密码： admin/admin
 
 == 业务应用接入
 
@@ -347,8 +360,10 @@ management.metrics.tags.application=${spring.application.name}
 . 怎么使用 Prometheus 监控 MySQL？
 . 监控数据怎么在 Prometheus，Grafana 和 OpenTelemetry 中共享及存储？
 . 怎样利用监控数据来助力服务治理，提高系统稳定性？
+. 看到很多公司，在大数据方面，使用 Apache Doris，不知能否接入进来？
+. 集成日志采集套装 ElasticSearch + Fluentd + Kibana
 
-这些问题，后续研究后再分享，敬请关注。
+这些问题，后续研究后再分享，敬请关注： https://www.diguage.com/post/building-a-develop-environment-based-on-docker-2/[基于 Docker 搭建开发环境（二）：日志套件^]
 
 == 完整的 `docker-compose.yml`
 
