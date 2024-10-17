@@ -1,0 +1,61 @@
+seqdiag {
+  edge_length = 200;
+
+  Acter => Hessian2Input[label="readObject()"] {
+    Hessian2Input => Hessian2Input[label="read()", note=" \n读取标志位\n_"];
+=== 处理链表（含数组、List、Set、Iterator、Enumeration 等） ===
+    Hessian2Input => Hessian2Input[label="readType()", note=" \n读取类型信息\n_"] {
+      Hessian2Input => Hessian2Input[label="read()", note=" \n读取标志位\n_"];
+      Hessian2Input => Hessian2Input[label="readString()", note=" \n读取字符串\n这里包含了大量大量的细节！\n_"];
+      Hessian2Input => Hessian2Input[label="readInt()", note=" \n读取数字\n这里包含了大量大量的细节！\n_"];
+    }
+
+    Hessian2Input => Hessian2Input[label="findSerializerFactory()", note=" \n查找 SerializerFactory\n_"] {
+      Hessian2Input => SerializerFactory[label="createDefault()"];
+    }
+
+    Hessian2Input => SerializerFactory[label="readList(AbstractHessianInput in, int length, String type)"] {
+      SerializerFactory => SerializerFactory[label="getDeserializer(String type)", note=" \n后面处理流程一样，\n直接引用这里，\n不再重复声明！\n_"] {
+        SerializerFactory => SerializerFactory[label="loadSerializedClass(String className)"] {
+          SerializerFactory => ClassFactory[label="load(String className)"];
+        }
+        SerializerFactory => SerializerFactory[label="getDeserializer(String type)"] {
+          SerializerFactory => SerializerFactory[label="loadDeserializer(Class cl)"] {
+            SerializerFactory => AbstractSerializerFactory[label="getDeserializer(Class cl)"];
+            SerializerFactory => ContextSerializerFactory[label="getDeserializer(String className)"];
+            SerializerFactory => ContextSerializerFactory[label="create(ClassLoader loader)"];
+            SerializerFactory => ContextSerializerFactory[label="getDeserializer(String className)"];
+            SerializerFactory => ContextSerializerFactory[label="getCustomDeserializer(Class cl)"];
+            SerializerFactory => SerializerFactory[label="new", note=" \n这里通过 new 或者 create() 方法，\n创建了很多不同类型 Deserializer 实现\n类，列表如下：\n1. CollectionDeserializer\n2. MapDeserializer\n3. IteratorDeserializer\n4. AnnotationDeserializer\n5. ObjectDeserializer\n6. ArrayDeserializer\n7. EnumerationDeserializer\n8. EnumDeserializer\n9. ClassDeserializer\n_"];
+          }
+        }
+      }
+      SerializerFactory => Deserializer[label="readList(AbstractHessianInput in, int length)"];
+      SerializerFactory => CollectionDeserializer[label="readList(AbstractHessianInput in, int length)"];
+    }
+
+=== 处理 Map ===
+    Hessian2Input => SerializerFactory[label="readMap(AbstractHessianInput in, String type)"] {
+      SerializerFactory => SerializerFactory[label="getDeserializer(String type)", note=" \n与上面处理链表中过程一样，\n不再重复声明！\n_"];
+      SerializerFactory => Deserializer[label="readMap(AbstractHessianInput in)"];
+    }
+
+=== 处理 对象 ===
+    Hessian2Input => Hessian2Input[label="readObjectDefinition(Class<?> cl)", note=" \n读取对象定义\n_"] {
+      Hessian2Input => Hessian2Input[label="readString()", note=" \n读取字符串\n_"];
+      Hessian2Input => Hessian2Input[label="readInt()", note=" \n读取长度\n_"];
+      Hessian2Input => Hessian2Input[label="findSerializerFactory()", note=" \n查找 SerializerFactory\n_"] {
+        Hessian2Input => SerializerFactory[label="createDefault()"];
+      }
+      Hessian2Input => SerializerFactory[label="getObjectDeserializer(String type, Class cl)"] {
+        SerializerFactory => SerializerFactory[label="getObjectDeserializer(String type)"] {
+          SerializerFactory => SerializerFactory[label="getDeserializer(String type)", note=" \n与上面处理链表中过程一样，\n不再重复声明！\n_"];
+        }
+      }
+    }
+
+    Hessian2Input => Hessian2Input[label="readObject()", note=" \n读取对象\n递归调用自身\n_"];
+  }
+
+=== D瓜哥 · https://www.diguage.com · 出品 ===
+}
