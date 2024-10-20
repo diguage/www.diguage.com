@@ -220,6 +220,8 @@ scrape_configs:
 --
 [source%nowrap,{source_attr}]
 ----
+# @author D瓜哥 · https://www.diguage.com
+
 # spring
 server.servlet.contextPath=${SERVER_SERVLET_CONTEXTPATH:/nacos}
 server.contextPath=/nacos
@@ -371,6 +373,8 @@ management.metrics.tags.application=${spring.application.name}
 
 [source%nowrap,yaml,{source_attr}]
 ----
+# @author D瓜哥 · https://www.diguage.com
+
 services:
   # mysql -h127.0.0.1 -uroot -p123456
   mysql:

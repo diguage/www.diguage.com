@@ -77,6 +77,8 @@ $ curl -X PUT "localhost:9200/_cluster/settings" -H 'Content-Type: application/j
 .`./docker/config/fluentd/fluent.conf`
 [source%nowrap,{source_attr}]
 ----
+# @author D瓜哥 · https://www.diguage.com
+
 <source>
   @type monitor_agent
   port 9880  # HTTP 监控端口，默认为 9880
@@ -146,6 +148,7 @@ $ curl -X PUT "localhost:9200/_cluster/settings" -H 'Content-Type: application/j
 
 [source%nowrap,yaml,{source_attr}]
 ----
+# @author D瓜哥 · https://www.diguage.com
 services:
   # mysql -h127.0.0.1 -uroot -p123456
   mysql:
@@ -335,7 +338,9 @@ volumes:
 . https://logz.io/blog/kibana-tutorial/[Kibana Tutorial: Getting Started | Logz.io^]
 . https://work.haufegroup.io/log-aggregation/[Log Aggregation with Fluentd, Elasticsearch and Kibana^]
 . https://www.toberoot.com/linux/2_excellent_tools/fluentd/fluentd_config.html[Fluentd 配置^]
-. https://docs.fluentd.org/configuration/config-file[Config File Syntax^]
+. https://docs.fluentd.org/configuration/config-file[Fluentd Config File Syntax^]
+. https://tangxusc.github.io/blog/2019/03/fluentd-%E5%AE%89%E8%A3%85%E9%85%8D%E7%BD%AE%E4%BD%BF%E7%94%A8%E4%BB%8B%E7%BB%8D/[fluentd 安装、配置、使用介绍^]
+. https://docs.fluentd.org/deployment/high-availability[Fluentd High Availability Config^]
 
 
 

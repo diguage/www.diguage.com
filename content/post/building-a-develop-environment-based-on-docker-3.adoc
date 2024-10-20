@@ -1,0 +1,436 @@
+---
+title: "基于 Docker 搭建开发环境（三）：链路追踪"
+date: 2024-10-20T16:50:11+08:00
+draft: false
+keywords: ["Docker", "OpenTelemetry", "Jaeger", "OpenTelemetry Collector"]
+tags: ["Java", "分布式", "微服务", "架构"]
+categories: ["开发工具","系统架构"]
+thumbnail: "images/logos/docker-compose.jpg"
+aliases: "/post/building-a-develop-environment-based-on-docker/"
+weight: 1
+---
+
+*基于 Docker 搭建开发环境系列*:
+
+. https://www.diguage.com/post/building-a-develop-environment-based-on-docker-1/[基于 Docker 搭建开发环境（一）：数据库+监控^]
+. https://www.diguage.com/post/building-a-develop-environment-based-on-docker-2/[基于 Docker 搭建开发环境（二）：EFK 日志套件^]
+. https://www.diguage.com/post/building-a-develop-environment-based-on-docker-3/[基于 Docker 搭建开发环境（三）：链路追踪^]
+
+在上一篇文章 https://www.diguage.com/post/building-a-develop-environment-based-on-docker-1/[基于 Docker 搭建开发环境（一）：数据库+监控^] 和 https://www.diguage.com/post/building-a-develop-environment-based-on-docker-2/[基于 Docker 搭建开发环境（二）：EFK 日志套件^] 两篇文章中，分别介绍了“数据库+监控”和“EFK 日志套件”。这篇文章给大家分享一下如何在本地搭建起一套简单的分布式链路追踪。
+
+在 AI 的帮助下，如同砍瓜切菜一样，非常迅速地就完成了 https://www.diguage.com/post/building-a-develop-environment-based-on-docker-2/[基于 Docker 搭建开发环境（二）：EFK 日志套件^] 的搭建。原以为搞这个也会分分钟的问题，结果应用的追踪数据一致无法正常发送到 Jaeger 中，各种改端口号都不行。后来，无意间看了 OpenTelemetry 的配置文档，增加了一个协议配置，全部流程竟然通了，非常神奇！
+
+站在更高的视角去看，链路追踪其实是可观测性的一部分，包括上篇文章的日志，也是可观测性的一部分。日志、追踪、度量，三者是相辅相成的。
+
+image::/images/it/observability.png[title="可观测性",alt="可观测性",{image_attr}]
+
+在 OpenTelemetry 出现之前，日志、追踪、度量是分离的，三者各各自为战。而 OpenTelemetry 的出现，则是试图将三者统一。目前 OpenTelemetry 是云原生架构中，最炙手可热的分布式链路追踪解决方案，它提供了一套相关标准，各个厂商可以在这套标准之上进行各种各样的组件开发，大家可以根据自己的需要，选择不同的组件，进行可插拔式的安装。
+
+image::/images/it/opentelemetry-collection.webp[title="OpenTelemetry 的野心",alt="OpenTelemetry 的野心",{image_attr}]
+
+在这篇文章中，链路追踪的解决方案选择的是 OpenTelemetry + OpenTelemetry Collector + Jaeger。
+
+== OpenTelemetry
+
+OpenTelemetry 并不需要在 Docker 中启动或者配置什么。在目前的架构中，Jaeger 是作为 OpenTelemetry 的一个实现来出现的。 OpenTelemetry 需要做的就是下载一个 Java Agent，执行 `docker/config/opentelemetry/download-opentelemetry-agent.sh` 脚本即可下载最新版的 Java Agent。在业务应用启动时，增加如下 JVM 参数：
+
+[source%nowrap,{source_attr}]
+----
+-javaagent:/path/to/opentelemetry-javaagent.jar
+-Dotel.service.name=<业务系统名称>
+-Dotel.traces.exporter=otlp <1>
+-Dotel.exporter.otlp.endpoint="http://localhost:4318" <2>
+-Dotel.exporter.otlp.protocol=http/protobuf <3>
+-Dotel.logs.exporter=console  <4>
+-Dotel.metrics.exporter=prometheus <5>
+-Dotel.exporter.prometheus.port=8079 <6>
+-Dotel.metric.export.interval=1000 <7>
+----
+<1> 选择 `otlp` exporter
+<2> `otlp` exporter 的网址
+<3> 传输协议。这个必须和 `otel.exporter.otlp.endpoint` 配置项及 Jaeger 暴露的端口相对应，否则传输失败。
+<4> 将日志输出到控制台。
+<5> 将 Metrics 信息导出到 Prometheus
+<6> Metrics 导出的端口。Prometheus 会从端口号拉去，路径是 `/metrics`。
+<7> Metrics 统计间隔。
+
+应用启动后，可以在 Prometheus 的配置文件 `docker/config/prometheus/prometheus.yml` 中增加相关配置：
+
+[source%nowrap,yaml,{source_attr}]
+----
+  # 业务系统：商城
+  - job_name: 'mall-system'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['host.docker.internal:8099'] <1>
+----
+<1> 从 Docker 容器访问主机端口，使用 `host.docker.internal`。
+
+这样就会 Prometheus 定期去拉取业务系统的监控信息，可以在 http://localhost:9090/targets 页面看到系统的运行状况。
+
+详细配置见： https://opentelemetry.io/docs/languages/java/configuration/[OpenTelemetry Configure the SDK^]。
+
+== Jaeger
+
+http://localhost:16686
+
+最新版的 Jaeger 都被集成到了 `jaegertracing/all-in-one` 这个一个镜像中。简化了很多配置。
+
+将官方文档中，启动 Docker 的参数改成 Docker Compose 配置即可。初次使用 Jaeger，肯定会惊讶于它居然需要这么多端口号，具体端口号的解释见： https://www.jaegertracing.io/docs/1.62/getting-started/[Jaeger Getting Started^]。
+
+
+== 尾部采样
+
+尾部采样是通过考虑 Trace 内的全部或大部分 Span 来决定对 Trace 进行采样。尾部采样允许您根据从 Trace 的不同部分使用的特定条件对 Trace 进行采样，而头部采样则不具有此选项。
+
+利用 OpenTelemetry Collector  来实现尾部采样。私以为尾部采样最大的优势是可以根据“问题”进行采样，比如耗时比较高的采样，再比如链路中出现错误，进行采样。
+
+OpenTelemetry Collector 的配置：
+
+.`docker/config/opentelemetry/otel-collector-config.yaml`
+[source%nowrap,yaml,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+# https://opentelemetry.io/docs/collector/configuration/
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors: ${file:/etc/otelcol-contrib/tail_sampling_config.yaml}
+
+exporters:
+  otlp:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true # 根据实际情况配置 TLS
+
+extensions:
+  health_check:
+  pprof:
+  zpages:
+
+service:
+  extensions: [ health_check, pprof, zpages ]
+  pipelines:
+    traces:
+      receivers: [ otlp ]
+      processors: [ tail_sampling, batch ]
+      exporters: [ otlp ]
+----
+
+这里展示三种采样示例：①超长耗时采样；②错误请求采样；③百分比随机采样：
+
+[source%nowrap,yaml,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+tail_sampling:
+  # 在采样决策之前等待的时间。这个时间允许 collector 收集更多的
+  # 追踪数据，以便基于更完整的信息进行决策。5s 表示等待 5 秒后进行采样决策。
+  # 确保采样决策基于完整的追踪数据，而不是追踪开始后的即时数据。
+  decision_wait: 5s
+  # 决定如何批量处理追踪数据。具体来说，这是一个用于批处理采样决策的追踪数量阈值。
+  # 100 表示每处理 100 个追踪数据后进行一次采样决策。
+  # 优化性能，通过批量处理减少资源消耗。
+  num_traces: 100
+  # 预期每秒钟接收的新追踪数量。这个参数用于调整采样策略的性能和资源使用。
+  # 10 表示预期每秒钟有 10 个新追踪到达。
+  # 帮助处理器优化其内部数据结构和性能，以适应流量模式。
+  expected_new_traces_per_sec: 10
+  # 配置用于存储已采样追踪的缓存设置。
+  decision_cache:
+    # 缓存中可存储的已采样追踪的最大数量。500 表示缓存最多存储 500 个已采样的追踪。
+    # 控制缓存的大小，防止内存占用过高。
+    sampled_cache_size: 500
+  # 定义一组采样策略，决定哪些追踪应被采样（保留）或丢弃。采样决策按顺序应用，直到一个策略匹配。
+  policies:
+    [
+      # 基于追踪的延迟时间来决定是否采样。延迟阈值（毫秒）。
+      # 有助于识别和分析性能瓶颈或异常延迟的追踪。
+      {
+        name: test-policy-2,
+        type: latency,
+        # 如果一个追踪的总延迟时间超过 119 毫秒，则该追踪将被采样。延迟阈值（毫秒）。
+        latency: { threshold_ms: 119 }
+      },
+
+      # 基于概率进行采样，即以一定的概率采样追踪数据。
+      # 用于控制采样率，以在保持数据质量的同时减少数据量。
+      {
+        name: test-policy-4,
+        type: probabilistic,
+        # hash_salt：用于哈希计算的盐值。
+        # sampling_percentage：采样百分比，20 表示 20% 的追踪将被采样。
+        probabilistic: {
+          hash_salt: "39b68c2b07f28452df4e64357e749139",
+          sampling_percentage: 20
+        }
+      },
+
+      # 基于追踪的状态码来决定是否采样。
+      # 用于重点关注有错误或未设置状态码的追踪，以便快速识别和修复问题。
+      {
+        name: test-policy-5,
+        type: status_code,
+        # status_codes：要匹配的状态码列表。
+        status_code: { status_codes: [ ERROR ] }
+      },
+    ]
+----
+
+尾部采样的配置文件在 `docker/config/opentelemetry/tail_sampling_config.yaml`。，
+
+== 完整 `docker-compose.yml`
+
+按照惯例，再把最新的完整 `docker-compose.yml` 文件展示一下：
+
+[source%nowrap,yaml,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+services:
+  # mysql -h127.0.0.1 -uroot -p123456
+  mysql:
+    container_name: mysql
+    build:
+      context: .
+      dockerfile: ./docker/images/mysql.dockerfile
+    image: example/mysql:8.4
+    environment:
+      - TZ=Asia/Shanghai  # 设置时区为上海时间
+    env_file:
+      - ./docker/env/mysql.env
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
+      interval: 30s  # 每 30 秒检查一次
+      timeout: 10s   # 请求超时时间为 10 秒
+      retries: 5     # 如果检查失败，最多重试 5 次
+      start_period: 60s  # 等待 60 秒后再开始进行 healthcheck
+
+  # Nacos: http://127.0.0.1:8848/nacos/
+  # http://localhost:8848/nacos/actuator/prometheus
+  # http://localhost:8848/nacos/actuator/health
+  nacos:
+    image: nacos/nacos-server:${NACOS_VERSION:-latest}
+    container_name: nacos
+    environment:
+      - TZ=Asia/Shanghai  # 设置时区为上海时间
+    env_file:
+      - ./docker/env/nacos.env
+    volumes:
+      - ./docker/config/nacos/application.properties:/home/nacos/conf/application.properties
+      - nacos_log:/home/nacos/logs
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+    restart: on-failure
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8848/nacos/actuator/health" ]
+      interval: 30s  # 每 30 秒检查一次
+      timeout: 10s   # 请求超时时间为 10 秒
+      retries: 5     # 如果检查失败，最多重试 5 次
+      start_period: 60s  # 等待 60 秒后再开始进行 healthcheck
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  # Prometheus: http://localhost:9090/
+  # http://localhost:9090/-/healthy
+  prometheus:
+    image: prom/prometheus:${PROMETHEUS_VERSION:-latest}
+    container_name: prometheus
+    environment:
+      - TZ=Asia/Shanghai  # 设置时区为上海时间
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    volumes:
+      - ./docker/config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - 9090:9090
+    restart: on-failure
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "http://localhost:9090/-/healthy" ]
+      interval: 30s  # 每 30 秒检查一次
+      timeout: 10s   # 请求超时时间为 10 秒
+      retries: 5     # 如果检查失败，最多重试 5 次
+      start_period: 60s  # 等待 60 秒后再开始进行 healthcheck
+    depends_on:
+      - nacos
+
+  # Grafana: http://localhost:3000/
+  # admin/admin
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:${GRAFANA_VERSION:-latest}
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - TZ=Asia/Shanghai  # 设置时区为上海时间
+    volumes:
+      - ./data/grafana:/var/lib/grafana  # 将主机目录映射到 Grafana 容器内的 /var/lib/grafana
+    ports:
+      - 3000:3000
+    restart: on-failure
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:3000/api/health" ]
+      interval: 30s  # 每 30 秒检查一次
+      timeout: 10s   # 请求超时时间为 10 秒
+      retries: 5     # 如果检查失败，最多重试 5 次
+      start_period: 60s  # 等待 60 秒后再开始进行 healthcheck
+    depends_on:
+      - prometheus
+
+  # ElasticSearch http://localhost:9200/
+  # http://localhost:9200/_cluster/health
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTICSEARCH_VERSION:-7.17.24}
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - ELASTIC_PASSWORD='123456'  # 设置 elastic 用户的默认密码
+      - TZ=Asia/Shanghai  # 设置时区为上海时间
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - ./data/elasticsearch:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -fsSL http://localhost:9200/_cluster/health || exit 1" ]
+      interval: 30s  # 每 30 秒检查一次
+      timeout: 10s   # 请求超时时间为 10 秒
+      retries: 5     # 如果检查失败，最多重试 5 次
+      start_period: 60s  # 等待 60 秒后再开始进行 healthcheck
+
+  # Kibana http://localhost:5601
+  # http://localhost:5601/api/status
+  kibana:
+    image: docker.elastic.co/kibana/kibana:${KIBANA_VERSION:-7.17.24}
+    container_name: kibana
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD='123456'
+      - TZ=Asia/Shanghai  # 设置时区为上海时间
+    ports:
+      - "5601:5601"
+    restart: on-failure
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:5601/api/status" ]
+      interval: 30s  # 每 30 秒检查一次
+      timeout: 10s   # 请求超时时间为 10 秒
+      retries: 5     # 如果检查失败，最多重试 5 次
+      start_period: 60s  # 等待 60 秒后再开始进行 healthcheck
+    depends_on:
+      - elasticsearch
+
+  # Fluentd http://localhost:9880/api/plugins.json 插件的安装情况
+  fluentd:
+    image: fluentd:${FLUENTD_VERSION:-latest}
+    container_name: fluentd
+    user: root  # 使用 root 用户安装插件
+    ports:
+      - "24224:24224"
+      - "9880:9880"  # 开启监控端口
+    volumes:
+      - ./docker/config/fluentd/fluent.conf:/fluentd/etc/fluent.conf  # 挂载 Fluentd 配置文件
+      - ./data/fluentd:/fluentd/log  # 持久化 Fluentd 数据目录
+      - nacos_log:/var/log/nacos  # 挂载 NACOS 日志目录
+    environment:
+      FLUENT_ELASTICSEARCH_HOST: elasticsearch
+      FLUENT_ELASTICSEARCH_PORT: 9200
+      TZ: Asia/Shanghai  # 设置时区为上海时间
+    # command: ["sh", "-c", "gem install fluent-plugin-elasticsearch --no-document && fluentd -c /fluentd/etc/fluent.conf"]
+    command: [ "sh", "-c", "gem install fluent-plugin-elasticsearch --no-document && chown -R fluent /usr/lib/ruby/gems && fluentd -c /fluentd/etc/fluent.conf" ]
+    healthcheck:
+      test: [ "CMD-SHELL", "pgrep fluentd || exit 1" ]
+      interval: 30s  # 每 30 秒检查一次
+      timeout: 10s   # 请求超时时间为 10 秒
+      retries: 5     # 如果检查失败，最多重试 5 次
+      start_period: 60s  # 等待 60 秒后再开始进行 healthcheck
+    depends_on:
+      - elasticsearch
+
+  # Jaeger: http://localhost:16686
+  jaeger:
+    image: jaegertracing/all-in-one:${JAEGER_VERSION:-latest}
+    container_name: jaeger
+    environment:
+      - TZ=Asia/Shanghai  # 设置时区为上海时间
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "14268:14268"  # Jaeger Collector HTTP, accept jaeger.thrift directly from clients
+      - "14250:14250"  # Jaeger Collector gRPC, accept model.proto
+      - "14317:4317"  # accept OpenTelemetry Protocol (OTLP) over gRPC
+      - "14318:4318"  # accept OpenTelemetry Protocol (OTLP) over HTTP
+      - "9411:9411" # Zipkin compatible endpoint (optional)
+      - "6831:6831/udp"  # accept jaeger.thrift over Thrift-compact protocol (used by most SDKs)
+      - "6832:6832/udp" # accept jaeger.thrift over Thrift-binary protocol (used by Node.js SDK)
+      - "5775:5775/udp" # (deprecated) accept zipkin.thrift over compact Thrift protocol (used by legacy clients only)
+      - "5778:5778"   # serve configs (sampling, etc.)
+    # https://www.jaegertracing.io/docs/1.62/getting-started/ 各端口用途
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "http://localhost:16686/" ]
+      interval: 30s  # 每 30 秒检查一次
+      timeout: 10s   # 请求超时时间为 10 秒
+      retries: 5     # 如果检查失败，最多重试 5 次
+      start_period: 60s  # 等待 60 秒后再开始进行 healthcheck
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:${OPEN_TELEMETRY_COLLECTOR_VERSION:-latest}
+    container_name: otel-collector
+    environment:
+      - TZ=Asia/Shanghai  # 设置时区为上海时间
+    volumes:
+      - ./docker/config/opentelemetry/otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml
+      - ./docker/config/opentelemetry/tail_sampling_config.yaml:/etc/otelcol-contrib/tail_sampling_config.yaml
+    ports:
+      - 1888:1888 # pprof extension
+      - 8888:8888 # Prometheus metrics exposed by the Collector
+      - 8889:8889 # Prometheus exporter metrics
+      - 13133:13133 # health_check extension
+      - 4317:4317 # OTLP gRPC receiver
+      - 4318:4318 # OTLP http receiver
+      - 55679:55679 # zpages extension
+    depends_on:
+      - jaeger
+
+volumes:
+  nacos_log:
+----
+
+相关配置已经推送到 GitHub： https://github.com/diguage/develop-env[diguage/develop-env: 基于 Docker 的开发环境^]，感兴趣欢迎围观。
+
+== 参考资料
+
+. https://logz.io/blog/introduction-to-collecting-traces-with-opentelemetry/[Introduction to Collecting Traces with OpenTelemetry^]
+. https://tech.qimao.com/qi-mao-fen-bu-shi-zhui-zong-shi-jian/[七猫分布式追踪实践^]
+. https://blog.csdn.net/MCC_MCC_MCC/article/details/130979298[OpenTelemetry 概念之Sampling_opentelemetry 的尾部采样器^]
+. https://docs.guance.com/best-practices/cloud-native/opentelemetry-simpling/[OpenTelemetry 采样最佳实践^]
+. https://www.51cto.com/article/766214.html[OpenTelemetry入门看这一篇就够了^]
+. https://www.cnblogs.com/hacker-linner/p/17613281.html[云原生可观测框架 OpenTelemetry 基础知识(架构/分布式追踪/指标/日志/采样/收集器)^]
+. https://opentelemetry.io/docs/languages/java/configuration/[Configure the SDK | OpenTelemetry^]
+. https://opentelemetry.io/docs/specs/otel/[OpenTelemetry Specification 1.38.0 | OpenTelemetry^]
+. https://www.jaegertracing.io/docs/1.62/architecture/[Jaeger Architecture^]
+. https://juejin.cn/post/7185780050921259065[OpenTelemetry日志体系前言 OpenTelemetry为了实现其可观测性有三大体系：Trace，Metric^]
+. https://blog.csdn.net/n9ecommunity/article/details/136473237[OpenTelemetry Logging 思维导图^]
+. https://opentelemetry.io/zh/docs/demo/architecture/[OpenTelemetry Demo Architecture^]
+. https://opentelemetry.io/zh/docs/demo/collector-data-flow-dashboard/[OpenTelemetry Collector Data Flow Dashboard^]
+. https://docs.daocloud.io/insight/best-practice/tail-based-sampling/[链路数据尾部采样方案^]
+. https://devopscube.com/what-is-observability/[What Is Observability? Comprehensive Beginners Guide^]
+. https://www.deepflow.io/blog/zh/012-build-a-unified-cloud-native-application-observability-data-platform/index.html[构建统一的云原生应用可观测性数据平台^]
+
+
+
+
