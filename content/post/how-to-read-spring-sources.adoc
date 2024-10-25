@@ -334,11 +334,14 @@ Spring 代码庞大，除去测试代码，还有 22 多万行正式的 Java 代
 
 . https://www.diguage.com/post/spring-startup-process-overview/[Spring 启动流程概述 - "地瓜哥"博客网^]
 . https://www.diguage.com/post/spring-bean-lifecycle-overview/[Spring Bean 生命周期概述 - "地瓜哥"博客网^]
+. https://www.diguage.com/post/dive-into-beanfactorypostprocessor/[深入研究 BeanFactoryPostProcessor - "地瓜哥"博客网^]
 . https://www.diguage.com/post/spring-aop-process-overview/[Spring AOP 处理流程概述 - "地瓜哥"博客网^]
 . https://www.diguage.com/post/spring-aop-bootstrap/[Spring AOP 源码分析：入门 - "地瓜哥"博客网^]
 . https://www.diguage.com/post/spring-aop-get-advices/[Spring AOP 源码分析：获得通知 - "地瓜哥"博客网^]
 . https://www.diguage.com/post/spring-aop-create-proxy-jdk/[Spring AOP 源码分析：创建代理（一） - "地瓜哥"博客网^]
 . https://www.diguage.com/post/spring-aop-create-proxy-cglib/[Spring AOP 源码分析：创建代理（二） - "地瓜哥"博客网^]
+. https://www.diguage.com/post/the-merging-spring-applications-road/[Spring 应用合并之路 - "地瓜哥"博客网^]
+. https://www.diguage.com/post/placeholder-in-spring-1/[Spring 对占位符的处理（一）：XML 中的 Bean - "地瓜哥"博客网^]
 
 
 学习 Spring 源码，一个关键点就是学习 Spring 支持的扩展点，一方面可以帮助理解 Spring 的设计；另外一方面也可以帮助我们在需要的时候，对 Spring 做一定的扩展，简化我们的代码。下面这几篇文章重点介绍了 Spring 支持的扩展点以及这些扩展点的应用示例：
