@@ -1,0 +1,701 @@
+---
+title: "玩转 Kubernetes（一）：离线安装 Kubernetes"
+date: 2024-12-14T16:13:19+08:00
+draft: false
+keywords: ["Kubernetes", "Kubespray"]
+tags: ["Kubernetes","Linux"]
+categories: ["开发工具","系统架构"]
+thumbnail: "images/logos/kubernetes.svg"
+
+weight: 1
+---
+
+
+// image::/images/[title="",alt="",{image_attr}]
+
+
+
+在 https://www.diguage.com/post/building-a-develop-environment-based-on-docker-3/[基于 Docker 搭建开发环境（三）：链路追踪^] 等几篇文章中，D瓜哥分享了如何使用 Docker Compose 在本地搭建起来一套应用可观测性环境。感觉还不够好玩，毕竟正在在企业中，Kubernetes 已经是绝对的主流。要玩就玩最具挑战性的东西，玩最符合企业所需的技能和工具。所以，打算将上面那套简易玩具，按照企业级的要求，搬到 Kubernetes 上去。
+
+如果想玩 Kubernetes，首先面临的一个问题就是 Kubernetes 集群的搭建。本来是一个非常简单的事情，但是由于众所周知的原因，变得非常具有挑战性。经过各种探索和多次试验，发现一种“离线”安装方式，感觉是一个不错的方式。
+
+本方法是基于 https://kubespray.io/#/[Kubespray^] 的一种安装办法，Kubespray 是由 Kubernetes SIG 小组来负责维护的一整套安装方式。既可以支持在裸机环境上安装，也支持云上环境安装。而且，只需要简单几行可以复制粘贴的命令，即可完成安装工作。非常适合入门玩耍使用。
+
+本安装方法所需的软件，D瓜哥都已经上传到 GitHub，如果需要下载，请移步： https://github.com/diguage/k8s-packages/releases/tag/2.26.0[Kubespray-2.26.0 安装包大全^]。
+
+== 搭建服务器集群
+
+这里推荐使用 https://www.vagrantup.com/[Vagrant^] 搭建集群。搭配 https://www.virtualbox.org/[VirtualBox^]，只需要一个配置文件，就可以轻轻松松搭建一个 Linux 服务器集群。搭建集群的配置文件 `Vagrantfile` 如下：
+
+[source%nowrap,ruby,{source_attr}]
+----
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+# @author D瓜哥 · https://www.diguage.com/
+
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+Vagrant.configure("2") do |config|
+  # The most common configuration options are documented and commented below.
+  # For a complete reference, please see the online documentation at
+  # https://docs.vagrantup.com.
+
+  # 三节点集群
+  (1..3).each do |i|
+    config.vm.define "node#{i}" do |node|
+
+      # Every Vagrant development environment requires a box. You can search for
+      # boxes at https://vagrantcloud.com/search.
+      # 这里使用 Ubuntu 24.04，其他版本可到 https://vagrantcloud.com/search 搜索下载
+      node.vm.box = "ubuntu2404"
+
+      # 设置虚拟机的主机名
+      node.vm.hostname="node#{i}"
+
+      config.vm.boot_timeout = 600
+
+      # Disable automatic box update checking. If you disable this, then
+      # boxes will only be checked for updates when the user runs
+      # `vagrant box outdated`. This is not recommended.
+      # config.vm.box_check_update = false
+
+      # Create a forwarded port mapping which allows access to a specific port
+      # within the machine from a port on the host machine. In the example below,
+      # accessing "localhost:8080" will access port 80 on the guest machine.
+      # NOTE: This will enable public access to the opened port
+      # config.vm.network "forwarded_port", guest: 80, host: 8080
+
+      # Create a forwarded port mapping which allows access to a specific port
+      # within the machine from a port on the host machine and only allow access
+      # via 127.0.0.1 to disable public access
+      # config.vm.network "forwarded_port", guest: 80, host: 8080, host_ip: "127.0.0.1"
+
+      # Create a private network, which allows host-only access to the machine
+      # using a specific IP.
+      node.vm.network "private_network", auto_config: false
+
+      # Create a public network, which generally matched to bridged network.
+      # Bridged networks make the machine appear as another physical device on
+      # your network.
+      # config.vm.network "public_network"
+
+      # Share an additional folder to the guest VM. The first argument is
+      # the path on the host to the actual folder. The second argument is
+      # the path on the guest to mount the folder. And the optional third
+      # argument is a set of non-required options.
+      # 设置主机与虚拟机的共享目录，根据需要开启
+      node.vm.synced_folder "/path/to/#{i}", "/data"
+
+
+      # Disable the default share of the current code directory. Doing this
+      # provides improved isolation between the vagrant box and your host
+      # by making sure your Vagrantfile isn't accessible to the vagrant box.
+      # If you use this you may want to enable additional shared subfolders as
+      # shown above.
+      # config.vm.synced_folder ".", "/vagrant", disabled: true
+
+      # Provider-specific configuration so you can fine-tune various
+      # backing providers for Vagrant. These expose provider-specific options.
+      # Example for VirtualBox:
+      node.vm.provider "virtualbox" do |vb|
+        # 设置虚拟机的名称
+        # vb.name = "node#{i}"
+
+        # if node.vm.hostname == "node1"
+        #   # Display the VirtualBox GUI when booting the machine
+        #   vb.gui = true
+        # end
+
+        # Customize the amount of memory on the VM:
+        vb.memory = "8192"
+
+        # 设置虚拟机的CPU个数
+        vb.cpus = 2
+      end
+
+      # View the documentation for the provider you are using for more
+      # information on available options.
+
+      # Enable provisioning with a shell script. Additional provisioners such as
+      # Ansible, Chef, Docker, Puppet and Salt are also available. Please see the
+      # documentation for more information about their specific syntax and use.
+      # config.vm.provision "shell", inline: <<-SHELL
+      #   sudo yum makecache --refresh
+      #   sudo yum install -y tcpdump
+      #   sudo yum install -y nc
+      #   sudo yum install -y net-tools
+      # SHELL
+    end
+  end
+end
+----
+
+将上述文件置于一个文件夹下，然后在终端进入该文件夹，执行 `vagrant up` 可以启动三个虚拟机。然后，配置公私钥，
+
+.点击查看：一种没有经过检验的自动配置的相互访问方法
+[%collapsible]
+====
+[source%nowrap,ruby,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com/
+
+Vagrant.configure("2") do |config|
+  # 定义节点
+  nodes = [
+    { name: "node1", ip: "192.168.56.101" },
+    { name: "node2", ip: "192.168.56.102" },
+    { name: "node3", ip: "192.168.56.103" }
+  ]
+
+  # 通用配置
+  nodes.each do |node|
+    config.vm.define node[:name] do |node_config|
+      node_config.vm.box = "ubuntu/bionic64" # 使用的 box 名称
+      node_config.vm.network "private_network", ip: node[:ip]
+
+      # 自动生成 SSH 密钥并分发公钥
+      node_config.vm.provision "shell", inline: <<-SHELL
+        # 生成 SSH 密钥（如果不存在）
+        if [ ! -f ~/.ssh/id_rsa ]; then
+          ssh-keygen -t rsa -N "" -f ~/.ssh/id_rsa
+        fi
+
+        # 分发公钥到其他节点
+        mkdir -p /vagrant/ssh_keys
+        cp ~/.ssh/id_rsa.pub /vagrant/ssh_keys/#{node[:name]}.pub
+      SHELL
+    end
+  end
+
+  # 第二阶段：将公钥分发到所有节点
+  nodes.each do |node|
+    config.vm.provision "shell", run: "always", inline: <<-SHELL
+      mkdir -p ~/.ssh
+      chmod 700 ~/.ssh
+
+      # 合并所有节点的公钥到 authorized_keys
+      for pubkey in /vagrant/ssh_keys/*.pub; do
+        cat $pubkey >> ~/.ssh/authorized_keys
+      done
+
+      chmod 600 ~/.ssh/authorized_keys
+    SHELL
+  end
+end
+----
+====
+
+== 修改容器镜像地址
+
+Kubernetes 从 v1.24 起，将 Dockershim 从 Kubernetes 项目中移除。而 Kubespray 2.26.0 安装的 Kubernetes 是 v1.30.4。Kubernetes v1.30.4 是使用 containerd 这个容器运行时。所以，专门配置一下容器镜像，更方便安装 Kubernetes 以及后续使用。
+
+启动好 Linux 集群后，正式安装之前，使用下面的脚本，来修改 containerd 的镜像配置。同时，也会提前下载 Kubernetes 所需的基本镜像。可以加快安装速度。
+
+[source%nowrap,bash,{source_attr}]
+----
+#!/usr/bin/env bash
+
+# @author D瓜哥 · https://www.diguage.com/
+
+CONFIG_FILE=/etc/containerd/config.toml
+
+BASE_DIR=/etc/containerd/certs.d
+
+K8S_VERSION='1.30.4'
+
+
+# 检查 /etc/containerd/config.toml 文件是否存在，存在则修改配置
+# https://blog.csdn.net/yang_song_yao/article/details/124017139
+while true
+do
+  if [ -f ${CONFIG_FILE} ]; then
+    # 判断匹配函数，匹配函数不为0，则包含给定字符
+    if grep -q '\[plugins\."io\.containerd\.grpc\.v1\.cri"\.registry\]' "${CONFIG_FILE}" && \
+       grep -A 1 '\[plugins\."io\.containerd\.grpc\.v1\.cri"\.registry\]' "${CONFIG_FILE}" | grep -q 'config_path = ""'; then
+      # 按照位置来做处理的
+      # sudo sed -i '0,/config_path = ""/s|config_path = ""|config_path = "/etc/containerd/certs.d"|'  ${CONFIG_FILE}
+      # 根据上下文来处理
+      sudo sed -i '/\[plugins\."io\.containerd\.grpc\.v1\.cri"\.registry\]/,/config_path = ""/s|config_path = ""|config_path = "/etc/containerd/certs.d"|' ${CONFIG_FILE}
+      sudo sed -i '/\[plugins."io.containerd.grpc.v1.cri".registry\./d' ${CONFIG_FILE}
+      echo 'config registry config_path'
+      break
+    else
+      # 如果文件中不包含 config_path，则是旧配置
+      sudo sed -i 's@\[plugins."io.containerd.grpc.v1.cri".registry.mirrors\]@config_path = "/etc/containerd/certs.d"@g' ${CONFIG_FILE}
+      sudo sed -i '/\[plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"\]/d' ${CONFIG_FILE}
+      sudo sed -i '/endpoint = \["https:\/\/registry-1.docker.io"\]/d' ${CONFIG_FILE}
+      echo 'config registry config_path'
+      break
+    fi
+  else
+    echo "${CONFIG_FILE} 文件不存在，休眠一秒钟再试…"
+    sleep 1 #休眠1秒后重试
+  fi
+done
+
+sudo mkdir -p  ${BASE_DIR}/docker.io/
+
+# docker hub镜像加速
+sudo tee ${BASE_DIR}/docker.io/hosts.toml << EOF
+server = "https://docker.io"
+[host."https://dockerpull.org"]
+  capabilities = ["pull", "resolve"]
+
+[host."https://docker.m.daocloud.io"]
+  capabilities = ["pull", "resolve"]
+EOF
+
+
+# registry.k8s.io镜像加速
+
+sudo mkdir -p ${BASE_DIR}/registry.k8s.io
+
+sudo tee ${BASE_DIR}/registry.k8s.io/hosts.toml << 'EOF'
+server = "https://registry.k8s.io"
+
+[host."https://k8s.m.daocloud.io"]
+  capabilities = ["pull", "resolve", "push"]
+
+[host."https://dockerpull.org"]
+  capabilities = ["pull", "resolve", "push"]
+EOF
+
+
+# gcr.io镜像加速
+
+sudo mkdir -p ${BASE_DIR}/gcr.io
+
+sudo tee ${BASE_DIR}/gcr.io/hosts.toml << 'EOF'
+server = "https://gcr.io"
+
+[host."https://gcr.m.daocloud.io"]
+  capabilities = ["pull", "resolve", "push"]
+
+[host."https://dockerpull.org"]
+  capabilities = ["pull", "resolve", "push"]
+EOF
+
+
+# ghcr.io镜像加速
+
+sudo mkdir -p ${BASE_DIR}/ghcr.io
+
+sudo tee ${BASE_DIR}/ghcr.io/hosts.toml << 'EOF'
+server = "https://ghcr.io"
+
+[host."https://dockerpull.org"]
+  capabilities = ["pull", "resolve", "push"]
+
+[host."https://ghcr.m.daocloud.io"]
+  capabilities = ["pull", "resolve", "push"]
+EOF
+
+
+# k8s.gcr.io镜像加速
+
+sudo mkdir -p ${BASE_DIR}/k8s.gcr.io
+
+sudo tee ${BASE_DIR}/k8s.gcr.io/hosts.toml << 'EOF'
+server = "https://k8s.gcr.io"
+
+[host."https://k8s-gcr.m.daocloud.io"]
+  capabilities = ["pull", "resolve", "push"]
+
+[host."https://dockerpull.org"]
+  capabilities = ["pull", "resolve", "push"]
+EOF
+
+# docker.elastic.co镜像加速
+sudo mkdir -p ${BASE_DIR}/docker.elastic.co
+sudo tee ${BASE_DIR}/docker.elastic.co/hosts.toml << 'EOF'
+server = "https://docker.elastic.co"
+
+[host."https://elastic.m.daocloud.io"]
+  capabilities = ["pull", "resolve", "push"]
+
+[host."https://dockerpull.org"]
+  capabilities = ["pull", "resolve", "push"]
+EOF
+
+# mcr.m.daocloud.io镜像加速
+sudo mkdir -p ${BASE_DIR}/mcr.microsoft.com
+sudo tee ${BASE_DIR}/mcr.microsoft.com/hosts.toml << 'EOF'
+server = "https://mcr.microsoft.com"
+
+[host."https://mcr.m.daocloud.io"]
+  capabilities = ["pull", "resolve", "push"]
+
+[host."https://dockerpull.org"]
+  capabilities = ["pull", "resolve", "push"]
+EOF
+
+# nvcr.io镜像加速
+sudo mkdir -p ${BASE_DIR}/nvcr.io
+sudo tee ${BASE_DIR}/nvcr.io/hosts.toml << 'EOF'
+server = "https://nvcr.io"
+
+[host."https://nvcr.m.daocloud.io"]
+  capabilities = ["pull", "resolve", "push"]
+
+[host."https://dockerpull.org"]
+  capabilities = ["pull", "resolve", "push"]
+EOF
+
+# quay.io镜像加速
+sudo mkdir -p ${BASE_DIR}/quay.io
+sudo tee ${BASE_DIR}/quay.io/hosts.toml << 'EOF'
+server = "https://quay.io"
+
+[host."https://dockerpull.org"]
+  capabilities = ["pull", "resolve", "push"]
+
+[host."https://quay.m.daocloud.io"]
+  capabilities = ["pull", "resolve", "push"]
+EOF
+
+# https://blog.csdn.net/IOT_AI/article/details/131975562
+# https://blog.csdn.net/wlcs_6305/article/details/122270487
+# https://github.com/DaoCloud/public-image-mirror
+
+sudo systemctl restart containerd.service
+sudo systemctl enable containerd
+
+while true
+do
+  # 检查是否存在 kubeadm 命令
+  if command -v kubeadm > /dev/null 2>&1; then
+      echo "kubeadm 命令存在，开始拉取镜像..."
+      # 执行 kubeadm config images pull
+      until sudo kubeadm config images pull --kubernetes-version ${K8S_VERSION}
+      do
+        echo "Try again..."
+      done
+  else
+      echo "kubeadm 命令不存在，休眠一秒钟再试…"
+      sleep 1
+  fi
+done
+----
+
+== 搭建安装文件下载服务器
+
+在集群任意一台服务中，从 https://github.com/diguage/k8s-packages/releases/tag/2.26.0 页面，将 https://github.com/diguage/k8s-packages/releases/download/2.26.0/binary-installer.tar.gz[binary-installer.tar.gz] 下载并解压。然后，安装 https://caddyserver.com/[Caddy^]，并用 Caddy 启动一个 HTTP 下载服务器。操作如下：
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com/
+
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' \
+  | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' \
+  | sudo tee /etc/apt/sources.list.d/caddy-stable.list
+
+sudo apt install caddy
+
+caddy file-server --root /path/to/binary-installer --listen 0.0.0.0:8888 --browse
+----
+
+== 搭建容器镜像仓库
+
+从 https://github.com/diguage/k8s-packages/releases/tag/2.26.0 页面，将 https://github.com/diguage/k8s-packages/releases/download/2.26.0/container-images.tar.gz[container-images.tar.gz] 下载并解压，里面包含所有所需的镜像导出包。
+
+TIP: D瓜哥尝试在本地环境启动容器镜像仓库，但是在下载镜像时，提示必须是 HTTPS 服务。所以，建议搞一套云主机来折腾，顺便使用 Let’s Encrypt 来配置 HTTPS。如果不想找，也可以找个容器镜像仓库服务来用。
+
+. 执行 `1.setup-registry.sh` 来搭建一个容器镜像仓库服务
++
+--
+[source%nowrap,bash,{source_attr}]
+----
+#!/usr/bin/env bash
+#
+# 启动 Docker Registry
+# @author D瓜哥 · https://www.diguage.com/
+#
+
+IMAGE_DIR=$(cd $(dirname $0); pwd)
+
+REGISTRY_PORT=${REGISTRY_PORT:-"5000"}
+
+sudo docker load -i ${IMAGE_DIR}/registry-latest.tar
+
+sudo docker container inspect registry >/dev/null 2>&1
+
+sudo docker run --restart=always -d -p "${REGISTRY_PORT}":"${REGISTRY_PORT}" --name registry registry:latest
+----
+--
+. 执行 `2.load-images.sh`，来把所有镜像加载到容器镜像仓库中
++
+--
+[source%nowrap,bash,{source_attr}]
+----
+#!/usr/bin/env bash
+#
+# 加载镜像
+# @author D瓜哥 · https://www.diguage.com/
+#
+
+REGISTRY_HOST=localhost:5000
+
+docker load -i ./docker.io-mirantis-k8s-netchecker-server-v1.2.2.tar
+docker tag  3fe402881a14307b8d56a81a0e123d9a433f8502ac1d77d311123f3c022772ec ${REGISTRY_HOST}/mirantis/k8s-netchecker-server:v1.2.2
+docker push ${REGISTRY_HOST}/mirantis/k8s-netchecker-server:v1.2.2
+
+docker load -i ./docker.io-mirantis-k8s-netchecker-agent-v1.2.2.tar
+docker tag  bf9a79a05945f73127f3bac2c89e921c951bc0445ebb968a658807fb638cdf6e ${REGISTRY_HOST}/mirantis/k8s-netchecker-agent:v1.2.2
+docker push ${REGISTRY_HOST}/mirantis/k8s-netchecker-agent:v1.2.2
+
+docker load -i ./quay.io-coreos-etcd-v3.5.12.tar
+docker tag  3a5389f209cef93c0229a4916964d90d002d44cdf07f6bf4c35f64420c2a0077 ${REGISTRY_HOST}/coreos/etcd:v3.5.12
+docker push ${REGISTRY_HOST}/coreos/etcd:v3.5.12
+
+docker load -i ./quay.io-cilium-cilium-v1.15.4.tar
+docker tag  aebfd554d3483825021208b1a2b6ed6029cabfb4b79a8db688bcbad95ebe774b ${REGISTRY_HOST}/cilium/cilium:v1.15.4
+docker push ${REGISTRY_HOST}/cilium/cilium:v1.15.4
+
+docker load -i ./quay.io-cilium-operator-v1.15.4.tar
+docker tag  cf4b9cdd4ba077d891fcc84033031f2487e9ed3bfb2224368a83d1b52aa42c50 ${REGISTRY_HOST}/cilium/operator:v1.15.4
+docker push ${REGISTRY_HOST}/cilium/operator:v1.15.4
+
+docker load -i ./quay.io-cilium-hubble-relay-v1.15.4.tar
+docker tag  667864766e0111a6092aa678a8800450bf181b677ad59f7c39145b433733d04c ${REGISTRY_HOST}/cilium/hubble-relay:v1.15.4
+docker push ${REGISTRY_HOST}/cilium/hubble-relay:v1.15.4
+
+docker load -i ./quay.io-cilium-certgen-v0.1.8.tar
+docker tag  a283370c8d8373c5a9d80c0a9fcab27683226ab095a02861e72db9c55325aa31 ${REGISTRY_HOST}/cilium/certgen:v0.1.8
+docker push ${REGISTRY_HOST}/cilium/certgen:v0.1.8
+
+docker load -i ./quay.io-cilium-hubble-ui-v0.11.0.tar
+docker tag  b555a2c7b3de8de852589f81b88381bec8071d7897541feeff65ad86d4be5e40 ${REGISTRY_HOST}/cilium/hubble-ui:v0.11.0
+docker push ${REGISTRY_HOST}/cilium/hubble-ui:v0.11.0
+
+docker load -i ./quay.io-cilium-hubble-ui-backend-v0.11.0.tar
+docker tag  0631ce248fa693cd92f88ac6bc51485269bca3ea2b8160114ba7ba506196b167 ${REGISTRY_HOST}/cilium/hubble-ui-backend:v0.11.0
+docker push ${REGISTRY_HOST}/cilium/hubble-ui-backend:v0.11.0
+
+docker load -i ./docker.io-envoyproxy-envoy-v1.22.5.tar
+docker tag  e9c4ee2ce7207ce0f446892dda8f1bcc16cd6aec0c7c55d04bddca52f8af280d ${REGISTRY_HOST}/envoyproxy/envoy:v1.22.5
+docker push ${REGISTRY_HOST}/envoyproxy/envoy:v1.22.5
+
+docker load -i ./ghcr.io-k8snetworkplumbingwg-multus-cni-v3.8.tar
+docker tag  c65d3833b509f9769a2e37ee7c68d6fbe54a47540b19a436455a9ee596b41100 ${REGISTRY_HOST}/k8snetworkplumbingwg/multus-cni:v3.8
+docker push ${REGISTRY_HOST}/k8snetworkplumbingwg/multus-cni:v3.8
+
+docker load -i ./docker.io-flannel-flannel-v0.22.0.tar
+docker tag  38c11b8f4aa1904512c0b3e93d34604de20ba24b38d4365d27fe05b7a4ce6f68 ${REGISTRY_HOST}/flannel/flannel:v0.22.0
+docker push ${REGISTRY_HOST}/flannel/flannel:v0.22.0
+
+docker load -i ./docker.io-flannel-flannel-cni-plugin-v1.1.2.tar
+docker tag  7a2dcab94698c786e7e41360faf8cd0ea2b29952469be75becc34c61902240e0 ${REGISTRY_HOST}/flannel/flannel-cni-plugin:v1.1.2
+docker push ${REGISTRY_HOST}/flannel/flannel-cni-plugin:v1.1.2
+
+docker load -i ./quay.io-calico-node-v3.28.1.tar
+docker tag  8bbeb9e1ee3287b8f750c10383f53fa1ec6f942aaea2a900f666d5e4e63cf4cc ${REGISTRY_HOST}/calico/node:v3.28.1
+docker push ${REGISTRY_HOST}/calico/node:v3.28.1
+
+docker load -i ./quay.io-calico-cni-v3.28.1.tar
+docker tag  f6d76a1259a8c22fd1c603577ee5bb8109bc40f2b3d0536d39160a027ffe9bab ${REGISTRY_HOST}/calico/cni:v3.28.1
+docker push ${REGISTRY_HOST}/calico/cni:v3.28.1
+
+docker load -i ./quay.io-calico-pod2daemon-flexvol-v3.28.1.tar
+docker tag  00564b1c843430f804fda219f98769c25b538adebc11504477d5ee331fd8f85b ${REGISTRY_HOST}/calico/pod2daemon-flexvol:v3.28.1
+docker push ${REGISTRY_HOST}/calico/pod2daemon-flexvol:v3.28.1
+
+docker load -i ./quay.io-calico-kube-controllers-v3.28.1.tar
+docker tag  9d19dff735fa0889ad6e741790dd1ff35dc4443f14c95bd61459ff0b9162252e ${REGISTRY_HOST}/calico/kube-controllers:v3.28.1
+docker push ${REGISTRY_HOST}/calico/kube-controllers:v3.28.1
+
+docker load -i ./quay.io-calico-typha-v3.28.1.tar
+docker tag  a19ab150adede78dd36481226e260735eb3b811481c6765aec79e8da6ae78b7f ${REGISTRY_HOST}/calico/typha:v3.28.1
+docker push ${REGISTRY_HOST}/calico/typha:v3.28.1
+
+docker load -i ./quay.io-calico-apiserver-v3.28.1.tar
+docker tag  91dd0fd3dab3f170b52404ec5e67926439207bf71c08b7f54de8f3db6209537b ${REGISTRY_HOST}/calico/apiserver:v3.28.1
+docker push ${REGISTRY_HOST}/calico/apiserver:v3.28.1
+
+docker load -i ./docker.io-rajchaudhuri-weave-kube-2.8.7.tar
+docker tag  3e91ac165aaecd4d5fd5d09ce5cb145b1941f5702eb402f58d664bbadb0b72cd ${REGISTRY_HOST}/rajchaudhuri/weave-kube:2.8.7
+docker push ${REGISTRY_HOST}/rajchaudhuri/weave-kube:2.8.7
+
+docker load -i ./docker.io-rajchaudhuri-weave-npc-2.8.7.tar
+docker tag  7c7344bfd580a1e474c2958cc0ba029430fb85e6181a6d0afa55953c0cf40871 ${REGISTRY_HOST}/rajchaudhuri/weave-npc:2.8.7
+docker push ${REGISTRY_HOST}/rajchaudhuri/weave-npc:2.8.7
+
+docker load -i ./docker.io-kubeovn-kube-ovn-v1.12.21.tar
+docker tag  2e2403ea690b9fa2c4d53233fdf1ced0dabb1fe8f39efb6fcdf6b422ca4749d1 ${REGISTRY_HOST}/kubeovn/kube-ovn:v1.12.21
+docker push ${REGISTRY_HOST}/kubeovn/kube-ovn:v1.12.21
+
+docker load -i ./docker.io-cloudnativelabs-kube-router-v2.0.0.tar
+docker tag  1fa8c5c5d0d3632a0312573c4310801e8b72450e22a75924f8fcf59555ae3dc3 ${REGISTRY_HOST}/cloudnativelabs/kube-router:v2.0.0
+docker push ${REGISTRY_HOST}/cloudnativelabs/kube-router:v2.0.0
+
+docker load -i ./docker.io-amazon-aws-alb-ingress-controller-v1.1.9.tar
+docker tag  4b1d22ffb3c0ff343f48c6dea02be3317ce9a9e539057619c88b1ea97d205985 ${REGISTRY_HOST}/amazon/aws-alb-ingress-controller:v1.1.9
+docker push ${REGISTRY_HOST}/amazon/aws-alb-ingress-controller:v1.1.9
+
+docker load -i ./docker.io-amazon-aws-ebs-csi-driver-v0.5.0.tar
+docker tag  187fd7ffef67eb25c49f94a5afb0ec57f0ebfb014650983ab29b0d4b68ad4191 ${REGISTRY_HOST}/amazon/aws-ebs-csi-driver:v0.5.0
+docker push ${REGISTRY_HOST}/amazon/aws-ebs-csi-driver:v0.5.0
+
+docker load -i ./docker.io-kubernetesui-dashboard-v2.7.0.tar
+docker tag  07655ddf2eebe5d250f7a72c25f638b27126805d61779741b4e62e69ba080558 ${REGISTRY_HOST}/kubernetesui/dashboard:v2.7.0
+docker push ${REGISTRY_HOST}/kubernetesui/dashboard:v2.7.0
+
+docker load -i ./docker.io-kubernetesui-metrics-scraper-v1.0.8.tar
+docker tag  115053965e86b2df4d78af78d7951b8644839d20a03820c6df59a261103315f7 ${REGISTRY_HOST}/kubernetesui/metrics-scraper:v1.0.8
+docker push ${REGISTRY_HOST}/kubernetesui/metrics-scraper:v1.0.8
+
+docker load -i ./docker.io-library-haproxy-2.8.2-alpine.tar
+docker tag  a3c8e99e9327aabf90c04224a994daacdab6f16da7c6f0baed4669102cd25875 ${REGISTRY_HOST}/library/haproxy:2.8.2-alpine
+docker push ${REGISTRY_HOST}/library/haproxy:2.8.2-alpine
+
+docker load -i ./docker.io-library-nginx-1.25.2-alpine.tar
+docker tag  661daf9bcac824a4be78d50e09fdb7c5d3755e78295c71e1004385244c0c97b1 ${REGISTRY_HOST}/library/nginx:1.25.2-alpine
+docker push ${REGISTRY_HOST}/library/nginx:1.25.2-alpine
+
+docker load -i ./docker.io-rancher-local-path-provisioner-v0.0.24.tar
+docker tag  b29384aeb4b13e047448ccfd312c52b4d023abcbbaafcab174293a97821dddb0 ${REGISTRY_HOST}/rancher/local-path-provisioner:v0.0.24
+docker push ${REGISTRY_HOST}/rancher/local-path-provisioner:v0.0.24
+
+docker load -i ./ghcr.io-kube-vip-kube-vip-v0.8.0.tar
+docker tag  38af8ddebf499adc4631fe68b0ee224ffd6d7dd6b4aeeb393aff3d33cb94eb12 ${REGISTRY_HOST}/kube-vip/kube-vip:v0.8.0
+docker push ${REGISTRY_HOST}/kube-vip/kube-vip:v0.8.0
+
+docker load -i ./quay.io-jetstack-cert-manager-cainjector-v1.14.7.tar
+docker tag  7a3c1a7f8a5e7096d7b08b7b296abfd8cb04986e316fc84f99fbcb4f9dfed47a ${REGISTRY_HOST}/jetstack/cert-manager-cainjector:v1.14.7
+docker push ${REGISTRY_HOST}/jetstack/cert-manager-cainjector:v1.14.7
+
+docker load -i ./quay.io-jetstack-cert-manager-controller-v1.14.7.tar
+docker tag  06ea6ac6af07a59fcfe135250c86c21b38ef6b6e7871a1511c92bc8c8f75e785 ${REGISTRY_HOST}/jetstack/cert-manager-controller:v1.14.7
+docker push ${REGISTRY_HOST}/jetstack/cert-manager-controller:v1.14.7
+
+docker load -i ./quay.io-jetstack-cert-manager-webhook-v1.14.7.tar
+docker tag  2c1a523c226a0b6b2e94bb109263b040b0f8f72af23cfcfeddc0f35b200a57e4 ${REGISTRY_HOST}/jetstack/cert-manager-webhook:v1.14.7
+docker push ${REGISTRY_HOST}/jetstack/cert-manager-webhook:v1.14.7
+
+docker load -i ./quay.io-metallb-controller-v0.13.9.tar
+docker tag  26952499c3023d9c7520c0cff480b3be67567d0cd85453d5dc83f08587c43767 ${REGISTRY_HOST}/metallb/controller:v0.13.9
+docker push ${REGISTRY_HOST}/metallb/controller:v0.13.9
+
+docker load -i ./quay.io-metallb-speaker-v0.13.9.tar
+docker tag  697605b359357289e5fc3737397f69b00dae7d23db5cc74ddf2f5702acf7ad63 ${REGISTRY_HOST}/metallb/speaker:v0.13.9
+docker push ${REGISTRY_HOST}/metallb/speaker:v0.13.9
+
+docker load -i ./registry.k8s.io-coredns-coredns-v1.11.1.tar
+docker tag  cbb01a7bd410dc08ba382018ab909a674fb0e48687f0c00797ed5bc34fcc6bb4 ${REGISTRY_HOST}/coredns/coredns:v1.11.1
+docker push ${REGISTRY_HOST}/coredns/coredns:v1.11.1
+
+docker load -i ./registry.k8s.io-cpa-cluster-proportional-autoscaler-v1.8.8.tar
+docker tag  b6d1a4be0743fd35029afe89eb5d5a0da894d072817575fcf6fddfa94749138b ${REGISTRY_HOST}/cpa/cluster-proportional-autoscaler:v1.8.8
+docker push ${REGISTRY_HOST}/cpa/cluster-proportional-autoscaler:v1.8.8
+
+docker load -i ./registry.k8s.io-cpa-cluster-proportional-autoscaler-v1.8.8.tar
+docker tag  b6d1a4be0743fd35029afe89eb5d5a0da894d072817575fcf6fddfa94749138b ${REGISTRY_HOST}/cpa/cluster-proportional-autoscaler:v1.8.8
+docker push ${REGISTRY_HOST}/cpa/cluster-proportional-autoscaler:v1.8.8
+
+docker load -i ./registry.k8s.io-dns-k8s-dns-node-cache-1.22.28.tar
+docker tag  59d295ba73230e5f3773325f65ff363d99a036cfa73153f6c6094d90ad4a359a ${REGISTRY_HOST}/dns/k8s-dns-node-cache:1.22.28
+docker push ${REGISTRY_HOST}/dns/k8s-dns-node-cache:1.22.28
+
+docker load -i ./registry.k8s.io-ingress-nginx-controller-v1.11.2.tar
+docker tag  a80c8fd6e52292d38d4e58453f310d612da59d802a3b62f4b88a21c50178f7ab ${REGISTRY_HOST}/ingress-nginx/controller:v1.11.2
+docker push ${REGISTRY_HOST}/ingress-nginx/controller:v1.11.2
+
+docker load -i ./registry.k8s.io-kube-apiserver-v1.30.4.tar
+docker tag  8a97b1fb3e2ebd03bf97ce8ae894b3dc8a68ab1f4ecfd0a284921c45c56f5aa4 ${REGISTRY_HOST}/kube-apiserver:v1.30.4
+docker push ${REGISTRY_HOST}/kube-apiserver:v1.30.4
+
+docker load -i ./registry.k8s.io-kube-controller-manager-v1.30.4.tar
+docker tag  8398ad49a121d58ecf8a36e8371c0928fdf75eb0a83d28232ab2b39b1c6a9050 ${REGISTRY_HOST}/kube-controller-manager:v1.30.4
+docker push ${REGISTRY_HOST}/kube-controller-manager:v1.30.4
+
+docker load -i ./registry.k8s.io-kube-proxy-v1.30.4.tar
+docker tag  568d5ba88d944bcd67415d8c358fce615824410f3a43bab2b353336bc3795a10 ${REGISTRY_HOST}/kube-proxy:v1.30.4
+docker push ${REGISTRY_HOST}/kube-proxy:v1.30.4
+
+docker load -i ./registry.k8s.io-kube-scheduler-v1.30.4.tar
+docker tag  4939f82ab9ab456e782c06ed37b245127c8a9ac29a72982346a7160f18107833 ${REGISTRY_HOST}/kube-scheduler:v1.30.4
+docker push ${REGISTRY_HOST}/kube-scheduler:v1.30.4
+
+docker load -i ./registry.k8s.io-metrics-server-metrics-server-v0.7.0.tar
+docker tag  b9a5a1927366a21e45606fe303f1d287adcb1e09d1be13dd44bdb4cf29146c86 ${REGISTRY_HOST}/metrics-server/metrics-server:v0.7.0
+docker push ${REGISTRY_HOST}/metrics-server/metrics-server:v0.7.0
+
+docker load -i ./registry.k8s.io-pause-3.9.tar
+docker tag  e6f1816883972d4be47bd48879a08919b96afcd344132622e4d444987919323c ${REGISTRY_HOST}/pause:3.9
+docker push ${REGISTRY_HOST}/pause:3.9
+
+docker load -i ./registry.k8s.io-provider-os-cinder-csi-plugin-v1.30.0.tar
+docker tag  5736bcd73da4e2be55d2b30eea8043344089c337cc7336afcdcfc58ac8300ac0 ${REGISTRY_HOST}/provider-os/cinder-csi-plugin:v1.30.0
+docker push ${REGISTRY_HOST}/provider-os/cinder-csi-plugin:v1.30.0
+
+docker load -i ./registry.k8s.io-sig-storage-csi-attacher-v3.3.0.tar
+docker tag  37f46af926da00dc4997b585763a56c8b30b058af800ae3327a01361adcd3426 ${REGISTRY_HOST}/sig-storage/csi-attacher:v3.3.0
+docker push ${REGISTRY_HOST}/sig-storage/csi-attacher:v3.3.0
+
+docker load -i ./registry.k8s.io-sig-storage-csi-node-driver-registrar-v2.4.0.tar
+docker tag  f45c8a305a0bb15ff256a32686d56356be69e1b8d469e90a247d279ad6702382 ${REGISTRY_HOST}/sig-storage/csi-node-driver-registrar:v2.4.0
+docker push ${REGISTRY_HOST}/sig-storage/csi-node-driver-registrar:v2.4.0
+
+docker load -i ./registry.k8s.io-sig-storage-csi-provisioner-v3.0.0.tar
+docker tag  fe0f921f3c92aaf2167c7c373ae48f2f008c0259b288785432c150e82ab62be8 ${REGISTRY_HOST}/sig-storage/csi-provisioner:v3.0.0
+docker push ${REGISTRY_HOST}/sig-storage/csi-provisioner:v3.0.0
+
+docker load -i ./registry.k8s.io-sig-storage-csi-resizer-v1.3.0.tar
+docker tag  1df30f0e255525c1fdea96abd7c475e4311f9e9fc99663f7cba2972e083bfa17 ${REGISTRY_HOST}/sig-storage/csi-resizer:v1.3.0
+docker push ${REGISTRY_HOST}/sig-storage/csi-resizer:v1.3.0
+
+docker load -i ./registry.k8s.io-sig-storage-csi-snapshotter-v5.0.0.tar
+docker tag  c5bdb516176ec494e00061b50723fd4d8d87346f0992a3193387bb2b329adbca ${REGISTRY_HOST}/sig-storage/csi-snapshotter:v5.0.0
+docker push ${REGISTRY_HOST}/sig-storage/csi-snapshotter:v5.0.0
+
+docker load -i ./registry.k8s.io-sig-storage-local-volume-provisioner-v2.5.0.tar
+docker tag  84fe61c6a33abf84fac7b4dd92d7c173440ae60119b871c0747fa6b581aacf06 ${REGISTRY_HOST}/sig-storage/local-volume-provisioner:v2.5.0
+docker push ${REGISTRY_HOST}/sig-storage/local-volume-provisioner:v2.5.0
+
+docker load -i ./registry.k8s.io-sig-storage-snapshot-controller-v7.0.2.tar
+docker tag  9a80c30d510050bd44c7835d92a76793af7b8a7912e2530a626da30df1af8548 ${REGISTRY_HOST}/sig-storage/snapshot-controller:v7.0.2
+docker push ${REGISTRY_HOST}/sig-storage/snapshot-controller:v7.0.2
+----
+--
+
+== 使用 Kubespray 搭建 Kubernetes 集群
+
+从 https://github.com/diguage/k8s-packages/releases/tag/2.26.0 页面，将 https://github.com/diguage/k8s-packages/releases/download/2.26.0/kubespray.tar.gz[kubespray.tar.gz] 和 https://github.com/diguage/k8s-packages/releases/download/2.26.0/kubespray-venv.tar.gz[kubespray-venv.tar.gz] 下载下来，并解压到同一目录。下面正式开始安装：
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com/
+
+# 设置 pip 的镜像
+pip config set global.index-url https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
+
+VENVDIR=kubespray-venv
+KUBESPRAYDIR=kubespray
+python3 -m venv $VENVDIR
+source $VENVDIR/bin/activate
+cd $KUBESPRAYDIR
+# 上述下载的 kubespray-venv.tar.gz 即包含了所需的依赖，下载应该可以很快完成
+# 在原始依赖的基础上，增加遗漏的 ruamel.yaml
+pip install -U -r requirements.txt
+
+declare -a IPS=(192.168.56.101 192.168.56.102 192.168.56.103)
+
+CONFIG_FILE=inventory/kubestar/hosts.yaml python3 contrib/inventory_builder/inventory.py ${IPS[@]}
+
+# 安装 Kubernetes 集群
+ansible-playbook -i inventory/kubestar/hosts.yaml  --become --become-user=root cluster.yml
+----
+
+等待一二十分钟，即可完成安装。
+
+TIP: 坦白讲，目前的安装并没有使用上述启动的各项服务，而是使用了 DaoCloud 提供的相关镜像以及文件下载。如果想使用自己搭建的服务，可以修改 `kubespray/inventory/kubestar/group_vars/all/offline.yml` 文件中的相关链接地址即可。
+
+== 参考资料
+
+. https://github.com/kubernetes-sigs/kubespray/tree/release-2.26[kubernetes-sigs/kubespray 2.26^]
+. https://github.com/kubernetes-sigs/kubespray/blob/release-2.26/docs/ansible/ansible.md#installing-ansible[kubespray/docs/ansible/ansible^]
+. https://gist.github.com/diguage/7b03b43b37eabd814d0534280b2438ff[快速 启动一套 kubespray 集群(Ubuntu)^]
+. https://imroc.cc/kubernetes/deploy/kubespray/offline[kubespray 离线安装配置^]
