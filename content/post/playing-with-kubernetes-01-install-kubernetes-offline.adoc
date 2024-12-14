@@ -27,6 +27,8 @@ weight: 1
 
 这里推荐使用 https://www.vagrantup.com/[Vagrant^] 搭建集群。搭配 https://www.virtualbox.org/[VirtualBox^]，只需要一个配置文件，就可以轻轻松松搭建一个 Linux 服务器集群。搭建集群的配置文件 `Vagrantfile` 如下：
 
+// more
+
 [source%nowrap,ruby,{source_attr}]
 ----
 # -*- mode: ruby -*-
