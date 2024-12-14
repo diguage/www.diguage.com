@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>操作系统 on "地瓜哥"博客网</title><link>https://www.diguage.com/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/</link><description>Recent content in 操作系统 on "地瓜哥"博客网</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Wed, 01 May 2024 22:12:16 +0800</lastBuildDate><atom:link href="https://www.diguage.com/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/index.xml" rel="self" type="application/rss+xml"/><item><title>JVM 剖析花园：2 - 透明大页</title><link>https://www.diguage.com/post/jvm-anatomy-quarks-02-transparent-huge-pages/</link><pubDate>Sat, 13 Jan 2024 19:24:37 +0800</pubDate><guid>https://www.diguage.com/post/jvm-anatomy-quarks-02-transparent-huge-pages/</guid><description>&lt;div class="sect1">
+&lt;h2 id="_问题">问题&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>什么是大页（Large Page）？什么是透明大页（Transparent Huge Page）？它对我有什么帮助？&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_理论">理论&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>虚拟内存现在已被视为理所当然。现在只有少数人还记得，更不用说做一些“真实模式”编程了，在这种情况下，你会接触到实际的物理内存。相反，每个进程都有自己的虚拟内存空间，该空间被映射到实际内存上。例如，两个进程在相同的虚拟地址 &lt;code>0x42424242&lt;/code> 上拥有不同的数据，而这些数据将由不同的物理内存支持。现在，当程序访问该地址时，应将虚拟地址转换为物理地址。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/os/virtual-address-space-and-physical-address-space-relationship.svg" alt="虚拟内存地址与物理内存地址之间的关系" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. 虚拟内存地址与物理内存地址之间的关系&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这通常由操作系统维护 &lt;a href="https://en.wikipedia.org/wiki/Page_table" target="_blank" rel="noopener">“页表”&lt;/a>，硬件通过“页表遍历”来实现地址转换。如果在页面粒度上维护翻译，整个过程就会变得简单。但这样做的成本并不低，而且每次内存访问都需要这样做！因此，还需要对最新的翻译进行小型缓存，即 &lt;a href="https://en.wikipedia.org/wiki/Translation_lookaside_buffer" target="_blank" rel="noopener">转译后备缓冲区（Translation Lookaside Buffer (TLB)）&lt;/a>。TLB 通常很小，只有不到 100 个条目，因为它的速度至少要与 L1 缓存相当，甚至更快。对于许多工作负载来说，TLB 未命中和相关的页表遍历需要大量时间。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>既然我们无法将 TLB 做得更大，那么我们可以做其他事情：制作更大的页面！大多数硬件有 4K 基本页和 2M/4M/1G “大页”。用更大的页来覆盖相同的区域，还能使页表本身更小，从而降低页表遍历的成本。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在 Linux 世界中，至少有两种不同的方法可以在应用程序中实现这一点：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;a href="https://www.kernel.org/doc/Documentation/vm/hugetlbpage.txt" target="_blank" rel="noopener">&lt;strong>hugetlbfs&lt;/strong>&lt;/a>。切出系统内存的一部分，将其作为虚拟文件系统公开，让应用程序通过 &lt;code>mmap(2)&lt;/code> 从其中获取。这是一个特殊的接口，需要操作系统配置和应用程序更改才能使用。这也是一种“要么全有，要么全无”的交易：分配给 &lt;code>hugetlbfs&lt;/code>（持久部分）的空间不能被普通进程使用。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.kernel.org/doc/Documentation/vm/transhuge.txt" target="_blank" rel="noopener">&lt;strong>透明大页（Transparent Huge Pages (THP)）&lt;/strong>&lt;/a>。让应用程序像往常一样分配内存，但尽量以透明方式为应用程序提供大容量页面支持的存储空间。理想情况下，不需要更改应用程序，但我们会看到应用程序如何从了解 THP 的可用性中获益。但在实际应用中，会产生内存开销（因为会为小文件分配整个大页面）或时间开销（因为 THP 有时需要对内存进行碎片整理以分配页面）。好在有一个中间方案：通过 &lt;code>madvise(2)&lt;/code> 可以让应用程序告诉 Linux 在哪里使用 THP。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>不明白为什么术语中会交替使用 &amp;#34;large &amp;#34;和 &amp;#34;huge&amp;#34;。总之，OpenJDK 支持这两种模式：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="nv">$ &lt;/span>java &lt;span class="nt">-XX&lt;/span>:+PrintFlagsFinal 2&amp;gt;&amp;amp;1 | &lt;span class="nb">grep &lt;/span>Huge
+ bool UseHugeTLBFS &lt;span class="o">=&lt;/span> &lt;span class="nb">false&lt;/span> &lt;span class="o">{&lt;/span>product&lt;span class="o">}&lt;/span> &lt;span class="o">{&lt;/span>default&lt;span class="o">}&lt;/span>
+ bool UseTransparentHugePages &lt;span class="o">=&lt;/span> &lt;span class="nb">false&lt;/span> &lt;span class="o">{&lt;/span>product&lt;span class="o">}&lt;/span> &lt;span class="o">{&lt;/span>default&lt;span class="o">}&lt;/span>
+&lt;span class="nv">$ &lt;/span>java &lt;span class="nt">-XX&lt;/span>:+PrintFlagsFinal 2&amp;gt;&amp;amp;1 | &lt;span class="nb">grep &lt;/span>LargePage
+ bool UseLargePages &lt;span class="o">=&lt;/span> &lt;span class="nb">false&lt;/span> &lt;span class="o">{&lt;/span>pd product&lt;span class="o">}&lt;/span> &lt;span class="o">{&lt;/span>default&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>优化网站</title><link>https://www.diguage.com/post/optimize-websites/</link><pubDate>Mon, 07 Feb 2022 11:44:17 +0800</pubDate><guid>https://www.diguage.com/post/optimize-websites/</guid><description>&lt;div class="paragraph">
+&lt;p>前几年应大势所趋，使用 Let’s Encrypt 给所有网站都上了 HTTPS。因为去年年中把博客托管到 GitHub 上了，导致一起申请 HTTPS 证书的站点无法按时更新证书。所以，所有证书都过期了。前几天有朋友发消息问我，Byte Buddy 的中文文档是不是我搞的？正好借机把证书更新了一下。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>此后不久，无意间查看了一下网站服务器的操作系统和 Nginx 版本，发现竟然是 Ubuntu 16.04 + Nginx 1.12。Ubuntu 16.04 都”过期“了，正好得空升级一下。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_升级操作系统">升级操作系统&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>以前没有升级过操作系统大版本，正好借此机会练手：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="bash">&lt;span class="c"># 升级操作系统版本执行，先做一下常规升级&lt;/span>
+&lt;span class="nb">sudo &lt;/span>apt-get update
+&lt;span class="nb">sudo &lt;/span>apt-get upgrade
+&lt;span class="nb">sudo &lt;/span>reboot
+
+&lt;span class="c"># 检查可以升级的版本&lt;/span>
+&lt;span class="nb">sudo &lt;/span>&lt;span class="k">do&lt;/span>&lt;span class="nt">-release-upgrade&lt;/span> &lt;span class="nt">-c&lt;/span>
+
+&lt;span class="c"># 开始升级&lt;/span>
+&lt;span class="nb">sudo &lt;/span>&lt;span class="k">do&lt;/span>&lt;span class="nt">-release-upgrade&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>升级完成后，检查操作系统版本：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="bash">&lt;span class="nv">$ &lt;/span>&lt;span class="nb">cat&lt;/span> /etc/os-release
+&lt;span class="nv">NAME&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;Ubuntu&amp;#34;&lt;/span>
+&lt;span class="nv">VERSION&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;20.04.3 LTS (Focal Fossa)&amp;#34;&lt;/span>
+&lt;span class="nv">ID&lt;/span>&lt;span class="o">=&lt;/span>ubuntu
+&lt;span class="nv">ID_LIKE&lt;/span>&lt;span class="o">=&lt;/span>debian
+&lt;span class="nv">PRETTY_NAME&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;Ubuntu 20.04.3 LTS&amp;#34;&lt;/span>
+&lt;span class="nv">VERSION_ID&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;20.04&amp;#34;&lt;/span>
+&lt;span class="nv">HOME_URL&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;https://www.ubuntu.com/&amp;#34;&lt;/span>
+&lt;span class="nv">SUPPORT_URL&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;https://help.ubuntu.com/&amp;#34;&lt;/span>
+&lt;span class="nv">BUG_REPORT_URL&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;https://bugs.launchpad.net/ubuntu/&amp;#34;&lt;/span>
+&lt;span class="nv">PRIVACY_POLICY_URL&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;https://www.ubuntu.com/legal/terms-and-policies/privacy-policy&amp;#34;&lt;/span>
+&lt;span class="nv">VERSION_CODENAME&lt;/span>&lt;span class="o">=&lt;/span>focal
+&lt;span class="nv">UBUNTU_CODENAME&lt;/span>&lt;span class="o">=&lt;/span>focal&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>有几点需要注意：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>LTS 版本升级，只能一步一步升级，从 16.04 升级到 18.04，再从 18.04 升级到 20.04。不能跳级。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>升级过程不能中断，需要逐步确认。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>如果升级中断，系统就会处在一个中间阶段，不能升级，不能重启（我遇到的情况）。需要人工介入处理，继续升级完成才行：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="bash">&lt;span class="nb">sudo &lt;/span>dpkg &lt;span class="nt">--configure&lt;/span> &lt;span class="nt">-a&lt;/span>
+
+&lt;span class="c"># 执行上述命令失败是，删除两个锁文件，再次执行即可&lt;/span>
+&lt;span class="nb">sudo rm&lt;/span> &lt;span class="nt">-rf&lt;/span> /var/lib/dpkg/lock
+&lt;span class="nb">sudo rm&lt;/span> /var/lib/dpkg/lock-frontend
+
+&lt;span class="nb">sudo &lt;/span>dpkg &lt;span class="nt">--configure&lt;/span> &lt;span class="nt">-a&lt;/span>
+
+&lt;span class="nb">sudo &lt;/span>apt-get update
+&lt;span class="nb">sudo &lt;/span>apt-get dist-upgrade
+
+&lt;span class="nb">sudo &lt;/span>&lt;span class="k">do&lt;/span>&lt;span class="nt">-release-upgrade&lt;/span>
+
+&lt;span class="nb">sudo &lt;/span>reboot&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>AWK 简介</title><link>https://www.diguage.com/post/introducing-awk/</link><pubDate>Sat, 10 Jul 2021 10:14:47 +0800</pubDate><guid>https://www.diguage.com/post/introducing-awk/</guid><description>&lt;div class="paragraph">
+&lt;p>这周需要处理一个日志文件，有一次体会到 AWK 强大和方便，但也认识到自己对 AWK 了解的粗浅。所以，写篇文章再深入学习一下。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>根据维基百科显示，AWK 于二十世纪七十年代在 Bell Labs 创建；其名字来源于三位创始人： Alfred Aho、Peter Weinberger and Brian Kernighan。AWK 是一个现在几乎每台 Linux 机器上都会有这个命令。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>AWK 是一种领域专用语言，专用设计用于文本处理，常用于提取文本或者生成报告。 AWK 也像 Shell 一样，方言和实现众多。D瓜哥这里选择最常用的 GNU AWK 实现。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>AWK 是以行为单位来处理文本的。它不仅仅是一个命令行，而且是一门语言。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>先展示一下我们的实例程序：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="bash">&lt;span class="nv">$ &lt;/span>&lt;span class="nb">cat &lt;/span>employee.txt
+ajay manager account 45000
+sunil clerk account 25000
+varun manager sales 50000
+amit manager account 47000
+tarun peon sales 15000
+deepak clerk sales 23000
+sunil peon sales 13000
+satvik director purchase 80000&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>AWK 的基本用法如下：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="bash">&lt;span class="c"># ① 基本格式&lt;/span>
+&lt;span class="nv">$ &lt;/span>&lt;span class="nb">awk &lt;/span>动作 文件名
+
+&lt;span class="c"># ② 标准 I/O 格式&lt;/span>
+&lt;span class="nv">$ &lt;/span>&lt;span class="nb">cat &lt;/span>文件名 | &lt;span class="nb">awk &lt;/span>动作&lt;/code>&lt;/pre>
+&lt;/div></description></item></channel></rss>

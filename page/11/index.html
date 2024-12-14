@@ -1,0 +1,350 @@
+<!doctype html><html class=no-js lang=zh-cn><head><meta name=generator content="Hugo 0.134.3"><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><meta http-equiv=X-UA-Compatible content="IE=edge"><title>"地瓜哥"博客网</title>
+<script>(function(e,t){e[t]=e[t].replace("no-js","js")})(document.documentElement,"className")</script><meta name=keywords content="java,架构,设计,spring,微服务,书籍,分布式,方法论,个人提升,序列化,数据库,最佳实践,gc,虚拟机,源码分析,算法,产品,翻译,团队建设,okr,工作方法,投资理财,笔记,股票,脑图,"><meta name=description content='"地瓜哥"博客网是由 D瓜哥 维护的以分享技术文章的博客网站。'><meta property="og:url" content="https://www.diguage.com/"><meta property="og:site_name" content='"地瓜哥"博客网'><meta property="og:title" content='"地瓜哥"博客网'><meta property="og:description" content='"地瓜哥"博客网是由 D瓜哥 维护的以分享技术文章的博客网站。'><meta property="og:locale" content="zh_cn"><meta property="og:type" content="website"><meta name=twitter:card content="summary"><meta name=twitter:title content='"地瓜哥"博客网'><meta name=twitter:description content='"地瓜哥"博客网是由 D瓜哥 维护的以分享技术文章的博客网站。'><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link rel=dns-prefetch href=//fonts.googleapis.com><link rel=dns-prefetch href=//fonts.gstatic.com><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Open+Sans:400,400i,700"><link rel=alternate type=application/rss+xml href=/index.xml title 地瓜哥"博客网"><link rel=stylesheet href=/css/style.min.css><link rel=stylesheet href=/css/asciidoctor.css><link rel=stylesheet href=/css/rouge-monokai.css><link rel=alternate type=application/rss+xml href=/index.xml title 地瓜哥"博客网"><link rel="shortcut icon" href=/favicon.ico><script async src="https://www.googletagmanager.com/gtag/js?id=G-1MMT2NLEL4"></script><script>var dnt,doNotTrack=!1;if(!1&&(dnt=navigator.doNotTrack||window.doNotTrack||navigator.msDoNotTrack,doNotTrack=dnt=="1"||dnt=="yes"),!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-1MMT2NLEL4")}</script><script id=baidu_analytics>var _hmt=_hmt||[];(function(){var e,t=document.createElement("script");t.src="https://hm.baidu.com/hm.js?e56e7dd0a120b414f5741f4c5e5218ea",e=document.getElementsByTagName("script")[0],e.parentNode.insertBefore(t,e)})()</script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css></head><body class=body><div class="container container--outer"><header class=header><div class="container header__container"><div class=logo><a class=logo__link href=/ title='"地瓜哥"博客网' rel=home><div class="logo__item logo__text"><div class=logo__title>"地瓜哥"博客网</div><div class=logo__tagline>分享技术带来的喜悦 — https://www.diguage.com/</div></div></a></div><nav class=menu><button class=menu__btn aria-haspopup=true aria-expanded=false tabindex=0>
+<span class=menu__btn-title tabindex=-1>菜单</span></button><ul class=menu__list><li class=menu__item><a class=menu__link href=/><span class=menu__text>首页</span></a></li><li class=menu__item><a class=menu__link href=/categories/><span class=menu__text>分类</span></a></li><li class=menu__item><a class=menu__link href=/about/><span class=menu__text>关于</span></a></li><li class=menu__item><a class=menu__link href=/archives/><span class=menu__text>归档</span></a></li></ul></nav></div></header><div class="wrapper flex"><div class=primary><main class="main list" role=main><article class="list__item post"><header class=list__header><h2 class="list__title post__title"><a href=/post/books-on-book-day/ rel=bookmark>在世界读书日，推荐书单</a></h2><div class="list__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2020-04-23T20:15:14+08:00>2020-04-23</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E9%98%85%E8%AF%BB%E6%91%98%E8%A6%81/ rel=category>阅读摘要</a>, <a class=meta__link href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/ rel=category>系统架构</a>, <a class=meta__link href=/categories/%E8%81%8C%E4%B8%9A%E5%8F%91%E5%B1%95/ rel=category>职业发展</a></span></div></div></header><div class="content list__excerpt post__content clearfix">今天是世界读书日，各种人都在推荐书单。D瓜哥也凑个热闹，水一篇文章，推荐一些书籍。
+在前一段时间，D瓜哥已经写了一个书单： 推荐几本 Java 并发编程的书。为了避免重复，上一个书单中推荐过的书籍，这次就不再重复推荐了。
+每年十二个月，D瓜哥就推荐 12 本书，每个月读一本想必压力也不算大。
+如何阅读一本书？ D瓜哥在年初的时候，刚刚再次重读了这本书。而且，还写了一篇读书笔记： 《如何阅读一本书？》之读书笔记。
+如果喜欢读书，那么这本书绝对应该是首先阅读的第一本书。一句话总结一下：用检视阅读的方法来快速筛选出你关注主题的书籍；用分析阅读的方法来吸收一本书的精华；用主题阅读的办法来对多本同一主题的书去伪存真，加工再输出。
+远见 D瓜哥在去年年末写的年终总结 “告别 2019，迎接 2020” 中提到了这本书。考虑这本书的实用性和对自身发展的指导意义，所以决定再次推荐这本书。
+在这本书中，作者将职业生涯分为：强势开局、聚焦长板和实现持续的影响力三个阶段。
+在强势开局阶段，就像要开始一个汽车拉力赛，要努力加添燃料。
+在聚焦长板阶段，要努力提高自己的核心竞争力，创造自己的制高点。
+在实现持续的影响力阶段，则要优化长尾效应，让自己持续保持领先。
+对于职业生涯有追求的小伙伴，尤其是在读大学生，一定要去尽早认真读一读这本书。
+思考，快与慢 这是一本有关心理学方面的书籍。作者丹尼尔•卡尼曼因其与阿莫斯•特沃斯基在决策制定上的研究而荣获了 2002 年度的诺贝尔经济学奖。所以，这本书质量上肯定是有保证的。
+这本书主要是介绍认知心理学的。作者在书中，把人的认知分为系统一和系统二。系统一是那种不需要思考的，已经固化在我们基因中的反应，比如看见危险会跑路等；而系统二，则是需要深入思考才能有所收获的事情，比如在新税法下，计算个人应该缴纳的个人所得税。两个系统相辅相成，时刻影响着我们的生活，但我们却有些熟视无睹。
+穷查理宝典 提起查理·芒格，也许有些人不知道是谁。（看这篇文章的读者估计都了解）但是，他的搭档估计是人尽皆知，那就是世界股神沃伦·巴菲特。
+虽然这本书不是查理·芒格书写的，里面的精华部分，却都是查理的演讲稿。通过这些演讲，你可以看到一个睿智的老人，如何在循循善诱地向你传授他的思维方法。查理给我们介绍了他的思维模型：逆向思维，多元思维模型，打造自己的核心圈，避免嫉妒效应，内部积分卡（用我们古人的话说就是反求诸己）等等。
+社会性动物 D瓜哥是去年开始读这本书的，非常抱歉目前还没有读完。
+这本书是讲述社会心理学的，讲述在这个社会中，人与人之间是如何相互影响的。举一个典型的例子：你思考过吗，什么样的广告最能打动你吗？
+事实 比尔·盖茨也推荐了这本书。我也是最近刚刚开始读这本书。还没有读完。就不做过多评价了。用一个问题，勾引一下你的兴趣：
+问题：在全世界所有的低收入国家里面，有多少百分比的女孩能够上完小学？
+选项：A. 20% B. 40% C. 60%
+想知道答案，就快点去读这本书吧。
+最近更新：D瓜哥终于把这本书读完了：https://www.diguage.com/post/factfulness/[《事实》之读书笔记^]。
+人类简史 坦白讲，这本书D瓜哥才读了一半。但是，作者最近发表的一篇文章： 尤瓦尔·赫拉利《冠状病毒之后的世界》，一个史学家站在历史发展的角度去看待疫情对世界发展的影响。由此可对赫拉利的思想窥得一斑。那么，如果感兴趣，他的成名大作《人类简史》就不得不读了。
+最近因为疫情影响，在网上看到各种五毛的无脑言论，怼天怼地，仿佛中国要征服世界，征服宇宙一样，真是让人呵呵…
+未来几十年时间里，中国未来寻求自身发展，还需要融入到整个世界经济中，在全世界产业链中，力争上游，占领高附加值的产业，比如芯片，5G，大飞机等等。怼这个，怼那个，只能让自己像二战时期的纳粹德国和日本，让自己四面树敌，最后被全世界群殴。</div><div class="list__footer clearfix"><a class="list__footer-readmore btn" href=/post/books-on-book-day/>阅读全文…</a></div></article><article class="list__item post"><figure class="list__thumbnail thumbnail"><a class=thumbnail__link href=/post/the-pragmatic-programmer/><img class=thumbnail__image src=/images/books/the-pragmatic-programmer.jpg alt=《程序员修炼之道》之提示全集></a></figure><header class=list__header><h2 class="list__title post__title"><a href=/post/the-pragmatic-programmer/ rel=bookmark>《程序员修炼之道》之提示全集</a></h2><div class="list__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2020-04-18T12:39:22+08:00>2020-04-18</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E4%B8%AA%E4%BA%BA%E6%88%90%E9%95%BF/ rel=category>个人成长</a>, <a class=meta__link href=/categories/%E6%96%B9%E6%B3%95%E8%AE%BA/ rel=category>方法论</a></span></div></div></header><div class="content list__excerpt post__content clearfix">计算机行业是一个发展非常迅速的行业，技术可谓是日新月异。同样，书籍也是更迭不断。书龄在二十年以上的书，少之又少。如果还能一直保持畅销，那绝对是凤毛麟角。而 《程序员修炼之道》 绝对算是这些神品中不可或缺的一本。
+最近当当在搞读书节，又成功骗我入坑，买了几本心仪已久的书。《程序员修炼之道·第2版》被我成功收入囊中。打开书本，只看目录就感觉可以值回书价了。99 条提示，字字珠玑，金科玉律。忍不住发篇水文，推波助澜，让其发扬光大。
+务实的哲学 关注你的技艺
+思考！思考你的工作
+你有选择权
+提供选择，别找借口
+不要放任破窗
+做推动变革的催化剂
+牢记全景
+将质量要求视为需求问题
+对知识组合做定期投资
+批判性地分析你读到和听到的东西
+英语就是另一门编程语言
+说什么和怎么说同样重要
+把文档嵌进去，而不是拴在表面
+务实的方法 优秀的设计比糟糕的设计更容易变更
+DRY—​不要重复自己
+让复用变得更容易
+消除不想搞事物之间的影响
+不设最终决定
+放弃追逐时尚
+使用曳光弹找到目标
+用原型学习
+靠近问题域编程
+通过估算来避免意外
+根据代码不断迭代进度表
+基础工具 将知识用纯文本保存
+发挥 Shell 命令的威力
+游刃有余地使用编辑器
+永远使用版本控制
+去解决问题，而不是责备
+不要恐慌
+修代码前先让代码在测试中失败
+读一下那些该死的出错信息
+“select”没出问题
+不要假设，要证明
+学习一门文本处理语言
+务实的偏执 你无法写出完美的软件
+通过契约进行设计
+尽早崩溃
+使用断言去预防不可能的事情
+有始有终
+在局部行动
+小步前进——由始至终
+避免占卜
+宁折不弯 解耦代码让改变更容易
+只管命令不要询问
+不要链式调用方法
+避免全局数据
+如果全局唯一非常重要，那么将它包装到API 中
+编程讲的是代码，而程序谈的是数据
+不要囤积状态，传递下去
+不要付继承税
+尽量用接口来表达多态
+用委托提供服务：“有一个”胜过“是一个”
+利用 mixin 共享功能
+使用外部配置参数化应用程序
+并发 通过分析工作流来提高并发性
+共享状态是不正确的状态
+随机故障通常是并发问题
+用角色实现并发性时不必共享状态
+使用黑板来协调工作流</div><div class="list__footer clearfix"><a class="list__footer-readmore btn" href=/post/the-pragmatic-programmer/>阅读全文…</a></div></article><article class="list__item post"><header class=list__header><h2 class="list__title post__title"><a href=/post/java-concurrent-books/ rel=bookmark>推荐几本 Java 并发编程的书</a></h2><div class="list__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2020-03-25T16:32:12+08:00>2020-03-25</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/ rel=category>程序设计</a></span></div></div></header><div class="content list__excerpt post__content clearfix">最近，D瓜哥的一个小伙伴向我抱怨，Java 并发是个大坑，问我怎么看？我回答，当然是用眼睛看啊…
+D瓜哥觉得，想学好 Java 并发，最重要的还是啃书。幸运的是，Java 中还是有不少关于并发的优秀书籍可以看。正好利用这个机会，把看过的、个人认为还不错的书推荐一波。没有看过的就不多言了。
+Java并发编程实战 如果只选一本书来深入研究并发，那肯定是这本书。
+Java并发编程实战 (豆瓣) — 这本书是必看的。JDK 中 JUC 就是这本书的作者们写的。虽然书名含有 Java 一次，但是，里面更多是原理性的东西，各种语言都适用。只是例子少了一些。这本书需要多读几遍。（据说翻译不行，推荐看英文版）
+放个英文版图片镇楼：
+Java并发编程的艺术 Java并发编程的艺术 (豆瓣) — 这本书也不错，讲了很多源码方面的内容，非常棒。另外，在讲解 Double Lock 方面的知识时，涉及了很多 Java Memory Model 方面的知识，可以先看看 深入理解Java虚拟机（第3版）(豆瓣) 最后两章的内容，来提前补充一下这么方面的知识。
+实战Java高并发程序设计 实战Java高并发程序设计（第2版） (豆瓣) — 这本书也不错，针对 Java 8 写的，Java 8 中的很多新知识都有涉猎，例子也很全面。广度和深度，得到了兼顾，非常棒。
+Java编程思想 Java编程思想（第4版）(豆瓣) — 虽然这本书已经出来十余年了，但是依然经典。第 21 章 并发，用大量的例子和陈述来介绍并发。非常棒。美中不足，是针对 Java 5 编写的，现在已经 Java 8 了。不过，作者又出了一本书，可以理解成升级版。</div><div class="list__footer clearfix"><a class="list__footer-readmore btn" href=/post/java-concurrent-books/>阅读全文…</a></div></article><article class="list__item post"><header class=list__header><h2 class="list__title post__title"><a href=/post/overview-of-distributed-transaction/ rel=bookmark>分布式事务概述</a></h2><div class="list__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2020-03-23T12:36:58+08:00>2020-03-23</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E5%88%86%E5%B8%83%E5%BC%8F/ rel=category>分布式</a></span></div></div></header><div class="content list__excerpt post__content clearfix">现在手机银行转账已经司空见惯。但是，D瓜哥一直在思考，银卡跨行转账是如何保证事务一致性的？借机就对分布式事务，做了简单地了解。
+2PC 两阶段提交（2pc， two-phase commit protocol），2pc是非常经典的强一致性、中心化的原子提交协议。中心化是指协议中有两类节点：一个中心化协调者节点（coordinator）和N个参与者节点（participant、cohort）。
+顾名思义，两阶段提交协议的每一次事务提交分为两个阶段：
+在第一阶段，协调者询问所有的参与者是否可以提交事务（请参与者投票），所有参与者向协调者投票。
+在第二阶段，协调者根据所有参与者的投票结果做出是否事务可以全局提交的决定，并通知所有的参与者执行该决定。在一个两阶段提交流程中，参与者不能改变自己的投票结果。两阶段提交协议的可以全局提交的前提是所有的参与者都同意提交事务，只要有一个参与者投票选择放弃(abort)事务，则事务必须被放弃。
+两阶段提交协议也依赖与日志，只要存储介质不出问题，两阶段协议就能最终达到一致的状态（成功或者回滚）
+优点 强一致性，只要节点或者网络最终恢复正常，协议就能保证顺利结束；部分关系型数据库（Oracle）、框架直接支持
+缺点 网络抖动导致的数据不一致： 第二阶段中协调者向参与者发送commit命令之后，一旦此时发生网络抖动，导致一部分参与者接收到了commit请求并执行，可其他未接到commit请求的参与者无法执行事务提交。进而导致整个分布式系统出现了数据不一致。
+超时导致的同步阻塞问题： 2PC中的所有的参与者节点都为事务阻塞型，当某一个参与者节点出现通信超时，其余参与者都会被动阻塞占用资源不能释放。
+单点故障的风险： 由于严重的依赖协调者，一旦协调者发生故障，而此时参与者还都处于锁定资源的状态，无法完成事务commit操作。虽然协调者出现故障后，会重新选举一个协调者，可无法解决因前一个协调者宕机导致的参与者处于阻塞状态的问题。
+基于两阶段提交的分布式事务在提交事务时需要在多个节点之间进行协调,最大限度地推后了提交事务的时间点，客观上延长了事务的执行时间，这会导致事务在访问共享资源时发生冲突和死锁的概率增高，随着数据库节点的增多，这种趋势会越来越严重，从而成为系统在数据库层面上水平伸缩的"枷锁"， 这是很多Sharding系统不采用分布式事务的主要原因。
+3PC 三阶段提交协议（3pc Three-phase_commit_protocol）主要是为了解决两阶段提交协议的阻塞问题，从原来的两个阶段扩展为三个阶段，并且增加了超时机制。
+3PC 的三个阶段分别是 CanCommit、PreCommit、DoCommit
+CanCommit 协调者向所有参与者发送CanCommit命令，询问是否可以执行事务提交操作。如果全部响应YES则进入下一个阶段。
+PreCommit 协调者向所有参与者发送PreCommit命令，询问是否可以进行事务的预提交操作，参与者接收到PreCommit请求后，如参与者成功的执行了事务操作，则返回Yes响应，进入最终commit阶段。一旦参与者中有向协调者发送了No响应，或因网络造成超时，协调者没有接到参与者的响应，协调者向所有参与者发送abort请求，参与者接受abort命令执行事务的中断。
+DoCommit 在前两个阶段中所有参与者的响应反馈均是YES后，协调者向参与者发送DoCommit命令正式提交事务，如协调者没有接收到参与者发送的ACK响应，会向所有参与者发送abort请求命令，执行事务的中断。
+3PC只是解决了在异常情况下2PC的阻塞问题，但导致一次提交要传递6条消息，延时很大。
+TCC TCC是Try、Commit、Cancel的缩写，TCC在保证强一致性的同时，最大限度提高系统的可伸缩性与可用性。
+TCC（Try-Confirm-Cancel）又被称补偿事务，TCC 与 2PC 的思想很相似，事务处理流程也很相似，但 2PC 是应用于在 DB 层面，TCC 则可以理解为在应用层面的 2PC，是需要我们编写业务逻辑来实现。
+TCC 的核心思想是："针对每个操作都要注册一个与其对应的确认（Try）和补偿（Cancel）"。
+一个完整的业务包含一组子业务，Try操作完成所有的子业务检查，预留必要的业务资源，实现与其他事务的隔离；Confirm使用Try阶段预留的业务资源真正执行业务，而且Confirm操作满足幂等性，以遍支持重试；Cancel操作释放Try阶段预留的业务资源，同样也满足幂等性。“一次完整的交易由一系列微交易的Try 操作组成，如果所有的Try 操作都成功，最终由微交易框架来统一Confirm，否则统一Cancel，从而实现了类似经典两阶段提交协议（2PC）的强一致性。”
+再来一个例子：
+与2PC协议比较 ，TCC拥有以下特点：
+位于业务服务层而非资源层 ，由业务层保证原子性
+没有单独的准备(Prepare)阶段，降低了提交协议的成本
+Try操作 兼备资源操作与准备能力
+Try操作可以灵活选择业务资源的锁定粒度，而不是锁住整个资源，提高了并发度
+缺点 应用侵入性强：TCC由于基于在业务层面，至使每个操作都需要有 try、confirm、cancel三个接口。
+开发难度大：代码开发量很大，要保证数据一致性 confirm 和 cancel 接口还必须实现幂等性。</div><div class="list__footer clearfix"><a class="list__footer-readmore btn" href=/post/overview-of-distributed-transaction/>阅读全文…</a></div></article><article class="list__item post"><header class=list__header><h2 class="list__title post__title"><a href=/post/map-reduce-gfs-bigtable/ rel=bookmark>Google 三驾马车：MapReduce、GFS、Bigtable</a></h2><div class="list__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2020-03-23T10:13:57+08:00>2020-03-23</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E5%88%86%E5%B8%83%E5%BC%8F/ rel=category>分布式</a></span></div></div></header><div class="content list__excerpt post__content clearfix">MapReduce MapReduce编程模型来自函数式编程，包含两个最基本的算子：map，reduce
+将一个运算任务分解成大量独立正交的子任务，每个子任务通过map算子计算，得到中间结果，然后用reduce算子进行聚合，得到最终结果。
+这两个算子有一个很重要的特征：确定性的纯过程调用（pure function），函数既不会修改输入，也不存在中间状态，也没有共享的内存。因此，输入一致的情况下，输出也是一致的，这大大方便了容错性设计。
+系统中有两类主要的进程节点：master（单点），worker（多个）。其中，worker根据不同的计算任务，又分为map worker（对应上图中的Map phase）、reduce worker（对应上图中的Reduce phase）。
+master是系统的中心节点，负责计算任务到worker节点的分配，同时监控worker节点的状态。如果某个worker计算太慢，或者宕机，master会将该worker进程负责的计算任务转移到其他进程。
+map worker从GFS（google file system）中读取输入数据，然后将中间结果写到本地文件；reduce worker从master处得知中间结果的问题，通过rpc读取中间文件，计算之后将最终结果写入到可靠存储GFS。生产环境中，一个MapReduce过程的输出通常是另一个MapReduce计算的输入，类似Unix 的 pipeline，只不过unix pipeline通过stdin、stdout连接两个程序，而MapReduce使用GFS连接两个计算过程。
+Scalability 由于计算任务的正交性，很容易通过增加map worker、reduce worker来处理计算任务的增长。Input file 到 Map phase这个阶段，使用了基于范围（range based）的分片方法，master作为元数据服务器会记录split到worker的映射关系。
+Availability 系统对worker的容错性较好，但对master的容错性较差。
+对于map worker，计算结果是写到本地文件，本地文件的位置需要通知到master，即使同一个task被多个map worker执行，单点的master只会采纳一份中间结果。而且上面提到了map function是pure function，所以计算结果也是一样的。
+对于reduce worker，reduce task的计算结果会先写到临时文件（temporary file），task完成之后再重命名写入gfs，那么如果一个reduce task再多个reduce worker上计算，那么会不会有问题呢，答案是不会的
+Performance data locality — 将任务调度到数据所在的节点进行计算，减少网络传输；
+backup task — master在发现某个worker上的task进展异常缓慢的时候，会将这个task调度到其他worker，以缩短这个任务（Job）的完成时间。
+GFS GFS（Google File System）是Google研发的可伸缩、高可用、高可靠的分布式文件系统，提供了类似POSIX的API，按层级目录来组织文件。
+GFS master、GFS Client、GFS chunkserver。其中，GFS master任意时刻只有一个，而chunkserver和gfs client可能有多个。
+一份文件被分为多个固定大小的chunk（默认64M），每个chunk有全局唯一的文件句柄 －－ 一个64位的chunk ID，每一份chunk会被复制到多个chunkserver（默认值是3)，以此保证可用性与可靠性。chunkserver将chunk当做普通的Linux文件存储在本地磁盘上。
+GFS master是系统的元数据服务器，维护的元数据包括：命令空间（GFS按层级目录管理文件）、文件到chunk的映射，chunk的位置。其中，前两者是会持久化的，而chunk的位置信息来自于Chunkserver的汇报。</div><div class="list__footer clearfix"><a class="list__footer-readmore btn" href=/post/map-reduce-gfs-bigtable/>阅读全文…</a></div></article><article class="list__item post"><header class=list__header><h2 class="list__title post__title"><a href=/post/http-123/ rel=bookmark>HTTP 123</a></h2><div class="list__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2020-03-05T08:08:44+08:00>2020-03-05</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E7%BD%91%E7%BB%9C/ rel=category>网络</a></span></div></div></header><div class="content list__excerpt post__content clearfix">HTTP1.0 根据谷歌的调查， 现在请求一个网页，平均涉及到 80 个资源，30 多个域名。考虑最原始的情况，每请求一个资源都需要建立一次 TCP 请求，显然不可接受。HTTP 协议规定了一个字段 Connection，不过默认的值是 close，也就是不开启。
+HTTP1.1 Pipeline 是为了减少不必要的 TCP 连接，但依然存在队头阻塞(HOC)的缺点，一种解决思路是利用并发连接减少某一个 HOC 的影响，另一个是共享(注意与复用的区别) TCP 连接，直接避免 HOC 问题的发生。
+HTTP1.1 的缺陷
+高延迟 — 队头阻塞(Head-Of-Line Blocking)
+当有多个串行请求执行时，如果第一个请求不执行完，后续的请求也无法执行。
+支持并发请求是解决解决 HOC 问题的一种方案，并发请求并非是直接解决了 HOC 的问题，而是尽可能减少 HOC 造成的影响。
+将同一页面的资源分散到不同域名下，提升连接上限。
+减少请求数量
+内联一些资源：css、base64 图片等
+合并小文件减少资源数
+无状态特性 — 阻碍交互
+明文传输 — 不安全性
+HTTP 1.x 也可以配合 TLS 进行安全传输，只是不是强制的。
+不支持服务端推送
+SPDY SPDY 是由 Google 推行的改进版本的 HTTP1.1。
+针对 HTTP1.1 的缺陷，SPDY 提供了如下特性：
+多路复用 — 解决队头阻塞
+SPDY 允许在一个连接上无限制并发流。因为请求在一个通道上，TCP 效率更高。</div><div class="list__footer clearfix"><a class="list__footer-readmore btn" href=/post/http-123/>阅读全文…</a></div></article><article class="list__item post"><header class=list__header><h2 class="list__title post__title"><a href=/post/anxiang/ rel=bookmark>暗想</a></h2><div class="list__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2020-02-14T20:39:36+08:00>2020-02-14</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E4%B8%AA%E4%BA%BA%E6%88%90%E9%95%BF/ rel=category>个人成长</a>, <a class=meta__link href=/categories/%E6%96%87%E5%AD%A6/ rel=category>文学</a></span></div></div></header><div class="content list__excerpt post__content clearfix">理智告诉我该走了， 但情感却恋恋不舍； 大脑告诉我放手吧， 但心依旧在沦陷；
+认识你让生活诗情画意， 想起你忍不住嘴角上扬， 思念你梦都是甜的。
+想做你的指南针， 带你周游世界； 带你翱翔太空； 带你去梦想的远方。
+想做你的眼镜， 带你观历史的沧海桑田； 带你赏自然的鬼斧神工； 带你看艺术的侠骨柔情。
+想做你的厨师， 可口的早餐等你醒来； 丰盛的晚餐等你回家。
+好想用心爱你一次， 爱你就像爱生命； 我挣钱养家，你貌美如花； 我用坚强的臂膀， 构建温馨的家。 即使外面狂风暴雨， 家中依然四季如春。
+好想和你站在一起， 勇往直前，彼此成就。 你做园丁， 浇灌祖国的花朵； 我做篝火， 温暖家庭，照亮社会。
+想说的话，千言万语， 却不能说出口。 想见的人，魂牵梦绕， 却咫尺天涯。 远远祝福你， 事事顺心，桃李天下。
+我渴望爱的垂涎， 但不要怜悯的爱。 我将继续加油， 做生活的愚公， 逢山开路，遇水搭桥。
+遥知不是雪，为有暗香来。
+知音难觅，弦断有谁听？</div></article><article class="list__item post"><figure class="list__thumbnail thumbnail"><a class=thumbnail__link href=/post/jie-du-ji-jin/><img class=thumbnail__image src=/images/books/jie-du-ji-jin.jpg alt=《解读基金》之读书笔记></a></figure><header class=list__header><h2 class="list__title post__title"><a href=/post/jie-du-ji-jin/ rel=bookmark>《解读基金》之读书笔记</a></h2><div class="list__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2020-01-31T12:23:28+08:00>2020-01-31</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E6%96%B9%E6%B3%95%E8%AE%BA/ rel=category>方法论</a>, <a class=meta__link href=/categories/%E7%BB%8F%E6%B5%8E%E9%87%91%E8%9E%8D/ rel=category>经济金融</a></span></div></div></header><div class="content list__excerpt post__content clearfix">这个月断断续续把季凯帆的 《解读基金——我的投资观与实践（修订版）》读完了，秉持读完一本，消化一本的读书理念，做一下读书笔记，整理消化一下书中的内容。
+目前房地产不景气，银行利息跑不赢 CPI 的情况下，证券市场是不错的可选性。首先，有政府在背后支撑、监督，不会像 P2P 那样随时暴雷跑路；其次，多方资料显示，长期来看，美国指数基金的收益率在 10% 左右，妥妥跑赢 CPI。第三，流动性好，随手都可以出手（当然有可能会亏损），最长一周时间就可以到账。（节假日除外）第四，起始资金低，几乎没有限制（支付宝买基金十元起步），相比买房动辄几十万，这几乎可以认为没有门槛。实际上，关键的问题是如何投资证券市场。
+学习借鉴别人的成功经验是迅速提高自己能力的最佳办法之一。阅读这本书，也是学习别人的成功经验，提高自己的投资能力。
+D瓜哥在 “《如何阅读一本书？》之读书笔记” 中介绍了一种读书方法，这次也按照这个读书方法把书的内容梳理一遍。
+四个基本问题 一个阅读者要提出的四个基本问题:
+整体来说，这本书到底在谈些什么？你一定要想办法找出这本书的主题，作者如何依次发展这个主题，如何逐步从核心主题分解出从属的关键议题来。
+作者细部说了什么，怎么说的？你一定要想办法找出主要的想法、声明与论点。这些组合成作者想要传达的特殊讯息。
+这本书说得有道理吗？是全部有道理，还是部分有道理？
+这本书跟你有什么关系？
+问题 针对这本书，D瓜哥有如下一下问题：
+股市都有哪些风险？
+常说的系统性风险都具体指哪些？
+配置什么样的投资产品？什么比例比较合适？
+基金是怎么运作的？怎么收费的？
+如何选择基金？需要关注哪些方面？
+何时卖出基金？
+场内 ETF 指数基金和场外 ETF 增强基金有啥区别？
+我的操作中，有什么不合理的地方？
+投资准备 总结 投资，说穿了就是让钱生钱。让钱生钱，这其实是所有富人的生财之道。-- D瓜哥觉得把“富人”换成“投资人”更合适。
+“富爸爸”和“穷爸爸”最核心的区别是理念，“富爸爸”在投资，让钱生钱；而“穷爸爸”就盯着那点工资，他一生的追求就是寻找一个好的工作，得到一份好的薪水。
+投机是瞄准一个“机会”，希望大赚一笔，一劳永逸，而投资是要你扎扎实实、一点一滴地走向你的最终梦想。
+基金就是把大家的钱收集到一起，由专门的人（基金经理）帮我们去投资证券市场。他提取他的佣金，我们拿我们的收益，他们帮我们理财投资。
+开放式基金，一般分为股票基金、债券基金、货币基金，以及介于股票和债券基金中间的配置型基金。
+Charmin综合征
+投资不是比智商，而是比谁更理性，而理性的前提就是理解，要理解就得花点时间吧。
+摘要 学习借鉴别人的成功经验是迅速提高自己能力的最佳办法之一。
+梳理正确的投资观念 投资，说穿了就是让钱生钱。让钱生钱，这其实是所有富人的生财之道。
+“富爸爸”和“穷爸爸”最核心的区别是理念，“富爸爸”在投资，让钱生钱；而“穷爸爸”就盯着那点工资，他一生的追求就是寻找一个好的工作，得到一份好的薪水。
+《富爸爸穷爸爸》 是一本很赞的书，推荐对投资理财感兴趣的童鞋去看一看。
+投机是瞄准一个“机会”，希望大赚一笔，一劳永逸，而投资是要你扎扎实实、一点一滴地走向你的最终梦想。投机实际上更多的是收获风险和灾难，而投资则是一种理性的产物。
+基金简介 简单地说，基金就是把大家的钱收集到一起，由专门的人（基金经理）帮我们去投资证券市场。他提取他的佣金，我们拿我们的收益，他们帮我们理财投资。
+基金资产的管理与保管是分开的，基金公司管理我们的钱的投资运作，而钱一般是托管在银行的。
+一种是在你购买基金的时候缴纳，叫前端收费；也可以选择在卖（赎回）基金的时候缴纳，叫后端收费。
+每种基金的净值都是在当天股票交易市场收盘以后再根据其所持有的证券的市值来计算的，一天就一个值，这个值在北京时间下午 3点以后才知道。
+在看一个基金的净值时会有两个，一个叫“净值”，一个叫“累计净值”。“累计净值”不考虑分红给基金净值带来的降低因素，反映了基金成立以来总体的发展情况，而“净值”则是你交易时候的真正价格。
+目前国家对个人的基金收益是不收税的。
+开放式基金，一般分为股票基金、债券基金、货币基金，以及介于股票和债券基金中间的配置型基金。
+有 80% 的基友在决定拿出十万八万元购买基金之前考虑的时间不到半个小时，比买件衣服的时间都少。
+美国非常著名的一个基金经理林奇把这种现象称为“Charmin综合征”。Charmin 是美国宝洁公司出的一种卫生纸，几乎在美国任何一个超市里面都可以看见。林奇说：“很多人在买宝洁公司股票前花的时间还不如花在挑 Charmin 卫生纸上的时间多。”这就是“Charmin综合征”。
+稀里糊涂、懵懵懂懂地就把大把的钞票投入到一个未知的领域，而且还不想花点时间去研究一下。</div><div class="list__footer clearfix"><a class="list__footer-readmore btn" href=/post/jie-du-ji-jin/>阅读全文…</a></div></article><article class="list__item post"><header class=list__header><h2 class="list__title post__title"><a href=/post/dynamic-programming/ rel=bookmark>动态规划入门</a></h2><div class="list__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2020-01-20T15:20:28+08:00>2020-01-20</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/ rel=category>程序设计</a>, <a class=meta__link href=/categories/%E9%98%85%E8%AF%BB%E6%91%98%E8%A6%81/ rel=category>阅读摘要</a></span></div></div></header><div class="content list__excerpt post__content clearfix">本篇文章是 D瓜哥 读《算法导论》的读书笔记。记录下来是为了方便整理思路，以便啃下“动态规划”这块骨头。
+目前侧重记录书中关于“动态规划原理”的介绍。接下来会把书中的例子结合 Java 代码演绎一遍。后续会根据D瓜哥的学习和理解，逐步完善。最终希望达到通过这一篇文章，就能学会、理解动态规划。
+山高水远，道阻且长，愿一起努力！
+— 2020年01月23日
+动态规划（dynamic programming）与分治方法相似，都是通过组合子问题的解来求解原问题（在这里，“programming”指的是一种表格法，并非编写计算机程序）。
+分治方法将问题划分为互不相交的子问题，递归地求解子问题，再将它们的解组合起来，求出原问题的解。
+动态规划应用于子问题重叠的情况，即不同的子问题具有公共的子子问题（子问题的求解是递归进行的，将其划分为更小的子子问题）。
+在这种情况下，分治算法会做许多不必要的工作，它会反复地求解那些公共子问题。
+动态规划算法对每个子子问题只求解一次，将其解保存在一个表格中，从而无需每次求解一个子子问题时都重新计算，避免了不必要的计算工作。
+动态规划方法通常用来求解最优化问题（optimization problem）。
+设计一个动态规划算法的步骤：
+刻画一个最优解的结构特征。
+递归地定义最优解的值。
+计算最优解的值，通常采用自底向上的方法。
+利用计算出的信息构造一个最优解。
+算法原理 适合应用动态规划方法求解的最优化问题应该具备的两个要素：最优子结构和子问题重叠。
+最优子结构 用动态规划方法求解最优化问题的第一步就是刻画最优解的结构。如果一个问题的最优解包含其子问题的最优解，则称此问题具有最优子结构性质。因此，某个问题是否适合应用动态规划算法，它是否具有最优子结构性质是一个好线索。
+发掘最优子结构性质的通过模式 证明问题最优解的第一个组成部分是做出一个选择。做出这次选择会产生一个或多个待解的子问题。
+对于一个给定问题，在其可能的第一步选择中，你假定已经知道哪种选择才会得到最优解。你现在并不关心这种选择具体是如何得到的，只是假定已经知道了这种选择。
+给定可获得最优解的选择后，你确定这次选择会产生哪些子问题，以及如何最好地刻画子问题空间。
+利用“剪切-粘贴”（cut-and-paste）技术证明：作为构造原问题最优解的组成部分，每个子问题的解就是它本身的最优解。证明这一点是利用反证法：假定子问题的解不是其自身的最优解，那么我们就可以从原问题的解中“剪切”掉这些非最优解，将最优解“粘贴”进去，从而得到原问题一个更优的解，这与最初的解是原问题最优解的前提假设锚段。
+一个刻画子问题空间的好经验是：保持子问题空间尽可能简单，只在必要时才扩展它。
+对于不同问题领域，最优子结构的不同体现在两个方面：
+原问题的最优解中涉及多少个子问题，以及
+在确定最优解使用哪些子问题时，我们需要考察多少种选择。
+可以用子问题的总数和每个子问题需要考察多少种选择这两个因素的乘积来粗略分析动态规划算法的运行时间。
+在动态规划方法中，通常自底向上地使用最优子结构。也就是说，首先求得子问题的最优解，然后求原问题的最优解。在求解原问题过程中，我们需要在涉及的子问题中做出选择，选出能得到原问题最优解的子问题。原问题最优解的代价通常就是子问题最优解的代价加上由此次选择直接产生的代价。
+能够使用贪心算法的问题也必须具有最优子结构性质。贪心算法和动态规划最大的不同在于，它并不是首先寻找子问题的最优解，然后在其中进行选择，而是首先做出一次“贪心”选择—​在当时（局部）看来最优的选择—​然后求解选出的子问题，从而不必费心求解所有可能相关的子问题。
+问题：使用贪心算法和动态规划的界线是什么？什么时候使用贪心？什么时候使用动态规划？ 重叠子问题 适合用动态规划方法求解的最优化问题应该具备的第二个性质是子问题空间必须足够“小”，即问题的递归算法会反复地求解相同的子问题，而不是一直生成新的子问题。
+如果递归算法反复求解相关的子问题，则就称为最优化问题具有重叠子问题（overlapping subproblems）性质。
+与之相对的，适合用分治算法求解的问题通常在递归的每一步都生成全新的子问题。
+动态规划算法通常这样利用重叠子问题性质：对每个子问题求解一次，将解存入一个表中，当再次需要这个子问题时直接查表，每次查表的代价为常量时间。
+一个问题是否适合用动态规划求解同事依赖于子问题的无关性和重叠性。两个子问题如果不共享资源，它们就是独立的。而重叠是指两个子问题实际上是同一个子问题，只是作为不同问题的子问题出现而已。
+将自顶向下的递归算法（无备忘录）与自底向上的动态规划算法进行比较，后者要高效得多，因为它利用了重叠子问题性质。
+重构最优解 从实际考虑，通常将每个子问题所做的选择存在一个表中，这样就不必根据代价来重构这些信息。
+备忘 可以保持自顶向下策略，同时达到与自底向上动态规划方法相似的效率。思路就是对自然但低效的递归算法加入备忘机制。维护一个表记录子问题的解，但仍然保持递归算法的控制流程。
+带备忘的递归算法为每个子问题维护一个表项来保存它的解。每个表项的初值设为一个特殊值，表示尚未填入子问题的解。当递归调用过程中第一次额遇到子问题时，计算其解，并存入对应表项。随后每次遇到同一个问题，只是简单地查表，返回其解。
+一个更通用的备忘方法是使用散列技术，以子问题参数为关键字。</div><div class="list__footer clearfix"><a class="list__footer-readmore btn" href=/post/dynamic-programming/>阅读全文…</a></div></article><article class="list__item post"><figure class="list__thumbnail thumbnail"><a class=thumbnail__link href=/post/how-to-read-a-book/><img class=thumbnail__image src=/images/books/how-to-read-a-book.jpg alt=《如何阅读一本书？》之读书笔记></a></figure><header class=list__header><h2 class="list__title post__title"><a href=/post/how-to-read-a-book/ rel=bookmark>《如何阅读一本书？》之读书笔记</a></h2><div class="list__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2020-01-08T22:23:51+08:00>2020-01-08</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E9%98%85%E8%AF%BB%E6%91%98%E8%A6%81/ rel=category>阅读摘要</a></span></div></div></header><div class="content list__excerpt post__content clearfix">D瓜哥在 “告别 2019，迎接 2020” 中已经提过，今年的一个重要改进就是把书读透，学以致用，不求速度但求质量。并且，还提到要重读《如何阅读一本书》和《如何有效阅读一本书》，以求提高读书技能，把书读透。
+最近在读《如何阅读一本书》，大概读了五分之一。最近有个想法，何不用《如何阅读一本书》中介绍的方法来阅读《如何阅读一本书》呢？熟悉编程（尤其是 Ruby）的朋友估计该会心一笑，有点元编程的感觉。
+D瓜哥这里先大概介绍一下书中的内容，然后再根据读书方法来剖析这本书。
+作者在全书第一章就开宗明义地写道：这本书为那些想把读书的主要目的当作是增进理解能力的人而写。
+我们的目标就是：第一提醒读者，阅读可以是一件多少主动的事。第二要指出的是，阅读越主动，效果越好。
+阅读艺术是一个凭借着头脑运作，除了玩味读物中的一些字句之外，不假任何外助，以一己之力来提升自我的过程。
+蒙田说：“初学者的无知在于未学，而学者的无知在于学后。”
+阅读的艺术包括了所有非辅助型自我发现学习的技巧：敏锐的观察、灵敏可靠的记忆、想象的空间，再者当然就是训练有素的分析、省思能力。
+要避免这样的错误 —— 以为读得多就是读得好的错误。
+做一个自我要求的读者 主动阅读的核心就是：你在阅读时要提出问题来 — 在阅读的过程中，你自己必须尝试去回答的问题。
+四个基本问题 一个阅读者要提出的四个基本问题:
+整体来说，这本书到底在谈些什么？你一定要想办法找出这本书的主题，作者如何依次发展这个主题，如何逐步从核心主题分解出从属的关键议题来。
+作者细部说了什么，怎么说的？你一定要想办法找出主要的想法、声明与论点。这些组合成作者想要传达的特殊讯息。
+这本书说得有道理吗？是全部有道理，还是部分有道理？
+这本书跟你有什么关系？
+做笔记的方法 画底线 —— 在主要的重点，或重要又有力量的句子下画线。
+在画底线处的栏外再加画一道线。
+在空白处做星号或其他符号 —— 要慎用。
+在空白处编号 —— 作者的某个论点发展出一连串的重要陈述时，可以做顺序编号。
+在空白处记下其他的页码 —— 强调作者在书中其他部分也有过同样的论点，或相关的要点，或是与此处观点不同的地方。
+将关键字或句子圈出来 —— 这跟画底线是同样的功能。
+在书页的空白处做笔记 —— 在阅读某一章节时，你可能会有些问题 （ 或答案 ），在空白处记下来，这样可以帮你回想起你的问题或答案。 .
+三种笔记 笔记主要的重点是全书的架构，而不是内容 —— 至少不是细节。因此我们称这样的笔记为结构笔记（Structural Note-making）。
+概念笔记（Conceptual Note-making）。
+针对一场讨论情境的笔记 —— 辩证笔记 （ Dialectical Note-making）。
+你在做这件事时，每一个分开来的步骤都需要你全神贯注地去做。在你分别练习过这些分开来的步骤后，你不但能放下你的注意力，很有效地将每个步骤做好，还能将所有的动作结合起来，表现出一个整体的顺畅行动。
+一个人只要学习过一种复杂的技巧，就会知道要学习一项新技巧，一开始的复杂过程是不足为惧的。等所有分开的动作不再分离，渐渐融为一体时，学习者便能将注意力转移到目标上，而他也具备了要达成目标的能力了。
+阅读的四个层次 第一层次的阅读为基础阅读（Elementary Reading）。这个层次的任务就是识文认字。</div><div class="list__footer clearfix"><a class="list__footer-readmore btn" href=/post/how-to-read-a-book/>阅读全文…</a></div></article></main><div class=pagination><a class="pagination__item pagination__item--else" href=/>«
+</a><a class="pagination__item pagination__item--else" href=/page/10/>&lt;
+</a><a class="pagination__item pagination__item--else" href=/page/4/>4
+</a><a class="pagination__item pagination__item--else" href=/page/5/>5
+</a><a class="pagination__item pagination__item--else" href=/page/6/>6
+</a><a class="pagination__item pagination__item--else" href=/page/7/>7
+</a><a class="pagination__item pagination__item--else" href=/page/8/>8
+</a><a class="pagination__item pagination__item--else" href=/page/9/>9
+</a><a class="pagination__item pagination__item--else" href=/page/10/>10
+</a><a class="pagination__item pagination__item--current" href=#>11
+</a><a class="pagination__item pagination__item--else" href=/page/12/>12
+</a><a class="pagination__item pagination__item--else" href=/page/12/>>
+</a><a class="pagination__item pagination__item--else" href=/page/12/>»</a></div></div><aside class=sidebar><div class="widget-search widget"><form class=widget-search__form role=search method=get action=https://google.com/search><label><input class=widget-search__field type=search placeholder=搜索… name=q aria-label=搜索…>
+</label><input class=widget-search__submit type=submit value=Search>
+<input type=hidden name=sitesearch value=https://www.diguage.com/></form></div><div class="widget-wechat widget"><h4 class=widget__title>微信公众号</h4><img alt=微信公众号 class=center src=/images/wx-jikerizhi-qrcode.jpg></div><div class="widget-wechat widget"><h4 class=widget__title>知识星球</h4><img alt=微信公众号 class=center src=/images/zhishixingqiu.png></div><div class="widget-recent widget"><h4 class=widget__title>近期文章</h4><div class=widget__content><ul class=widget__list><li class=widget__item><a class=widget__link href=/post/playing-with-kubernetes-01-install-kubernetes-offline/>玩转 Kubernetes（一）：离线安装 Kubernetes</a></li><li class=widget__item><a class=widget__link href=/post/understanding-database-sharding/>理解数据库分片</a></li><li class=widget__item><a class=widget__link href=/post/building-a-develop-environment-based-on-docker-3/>基于 Docker 搭建开发环境（三）：链路追踪</a></li><li class=widget__item><a class=widget__link href=/post/building-a-develop-environment-based-on-docker-2/>基于 Docker 搭建开发环境（二）：EFK 日志套件</a></li><li class=widget__item><a class=widget__link href=/post/building-a-develop-environment-based-on-docker-1/>基于 Docker 搭建开发环境（一）：数据库+监控</a></li><li class=widget__item><a class=widget__link href=/post/is-ddd-a-silver-bullet-2/>再谈 DDD 是银弹吗？</a></li><li class=widget__item><a class=widget__link href=/post/is-ddd-a-silver-bullet/>DDD 是银弹吗？</a></li><li class=widget__item><a class=widget__link href=/post/some-tips-for-high-school/>关于高中求学的一些问答及提醒</a></li><li class=widget__item><a class=widget__link href=/post/dive-into-beanfactorypostprocessor/>深入研究 BeanFactoryPostProcessor</a></li><li class=widget__item><a class=widget__link href=/post/java-21-boot-parameters-in-the-production/>生产环境中 Java 21 启动参数</a></li><li class=widget__item><a class=widget__link href=/post/optimize-code-using-openrewrite/>使用 OpenRewrite 优化代码</a></li><li class=widget__item><a class=widget__link href=/post/upgrade-to-openjdk21/>OpenJDK 21 升级指南</a></li><li class=widget__item><a class=widget__link href=/post/gc-performance-real-qps/>JVM GC 性能测试（三）：真实流量</a></li><li class=widget__item><a class=widget__link href=/post/gc-performance-incremental-qps/>JVM GC 性能测试（二）：递增流量</a></li><li class=widget__item><a class=widget__link href=/post/gc-performance-same-qps/>JVM GC 性能测试（一）：相同流量</a></li><li class=widget__item><a class=widget__link href=/post/gc-performance-comparison-method/>JVM GC 性能对比方法</a></li><li class=widget__item><a class=widget__link href=/post/jvm-anatomy-quarks-02-transparent-huge-pages/>JVM 剖析花园：2 - 透明大页</a></li><li class=widget__item><a class=widget__link href=/post/jvm-anatomy-quarks-01-lock-coarsening-for-loops/>JVM 剖析花园：1 - 锁粗化及循环</a></li><li class=widget__item><a class=widget__link href=/post/memory-wasted-by-spring-boot-application/>Spring Boot 应用程序浪费的内存</a></li><li class=widget__item><a class=widget__link href=/post/gc-tuning-success-story-reducing-young-gen-size/>GC 调优成功案例：减少新生代的大小</a></li></ul></div></div><div class="widget-categories widget"><h4 class=widget__title>分类</h4><div class=widget__content><ul class=widget__list><li class=widget__item><a class=widget__link href=/categories/%E4%B8%AA%E4%BA%BA%E6%88%90%E9%95%BF/>个人成长</a></li><li class=widget__item><a class=widget__link href=/categories/%E5%88%86%E5%B8%83%E5%BC%8F/>分布式</a></li><li class=widget__item><a class=widget__link href=/categories/%E5%BC%80%E5%8F%91%E5%B7%A5%E5%85%B7/>开发工具</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/>性能优化</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/>操作系统</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%95%B0%E6%8D%AE%E5%AD%98%E5%82%A8/>数据存储</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%96%87%E5%AD%A6/>文学</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%96%B9%E6%B3%95%E8%AE%BA/>方法论</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/>程序设计</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%AE%97%E6%B3%95/>算法</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/>系统架构</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%BB%8F%E6%B5%8E%E9%87%91%E8%9E%8D/>经济金融</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/>编程语言</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%BD%91%E7%BB%9C/>网络</a></li><li class=widget__item><a class=widget__link href=/categories/%E8%81%8C%E4%B8%9A%E5%8F%91%E5%B1%95/>职业发展</a></li><li class=widget__item><a class=widget__link href=/categories/%E8%BD%AF%E4%BB%B6%E5%B7%A5%E7%A8%8B/>软件工程</a></li><li class=widget__item><a class=widget__link href=/categories/%E9%80%B8%E9%97%BB%E8%B6%A3%E4%BA%8B/>逸闻趣事</a></li><li class=widget__item><a class=widget__link href=/categories/%E9%98%85%E8%AF%BB%E6%91%98%E8%A6%81/>阅读摘要</a></li></ul></div></div><div class="widget-taglist widget"><h4 class=widget__title>标签</h4><div class=widget__content><a class="widget-taglist__link widget__link btn" href=/tags/gc/ title=GC>GC (9)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/http/ title=HTTP>HTTP (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/java/ title=Java>Java (63)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/jvm/ title=JVM>JVM (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/kpi/ title=KPI>KPI (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/kubernetes/ title=Kubernetes>Kubernetes (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/linux/ title=Linux>Linux (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/okr/ title=OKR>OKR (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/redis/ title=Redis>Redis (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/shell/ title=Shell>Shell (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/spring/ title=Spring>Spring (25)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/tcp/ title=TCP>TCP (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/udp/ title=UDP>UDP (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/zookeeper/ title=ZooKeeper>ZooKeeper (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E4%B8%AA%E4%BA%BA%E6%8F%90%E5%8D%87/ title=个人提升>个人提升 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E4%B9%A6%E7%B1%8D/ title=书籍>书籍 (15)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E4%BA%A7%E5%93%81/ title=产品>产品 (7)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%80%BA%E5%88%B8/ title=债券>债券 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%88%86%E5%B8%83%E5%BC%8F/ title=分布式>分布式 (15)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%88%86%E6%B2%BB/ title=分治>分治 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/ title=动态规划>动态规划 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9B%A2%E9%98%9F%E5%BB%BA%E8%AE%BE/ title=团队建设>团队建设 (6)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9B%A2%E9%98%9F%E6%96%87%E5%8C%96/ title=团队文化>团队文化 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9F%BA%E9%87%91/ title=基金>基金 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%AD%98%E5%82%A8/ title=存储>存储 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%B7%A5%E4%BD%9C%E6%96%B9%E6%B3%95/ title=工作方法>工作方法 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%B9%B6%E5%8F%91/ title=并发>并发 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%BA%8F%E5%88%97%E5%8C%96/ title=序列化>序列化 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/ title=微服务>微服务 (17)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%BF%83%E7%90%86%E5%AD%A6/ title=心理学>心理学 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95/ title=性能测试>性能测试 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%8A%95%E8%B5%84%E7%90%86%E8%B4%A2/ title=投资理财>投资理财 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/ title=数据库>数据库 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/ title=数据结构>数据结构 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%96%B9%E6%B3%95%E8%AE%BA/ title=方法论>方法论 (13)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%97%85%E8%A1%8C/ title=旅行>旅行 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5/ title=最佳实践>最佳实践 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%9E%B6%E6%9E%84/ title=架构>架构 (41)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%A0%88/ title=栈>栈 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%A0%91/ title=树>树 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%B2%9F%E9%80%9A%E6%8A%80%E5%B7%A7/ title=沟通技巧>沟通技巧 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/ title=源码分析>源码分析 (8)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%90%86%E8%B4%A2/ title=理财>理财 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%94%9F%E6%B4%BB/ title=生活>生活 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%AC%94%E8%AE%B0/ title=笔记>笔记 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%AE%97%E6%B3%95/ title=算法>算法 (8)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BB%8F%E6%B5%8E/ title=经济>经济 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BC%96%E7%A0%81/ title=编码>编码 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BD%91%E7%BB%9C/ title=网络>网络 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BF%BB%E8%AF%91/ title=翻译>翻译 (7)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%82%A1%E7%A5%A8/ title=股票>股票 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%84%91%E5%9B%BE/ title=脑图>脑图 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%8A%82%E6%97%A5/ title=节日>节日 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%8B%B1%E8%AF%AD/ title=英语>英语 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%99%9A%E6%8B%9F%E6%9C%BA/ title=虚拟机>虚拟机 (9)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AE%BA%E6%96%87/ title=论文>论文 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AE%BE%E8%AE%A1/ title=设计>设计 (33)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/ title=设计模式>设计模式 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AF%97%E6%AD%8C/ title=诗歌>诗歌 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AF%BB%E4%B9%A6/ title=读书>读书 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%80%92%E5%BD%92/ title=递归>递归 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%87%91%E8%9E%8D/ title=金融>金融 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1/ title=面向对象>面向对象 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%A2%86%E5%9F%9F%E9%A9%B1%E5%8A%A8%E8%AE%BE%E8%AE%A1/ title=领域驱动设计>领域驱动设计 (5)</a></div></div><div class="widget-social widget"><h4 class="widget-social__title widget__title">社交</h4><div class="widget-social__content widget__content"><div class="widget-social__item widget__item"><a class="widget-social__link widget__link btn" title=Twitter rel="noopener noreferrer" href=https://twitter.com/diguage target=_blank><svg class="widget-social__link-icon icon icon-twitter" width="24" height="24" viewBox="0 0 384 312"><path d="m384 36.9c-14.1 6.3-29.3 10.5-45.2 12.4 16.3-9.7 28.8-25.2 34.6-43.6-15.2 9-32.1 15.6-50 19.1-14.4-15.2-34.9-24.8-57.5-24.8-43.5.0-78.8 35.3-78.8 78.8.0 6.2.7 12.2 2 17.9-65.5-3.3-123.5-34.6-162.4-82.3C20 26 16.1 39.6 16.1 54c0 27.3 13.9 51.4 35 65.6-12.9-.4-25.1-4-35.7-9.9v1c0 38.2 27.2 70 63.2 77.2-6.6 1.8-13.6 2.8-20.8 2.8-5.1.0-10-.5-14.8-1.4 10 31.3 39.1 54.1 73.6 54.7-27 21.1-60.9 33.7-97.8 33.7-6.4.0-12.6-.4-18.8-1.1C34.9 299 76.3 312 120.8 312c144.9.0 224.1-120 224.1-224.1.0-3.4-.1-6.8-.2-10.2 15.4-11.1 28.7-25 39.3-40.8z"/></svg>
+<span>Twitter</span></a></div><div class="widget-social__item widget__item"><a class="widget-social__link widget__link btn" title=GitHub rel="noopener noreferrer" href=https://github.com/diguage target=_blank><svg class="widget-social__link-icon icon icon-github" width="24" height="24" viewBox="0 0 384 374"><path d="m192 0C85.9.0.0 85.8.0 191.7c0 84.7 55 156.6 131.3 181.9 9.6 1.8 13.1-4.2 13.1-9.2.0-4.6-.2-16.6-.3-32.6-53.4 11.6-64.7-25.7-64.7-25.7-8.7-22.1-21.3-28-21.3-28-17.4-11.9 1.3-11.6 1.3-11.6 19.3 1.4 29.4 19.8 29.4 19.8 17.1 29.3 44.9 20.8 55.9 15.9 1.7-12.4 6.7-20.8 12.2-25.6-42.6-4.8-87.5-21.3-87.5-94.8.0-20.9 7.5-38 19.8-51.4-2-4.9-8.6-24.3 1.9-50.7.0.0 16.1-5.2 52.8 19.7 15.3-4.2 31.7-6.4 48.1-6.5 16.3.1 32.7 2.2 48.1 6.5 36.7-24.8 52.8-19.7 52.8-19.7 10.5 26.4 3.9 45.9 1.9 50.7 12.3 13.4 19.7 30.5 19.7 51.4.0 73.7-44.9 89.9-87.7 94.6 6.9 5.9 13 17.6 13 35.5.0 25.6-.2 46.3-.2 52.6.0 5.1 3.5 11.1 13.2 9.2C329 348.2 384 276.4 384 191.7 384 85.8 298 0 192 0z"/></svg>
+<span>GitHub</span></a></div><div class="widget-social__item widget__item"><a class="widget-social__link widget__link btn" title=Email href=mailto:leejun119@gmail.com><svg class="widget-social__link-icon icon icon-mail" width="24" height="24" viewBox="0 0 416 288"><path d="m0 16v256 16h16 384 16v-16V16 0h-16H16 0zm347 16-139 92.5L69 32zM199 157.5l9 5.5 9-5.5L384 46v210H32V46z"/></svg>
+<span>leejun119@gmail.com</span></a></div></div></div></aside></div><footer class=footer><div class="container footer__container flex"><div class=footer__copyright>&copy; 2024 "地瓜哥"博客网.
+<span class=footer__copyright-credits>基于 <a href=https://gohugo.io/ rel="nofollow noopener" target=_blank>Hugo</a> 引擎和 <a href=https://github.com/Vimux/Mainroad/ rel="nofollow noopener" target=_blank>Mainroad</a> 主题</span>
+<span><a href=https://beian.miit.gov.cn/ target=_target>京ICP备14046450号-4</a></span></div></div></footer></div><script async defer src=/js/menu.js></script></body></html>

@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Redis on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/redis/</link><description>Recent content in Redis on "地瓜哥"博客网</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Sat, 02 Jul 2022 20:24:55 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/redis/index.xml" rel="self" type="application/rss+xml"/><item><title>分布式锁之 Apache Curator InterProcessReadWriteLock</title><link>https://www.diguage.com/post/distributed-lock-apache-curator-interprocessreadwritelock/</link><pubDate>Wed, 22 Jul 2020 10:45:44 +0800</pubDate><guid>https://www.diguage.com/post/distributed-lock-apache-curator-interprocessreadwritelock/</guid><description>&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/distributed-lock-apache-curator-interprocessmutex/">分布式锁之 Apache Curator InterProcessMutex&lt;/a> 中介绍了基于 ZooKeeper 实现的互斥锁。除此之外，还可以实现读写锁。这篇文章就来简要介绍一下 &lt;code>InterProcessReadWriteLock&lt;/code> 的实现原理。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>老规矩，先看看类的注释：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="cm">/**
+ * &amp;lt;p&amp;gt;
+ * A re-entrant read/write mutex that works across JVMs. Uses Zookeeper to hold the lock. All processes
+ * in all JVMs that use the same lock path will achieve an inter-process critical section. Further, this mutex is
+ * &amp;#34;fair&amp;#34; - each user will get the mutex in the order requested (from ZK&amp;#39;s point of view).
+ * &amp;lt;/p&amp;gt;
+ *
+ * &amp;lt;p&amp;gt;
+ * A read write lock maintains a pair of associated locks, one for read-only operations and one
+ * for writing. The read lock may be held simultaneously by multiple reader processes, so long as
+ * there are no writers. The write lock is exclusive.
+ * &amp;lt;/p&amp;gt;
+ *
+ * &amp;lt;p&amp;gt;
+ * &amp;lt;b&amp;gt;Reentrancy&amp;lt;/b&amp;gt;&amp;lt;br&amp;gt;
+ * This lock allows both readers and writers to reacquire read or write locks in the style of a
+ * re-entrant lock. Non-re-entrant readers are not allowed until all write locks held by the
+ * writing thread/process have been released. Additionally, a writer can acquire the read lock, but not
+ * vice-versa. If a reader tries to acquire the write lock it will never succeed.&amp;lt;br&amp;gt;&amp;lt;br&amp;gt;
+ *
+ * &amp;lt;b&amp;gt;Lock downgrading&amp;lt;/b&amp;gt;&amp;lt;br&amp;gt;
+ * Re-entrancy also allows downgrading from the write lock to a read lock, by acquiring the write
+ * lock, then the read lock and then releasing the write lock. However, upgrading from a read
+ * lock to the write lock is not possible.
+ * &amp;lt;/p&amp;gt;
+ */&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">InterProcessReadWriteLock&lt;/span>
+&lt;span class="o">{&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>分布式锁之 Apache Curator InterProcessMutex</title><link>https://www.diguage.com/post/distributed-lock-apache-curator-interprocessmutex/</link><pubDate>Tue, 21 Jul 2020 10:13:21 +0800</pubDate><guid>https://www.diguage.com/post/distributed-lock-apache-curator-interprocessmutex/</guid><description>&lt;div class="paragraph">
+&lt;p>对分布式锁耳熟能详。不过，一直关注的是基于 Redis 实现的分布式锁。知道 ZooKeeper 也可以实现分布式锁。但是，原来的想法是把 Redis 那个思路切换到 ZooKeeper 上来实现就好。今天了解到 Apache Curator 内置了分布式锁的实现： &lt;code>InterProcessMutex&lt;/code>。查看了一下源码实现，发现跟基于 Redis 实现的源码相比，在思路上还是有很大不同的。所以，特别作文记录一下。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>先来看一下，整体流程：&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;span class="image">&lt;img src="https://www.diguage.com/images/distributed-system/InterProcessMutex-process.png" alt="InterProcessMutex process" width="95%"/>&lt;/span>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>结合流程图和源码，加锁的过程是这样的：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>先判断本地是否有锁数据，如果有则对锁定次数自增一下，然后返回 &lt;code>true&lt;/code>；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>如果没有锁数据，则尝试获取锁：&lt;/p>
+&lt;div class="olist loweralpha">
+&lt;ol class="loweralpha" type="a">
+&lt;li>
+&lt;p>在指定路径下创建临时顺序节点&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>获取指定路径下，所有节点，检查自身是否是序号最小的节点：&lt;/p>
+&lt;div class="olist lowerroman">
+&lt;ol class="lowerroman" type="i">
+&lt;li>
+&lt;p>如果自身序号最小，则获得锁；否则&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>如果自身不是序号最小的节点，则通过 &lt;code>while&lt;/code> 自旋 + &lt;code>wait(times)&lt;/code> 不断尝试获取锁，直到成功。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>获得锁后，把锁信息缓存在本地 &lt;code>ConcurrentMap&amp;lt;Thread, LockData&amp;gt; threadData&lt;/code> 变量中，方便计算重入。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在 ZooKeeper 中的结构大致如下：&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;span class="image">&lt;img src="https://www.diguage.com/images/distributed-system/InterProcessMutex-structure.png" alt="InterProcessMutex structure" width="95%"/>&lt;/span>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>下面我们逐个方法进行分析说明。先来看一下 &lt;code>InterProcessMutex&lt;/code> 的注释：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="cm">/**
+ * A re-entrant mutex that works across JVMs. Uses Zookeeper to hold the lock. All processes in all JVMs that
+ * use the same lock path will achieve an inter-process critical section. Further, this mutex is
+ * &amp;#34;fair&amp;#34; - each user will get the mutex in the order requested (from ZK&amp;#39;s point of view)
+ */&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">InterProcessMutex&lt;/span> &lt;span class="kd">implements&lt;/span> &lt;span class="nc">InterProcessLock&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="nc">Revocable&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="nc">InterProcessMutex&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item></channel></rss>
