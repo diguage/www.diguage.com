@@ -1,0 +1,326 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Linux on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/linux/</link><description>Recent content in Linux on "地瓜哥"博客网</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Wed, 25 Dec 2024 21:08:16 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/linux/index.xml" rel="self" type="application/rss+xml"/><item><title>玩转 Kubernetes（一）：离线安装 Kubernetes</title><link>https://www.diguage.com/post/play-with-kubernetes-01-install-kubernetes-offline/</link><pubDate>Sat, 14 Dec 2024 16:13:19 +0800</pubDate><guid>https://www.diguage.com/post/play-with-kubernetes-01-install-kubernetes-offline/</guid><description>&lt;div class="paragraph">
+&lt;p>在 &lt;a href="https://www.diguage.com/post/building-a-develop-environment-based-on-docker-3/" target="_blank" rel="noopener">基于 Docker 搭建开发环境（三）：链路追踪&lt;/a> 等几篇文章中，D瓜哥分享了如何使用 Docker Compose 在本地搭建起来一套应用可观测性环境。感觉还不够好玩，毕竟正在在企业中，Kubernetes 已经是绝对的主流。要玩就玩最具挑战性的东西，玩最符合企业所需的技能和工具。所以，打算将上面那套简易玩具，按照企业级的要求，搬到 Kubernetes 上去。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>如果想玩 Kubernetes，首先面临的一个问题就是 Kubernetes 集群的搭建。本来是一个非常简单的事情，但是由于众所周知的原因，变得非常具有挑战性。经过各种探索和多次试验，发现一种“离线”安装方式，感觉是一个不错的方式。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>本方法是基于 &lt;a href="https://kubespray.io/#/" target="_blank" rel="noopener">Kubespray&lt;/a> 的一种安装办法，Kubespray 是由 Kubernetes SIG 小组来负责维护的一整套安装方式。既可以支持在裸机环境上安装，也支持云上环境安装。而且，只需要简单几行可以复制粘贴的命令，即可完成安装工作。非常适合入门玩耍使用。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>本安装方法所需的软件，D瓜哥都已经上传到 GitHub，如果需要下载，请移步： &lt;a href="https://github.com/diguage/k8s-packages/releases/tag/2.26.0" target="_blank" rel="noopener">Kubespray-2.26.0 安装包大全&lt;/a>。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_搭建服务器集群">搭建服务器集群&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>这里推荐使用 &lt;a href="https://www.vagrantup.com/" target="_blank" rel="noopener">Vagrant&lt;/a> 搭建集群。搭配 &lt;a href="https://www.virtualbox.org/" target="_blank" rel="noopener">VirtualBox&lt;/a>，只需要一个配置文件，就可以轻轻松松搭建一个 Linux 服务器集群。搭建集群的配置文件 &lt;code>Vagrantfile&lt;/code> 如下：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="ruby">&lt;span class="c1"># -*- mode: ruby -*-&lt;/span>
+&lt;span class="c1"># vi: set ft=ruby :&lt;/span>
+&lt;span class="c1"># @author D瓜哥 · &lt;a href="https://www.diguage.com/" target="_blank">https://www.diguage.com/&lt;/a>&lt;/span>
+
+&lt;span class="c1"># All Vagrant configuration is done below. The &amp;#34;2&amp;#34; in Vagrant.configure&lt;/span>
+&lt;span class="c1"># configures the configuration version (we support older styles for&lt;/span>
+&lt;span class="c1"># backwards compatibility). Please don&amp;#39;t change it unless you know what&lt;/span>
+&lt;span class="c1"># you&amp;#39;re doing.&lt;/span>
+&lt;span class="no">Vagrant&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">configure&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s2">&amp;#34;2&amp;#34;&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="k">do&lt;/span> &lt;span class="o">|&lt;/span>&lt;span class="n">config&lt;/span>&lt;span class="o">|&lt;/span>
+ &lt;span class="c1"># The most common configuration options are documented and commented below.&lt;/span>
+ &lt;span class="c1"># For a complete reference, please see the online documentation at&lt;/span>
+ &lt;span class="c1"># &lt;a href="https://docs.vagrantup.com." target="_blank">https://docs.vagrantup.com.&lt;/a>&lt;/span>
+
+ &lt;span class="c1"># 三节点集群&lt;/span>
+ &lt;span class="p">(&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="o">..&lt;/span>&lt;span class="mi">3&lt;/span>&lt;span class="p">).&lt;/span>&lt;span class="nf">each&lt;/span> &lt;span class="k">do&lt;/span> &lt;span class="o">|&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="o">|&lt;/span>
+ &lt;span class="n">config&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">vm&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">define&lt;/span> &lt;span class="s2">&amp;#34;node&lt;/span>&lt;span class="si">#{&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="si">}&lt;/span>&lt;span class="s2">&amp;#34;&lt;/span> &lt;span class="k">do&lt;/span> &lt;span class="o">|&lt;/span>&lt;span class="n">node&lt;/span>&lt;span class="o">|&lt;/span>
+
+ &lt;span class="c1"># Every Vagrant development environment requires a box. You can search for&lt;/span>
+ &lt;span class="c1"># boxes at &lt;a href="https://vagrantcloud.com/search." target="_blank">https://vagrantcloud.com/search.&lt;/a>&lt;/span>
+ &lt;span class="c1"># 这里使用 Ubuntu 24.04，其他版本可到 &lt;a href="https://vagrantcloud.com/search" target="_blank">https://vagrantcloud.com/search&lt;/a> 搜索下载&lt;/span>
+ &lt;span class="n">node&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">vm&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">box&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s2">&amp;#34;ubuntu2404&amp;#34;&lt;/span>
+
+ &lt;span class="c1"># 设置虚拟机的主机名&lt;/span>
+ &lt;span class="n">node&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">vm&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">hostname&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;node&lt;/span>&lt;span class="si">#{&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="si">}&lt;/span>&lt;span class="s2">&amp;#34;&lt;/span>
+
+ &lt;span class="n">config&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">vm&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">boot_timeout&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">600&lt;/span>
+
+ &lt;span class="c1"># Disable automatic box update checking. If you disable this, then&lt;/span>
+ &lt;span class="c1"># boxes will only be checked for updates when the user runs&lt;/span>
+ &lt;span class="c1"># `vagrant box outdated`. This is not recommended.&lt;/span>
+ &lt;span class="c1"># config.vm.box_check_update = false&lt;/span>
+
+ &lt;span class="c1"># Create a forwarded port mapping which allows access to a specific port&lt;/span>
+ &lt;span class="c1"># within the machine from a port on the host machine. In the example below,&lt;/span>
+ &lt;span class="c1"># accessing &amp;#34;localhost:8080&amp;#34; will access port 80 on the guest machine.&lt;/span>
+ &lt;span class="c1"># NOTE: This will enable public access to the opened port&lt;/span>
+ &lt;span class="c1"># config.vm.network &amp;#34;forwarded_port&amp;#34;, guest: 80, host: 8080&lt;/span>
+
+ &lt;span class="c1"># Create a forwarded port mapping which allows access to a specific port&lt;/span>
+ &lt;span class="c1"># within the machine from a port on the host machine and only allow access&lt;/span>
+ &lt;span class="c1"># via 127.0.0.1 to disable public access&lt;/span>
+ &lt;span class="c1"># config.vm.network &amp;#34;forwarded_port&amp;#34;, guest: 80, host: 8080, host_ip: &amp;#34;127.0.0.1&amp;#34;&lt;/span>
+
+ &lt;span class="c1"># Create a private network, which allows host-only access to the machine&lt;/span>
+ &lt;span class="c1"># using a specific IP.&lt;/span>
+ &lt;span class="n">node&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">vm&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">network&lt;/span> &lt;span class="s2">&amp;#34;private_network&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="ss">auto_config: &lt;/span>&lt;span class="kp">false&lt;/span>
+
+ &lt;span class="c1"># Create a public network, which generally matched to bridged network.&lt;/span>
+ &lt;span class="c1"># Bridged networks make the machine appear as another physical device on&lt;/span>
+ &lt;span class="c1"># your network.&lt;/span>
+ &lt;span class="c1"># config.vm.network &amp;#34;public_network&amp;#34;&lt;/span>
+
+ &lt;span class="c1"># Share an additional folder to the guest VM. The first argument is&lt;/span>
+ &lt;span class="c1"># the path on the host to the actual folder. The second argument is&lt;/span>
+ &lt;span class="c1"># the path on the guest to mount the folder. And the optional third&lt;/span>
+ &lt;span class="c1"># argument is a set of non-required options.&lt;/span>
+ &lt;span class="c1"># 设置主机与虚拟机的共享目录，根据需要开启&lt;/span>
+ &lt;span class="n">node&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">vm&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">synced_folder&lt;/span> &lt;span class="s2">&amp;#34;/path/to/&lt;/span>&lt;span class="si">#{&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="si">}&lt;/span>&lt;span class="s2">&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s2">&amp;#34;/data&amp;#34;&lt;/span>
+
+
+ &lt;span class="c1"># Disable the default share of the current code directory. Doing this&lt;/span>
+ &lt;span class="c1"># provides improved isolation between the vagrant box and your host&lt;/span>
+ &lt;span class="c1"># by making sure your Vagrantfile isn&amp;#39;t accessible to the vagrant box.&lt;/span>
+ &lt;span class="c1"># If you use this you may want to enable additional shared subfolders as&lt;/span>
+ &lt;span class="c1"># shown above.&lt;/span>
+ &lt;span class="c1"># config.vm.synced_folder &amp;#34;.&amp;#34;, &amp;#34;/vagrant&amp;#34;, disabled: true&lt;/span>
+
+ &lt;span class="c1"># Provider-specific configuration so you can fine-tune various&lt;/span>
+ &lt;span class="c1"># backing providers for Vagrant. These expose provider-specific options.&lt;/span>
+ &lt;span class="c1"># Example for VirtualBox:&lt;/span>
+ &lt;span class="n">node&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">vm&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">provider&lt;/span> &lt;span class="s2">&amp;#34;virtualbox&amp;#34;&lt;/span> &lt;span class="k">do&lt;/span> &lt;span class="o">|&lt;/span>&lt;span class="n">vb&lt;/span>&lt;span class="o">|&lt;/span>
+ &lt;span class="c1"># 设置虚拟机的名称&lt;/span>
+ &lt;span class="c1"># vb.name = &amp;#34;node#{i}&amp;#34;&lt;/span>
+
+ &lt;span class="c1"># if node.vm.hostname == &amp;#34;node1&amp;#34;&lt;/span>
+ &lt;span class="c1"># # Display the VirtualBox GUI when booting the machine&lt;/span>
+ &lt;span class="c1"># vb.gui = true&lt;/span>
+ &lt;span class="c1"># end&lt;/span>
+
+ &lt;span class="c1"># Customize the amount of memory on the VM:&lt;/span>
+ &lt;span class="n">vb&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">memory&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s2">&amp;#34;8192&amp;#34;&lt;/span>
+
+ &lt;span class="c1"># 设置虚拟机的CPU个数&lt;/span>
+ &lt;span class="n">vb&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">cpus&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">2&lt;/span>
+ &lt;span class="k">end&lt;/span>
+
+ &lt;span class="c1"># View the documentation for the provider you are using for more&lt;/span>
+ &lt;span class="c1"># information on available options.&lt;/span>
+
+ &lt;span class="c1"># Enable provisioning with a shell script. Additional provisioners such as&lt;/span>
+ &lt;span class="c1"># Ansible, Chef, Docker, Puppet and Salt are also available. Please see the&lt;/span>
+ &lt;span class="c1"># documentation for more information about their specific syntax and use.&lt;/span>
+ &lt;span class="c1"># config.vm.provision &amp;#34;shell&amp;#34;, inline: &amp;lt;&amp;lt;-SHELL&lt;/span>
+ &lt;span class="c1"># sudo yum makecache --refresh&lt;/span>
+ &lt;span class="c1"># sudo yum install -y tcpdump&lt;/span>
+ &lt;span class="c1"># sudo yum install -y nc&lt;/span>
+ &lt;span class="c1"># sudo yum install -y net-tools&lt;/span>
+ &lt;span class="c1"># SHELL&lt;/span>
+ &lt;span class="k">end&lt;/span>
+ &lt;span class="k">end&lt;/span>
+&lt;span class="k">end&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>新 Mac 安装软件脚本</title><link>https://www.diguage.com/post/install-software-for-new-mac/</link><pubDate>Tue, 24 Oct 2023 16:39:37 +0800</pubDate><guid>https://www.diguage.com/post/install-software-for-new-mac/</guid><description>&lt;div class="paragraph">
+&lt;p>最近公司可以申请零净值 MacBook 笔记本，就随手申请了一个。由于有很多软件需要安装，就搜集了一下以前安装软件的命令，整理成一个安装脚本，分享出来，方便后续再次装机。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_xcode_select">1. &lt;code>xcode-select&lt;/code>&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>作为开发人员，这是基础工具包，必须安装：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">xcode-select &lt;span class="nt">--install&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_安装脚本">2. 安装脚本&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>安装脚本主要构成如下：&lt;/p>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_oh_my_zsh">2.1. oh my zsh&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>安装脚本先安装了 oh-my-zsh。最近帮同事搞 MacBook，没有 oh-my-zsh 的加持，写命令行浑身难受。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/logos/oh-my-zsh.png" alt="oh-my-zsh" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. oh-my-zsh&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>由于安装 oh my zsh 会导致脚本退出，所以，单独安装：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="c">#!/usr/bin/env bash&lt;/span>
+&lt;span class="c">#&lt;/span>
+&lt;span class="c"># Author: D瓜哥 · &lt;a href="https://www.diguage.com" target="_blank">https://www.diguage.com&lt;/a>&lt;/span>
+&lt;span class="c">#&lt;/span>
+
+&lt;span class="c"># 安装 oh-my-zsh&lt;/span>
+sh &lt;span class="nt">-c&lt;/span> &lt;span class="s2">&amp;#34;&lt;/span>&lt;span class="si">$(&lt;/span>curl &lt;span class="nt">-fsSL&lt;/span> https://cdn.jsdelivr.net/gh/ohmyzsh/ohmyzsh/tools/install.sh&lt;span class="si">)&lt;/span>&lt;span class="s2">&amp;#34;&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_homebrew">2.2. Homebrew&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>脚本里面主要使用了 Homebrew 来安装软件。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/logos/homebrew.svg" alt="Homebrew" width="50%"/>
+&lt;/div>
+&lt;div class="title">图 2. Homebrew&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_sdkman">2.3. sdkman&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>Java JDK + Maven 等相关安装，主要使用了 Sdkman，方便多个版本相互切换。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/logos/sdkman.png" alt="sdkman" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 3. sdkman&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_感谢_jsdelivr">2.4. 感谢 jsDelivr&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>为了解决安装 oh-my-zsh 和 Homebrew 时，GitHub 访问不畅，使用 jsDelivr 将它们的安装链接进行改写，可以利用 CDN 加速，让安装过程更加顺利。&lt;/p>
+&lt;/div></description></item><item><title>AWK 简介</title><link>https://www.diguage.com/post/introducing-awk/</link><pubDate>Sat, 10 Jul 2021 10:14:47 +0800</pubDate><guid>https://www.diguage.com/post/introducing-awk/</guid><description>&lt;div class="paragraph">
+&lt;p>这周需要处理一个日志文件，有一次体会到 AWK 强大和方便，但也认识到自己对 AWK 了解的粗浅。所以，写篇文章再深入学习一下。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>根据维基百科显示，AWK 于二十世纪七十年代在 Bell Labs 创建；其名字来源于三位创始人： Alfred Aho、Peter Weinberger and Brian Kernighan。AWK 是一个现在几乎每台 Linux 机器上都会有这个命令。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>AWK 是一种领域专用语言，专用设计用于文本处理，常用于提取文本或者生成报告。 AWK 也像 Shell 一样，方言和实现众多。D瓜哥这里选择最常用的 GNU AWK 实现。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>AWK 是以行为单位来处理文本的。它不仅仅是一个命令行，而且是一门语言。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>先展示一下我们的实例程序：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="bash">&lt;span class="nv">$ &lt;/span>&lt;span class="nb">cat &lt;/span>employee.txt
+ajay manager account 45000
+sunil clerk account 25000
+varun manager sales 50000
+amit manager account 47000
+tarun peon sales 15000
+deepak clerk sales 23000
+sunil peon sales 13000
+satvik director purchase 80000&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>AWK 的基本用法如下：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="bash">&lt;span class="c"># ① 基本格式&lt;/span>
+&lt;span class="nv">$ &lt;/span>&lt;span class="nb">awk &lt;/span>动作 文件名
+
+&lt;span class="c"># ② 标准 I/O 格式&lt;/span>
+&lt;span class="nv">$ &lt;/span>&lt;span class="nb">cat &lt;/span>文件名 | &lt;span class="nb">awk &lt;/span>动作&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>只要一部计算机，就可以创造出无限的世界</title><link>https://www.diguage.com/post/computer-create-world/</link><pubDate>Tue, 21 Apr 2009 00:00:00 +0800</pubDate><guid>https://www.diguage.com/post/computer-create-world/</guid><description>&lt;div class="paragraph">
+&lt;p>曾经写给学弟学妹的一封信。我觉得还行，发出来，希望对刚学计算机专业的朋友有所帮助。当然，如果哪位朋友有更好的想法，也请留言，大家讨论讨论。原文如下：&lt;/p>
+&lt;/div>
+&lt;div class="sidebarblock">
+&lt;div class="content">
+&lt;div class="title">致师弟师妹的一封信&lt;/div>
+&lt;div class="paragraph">
+&lt;p>各位朋友：&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>大家好！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>从本周开始，我必须专心为我的前程奋斗了。很可惜不能和大家一起学习了。这封信就算是我和大家的一个告别吧。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>首先，感谢史老师给我提供这个和大家一起学习和交流的机会，让我和大家一起度过了一段特殊而愉快的时光。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>其次，我应该感谢大家。由于本人水平有限，也许我没能让大家从我这里学到太多知识，但是大家却让我学会了很多东西，锻炼了我很多方面的能力。单凭这一点，我就应该感谢大家。同时，很多人把我当朋友，更使我感激不尽。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>再次，在这短暂而又宝贵的大学时光里，大家走的路应该和我的基本一样。我以一个过来人的身份，和大家分享一下我的学习经验吧，希望可以让大家少走甚至不走弯路。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>先说一点我们所学科目的情况吧。&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>Linux：一定要动手敲指令。在我们一年半的学习时光里，我认为Linux是我们所学的所有实践性学科里面最简单的一科了！只要把指令记好用熟就行了！另外，指令不需要背，用多了自然就记住了。（相信95%的同学都知道cd是什么意思吧！为什么呢？因为用它的次数多！）多提一点，一定要多尝试！&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Java或者C#或者PHP（由于个人比较喜欢Java，所以，一下描述Java的地方，你可以同样换成C#或在PHP等）：这是我们大家必须要下苦功夫学好的课！而且一定一定要学精！它们在我们的课程体系结构中的作用，就像是地基对于这个房子的作用！根基不好，房子很难建高的！即使建好也是豆腐渣工程。毕竟“空中楼阁”只存在于我们的想象中。它们是学习JSP、ASP.NET、J2EE、“游戏开发”、网页开发等等的基础，Java或者C#或者PHP学不会，这些课很难学好！（我这里有Java的教学视频，感兴趣的同学可以来我寝室拷贝。也可以上网下载：http://www.verycd.com/topics/93279/（请下载J2SE的））&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>数据库：重点是关系模型、 SQL语句以及后面的数据库设计。做动态网站的技术、做桌面程序，甚至做手机应用等，都会用到数据库！以后工作中数据模型设计、数据查询等都要求有比较扎实的数据库基础才行。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>数据结构：我个人认为学习数据结构就是学习一种解决问题的思想。其实，类库已经实现了我们所学的所有的数据结构，到时会用就行了！&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>现在NBA正在进行季后赛，就用乔丹的一句话，作为所有学科的一个共同的建议送给大家：&lt;/p>
+&lt;/div>
+&lt;div class="quoteblock">
+&lt;blockquote>
+&lt;div class="paragraph">
+&lt;p>I can accept failure, but I can’t accept not trying.&lt;/p>
+&lt;/div>
+&lt;/blockquote>
+&lt;div class="attribution">
+— Michael Jordan
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>其实学习就是不断尝试，不断总结，不断进取的一个过程。我可以用我的尝试告你一个正确的结果，但是自己尝试出来的结果印象更加深刻！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>再说一点我的个人的学习感触吧。我个人认为，这些比我们大家在学校学到知识更为重要！知识马上就会过时，但是学习的方法却可以带领我们走的更远。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>一、享受学习。&lt;/strong>如果我们把学习当成像玩游戏、听音乐一样的娱乐活动时，我想这会给我们一种全新的感觉。Study hard，have fun，make history！ By Jeff Bezos &amp;amp; Joy Lee （努力学习，乐在其中，并创造历史！—Jeff Bezos（Amazon.com的创办者兼CEO，Joy Lee就是我。(*&lt;sup>__&lt;/sup>*) 嘻嘻…… 这句话是我从他的一句话里改编过来的！））&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>其实，学计算机学科非常有趣！Linux里面，几行指令，我们就可以顺利的让鼠标在两个操作系统自由转换！Java里面几行，几十行代码就有一个漂亮的窗口！C#里面随便一个拖拽，也是一个不错的窗口！“只要一部计算机，就可以创造出无限的世界。”（出自蔡学镛《写程序，好好玩》，《Java夜未眠》里面的一篇，本书是本很搞笑的编程感触散文集，推荐看看。）加油吧！相信你行！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>二、坚持不懈。&lt;/strong>任何事情都不是可以一蹴而就的，都需要我们坚持！再送给大家一句话：失败只有一种，那就是半途而废！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>三、舍我其谁的豪迈和霸气。&lt;/strong>“Horse’s，Gosling能创造出来Java，我就不信我学不会！一个破Java，我还不放到眼里呢！！”，“别人能创造出来，我就不相信我学不会？！”不过，也要给大家提醒一句：“战略上，藐视敌人；战术上，重视敌人”！一定要下功夫学习才行！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>四、信心。&lt;/strong>一定要相信自己的能力！你是独一无二，无可替代的！信心能让你从一个更高的角度看待你的学习！能给你一种驾驭知识的成就感！这种感觉能让你从学习中找到乐趣！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>五、行动！&lt;/strong>上面的大道理，我们大家都懂！但是，谁实际做到呢？伟大与平凡的区别也许就在于这一点吧。我以我自己的高中、大学对比来看，行动与否结果绝对是不一样的！只想不做，最多是个空想家！所以，大家一定要“坚持不懈的行动”！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>最后，送给大家一句话：&lt;strong>你充满了潜能，但你的努力还远远不够！&lt;/strong>再次怀念我们共同的学习时光！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>祝大家学有所成！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div></description></item></channel></rss>

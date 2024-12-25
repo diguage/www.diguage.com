@@ -1,0 +1,29 @@
+seqdiag {
+  edge_length = 150;
+
+  Acter => Hessian2Output[label="writeObject\n(Object object)"] {
+    Hessian2Output => AbstractHessianOutput[label="findSerializerFactory()", note=" \n查找 SerializerFactory\n_"] {
+      AbstractHessianOutput => SerializerFactory[label="createDefault()"];
+    }
+
+    Hessian2Output => SerializerFactory[label="getObjectSerializer(Class<?> cl)", note=" \n根据 Class 获得 Serializer\n_"] {
+      SerializerFactory => SerializerFactory[label="getSerializer\n(Class c)"] {
+        SerializerFactory => SerializerFactory[label="loadSerializer\n(Class cl)", note=" \n扩展点\n可以扫描出提前添加的 SerializerFactory\n_"] {
+          SerializerFactory => AbstractSerializerFactory[label="getSerializer(Class cl)"];
+
+          SerializerFactory => ContextSerializerFactory[label="getSerializer(String className)"];
+
+          SerializerFactory => ContextSerializerFactory[label="create(ClassLoader loader)"];
+
+          SerializerFactory => ContextSerializerFactory[label="getCustomSerializer(Class cl)", note=" \n扩展点\n根据 Class 获得自定义的 Serializer\n_"];
+
+          SerializerFactory => JavaSerializer[label="create(Class<?> cl)", note=" \n这里通过 new 或者 create() 方法，\n创建了很多不同类型 Serializer 实现\n类，列表如下：\n01. RemoteSerializer\n02. InetAddressSerializer\n03. WriteReplaceSerializer\n04. MapSerializer\n05. CollectionSerializer\n06. ArraySerializer\n07. ThrowableSerializer\n08. InputStreamSerializer\n09. IteratorSerializer\n10. CalendarSerializer\n11. EnumerationSerializer\n12. EnumSerializer\n13. AnnotationSerializer\n_"];
+        }
+      }
+    }
+
+    Hessian2Output => Serializer[label="writeObject(Object obj, AbstractHessianOutput out)", leftnote=" \n将对象序列化\n\n有一点特别说明一下：\n在针对“对象”序列化时，\n对于每个字段会递归调用\nwriteObject(Object object)\n来完成对字段的序列化\n_"];
+  }
+
+=== D瓜哥 · https://www.diguage.com · 出品 ===
+}

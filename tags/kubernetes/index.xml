@@ -1,0 +1,296 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Kubernetes on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/kubernetes/</link><description>Recent content in Kubernetes on "地瓜哥"博客网</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Wed, 25 Dec 2024 21:08:16 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/kubernetes/index.xml" rel="self" type="application/rss+xml"/><item><title>玩转 Kubernetes（一）：离线安装 Kubernetes</title><link>https://www.diguage.com/post/play-with-kubernetes-01-install-kubernetes-offline/</link><pubDate>Sat, 14 Dec 2024 16:13:19 +0800</pubDate><guid>https://www.diguage.com/post/play-with-kubernetes-01-install-kubernetes-offline/</guid><description>&lt;div class="paragraph">
+&lt;p>在 &lt;a href="https://www.diguage.com/post/building-a-develop-environment-based-on-docker-3/" target="_blank" rel="noopener">基于 Docker 搭建开发环境（三）：链路追踪&lt;/a> 等几篇文章中，D瓜哥分享了如何使用 Docker Compose 在本地搭建起来一套应用可观测性环境。感觉还不够好玩，毕竟正在在企业中，Kubernetes 已经是绝对的主流。要玩就玩最具挑战性的东西，玩最符合企业所需的技能和工具。所以，打算将上面那套简易玩具，按照企业级的要求，搬到 Kubernetes 上去。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>如果想玩 Kubernetes，首先面临的一个问题就是 Kubernetes 集群的搭建。本来是一个非常简单的事情，但是由于众所周知的原因，变得非常具有挑战性。经过各种探索和多次试验，发现一种“离线”安装方式，感觉是一个不错的方式。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>本方法是基于 &lt;a href="https://kubespray.io/#/" target="_blank" rel="noopener">Kubespray&lt;/a> 的一种安装办法，Kubespray 是由 Kubernetes SIG 小组来负责维护的一整套安装方式。既可以支持在裸机环境上安装，也支持云上环境安装。而且，只需要简单几行可以复制粘贴的命令，即可完成安装工作。非常适合入门玩耍使用。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>本安装方法所需的软件，D瓜哥都已经上传到 GitHub，如果需要下载，请移步： &lt;a href="https://github.com/diguage/k8s-packages/releases/tag/2.26.0" target="_blank" rel="noopener">Kubespray-2.26.0 安装包大全&lt;/a>。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_搭建服务器集群">搭建服务器集群&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>这里推荐使用 &lt;a href="https://www.vagrantup.com/" target="_blank" rel="noopener">Vagrant&lt;/a> 搭建集群。搭配 &lt;a href="https://www.virtualbox.org/" target="_blank" rel="noopener">VirtualBox&lt;/a>，只需要一个配置文件，就可以轻轻松松搭建一个 Linux 服务器集群。搭建集群的配置文件 &lt;code>Vagrantfile&lt;/code> 如下：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="ruby">&lt;span class="c1"># -*- mode: ruby -*-&lt;/span>
+&lt;span class="c1"># vi: set ft=ruby :&lt;/span>
+&lt;span class="c1"># @author D瓜哥 · &lt;a href="https://www.diguage.com/" target="_blank">https://www.diguage.com/&lt;/a>&lt;/span>
+
+&lt;span class="c1"># All Vagrant configuration is done below. The &amp;#34;2&amp;#34; in Vagrant.configure&lt;/span>
+&lt;span class="c1"># configures the configuration version (we support older styles for&lt;/span>
+&lt;span class="c1"># backwards compatibility). Please don&amp;#39;t change it unless you know what&lt;/span>
+&lt;span class="c1"># you&amp;#39;re doing.&lt;/span>
+&lt;span class="no">Vagrant&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">configure&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s2">&amp;#34;2&amp;#34;&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="k">do&lt;/span> &lt;span class="o">|&lt;/span>&lt;span class="n">config&lt;/span>&lt;span class="o">|&lt;/span>
+ &lt;span class="c1"># The most common configuration options are documented and commented below.&lt;/span>
+ &lt;span class="c1"># For a complete reference, please see the online documentation at&lt;/span>
+ &lt;span class="c1"># &lt;a href="https://docs.vagrantup.com." target="_blank">https://docs.vagrantup.com.&lt;/a>&lt;/span>
+
+ &lt;span class="c1"># 三节点集群&lt;/span>
+ &lt;span class="p">(&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="o">..&lt;/span>&lt;span class="mi">3&lt;/span>&lt;span class="p">).&lt;/span>&lt;span class="nf">each&lt;/span> &lt;span class="k">do&lt;/span> &lt;span class="o">|&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="o">|&lt;/span>
+ &lt;span class="n">config&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">vm&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">define&lt;/span> &lt;span class="s2">&amp;#34;node&lt;/span>&lt;span class="si">#{&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="si">}&lt;/span>&lt;span class="s2">&amp;#34;&lt;/span> &lt;span class="k">do&lt;/span> &lt;span class="o">|&lt;/span>&lt;span class="n">node&lt;/span>&lt;span class="o">|&lt;/span>
+
+ &lt;span class="c1"># Every Vagrant development environment requires a box. You can search for&lt;/span>
+ &lt;span class="c1"># boxes at &lt;a href="https://vagrantcloud.com/search." target="_blank">https://vagrantcloud.com/search.&lt;/a>&lt;/span>
+ &lt;span class="c1"># 这里使用 Ubuntu 24.04，其他版本可到 &lt;a href="https://vagrantcloud.com/search" target="_blank">https://vagrantcloud.com/search&lt;/a> 搜索下载&lt;/span>
+ &lt;span class="n">node&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">vm&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">box&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s2">&amp;#34;ubuntu2404&amp;#34;&lt;/span>
+
+ &lt;span class="c1"># 设置虚拟机的主机名&lt;/span>
+ &lt;span class="n">node&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">vm&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">hostname&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;node&lt;/span>&lt;span class="si">#{&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="si">}&lt;/span>&lt;span class="s2">&amp;#34;&lt;/span>
+
+ &lt;span class="n">config&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">vm&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">boot_timeout&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">600&lt;/span>
+
+ &lt;span class="c1"># Disable automatic box update checking. If you disable this, then&lt;/span>
+ &lt;span class="c1"># boxes will only be checked for updates when the user runs&lt;/span>
+ &lt;span class="c1"># `vagrant box outdated`. This is not recommended.&lt;/span>
+ &lt;span class="c1"># config.vm.box_check_update = false&lt;/span>
+
+ &lt;span class="c1"># Create a forwarded port mapping which allows access to a specific port&lt;/span>
+ &lt;span class="c1"># within the machine from a port on the host machine. In the example below,&lt;/span>
+ &lt;span class="c1"># accessing &amp;#34;localhost:8080&amp;#34; will access port 80 on the guest machine.&lt;/span>
+ &lt;span class="c1"># NOTE: This will enable public access to the opened port&lt;/span>
+ &lt;span class="c1"># config.vm.network &amp;#34;forwarded_port&amp;#34;, guest: 80, host: 8080&lt;/span>
+
+ &lt;span class="c1"># Create a forwarded port mapping which allows access to a specific port&lt;/span>
+ &lt;span class="c1"># within the machine from a port on the host machine and only allow access&lt;/span>
+ &lt;span class="c1"># via 127.0.0.1 to disable public access&lt;/span>
+ &lt;span class="c1"># config.vm.network &amp;#34;forwarded_port&amp;#34;, guest: 80, host: 8080, host_ip: &amp;#34;127.0.0.1&amp;#34;&lt;/span>
+
+ &lt;span class="c1"># Create a private network, which allows host-only access to the machine&lt;/span>
+ &lt;span class="c1"># using a specific IP.&lt;/span>
+ &lt;span class="n">node&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">vm&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">network&lt;/span> &lt;span class="s2">&amp;#34;private_network&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="ss">auto_config: &lt;/span>&lt;span class="kp">false&lt;/span>
+
+ &lt;span class="c1"># Create a public network, which generally matched to bridged network.&lt;/span>
+ &lt;span class="c1"># Bridged networks make the machine appear as another physical device on&lt;/span>
+ &lt;span class="c1"># your network.&lt;/span>
+ &lt;span class="c1"># config.vm.network &amp;#34;public_network&amp;#34;&lt;/span>
+
+ &lt;span class="c1"># Share an additional folder to the guest VM. The first argument is&lt;/span>
+ &lt;span class="c1"># the path on the host to the actual folder. The second argument is&lt;/span>
+ &lt;span class="c1"># the path on the guest to mount the folder. And the optional third&lt;/span>
+ &lt;span class="c1"># argument is a set of non-required options.&lt;/span>
+ &lt;span class="c1"># 设置主机与虚拟机的共享目录，根据需要开启&lt;/span>
+ &lt;span class="n">node&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">vm&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">synced_folder&lt;/span> &lt;span class="s2">&amp;#34;/path/to/&lt;/span>&lt;span class="si">#{&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="si">}&lt;/span>&lt;span class="s2">&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s2">&amp;#34;/data&amp;#34;&lt;/span>
+
+
+ &lt;span class="c1"># Disable the default share of the current code directory. Doing this&lt;/span>
+ &lt;span class="c1"># provides improved isolation between the vagrant box and your host&lt;/span>
+ &lt;span class="c1"># by making sure your Vagrantfile isn&amp;#39;t accessible to the vagrant box.&lt;/span>
+ &lt;span class="c1"># If you use this you may want to enable additional shared subfolders as&lt;/span>
+ &lt;span class="c1"># shown above.&lt;/span>
+ &lt;span class="c1"># config.vm.synced_folder &amp;#34;.&amp;#34;, &amp;#34;/vagrant&amp;#34;, disabled: true&lt;/span>
+
+ &lt;span class="c1"># Provider-specific configuration so you can fine-tune various&lt;/span>
+ &lt;span class="c1"># backing providers for Vagrant. These expose provider-specific options.&lt;/span>
+ &lt;span class="c1"># Example for VirtualBox:&lt;/span>
+ &lt;span class="n">node&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">vm&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">provider&lt;/span> &lt;span class="s2">&amp;#34;virtualbox&amp;#34;&lt;/span> &lt;span class="k">do&lt;/span> &lt;span class="o">|&lt;/span>&lt;span class="n">vb&lt;/span>&lt;span class="o">|&lt;/span>
+ &lt;span class="c1"># 设置虚拟机的名称&lt;/span>
+ &lt;span class="c1"># vb.name = &amp;#34;node#{i}&amp;#34;&lt;/span>
+
+ &lt;span class="c1"># if node.vm.hostname == &amp;#34;node1&amp;#34;&lt;/span>
+ &lt;span class="c1"># # Display the VirtualBox GUI when booting the machine&lt;/span>
+ &lt;span class="c1"># vb.gui = true&lt;/span>
+ &lt;span class="c1"># end&lt;/span>
+
+ &lt;span class="c1"># Customize the amount of memory on the VM:&lt;/span>
+ &lt;span class="n">vb&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">memory&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s2">&amp;#34;8192&amp;#34;&lt;/span>
+
+ &lt;span class="c1"># 设置虚拟机的CPU个数&lt;/span>
+ &lt;span class="n">vb&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">cpus&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">2&lt;/span>
+ &lt;span class="k">end&lt;/span>
+
+ &lt;span class="c1"># View the documentation for the provider you are using for more&lt;/span>
+ &lt;span class="c1"># information on available options.&lt;/span>
+
+ &lt;span class="c1"># Enable provisioning with a shell script. Additional provisioners such as&lt;/span>
+ &lt;span class="c1"># Ansible, Chef, Docker, Puppet and Salt are also available. Please see the&lt;/span>
+ &lt;span class="c1"># documentation for more information about their specific syntax and use.&lt;/span>
+ &lt;span class="c1"># config.vm.provision &amp;#34;shell&amp;#34;, inline: &amp;lt;&amp;lt;-SHELL&lt;/span>
+ &lt;span class="c1"># sudo yum makecache --refresh&lt;/span>
+ &lt;span class="c1"># sudo yum install -y tcpdump&lt;/span>
+ &lt;span class="c1"># sudo yum install -y nc&lt;/span>
+ &lt;span class="c1"># sudo yum install -y net-tools&lt;/span>
+ &lt;span class="c1"># SHELL&lt;/span>
+ &lt;span class="k">end&lt;/span>
+ &lt;span class="k">end&lt;/span>
+&lt;span class="k">end&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>告别 2019，迎接 2020</title><link>https://www.diguage.com/post/goodbye-2019-hello-2020/</link><pubDate>Tue, 31 Dec 2019 19:20:00 +0800</pubDate><guid>https://www.diguage.com/post/goodbye-2019-hello-2020/</guid><description>&lt;div class="sect1">
+&lt;h2 id="_我的_2019">我的 2019&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>在 2018 年底，我写了 &lt;a href="https://www.diguage.com/post/2019-plan/" target="_blank" rel="noopener">“2019 年度计划”&lt;/a> 对 2019 年做了一个简单的规划。2019 年如白驹过隙，稍纵即逝。又到一年年底，现在对这一年做一个总结。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>虽然这一年，我一直在意有这么一个计划，但是从来没有认真总结反思过。为了回顾一下，刚刚又打开计划去看，生活才发现过得如此苍白无力。抛开计划，按时间顺序，从头到尾，随意来说吧。&lt;/p>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_读书">读书&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>今年读了几本书：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>《小岛经济学》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《小王子（英文版）》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《未来世界的幸存者》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《白夜行》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《教父》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《远见》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《如何阅读一本书？》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《文明之光（第一册）》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《基督山伯爵》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《Kubernetes in Action》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《富爸爸穷爸爸》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《巴菲特与索罗斯的投资习惯》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《幸福的方法》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《魔鬼聊天术》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《拆掉思维里的墙》&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>挑选几本来简单说说吧。&lt;/p>
+&lt;/div>
+&lt;div class="sect3">
+&lt;h4 id="_小岛经济学">《小岛经济学》&lt;/h4>
+&lt;div class="paragraph">
+&lt;p>《小岛经济学》是今年读完的第一本书，也算是去年留下的一个尾巴。奥地利经济学派主张政府不干预的观点。这本书简单描述了经济发展的过程，从莽荒时代，手工作业开始，逐步引入工具，提高生产力；随着生产力的提升，人口的增多，经济活动增多，开始物物交换；从物物交换过渡到货币交易，然后银行业兴起；生产力再次提高，以及货币的增加，投资也成为必要，资本市场应运而生；随着地区优势的凸显，资源整合也势在必行，接着发展起了跨国贸易，换汇成为必要，汇率也就被引入进来；随着资本市场的繁荣，埋藏的地雷被引爆，通货膨胀，货币贬值，资本市场崩溃，社会进入大萧条，然后重置继续发展……&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>整个过程完整而清晰，犹如亲历过去发展的波澜壮阔。作为一本经济学入门教程还是很赞的。最近开始看曼昆的《经济学原理》，再来看这本书，真的只能是入门。也许智商不够用，也许对经济学的知识了解得过于浅薄，当经济发展到引入汇率之后，后面的发展过程理解的就不是很透彻了。等看一下金融的书，结合起来，希望能更好地理解。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect3">
+&lt;h4 id="_未来世界的幸存者">《未来世界的幸存者》&lt;/h4>
+&lt;div class="paragraph">
+&lt;p>在年初看完的这本书，看完后震撼很大。把当时的读后感直接贴到这里作为总结吧。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>作者站在一个技术人员的角度，去思考技术如何改变世界？未来会是什么样子？&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>作者的思考和我的思考结果是一样的：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>技术的快速发展，机器必定完成大部分重复性劳动，使得大部分劳动者被取代。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>大部分人必定只能找到低端工作，工资仅够温饱。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>贫富分化将越来越严重，而且会世袭，穷人毫无翻身的可能。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>科技发展的结果，我自己感觉是喜忧参半：&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>作为一名IT从业者，真正在用技术改变这个世界，带给大家更多的便利，这是百年难得一遇的机遇，生在这个伟大的时代，能参与这个伟大的浪潮之中，可以用自己的双手去推动世界的改变，何其幸哉！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>同时，技术带给人们的便利真是难以想象，足不出户点餐、购物、约车、娱乐…&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>但是，也有很多人是不幸的，他们没有一技之长，或者人到中年，却惨遭失业；还有一部分人，或者说大部分生活在底层的人们，因为没有一技之长（仅指不容易被技术取代的技能），也许永无翻身之日，无所事事，惶惶终日。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>技术的发展，造成人类事业，伴随而来的可能会是“黑镜第一季第二集”的样子：每人一张床，四周都是显示器，想看什么看什么，什么活也不用干，平时运动挣积分，拿积分再消费…&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>进一步发展，也许就是《西部世界》，尤其是娱乐业。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>人类本身很可能会再进化一步：进化成碳基+硅基的组合体。碳基就是目前的人（也许仅仅只需要保留大脑），硅基就是各种芯片+维持大脑活动的必要设备和机械躯体…&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>基因改造将带来彻底的不平衡：人类被分为被改造人和原始人。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect3">
+&lt;h4 id="the-long-view">《远见》&lt;/h4>
+&lt;div class="paragraph">
+&lt;p>这本书是在刷知乎时，别人推荐的书。就找来看了看。真是相见恨晚！如果在大学毕业时就看到这本书，也许……&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>简单做个摘录作为总结吧。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>本书讲人生的职业生涯分为三个阶段：&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>第一阶段是强势开局的时候。你在职业上的努力必须着重于为前方的漫长道路挖掘和装备自己。你的学习曲线要比职位、职称更加重要。在这一阶段，要为职业生涯打好基础并建立起良好的早期习惯。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>第二阶段是聚焦长板的时候。该阶段的首要目标是寻找自己的甜蜜区，即你所擅长的、所热爱的和这个世界所需要的这三者之间的交集。这个时候你要展现自我，让自己鹤立鸡群，想方设法平稳地走在那条收获最大的职场路径上。你要专注于自己的长板，且大可忽略自己的短板。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>第三阶段致力于实现持续的影响力，以及寻找一条可以稳定延续到60多岁甚至70多岁的新的可持续职业道路。你要在第三阶段完成三个关键任务：完成继任计划、保持关联性，以及为自己点燃一团新的职业之火。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>用一句话来总结：第一阶段：加添燃料，强势开局； 第二阶段：聚焦长板，达到高点； 第三阶段：优化长尾，持续发挥影响力。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>三大职场燃料来源：可迁移技能、有意义的经验和持久的关系。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>5个数字，树立正确的职场思维&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>职业生涯的长度：用62减去你目前的年龄。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>精通一项技能所需的时间：要花多少小时才能在某一方面达到“精通”？&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>40岁之后能赚到的个人财富百分比：在40岁之后，你赚到的钱会占你一生个人财富的百分之多少？大部分人的估计是60%。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>社交货币：你有多少社交网络好友？&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>职场支持者的人数：你认为能在“职业生涯的天堂”里遇到多少人，也就是说有多少人能对你的职业生涯和人生带来真正的变化？&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这本书的摘要已经发布出来，感兴趣的小伙伴请移步： &lt;a href="https://www.diguage.com/post/the-long-view/">《远见》之读书笔记&lt;/a>。&lt;/p>
+&lt;/div></description></item></channel></rss>

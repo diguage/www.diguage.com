@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>并发 on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/%E5%B9%B6%E5%8F%91/</link><description>Recent content in 并发 on "地瓜哥"博客网</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Mon, 05 Sep 2022 21:30:31 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/%E5%B9%B6%E5%8F%91/index.xml" rel="self" type="application/rss+xml"/><item><title>HikariCP 源码分析 -- FastList</title><link>https://www.diguage.com/post/hikari-cp-source-analysis-fast-list/</link><pubDate>Sun, 02 Aug 2020 15:06:02 +0800</pubDate><guid>https://www.diguage.com/post/hikari-cp-source-analysis-fast-list/</guid><description>&lt;div class="paragraph">
+&lt;p>在前面的文章 &lt;a href="https://www.diguage.com/post/hikari-cp-source-analysis-concurrent-bag/">HikariCP 源码分析 — ConcurrentBag&lt;/a> 中，D瓜哥分析了一下 HikariCP 中一个非常重要的数据结构 &lt;code>ConcurrentBag&lt;/code>。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>今天，继续再介绍 HikariCP 中另一个很关键的数据结构： &lt;code>FastList&lt;/code>。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;code>FastList&lt;/code> 本身的实现非常简单，要理解它的奥秘，就需要结合 Java 原生集合类的 &lt;code>ArrayList&lt;/code> 来比较性地看。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_构造函数">构造函数&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>先来对比一下两者的构造函数。先来看看 &lt;code>FastList&lt;/code>：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="title">&lt;code>FastList&lt;/code>&lt;/div>
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="kd">public&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">FastList&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="kd">implements&lt;/span> &lt;span class="nc">List&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">&amp;gt;,&lt;/span> &lt;span class="nc">RandomAccess&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="nc">Serializable&lt;/span>
+&lt;span class="o">{&lt;/span>
+ &lt;span class="kd">private&lt;/span> &lt;span class="kd">static&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="kt">long&lt;/span> &lt;span class="n">serialVersionUID&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="o">-&lt;/span>&lt;span class="mi">4598088075242913858L&lt;/span>&lt;span class="o">;&lt;/span>
+
+ &lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="nc">Class&lt;/span>&lt;span class="o">&amp;lt;?&amp;gt;&lt;/span> &lt;span class="n">clazz&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="kd">private&lt;/span> &lt;span class="no">T&lt;/span>&lt;span class="o">[]&lt;/span> &lt;span class="n">elementData&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="kd">private&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="n">size&lt;/span>&lt;span class="o">;&lt;/span>
+
+ &lt;span class="cm">/**
+ * Construct a FastList with a default size of 32.
+ * @param clazz the Class stored in the collection
+ */&lt;/span>
+ &lt;span class="nd">@SuppressWarnings&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;unchecked&amp;#34;&lt;/span>&lt;span class="o">)&lt;/span>
+ &lt;span class="kd">public&lt;/span> &lt;span class="nf">FastList&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">Class&lt;/span>&lt;span class="o">&amp;lt;?&amp;gt;&lt;/span> &lt;span class="n">clazz&lt;/span>&lt;span class="o">)&lt;/span>
+ &lt;span class="o">{&lt;/span>
+ &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">elementData&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">[])&lt;/span> &lt;span class="nc">Array&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">newInstance&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">clazz&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="mi">32&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">clazz&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">clazz&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>
+
+ &lt;span class="cm">/**
+ * Construct a FastList with a specified size.
+ * @param clazz the Class stored in the collection
+ * @param capacity the initial size of the FastList
+ */&lt;/span>
+ &lt;span class="nd">@SuppressWarnings&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;unchecked&amp;#34;&lt;/span>&lt;span class="o">)&lt;/span>
+ &lt;span class="kd">public&lt;/span> &lt;span class="nf">FastList&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">Class&lt;/span>&lt;span class="o">&amp;lt;?&amp;gt;&lt;/span> &lt;span class="n">clazz&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="n">capacity&lt;/span>&lt;span class="o">)&lt;/span>
+ &lt;span class="o">{&lt;/span>
+ &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">elementData&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">[])&lt;/span> &lt;span class="nc">Array&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">newInstance&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">clazz&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">capacity&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">clazz&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">clazz&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>HikariCP 源码分析 -- ConcurrentBag</title><link>https://www.diguage.com/post/hikari-cp-source-analysis-concurrent-bag/</link><pubDate>Wed, 06 May 2020 17:12:55 +0800</pubDate><guid>https://www.diguage.com/post/hikari-cp-source-analysis-concurrent-bag/</guid><description>&lt;div class="paragraph">
+&lt;p>以前无意间搜资料了解到 HikariCP，一下子就被它的简洁代码和卓越性能吸引住了。以前也有翻过它的代码，但是不是很系统，最近再次翻阅，正好做些笔记，方便以后学习。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥最近在学习 Java 并发知识。那就从 HikariCP 自定义的并发集合 &lt;code>ConcurrentBag&lt;/code> 开始学习。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在 HikariCP 的 Wiki 中，有 &lt;a href="https://github.com/brettwooldridge/HikariCP/wiki/Down-the-Rabbit-Hole#concurrentbag" target="_blank" rel="noopener">Down the Rabbit Hole · ConcurrentBag&lt;/a> 的章节来专门介绍 &lt;code>ConcurrentBag&lt;/code>：&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;code>ConcurrentBag&lt;/code> 的灵感借鉴自 C# .NET 的 &lt;code>ConcurrentBag&lt;/code> 类。但是实现却是完全不同的。这里的 &lt;code>ConcurrentBag&lt;/code> 有如下特性：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>A lock-free design&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>ThreadLocal caching&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Queue-stealing&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Direct hand-off optimizations&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>下面，通过代码来对此做个说明。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在 &lt;code>ConcurrentBag&lt;/code> 类的定义中，声明了集合元素必须是 &lt;code>IConcurrentBagEntry&lt;/code> 的子类。先来看看这个接口的定义：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="kd">public&lt;/span> &lt;span class="kd">interface&lt;/span> &lt;span class="nc">IConcurrentBagEntry&lt;/span>
+&lt;span class="o">{&lt;/span>
+ &lt;span class="kt">int&lt;/span> &lt;span class="no">STATE_NOT_IN_USE&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="kt">int&lt;/span> &lt;span class="no">STATE_IN_USE&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">1&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="kt">int&lt;/span> &lt;span class="no">STATE_REMOVED&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="o">-&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="kt">int&lt;/span> &lt;span class="no">STATE_RESERVED&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="o">-&lt;/span>&lt;span class="mi">2&lt;/span>&lt;span class="o">;&lt;/span>
+
+ &lt;span class="kt">boolean&lt;/span> &lt;span class="nf">compareAndSet&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="kt">int&lt;/span> &lt;span class="n">expectState&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="n">newState&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="kt">void&lt;/span> &lt;span class="nf">setState&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="kt">int&lt;/span> &lt;span class="n">newState&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="kt">int&lt;/span> &lt;span class="nf">getState&lt;/span>&lt;span class="o">();&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>接下来，看一下成员变量：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="c1">// 存放共享元素&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="nc">CopyOnWriteArrayList&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="n">sharedList&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="kt">boolean&lt;/span> &lt;span class="n">weakThreadLocals&lt;/span>&lt;span class="o">;&lt;/span>
+
+&lt;span class="c1">// 在 ThreadLocal 缓存线程本地元素，避免线程争用&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="nc">ThreadLocal&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="nc">List&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="nc">Object&lt;/span>&lt;span class="o">&amp;gt;&amp;gt;&lt;/span> &lt;span class="n">threadList&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="nc">IBagStateListener&lt;/span> &lt;span class="n">listener&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="c1">//&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="nc">AtomicInteger&lt;/span> &lt;span class="n">waiters&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">volatile&lt;/span> &lt;span class="kt">boolean&lt;/span> &lt;span class="n">closed&lt;/span>&lt;span class="o">;&lt;/span>
+
+&lt;span class="c1">// 接力队列&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="nc">SynchronousQueue&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="n">handoffQueue&lt;/span>&lt;span class="o">;&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在 &lt;code>ConcurrentBag&lt;/code> 开头的 JavaDoc 中就做了明确说明：&lt;/p>
+&lt;/div>
+&lt;div class="sidebarblock">
+&lt;div class="content">
+&lt;div class="paragraph">
+&lt;p>Note that items that are &amp;#34;borrowed&amp;#34; from the bag are not actually removed from any collection, so garbage collection will not occur even if the reference is abandoned. Thus care must be taken to &amp;#34;requite&amp;#34; borrowed objects otherwise a memory leak will result. Only the &amp;#34;remove&amp;#34; method can completely remove an object from the bag.&lt;/p>
+&lt;/div></description></item><item><title>推荐几本 Java 并发编程的书</title><link>https://www.diguage.com/post/java-concurrent-books/</link><pubDate>Wed, 25 Mar 2020 16:32:12 +0800</pubDate><guid>https://www.diguage.com/post/java-concurrent-books/</guid><description>&lt;div class="paragraph">
+&lt;p>最近，D瓜哥的一个小伙伴向我抱怨，Java 并发是个大坑，问我怎么看？我回答，当然是用眼睛看啊…&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥觉得，想学好 Java 并发，最重要的还是啃书。幸运的是，Java 中还是有不少关于并发的优秀书籍可以看。正好利用这个机会，把看过的、个人认为还不错的书推荐一波。没有看过的就不多言了。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_java并发编程实战">Java并发编程实战&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>如果只选一本书来深入研究并发，那肯定是这本书。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/java-concurrent-books/java-concurrency-in-practice.jpg" alt="java concurrency in practice" width="60%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;a href="https://book.douban.com/subject/10484692/" target="_blank" rel="noopener">Java并发编程实战 (豆瓣)&lt;/a> — 这本书是必看的。JDK 中 JUC 就是这本书的作者们写的。虽然书名含有 &lt;code>Java&lt;/code> 一次，但是，里面更多是原理性的东西，各种语言都适用。只是例子少了一些。这本书需要多读几遍。（据说翻译不行，推荐看英文版）&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>放个英文版图片镇楼：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/java-concurrent-books/java-concurrency-in-practice-en.jpg" alt="java concurrency in practice en" width="60%"/>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_java并发编程的艺术">Java并发编程的艺术&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/java-concurrent-books/art-of-java-concurrency-programming.jpg" alt="art of java concurrency programming" width="60%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;a href="https://book.douban.com/subject/26591326/" target="_blank" rel="noopener">Java并发编程的艺术 (豆瓣)&lt;/a> — 这本书也不错，讲了很多源码方面的内容，非常棒。另外，在讲解 Double Lock 方面的知识时，涉及了很多 Java Memory Model 方面的知识，可以先看看 &lt;a href="https://book.douban.com/subject/34907497/" target="_blank" rel="noopener">深入理解Java虚拟机（第3版）(豆瓣)&lt;/a> 最后两章的内容，来提前补充一下这么方面的知识。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_实战java高并发程序设计">实战Java高并发程序设计&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/java-concurrent-books/java-concurrency-in-action.jpg" alt="java concurrency in action" width="60%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;a href="https://book.douban.com/subject/30358019/" target="_blank" rel="noopener">实战Java高并发程序设计（第2版） (豆瓣)&lt;/a> — 这本书也不错，针对 Java 8 写的，Java 8 中的很多新知识都有涉猎，例子也很全面。广度和深度，得到了兼顾，非常棒。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_java编程思想">Java编程思想&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/java-concurrent-books/thinking-in-java.jpg" alt="thinking in java" width="60%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;a href="https://book.douban.com/subject/2130190/" target="_blank" rel="noopener">Java编程思想（第4版）(豆瓣)&lt;/a> — 虽然这本书已经出来十余年了，但是依然经典。第 21 章 并发，用大量的例子和陈述来介绍并发。非常棒。美中不足，是针对 Java 5 编写的，现在已经 Java 8 了。不过，作者又出了一本书，可以理解成升级版。&lt;/p>
+&lt;/div></description></item></channel></rss>
