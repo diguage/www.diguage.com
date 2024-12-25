@@ -6,7 +6,6 @@ keywords: ["Docker", "Elasticsearch", "Kibana", "Fluentd", "NACOS"]
 tags: ["Java", "架构", "分布式"]
 categories: ["开发工具","系统架构"]
 thumbnail: "images/logos/docker-compose.jpg"
-aliases: "/post/building-a-develop-environment-based-on-docker/"
 weight: 1
 ---
 

@@ -6,6 +6,7 @@ keywords: ["Kubernetes", "Kubespray"]
 tags: ["Kubernetes","Linux"]
 categories: ["开发工具","系统架构"]
 thumbnail: "images/logos/kubernetes.svg"
+aliases: "/post/playing-with-kubernetes-01-install-kubernetes-offline/"
 
 weight: 1
 ---

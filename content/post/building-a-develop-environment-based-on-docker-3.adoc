@@ -6,7 +6,6 @@ keywords: ["Docker", "OpenTelemetry", "Jaeger", "OpenTelemetry Collector"]
 tags: ["Java", "分布式", "微服务", "架构"]
 categories: ["开发工具","系统架构"]
 thumbnail: "images/logos/docker-compose.jpg"
-aliases: "/post/building-a-develop-environment-based-on-docker/"
 weight: 1
 ---
 
