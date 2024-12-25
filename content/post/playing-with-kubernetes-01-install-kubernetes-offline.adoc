@@ -366,15 +366,17 @@ while true
 do
   # 检查是否存在 kubeadm 命令
   if command -v kubeadm > /dev/null 2>&1; then
-      echo "kubeadm 命令存在，开始拉取镜像..."
-      # 执行 kubeadm config images pull
-      until sudo kubeadm config images pull --kubernetes-version ${K8S_VERSION}
-      do
-        echo "Try again..."
-      done
+    echo "kubeadm 命令存在，开始拉取镜像..."
+    # 执行 kubeadm config images pull
+    until sudo kubeadm config images pull --kubernetes-version ${K8S_VERSION}
+    do
+      echo "Try again..."
+    done
+
+    break
   else
-      echo "kubeadm 命令不存在，休眠一秒钟再试…"
-      sleep 1
+    echo "kubeadm 命令不存在，休眠一秒钟再试…"
+    sleep 1
   fi
 done
 ----
