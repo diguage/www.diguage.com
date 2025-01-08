@@ -1,13 +1,12 @@
 ---
-title: "玩转 Kubernetes（一）： 深入理解 Pod"
-date: 2024-12-27T17:16:02+08:00
-draft: false
+title: "玩转 Kubernetes（二）： 深入理解 Pod"
+date: 2025-01-08T21:13:58+08:00
+draft: true
 keywords: ["Kubernetes", "Kubespray"]
 tags: ["Kubernetes","Linux"]
 categories: ["开发工具","系统架构"]
 thumbnail: "images/logos/kubernetes.svg"
 aliases: "/post/playing-with-kubernetes-01-install-kubernetes-offline/"
-
 weight: 1
 ---
 

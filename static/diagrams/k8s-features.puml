@@ -10,8 +10,7 @@ skinparamlocked titleFontSize 30
 skinparamlocked footerFontSize 20
 
 'projectscale monthly
-projectscale quarterly
-' zoom 1.1
+projectscale quarterly zoom 1.1
 Project starts 2014-09-09
 
 <style>
@@ -37,26 +36,26 @@ end legend
 -- **版本** --
 
 
-[v0.2 ~ ] as [v0.2] starts 2014-09-09
-[v0.3 ~ ] as [v0.3] starts 2014-09-20
-[v0.4 ~ ] as [v0.4] starts 2014-10-16
-[v0.5 ~ ] as [v0.5] starts 2014-11-18
-[v0.6.0 ~ ] as [v0.6.0] starts 2014-12-02
-[v0.7.0 ~ ] as [v0.7.0] starts 2014-12-16
-[v0.8.0 ~ ] as [v0.8.0] starts 2015-01-08
-[v0.9.0 ~ ] as [v0.9.0] starts 2015-01-24
-[v0.10.0 ~ ] as [v0.10.0] starts 2015-02-04
-[v0.11.0 ~ ] as [v0.11.0] starts 2015-02-18
-[v0.12.0 ~ ] as [v0.12.0] starts 2015-03-03
-[v0.13.0 ~ ] as [v0.13.0] starts 2015-03-17
-[v0.14.0 ~ ] as [v0.14.0] starts 2015-03-31
-[v0.15.0 ~ ] as [v0.15.0] starts 2015-04-14
-[v0.16.0 ~ ] as [v0.16.0] starts 2015-04-29
-[v0.17.0 ~ ] as [v0.17.0] starts 2015-05-12
-[v0.18.0 ~ ] as [v0.18.0] starts 2015-05-30
-[v0.19.0 ~ ] as [v0.19.0] starts 2015-06-11
-[v0.20.0 ~ ] as [v0.20.0] starts 2015-06-26
-[v0.21.0 ~ v0.21.4] as [v0.21.0] starts 2015-07-08
+[v0.2] as [v0.2] starts 2014-09-09
+[v0.3] as [v0.3] starts 2014-09-20
+[v0.4 ~ v0.4.4] as [v0.4] starts 2014-10-16 and ends 2014-11-20
+[v0.5 ~ v0.5.6] as [v0.5] starts 2014-11-18 and ends 2014-12-13
+[v0.6.0 ~ v0.6.2] as [v0.6.0] starts 2014-12-02 and ends 2014-12-13
+[v0.7.0 ~ v0.7.4] as [v0.7.0] starts 2014-12-16 and ends 2015-01-10
+[v0.8.0 ~ v0.8.4] as [v0.8.0] starts 2015-01-08 and ends 2015-01-29
+[v0.9.0 ~ v0.9.3] as [v0.9.0] starts 2015-01-24 and ends 2015-01-31
+[v0.10.0 ~ v0.10.1] as [v0.10.0] starts 2015-02-04 and ends 2015-02-10
+[v0.11.0] as [v0.11.0] starts 2015-02-18
+[v0.12.0 ~ v0.12.2] as [v0.12.0] starts 2015-03-03 and ends 2015-03-17
+[v0.13.0 ~ v0.13.2] as [v0.13.0] starts 2015-03-17 and ends 2015-03-19
+[v0.14.0 ~ v0.14.2] as [v0.14.0] starts 2015-03-31 and ends 2015-04-09
+[v0.15.0] as [v0.15.0] starts 2015-04-14
+[v0.16.0 ~ v0.16.2] as [v0.16.0] starts 2015-04-29 and ends 2015-05-05
+[v0.17.0 ~ v0.17.1] as [v0.17.0] starts 2015-05-13 and ends 2015-05-22
+[v0.18.0 ~ v0.18.2] as [v0.18.0] starts 2015-05-30 and ends 2015-06-09
+[v0.19.0 ~ v0.19.3] as [v0.19.0] starts 2015-06-11 and ends 2015-06-23
+[v0.20.0 ~ v0.20.2] as [v0.20.0] starts 2015-06-26 and ends 2015-07-01
+[v0.21.0 ~ v0.21.4] as [v0.21.0] starts 2015-07-08 and ends 2015-07-18
 [v1.0.0 ~ v1.0.7] as [v1.0.0] starts 2015-07-11 and ends 2015-10-27
 [v1.1.0 ~ v1.1.8] as [v1.1.0] starts 2015-09-26 and ends 2016-02-24
 [v1.2.0 ~ v1.2.7] as [v1.2.0] starts 2016-03-17 and ends 2016-10-23
@@ -383,6 +382,7 @@ end legend
 ' v1.30
 
 [结构化鉴权配置(KEP-3221)/Beta] as [KEP-3221] starts at [v1.30.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[KEP-3221] is colored in GreenYellow
 [KEP-3221] links to [[https://kep.k8s.io/3221]]
 
 ' v1.32
@@ -518,6 +518,9 @@ end note
 
 [磁盘充足时删除长期未使用的镜像] as [deleteUnusefulImage] starts at [v1.29.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
 [deleteUnusefulImage] is colored in GreenYellow
+
+[Pod间的亲和性和反亲和性调度策略] as [PodAffinity] starts at [v1.4.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[PodAffinity] is colored in GreenYellow
 
 footer D瓜哥 · ""https://www.diguage.com"" · 出品
 @endgantt
