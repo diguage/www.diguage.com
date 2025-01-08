@@ -1,0 +1,122 @@
+---
+title: "玩转 Kubernetes（一）： 深入理解 Pod"
+date: 2024-12-27T17:16:02+08:00
+draft: false
+keywords: ["Kubernetes", "Kubespray"]
+tags: ["Kubernetes","Linux"]
+categories: ["开发工具","系统架构"]
+thumbnail: "images/logos/kubernetes.svg"
+aliases: "/post/playing-with-kubernetes-01-install-kubernetes-offline/"
+
+weight: 1
+---
+
+在上一篇文章 https://www.diguage.com/post/play-with-kubernetes-01-install-kubernetes-offline/[玩转 Kubernetes（一）：离线安装 Kubernetes^]，详细分享了离线安装 Kubernetes 的一些技巧和经验。既然舞台搭好了，当然大戏也要跟上啊！
+
+本文来跟大家重点分享一下关于 Pod 的一些粗浅认识。
+
+== 静态 Pod
+
+[source%nowrap,bash,{source_attr}]
+----
+$ ps -ef | grep kubelet
+root       14844       1  5 04:45 ?        00:13:51 /usr/local/bin/kubelet --v=2 --node-ip=10.0.2.21 --hostname-override=node1 --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --config=/etc/kubernetes/kubelet-config.yaml --kubeconfig=/etc/kubernetes/kubelet.conf --container-runtime-endpoint=unix:///var/run/containerd/containerd.sock --runtime-cgroups=/system.slice/containerd.service
+
+$ cat /etc/kubernetes/kubelet-config.yaml
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+nodeStatusUpdateFrequency: "10s"
+failSwapOn: True
+authentication:
+  anonymous:
+    enabled: false
+  webhook:
+    enabled: True
+  x509:
+    clientCAFile: /etc/kubernetes/ssl/ca.crt
+authorization:
+  mode: Webhook
+staticPodPath: /etc/kubernetes/manifests #<1>
+cgroupDriver: systemd
+containerLogMaxFiles: 5
+containerLogMaxSize: 10Mi
+maxPods: 110
+podPidsLimit: -1
+address: 10.0.2.21
+readOnlyPort: 0
+healthzPort: 10248
+healthzBindAddress: 127.0.0.1
+kubeletCgroups: /system.slice/kubelet.service
+clusterDomain: cluster.local
+protectKernelDefaults: true
+rotateCertificates: true
+clusterDNS:
+- 169.254.25.10
+kubeReserved:
+  cpu: "200m"
+  memory: 512Mi
+resolvConf: "/run/systemd/resolve/resolv.conf"
+eventRecordQPS: 50
+shutdownGracePeriod: 60s
+shutdownGracePeriodCriticalPods: 20s
+maxParallelImagePulls: 1
+
+$ cd /etc/kubernetes/manifests
+
+
+/etc/kubernetes/manifests $ kubectl get pod
+No resources found in default namespace.
+
+/etc/kubernetes/manifests $ mv ../static-pod-nginx.yaml .
+
+/etc/kubernetes/manifests $ kubectl get pod
+NAME                     READY   STATUS    RESTARTS   AGE
+static-pod-nginx-node1   1/1     Running   0          27s <2>
+
+/etc/kubernetes/manifests $ cat static-pod-nginx.yaml
+kind: Pod
+apiVersion: v1
+metadata:
+  name: static-pod-nginx
+spec:
+  containers:
+    - name: nginx
+      image: nginx:1.25.2-alpine
+
+/etc/kubernetes/manifests $ head kube-scheduler.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  labels:
+    component: kube-scheduler
+    tier: control-plane
+  name: kube-scheduler
+  namespace: kube-system
+
+/etc/kubernetes/manifests $ kubectl -n kube-system get pod
+kube-scheduler-node1                       1/1     Running   1          18h
+kube-scheduler-node2                       1/1     Running   1          18h
+
+
+/etc/kubernetes/manifests $ kubectl delete pod static-pod-nginx-node1
+pod "static-pod-nginx-node1" deleted
+/etc/kubernetes/manifests $ kubectl get pod
+NAME                     READY   STATUS    RESTARTS   AGE
+static-pod-nginx-node1   0/1     Pending   0          1s  <3>
+/etc/kubernetes/manifests $ kubectl get pod
+NAME                     READY   STATUS    RESTARTS   AGE
+static-pod-nginx-node1   0/1     Pending   0          9s  <3>
+/etc/kubernetes/manifests $ kubectl get pod
+NAME                     READY   STATUS    RESTARTS   AGE
+static-pod-nginx-node1   1/1     Running   0          11s <3>
+
+/etc/kubernetes/manifests$ rm -rf static-pod-nginx.yaml
+/etc/kubernetes/manifests$ kubectl get pod
+No resources found in default namespace.
+----
+<1> 这里配置了 `staticPodPath`
+<2> 静态 Pod 已经运行起来了，名称还做了调整，应该是防止重名。
+<3> 可以通过控制平面删除，但是删除后马上又重建了静态 Pod。
+
+
