@@ -1,0 +1,317 @@
+---
+title: "killercoda CKA：Services & Networking"
+date: 2024-12-18T19:54:28+08:00
+draft: false
+keywords: ["Kubernetes", "CKA"]
+tags: ["Kubernetes","Linux"]
+categories: ["系统架构"]
+thumbnail: "images/logos/kubernetes.svg"
+weight: 1
+---
+
+// * https://killercoda.com/killer-shell-cka[Killer Shell CKA | Killercoda^]
+// * https://killercoda.com/sachin/course/CKA
+// * https://killer.sh/[Killer Shell - Exam Simulators^] -- 收费，30刀
+
+// 不足之处：
+//
+// . 对 Pod 定义中 `command`、 `args`、 `volumes` 等不熟悉
+// . 对 ConfigMap 的使用不是很熟练。
+// . apt 查询可升级版本不熟悉
+// . Secret 各种创建不熟悉
+// . kubectl -o jsonpath='<jsonpath>' 用法
+// . 各个常用资源的 apiGroup 不是特别清楚
+// . Pod 对 Volume 的使用，以及结合 ConfigMap 的使用
+// . etcd 的基本运维操作
+
+:sectnums:
+
+
+== Services & Networking - Services
+
+https://killercoda.com/sachin/course/CKA/svc[Services & Networking - Services^]
+
+****
+You have an existing Nginx pod named `nginx-pod`. Perform the following steps:
+
+* Expose the `nginx-pod` internally within the cluster using a Service named `nginx-service` .
+* Use `port forwarding` to service to access the Welcome content of `nginx-pod` using the `curl` command.
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com/
+
+$ kubectl get pod --show-labels
+NAME        READY   STATUS    RESTARTS   AGE     LABELS
+nginx-pod   1/1     Running   0          8m48s   app=nginx
+$ cat svc.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+spec:
+  selector:
+    app: nginx
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 80
+$ kubectl apply -f svc.yaml
+service/nginx-service created
+$ kubectl port-forward service/nginx-service 8081:80
+Forwarding from 127.0.0.1:8081 -> 80
+Forwarding from [::1]:8081 -> 80
+Handling connection for 8081
+
+
+# 打开另外一个终端
+$ curl localhost:8081
+<!DOCTYPE html>
+<html>
+<head>
+<title>Welcome to nginx!</title>
+<style>
+html { color-scheme: light dark; }
+body { width: 35em; margin: 0 auto;
+font-family: Tahoma, Verdana, Arial, sans-serif; }
+</style>
+</head>
+<body>
+<h1>Welcome to nginx!</h1>
+<p>If you see this page, the nginx web server is successfully installed and
+working. Further configuration is required.</p>
+
+<p>For online documentation and support please refer to
+<a href="http://nginx.org/">nginx.org</a>.<br/>
+Commercial support is available at
+<a href="http://nginx.com/">nginx.com</a>.</p>
+
+<p><em>Thank you for using nginx.</em></p>
+</body>
+</html>
+----
+
+
+== Services & Networking - ClusterIP
+
+https://killercoda.com/sachin/course/CKA/clusterip[Services & Networking - ClusterIP^]
+
+****
+Part I::
+Create a Kubernetes ClusterIP service named `nginx-service` . This service should expose to `nginx-deployment` , using port `8080` and target port `80`
+
+Part II::
+Retrieve and store the IP addresses of the pods. Sort the output by their IP addresses in Ascending order and save it to the file `pod_ips.txt` in the following format:
++
+----
+IP_ADDRESS
+127.0.0.1
+127.0.0.2
+127.0.0.3
+----
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com/
+
+$ kubectl get pod --show-labels
+NAME                                READY   STATUS    RESTARTS   AGE     LABELS
+nginx-deployment-588c865b75-6vbqp   1/1     Running   0          2m24s   app=nginx-app,pod-template-hash=588c865b75
+nginx-deployment-588c865b75-h86q4   1/1     Running   0          2m24s   app=nginx-app,pod-template-hash=588c865b75
+nginx-deployment-588c865b75-hks9z   1/1     Running   0          2m24s   app=nginx-app,pod-template-hash=588c865b75
+$ vim svc.yaml
+$ cat svc.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+spec:
+  selector:
+    app: nginx-app
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8080
+      targetPort: 80
+$ kubectl apply -f svc.yaml
+service/nginx-service created
+$ kubectl get svc -o wide
+NAME            TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE    SELECTOR
+kubernetes      ClusterIP   10.96.0.1       <none>        443/TCP    7d5h   <none>
+nginx-service   ClusterIP   10.98.228.143   <none>        8080/TCP   18s    app=nginx-app
+
+$ kubectl get pod -o wide --no-headers \
+   | awk '{ print $6 }' \
+   | sort  \
+   | awk 'BEGIN { printf "IP_ADDRESS\n"} { print $1 }' \
+   | tee pod_ips
+.txt
+IP_ADDRESS
+192.168.1.4
+192.168.1.5
+192.168.1.6
+
+$ cat pod_ips.txt
+IP_ADDRESS
+192.168.1.4
+192.168.1.5
+192.168.1.6
+----
+
+
+== Services & Networking - Coredns
+
+https://killercoda.com/sachin/course/CKA/coredns[Services & Networking - Coredns^]
+
+****
+Create a ReplicaSet named `dns-rs-cka` with 2 replicas in the `dns-ns` namespace using the image `registry.k8s.io/e2e-test-images/jessie-dnsutils:1.3` and set the command to `sleep 3600` with the container named `dns-container` .
+
+Once the pods are up and running, run the `nslookup kubernetes.default` command from any one of the pod and save the output into a file named `dns-output.txt`.
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com/
+
+$ kubectl create ns dns-ns
+
+$ cat rs.yaml
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: dns-rs-cka
+  namespace: dns-ns
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: dns
+  template:
+    metadata:
+      labels:
+        app: dns
+    spec:
+      containers:
+      - name: dns-container
+        image: registry.k8s.io/e2e-test-images/jessie-dnsutils:1.3
+        command:
+           - sleep
+           - "3600"
+
+$ kubectl apply -f rs.yaml
+replicaset.apps/dns-rs-cka created
+
+$ kubectl -n dns-ns get pod --show-labels
+NAME               READY   STATUS    RESTARTS   AGE     LABELS
+dns-rs-cka-25ssk   1/1     Running   0          5m16s   app=dns
+dns-rs-cka-9dfzz   1/1     Running   0          5m16s   app=dns
+
+$ kubectl -n dns-ns exec dns-rs-cka-25ssk  -- nslookup "kubernetes.default"
+;; connection timed out; no servers could be reached
+
+command terminated with exit code 1
+----
+
+NOTE: 执行 `nslookup kubernetes.default` 时，超时！奇怪！
+
+== Services & Networking - Coredns - 1
+
+https://killercoda.com/sachin/course/CKA/coredns-1[Services & Networking - Coredns - 1^]
+
+****
+Create a Deployment named `dns-deploy-cka` with `2` replicas in the `dns-ns` namespace using the image `registry.k8s.io/e2e-test-images/jessie-dnsutils:1.3` and set the command to `sleep 3600` with the container named `dns-container` .
+
+Once the pods are up and running, run the `nslookup kubernetes.default` command from any one of the pod and save the output into a file named `dns-output.txt`.
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com/
+
+
+----
+
+
+== Services & Networking - Ingress
+
+[Services & Networking - Ingress^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com/
+
+
+----
+
+
+== Services & Networking - NodePort
+
+[Services & Networking - NodePort^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com/
+
+
+----
+
+
+== Services & Networking - NodePort - 1
+
+[Services & Networking - NodePort - 1^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com/
+
+
+----
+
+
+== Services & Networking - Nslookup
+
+[Services & Networking - Nslookup^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com/
+
+
+----
+
+
+== Services & Networking - Network Policy
+
+[Services & Networking - Network Policy^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com/
+
+
+----
+
+
