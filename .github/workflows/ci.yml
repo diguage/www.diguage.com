@@ -154,7 +154,7 @@ jobs:
           remote_key: ${{ secrets.DEPLOY_KEY }}
 
       # https://github.com/appleboy/ssh-action
-      - name: Change Files Mod 🔐
+      - name: Change Files Owner 🔐
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.DEPLOY_HOST }}
@@ -163,7 +163,7 @@ jobs:
           key: ${{ secrets.DEPLOY_KEY }}
           script: |
             cd ${{ secrets.DEPLOY_PATH }}
-            sudo chmod -R 777 *
+            sudo chown -R nginx:nginx *
 
       # https://github.com/JamesIves/github-pages-deploy-action
       - name: Deploy 🚀
