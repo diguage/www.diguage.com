@@ -1,0 +1,461 @@
+---
+title: "killercoda CKA：Services & Networking"
+date: 2024-12-22T19:54:28+08:00
+draft: true
+keywords: ["Kubernetes", "CKA"]
+tags: ["Kubernetes","Linux"]
+categories: ["系统架构"]
+thumbnail: "images/logos/kubernetes.svg"
+weight: 1
+---
+
+// * https://killercoda.com/killer-shell-cka[Killer Shell CKA | Killercoda^]
+// * https://killercoda.com/sachin/course/CKA
+// * https://killer.sh/[Killer Shell - Exam Simulators^] -- 收费，30刀
+
+// 不足之处：
+//
+// . 对 Pod 定义中 `command`、 `args`、 `volumes` 等不熟悉
+// . 对 ConfigMap 的使用不是很熟练。
+// . apt 查询可升级版本不熟悉
+// . Secret 各种创建不熟悉
+// . kubectl -o jsonpath='<jsonpath>' 用法
+// . 各个常用资源的 apiGroup 不是特别清楚
+// . Pod 对 Volume 的使用，以及结合 ConfigMap 的使用
+// . etcd 的基本运维操作
+
+:sectnums:
+
+
+== Troubleshooting - Pod Issue
+
+[Troubleshooting - Pod Issue^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+
+----
+
+
+== Troubleshooting - Pod Issue - 1
+
+[Troubleshooting - Pod Issue - 1^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+
+----
+
+
+== Troubleshooting - Pod Issue - 2
+
+[Troubleshooting - Pod Issue - 2^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+
+----
+
+
+== Troubleshooting - Pod Issue - 3
+
+[Troubleshooting - Pod Issue - 3^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+
+----
+
+
+== Troubleshooting - Pod Issue - 4
+
+[Troubleshooting - Pod Issue - 4^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+
+----
+
+
+== Troubleshooting - Pod Issue - 5
+
+[Troubleshooting - Pod Issue - 5^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+
+----
+
+
+== Troubleshooting - Pod Issue - 6
+
+[Troubleshooting - Pod Issue - 6^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+
+----
+
+
+== Troubleshooting - Pod Issue - 7
+
+[Troubleshooting - Pod Issue - 7^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+
+----
+
+
+== Troubleshooting - Pod Issue - 8
+
+[Troubleshooting - Pod Issue - 8^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+
+----
+
+
+== Troubleshooting - Network Policy Issue
+
+[Troubleshooting - Network Policy Issue^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+
+----
+
+
+== Troubleshooting - Persistent Volume, Persistent Volume Claim - Issue
+
+[Troubleshooting - Persistent Volume, Persistent Volume Claim - Issue^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+
+----
+
+
+== Troubleshooting - CronJob Issue
+
+[Troubleshooting - CronJob Issue^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+
+----
+
+
+== Troubleshooting - Service account, role, role binding Issue
+
+[Troubleshooting - Service account, role, role binding Issue^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+
+----
+
+
+== Troubleshooting - Service account, role, role binding Issue
+
+[Troubleshooting - Service account, role, role binding Issue^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+
+----
+
+
+== Troubleshooting - DaemonSet Issue
+
+[Troubleshooting - DaemonSet Issue^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+
+----
+
+
+== Troubleshooting - Deployment Issue
+
+[Troubleshooting - Deployment Issue^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+
+----
+
+
+== Troubleshooting - Deployment Issue 1
+
+[Troubleshooting - Deployment Issue 1^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+
+----
+
+
+== Troubleshooting - Deployment Issue 2
+
+[Troubleshooting - Deployment Issue 2^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+
+----
+
+
+== Troubleshooting - Deployment Issue 3
+
+[Troubleshooting - Deployment Issue 3^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+
+----
+
+
+== Troubleshooting - Deployment Issue 4
+
+[Troubleshooting - Deployment Issue 4^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+
+----
+
+
+== Troubleshooting - Deployment Not UP-TO-DATE
+
+[Troubleshooting - Deployment Not UP-TO-DATE^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+
+----
+
+
+== Troubleshooting - Kubectl - Config Issue
+
+[Troubleshooting - Kubectl - Config Issue^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+
+----
+
+
+== Troubleshooting - Kubectl - Port Issue
+
+[Troubleshooting - Kubectl - Port Issue^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+
+----
+
+
+== Troubleshooting - Kubelet Issue
+
+[Troubleshooting - Kubelet Issue^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+
+----
+
+
+== Troubleshooting - Node Not Ready
+
+[Troubleshooting - Node Not Ready^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+
+----
+
+
+== Troubleshooting - ETCD Backup Issue
+
+[Troubleshooting - ETCD Backup Issue^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+
+----
+
+
+== Troubleshooting - Controller Manager Issue
+
+[Troubleshooting - Controller Manager Issue^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+
+----
+
+
