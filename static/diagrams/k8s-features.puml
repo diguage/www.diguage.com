@@ -420,6 +420,7 @@ note bottom
 从 v1.2 改为默认模式，引入的时间应该更早。
 end note
 
+
 [kube-dns] as [kube-dns] starts at [v1.2.0]'s start with Lime bold link and ends at [v1.11.0]'s start
 [kube-dns] is colored in Red
 note bottom
@@ -494,6 +495,14 @@ end note
 [SchedulerMapReduce] is colored in GreenYellow
 note bottom
 Scheduler：为调度器的优先级算法引入 Map/Reduce 计算模式。
+end note
+
+
+[RBAC 基于角色的访问控制] as [RBAC] starts at [v1.6.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[RBAC] is colored in GreenYellow
+note bottom
+' TODO ？？
+结合 ServiceAccount 进行权限管理。
 end note
 
 
@@ -597,6 +606,13 @@ TLS Bootstraping 机制，自动签发客户端证书。
 end note
 
 
+[Pod Topology Spread Constraints 基于拓扑信息的调度机制] as [TopologySpreadConstraints] starts at [v1.18.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[TopologySpreadConstraints] is colored in GreenYellow
+note bottom
+在 Pod 中配置 .spec.topologySpreadConstraints 字段。
+end note
+
+
 [Scheduler 所有策略全部组件化] as [SchedulerPredicatesPriorities] starts at [v1.18.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
 [SchedulerPredicatesPriorities] is colored in GreenYellow
 note bottom
@@ -608,7 +624,7 @@ end note
 [Scheduler 抢占过程组件化] as [SchedulerMultiProfile] starts at [v1.19.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
 [SchedulerMultiProfile] is colored in GreenYellow
 note bottom
-Scheduler：将抢占过程组件化，同时支持 Multi Scheduling Profile
+Scheduler：将抢占过程组件化，同时支持 Multi Scheduling Profile(多调度器配置)
 end note
 
 
@@ -681,6 +697,22 @@ end note
 [PVdpf] is colored in GreenYellow
 note bottom
 v1.23 Alpha
+end note
+
+
+[Projected ServiceAccount Tokens] as [ProjectedTokens] starts at [v1.24.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[ProjectedTokens] is colored in GreenYellow
+note bottom
+' TODO ？？
+更安全、更短有效期、更灵活。
+end note
+
+
+[临时 debug 容器调试 Pod] as [EphemeralContainer] starts at [v1.25.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[EphemeralContainer] is colored in GreenYellow
+note bottom
+v1.25 达到 Stable 阶段。
+建立临时容器，与目标 Pod 共享进程命名空间来访问容器环境。
 end note
 
 

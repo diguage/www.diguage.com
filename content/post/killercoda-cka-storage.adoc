@@ -1,0 +1,189 @@
+---
+title: "killercoda CKA：Storage"
+date: 2024-12-19T19:54:28+08:00
+draft: true
+keywords: ["Kubernetes", "CKA"]
+tags: ["Kubernetes","Linux"]
+categories: ["系统架构"]
+thumbnail: "images/logos/kubernetes.svg"
+weight: 1
+---
+
+// * https://killercoda.com/killer-shell-cka[Killer Shell CKA | Killercoda^]
+// * https://killercoda.com/sachin/course/CKA
+// * https://killer.sh/[Killer Shell - Exam Simulators^] -- 收费，30刀
+
+// 不足之处：
+//
+// . 对 Pod 定义中 `command`、 `args`、 `volumes` 等不熟悉
+// . 对 ConfigMap 的使用不是很熟练。
+// . apt 查询可升级版本不熟悉
+// . Secret 各种创建不熟悉
+// . kubectl -o jsonpath='<jsonpath>' 用法
+// . 各个常用资源的 apiGroup 不是特别清楚
+// . Pod 对 Volume 的使用，以及结合 ConfigMap 的使用
+// . etcd 的基本运维操作
+
+:sectnums:
+
+
+== Storage - Persistent Volume
+
+[Storage - Persistent Volume^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+
+----
+
+
+== Storage - Persistent Volume Claim 
+
+[Storage - Persistent Volume Claim^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+
+----
+
+
+== Storage - Persistent Volume Claim Resize 
+
+[Storage - Persistent Volume Claim Resize^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+
+----
+
+
+== Storage - Persistent Volume Claim, Pod 
+
+[Storage - Persistent Volume Claim, Pod^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+
+----
+
+
+== Storage - Persistent Volume, Persistent Volume Claim 
+
+[Storage - Persistent Volume, Persistent Volume Claim^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+
+----
+
+
+== Storage - Persistent Volume, Persistent Volume Claim, Pod 
+
+[Storage - Persistent Volume, Persistent Volume Claim, Pod^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+
+----
+
+
+== Storage - Shared Volume 
+
+[Storage - Shared Volume^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+
+----
+
+
+== Storage - Storage Class 
+
+[Storage - Storage Class^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+
+----
+
+
+== Storage - Persistent Volume, Persistent Volume Claim, Storage Class 
+
+[Storage - Persistent Volume, Persistent Volume Claim, Storage Class^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+
+----
+
+
+== Storage - Storage Class, Persistent Volume, Persistent Volume Claim, Pod 
+
+[Storage - Storage Class, Persistent Volume, Persistent Volume Claim, Pod^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+
+----
+
+

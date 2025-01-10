@@ -36,7 +36,7 @@ Create a pod called `sleep-pod`  using the `nginx`  image and also `sleep` (usin
 
 [source%nowrap,bash,{source_attr}]
 ----
-# @author D瓜哥 · https://www.diguage.com/
+# @author D瓜哥 · https://www.diguage.com
 
 $ cat nginx.yaml
 apiVersion: v1
@@ -68,7 +68,7 @@ https://killercoda.com/sachin/course/CKA/log-reader[Architecture, Installation &
 
 [source%nowrap,bash,{source_attr}]
 ----
-# @author D瓜哥 · https://www.diguage.com/
+# @author D瓜哥 · https://www.diguage.com
 
 $ kubectl get pod
 NAME             READY   STATUS    RESTARTS   AGE
@@ -96,7 +96,7 @@ https://killercoda.com/sachin/course/CKA/log-reader-2[Architecture, Installation
 
 [source%nowrap,bash,{source_attr}]
 ----
-# @author D瓜哥 · https://www.diguage.com/
+# @author D瓜哥 · https://www.diguage.com
 
 $ kubectl logs application-pod | grep ERROR | tee poderrorlogs.txt
 ERROR: Mon Oct 1 10:30:23 UTC 2023 Log in Error!
@@ -117,7 +117,7 @@ https://killercoda.com/sachin/course/CKA/log-reader-1[Architecture, Installation
 
 [source%nowrap,bash,{source_attr}]
 ----
-# @author D瓜哥 · https://www.diguage.com/
+# @author D瓜哥 · https://www.diguage.com
 
 $ kubectl logs alpine-reader-pod | grep "INFO\|ERROR" | tee podlogs.txt
 ERROR: Mon Oct 1 10:30:23 UTC 2023 Log in Error!
@@ -151,7 +151,7 @@ Requirements:
 
 [source%nowrap,bash,{source_attr}]
 ----
-# @author D瓜哥 · https://www.diguage.com/
+# @author D瓜哥 · https://www.diguage.com
 
 $ kubectl get configmaps log-configmap -o yaml
 apiVersion: v1
@@ -218,7 +218,7 @@ Please update the pod definition file to utilize an environment variable with th
 
 [source%nowrap,bash,{source_attr}]
 ----
-# @author D瓜哥 · https://www.diguage.com/
+# @author D瓜哥 · https://www.diguage.com
 
 $ kubectl get pod product -o yaml | tee pod.yaml
 apiVersion: v1
@@ -391,7 +391,7 @@ Find the pod that consumes the most CPU in all namespace(including kube-system) 
 
 [source%nowrap,bash,{source_attr}]
 ----
-# @author D瓜哥 · https://www.diguage.com/
+# @author D瓜哥 · https://www.diguage.com
 
 $ kubectl top pod -A --sort-by cpu
 NAMESPACE            NAME                                      CPU(cores)   MEMORY(bytes)
@@ -432,7 +432,7 @@ It should be in the format `kubectl get pod <pod-name> <remainingcmd>`
 
 [source%nowrap,bash,{source_attr}]
 ----
-# @author D瓜哥 · https://www.diguage.com/
+# @author D瓜哥 · https://www.diguage.com
 
 $ cat pod-filter.sh
 #!/bin/bash
@@ -481,7 +481,7 @@ Create a Kubernetes Secret named `database-app-secret` in the default namespace 
 
 [source%nowrap,bash,{source_attr}]
 ----
-# @author D瓜哥 · https://www.diguage.com/
+# @author D瓜哥 · https://www.diguage.com
 
 $ cat database-data.txt
 DB_User=REJfVXNlcj1teXVzZXI=
@@ -501,7 +501,7 @@ Decode the contents of the existing secret named `database-data` in the `databas
 
 [source%nowrap,bash,{source_attr}]
 ----
-# @author D瓜哥 · https://www.diguage.com/
+# @author D瓜哥 · https://www.diguage.com
 
 $ kubectl -n database-ns get secrets database-data -o yaml
 apiVersion: v1
@@ -534,7 +534,7 @@ Find the Node that consumes the most MEMORY in all cluster(currently we have sin
 
 [source%nowrap,bash,{source_attr}]
 ----
-# @author D瓜哥 · https://www.diguage.com/
+# @author D瓜哥 · https://www.diguage.com
 
 $ kubectl top node --sort-by memory
 NAME           CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%
@@ -566,7 +566,7 @@ It should be in the format kubectl get svc OR It should be in the format kubectl
 
 [source%nowrap,bash,{source_attr}]
 ----
-# @author D瓜哥 · https://www.diguage.com/
+# @author D瓜哥 · https://www.diguage.com
 
 $ kubectl get svc redis-service -o yaml
 apiVersion: v1
@@ -619,7 +619,7 @@ You have a service account named `group1-sa` , a ClusterRole named `group1-role-
 
 [source%nowrap,bash,{source_attr}]
 ----
-# @author D瓜哥 · https://www.diguage.com/
+# @author D瓜哥 · https://www.diguage.com
 
 $ kubectl get sa
 NAME        SECRETS   AGE
@@ -686,7 +686,7 @@ Create a service account named `app-account` , a role named `app-role-cka` , and
 
 [source%nowrap,bash,{source_attr}]
 ----
-# @author D瓜哥 · https://www.diguage.com/
+# @author D瓜哥 · https://www.diguage.com
 
 $ kubectl create sa app-account
 serviceaccount/app-account created
@@ -788,7 +788,7 @@ Similarly verify upgradation for current verion. ( ex:- v1.31.0 to v1.31.1 )
 
 [source%nowrap,bash,{source_attr}]
 ----
-# @author D瓜哥 · https://www.diguage.com/
+# @author D瓜哥 · https://www.diguage.com
 
 $ uname -a
 Linux controlplane 5.4.0-131-generic #147-Ubuntu SMP Fri Oct 14 17:07:22 UTC 2022 x86_64 x86_64 x86_64 GNU/Linux
@@ -962,7 +962,7 @@ https://killercoda.com/sachin/course/CKA/etcd-backup[Architecture, Installation 
 
 [source%nowrap,bash,{source_attr}]
 ----
-# @author D瓜哥 · https://www.diguage.com/
+# @author D瓜哥 · https://www.diguage.com
 
 $ ssh controlplane
 Last login: Sun Nov 13 17:27:09 2022 from 10.48.0.33
@@ -1254,7 +1254,7 @@ ETCD backup is stored at the path `/opt/cluster_backup.db`  on the `controlplane
 
 [source%nowrap,bash,{source_attr}]
 ----
-# @author D瓜哥 · https://www.diguage.com/
+# @author D瓜哥 · https://www.diguage.com
 
 $ kubectl -n kube-system get pod -o wide
 NAME                                      READY   STATUS    RESTARTS      AGE    IP            NODE           NOMINATED NODE   READINESS GATES
@@ -1449,6 +1449,8 @@ status:
   - ip: 172.30.1.2
   qosClass: Burstable
   startTime: "2025-01-09T12:59:48Z"
+
+$ kubectl exec -n kube-system etcd-controlplane -- sh -c "ETCDCTL_API=3 etcdctl snapshot save /opt/cluster_backup.db --endpoints=https://127.0.0.1:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key"
 ----
 
 NOTE: 有点不明觉厉！
