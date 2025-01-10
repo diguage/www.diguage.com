@@ -362,6 +362,7 @@ end legend
 [autoscaling/v2beta2/HorizontalPodAutoscaler] is colored in Red
 
 [动态资源分配（DRA）] starts at [v1.26.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[动态资源分配（DRA）] is colored in GreenYellow
 
 ' v1.27
 
@@ -398,6 +399,81 @@ end note
 
 -- 权威指南 --
 
+[kube-proxy/Proxy] as [kube-proxy/Proxy] starts at [v0.2]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[kube-proxy/Proxy] is colored in GreenYellow
+note bottom
+怀疑这种 TCP/UDP 代理模式已经被废弃了。
+只是目前不知道废弃时间。
+end note
+
+
+[ServiceAccount] as [ServiceAccount] starts at [v0.18.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[ServiceAccount] is colored in GreenYellow
+note bottom
+v0.18 引入
+end note
+
+
+[kube-proxy/iptables] as [kube-proxy/iptables] starts at [v1.2.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[kube-proxy/iptables] is colored in GreenYellow
+note bottom
+从 v1.2 改为默认模式，引入的时间应该更早。
+end note
+
+[kube-dns] as [kube-dns] starts at [v1.2.0]'s start with Lime bold link and ends at [v1.11.0]'s start
+[kube-dns] is colored in Red
+note bottom
+从 v1.2 以插件方式引入 kube-dns。v1.11 支持 CoreDNS。
+end note
+
+
+[新增资源类型：Job] as [Job] starts at [v1.2.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[Job] is colored in GreenYellow
+note bottom
+v1.2 开始引入。
+' https://github.com/kubernetes/kubernetes/pull/12910
+end note
+
+
+[Scheduler Extender] as [SchedulerExtender] starts at [v1.2.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[SchedulerExtender] is colored in GreenYellow
+note bottom
+Scheduler：支持外部扩展。
+end note
+
+
+[支持 rtk 容器] as [rtk] starts at [v1.3.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[rtk] is colored in GreenYellow
+note bottom
+从 v1.3 开始支持
+end note
+
+
+[Pod间的亲和性和反亲和性调度策略] as [PodAffinity] starts at [v1.4.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[PodAffinity] is colored in GreenYellow
+
+
+[引入 OpenAPI 规范] as [OpenAPI] starts at [v1.4.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[OpenAPI] is colored in GreenYellow
+note bottom
+在 v1.4 中引入，v1.5 已经完备支持，v1.27 完备支持 OpenAPI v3。
+end note
+
+
+[审计机制] as [AuditLog] starts at [v1.4.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[AuditLog] is colored in GreenYellow
+note bottom
+审计机制，主要体现为审计日志。
+end note
+
+
+[Container Runtime Interface 即 CRI 规范] as [CRISpec] starts at [v1.5.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[CRISpec] is colored in GreenYellow
+note bottom
+在 v1.5 中设计
+end note
+
+
 [Node Allocatable Resources 节点可分配资源] as [NAR] starts at [v1.5.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
 [NAR] is colored in GreenYellow
 note bottom
@@ -405,11 +481,35 @@ v1.5 引入，v1.6 默认开启。
 本质就是 Cgroups Per QoS。通过 /sys/fs/cgroup/kubepods.slice 控制。
 end note
 
-[Cgroups V2] as [CgroupsV2] starts at [v1.19.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
-[CgroupsV2] is colored in GreenYellow
+
+[Windows容器] as [Windows] starts at [v1.5.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[Windows] is colored in GreenYellow
 note bottom
-v1.19 开始支持，v1.25 达到 Stable 阶段。增加了一些新特性，比如 MemoryQoS。
+v1.5 引入，v1.14 达到生产标准。
+Windows Server 2016 支持创建和调度 Windows 容器。
 end note
+
+
+[Scheduler Map/Reduce 计算模式] as [SchedulerMapReduce] starts at [v1.5.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[SchedulerMapReduce] is colored in GreenYellow
+note bottom
+Scheduler：为调度器的优先级算法引入 Map/Reduce 计算模式。
+end note
+
+
+[Custom Resource Definition 即 CRD] as [CRD] starts at [v1.7.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[CRD] is colored in GreenYellow
+note bottom
+重要的扩展点！
+end note
+
+
+[高级审计特效 Advanced Auditing] as [AdvancedAuditing] starts at [v1.7.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[AdvancedAuditing] is colored in GreenYellow
+note bottom
+自定义审计策略和审计后端存储等。
+end note
+
 
 [NUMA/(CPU Manager)] as [CPUManager] starts at [v1.8.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
 [CPUManager] is colored in GreenYellow
@@ -420,6 +520,170 @@ CPU Manager 的 Static 策略可实现 Pod 独占 CPU， 使用 Linux cpuset cgr
 注：CFS 就是基于时间片分配的，实现了公平，但牺牲了性能（需要频繁进行上下文切换）。
 end note
 
+
+[kube-proxy/IPVS] as [kube-proxy/IPVS] starts at [v1.8.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[kube-proxy/IPVS] is colored in GreenYellow
+note bottom
+v1.8 引入，v1.11 达到稳定版。
+end note
+
+
+[Pod Priority Preemption 抢占式调度] as [PodPriority] starts at [v1.8.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[PodPriority] is colored in GreenYellow
+note bottom
+v1.8 引入，v1.11 达到 Beta，v1.14 达到 Stable 阶段。
+当有新加入的高优先级的 Pod，在资源紧张的情况下，会把低优先级的 Pod 清理掉，以满足高优先级 Pod 的运行。
+end note
+
+
+[进程 PID 限制与预留] as [PID] starts at [v1.10.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[PID] is colored in GreenYellow
+note bottom
+v1.10 引入，v1.14 引入 Node 级别的 PID 资源管理限制，v1.15 成为 Beta 版本，v1.20 达到 Stable 阶段。
+end note
+
+
+[CoreDNS] as [CoreDNS] starts at [v1.11.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[CoreDNS] is colored in GreenYellow
+note bottom
+从 v1.2 以插件方式引入 kube-dns。v1.11 支持 CoreDNS。
+end note
+
+
+[RuntimeClass] as [RuntimeClass] starts at [v1.12.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[RuntimeClass] is colored in GreenYellow
+note bottom
+v1.12 引入，v1.20 达到 Stable 阶段。
+用于指定不同的容器运行时。
+end note
+
+
+[Server-side apply 特性] as [ServerSideApply] starts at [v1.14.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[ServerSideApply] is colored in GreenYellow
+note bottom
+v1.14 引入，v1.22 达到 Stable 阶段。
+在 API Server 完整实现 kubectl apply 命令的功能。
+end note
+
+
+[Scheduler Framework 框架] as [SchedulerFramework] starts at [v1.15.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[SchedulerFramework] is colored in GreenYellow
+note bottom
+Scheduler：实现基于 Scheduler Framework 的开发方式，开始支持组件化开发。
+end note
+
+
+[Startup Probe] as [StartupProbe] starts at [v1.16.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[StartupProbe] is colored in GreenYellow
+note bottom
+v1.16 引入，v1.20 达到 Stable 阶段。
+end note
+
+
+[API Server Network Proxy] as [NetworkProxy] starts at [v1.16.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[NetworkProxy] is colored in GreenYellow
+note bottom
+v1.16 引入 Alpha 阶段，v1.17 进入 Beta 阶段，v1.28 到 v0.0.9 阶段。
+核心设计思想：将 API Server 放置在一个独立网络中，与 Node 网络隔离，
+            使用网络连通性代理（Connectivity Proxy）来连通两个网络。
+end note
+
+
+[Bootstrap Token] as [BootstrapToken] starts at [v1.18.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[BootstrapToken] is colored in GreenYellow
+note bottom
+v1.18 达到 Stable 阶段。引入时间应该更早。
+TLS Bootstraping 机制，自动签发客户端证书。
+end note
+
+
+[Scheduler 所有策略全部组件化] as [SchedulerPredicatesPriorities] starts at [v1.18.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[SchedulerPredicatesPriorities] is colored in GreenYellow
+note bottom
+Scheduler：所有策略（Predicates 和 Priorities）全部组件化，
+           默认调度流程切换为 Scheduling Framework。
+end note
+
+
+[Scheduler 抢占过程组件化] as [SchedulerMultiProfile] starts at [v1.19.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[SchedulerMultiProfile] is colored in GreenYellow
+note bottom
+Scheduler：将抢占过程组件化，同时支持 Multi Scheduling Profile
+end note
+
+
+[Cgroups V2] as [CgroupsV2] starts at [v1.19.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[CgroupsV2] is colored in GreenYellow
+note bottom
+v1.19 开始支持，v1.25 达到 Stable 阶段。增加了一些新特性，比如 MemoryQoS。
+end note
+
+
+[EndpointSlice API] as [EndpointSlice] starts at [v1.19.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[EndpointSlice] is colored in GreenYellow
+note bottom
+v1.19 引入，v1.21 达到 Stable 阶段。
+end note
+
+
+[支持 SCTP 协议] as [SCTP] starts at [v1.20.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[SCTP] is colored in GreenYellow
+note bottom
+v1.20 达到 Stable 阶段。两年前开始引入。
+SCTP 是电信领域基础通信协议。
+Pod、Service 和 NetworkPolicy 都完成支持 SCTP 协议。
+end note
+
+
+[Pod Resources API] as [PodResources] starts at [v1.20.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[PodResources] is colored in GreenYellow
+note bottom
+v1.20 List API 除了报告 CPU Core 和内存，还增加了 NUMA Node 位置。
+v1.21 增加了 GetAllocatableResources 函数。
+v1.28 正式发布，引入时间应该更早。
+end note
+' TODO 要不要加这个正式版里程碑？
+[Pod Resources API 正式版] starts at [v1.28.0]'s start with Gold bold link
+[Pod Resources API 正式版] happens at [v1.28.0]'s start
+
+
+[Credential Provider Plugin] as [CredentialProviderPlugin] starts at [v1.20.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[CredentialProviderPlugin] is colored in GreenYellow
+note bottom
+v1.20 引入，v1.26 达到 Stable 阶段。
+依赖 client-go 的 External Credential Providers 特性。
+end note
+
+
+[NUMA/(Memory Manager)] as [MemoryManager] starts at [v1.21.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[MemoryManager] is colored in GreenYellow
+note bottom
+v1.21 增加，v1.22 是 Beta 版，v1.29 达到 Stable 节点。引入时间应该更早。
+对 HugePage 的支持在 v1.28 达到了 Stable 阶段。
+end note
+
+
+[Quality-of-Service for Memory Resources] as [MemoryQoS] starts at [v1.22.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[MemoryQoS] is colored in GreenYellow
+note bottom
+v1.22.0 引入，v1.27.0 成为 Alpha 版本。通过 Cgroups V2 实现。
+end note
+
+
+[Job 对象的垃圾清理] as [JobGC] starts at [v1.23.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[JobGC] is colored in GreenYellow
+note bottom
+v1.23 达到稳定版，引入的时间应该更早。
+end note
+
+
+[PersistentVolume deletion protection finalizer] as [PVdpf] starts at [v1.23.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[PVdpf] is colored in GreenYellow
+note bottom
+v1.23 Alpha
+end note
+
+
 [NUMA/(Device Manager)] as [DeviceManager] starts at [v1.26.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
 [DeviceManager] is colored in GreenYellow
 note bottom
@@ -428,12 +692,6 @@ v1.26.0 达到正式版，引入时间应该更早。
 套接字，启动 gRPC Server 服务，以此来注册设备。
 end note
 
-[NUMA/(Memory Manager)] as [MemoryManager] starts at [v1.21.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
-[MemoryManager] is colored in GreenYellow
-note bottom
-v1.21 增加，v1.22 是 Beta 版，v1.29 达到 Stable 节点。引入时间应该更早。
-对 HugePage 的支持在 v1.28 达到了 Stable 阶段。
-end note
 
 [NUMA/(Topology Manager)] as [TopologyManager] starts at [v1.27.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
 [TopologyManager] is colored in GreenYellow
@@ -443,84 +701,19 @@ Topology Manager 是NUMA 资源亲和性分配的仲裁者和判决者，
 负责协调 CPU Manager、Device Manager 和 Memory Manager。
 end note
 
-[Quality-of-Service for Memory Resources] as [MemoryQoS] starts at [v1.22.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
-[MemoryQoS] is colored in GreenYellow
+
+[Sidecar Containers] as [Sidecar] starts at [v1.28.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[Sidecar] is colored in GreenYellow
 note bottom
-v1.22.0 引入，v1.27.0 成为 Alpha 版本。通过 Cgroups V2 实现。
+v1.28.0 Alpha 引入。
+早在 2018 年 5 月提出第一版 KEP，后被废弃。
+在 2020 年 11 月 提出新的提议草案。
 end note
 
-[进程 PID 限制与预留] as [PID] starts at [v1.10.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
-[PID] is colored in GreenYellow
-note bottom
-v1.10 引入，v1.14 引入 Node 级别的 PID 资源管理限制，v1.15 成为 Beta 版本，v1.20 达到 Stable 阶段。
-end note
-
-[Pod Resources API] as [PodResources] starts at [v1.20.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
-[PodResources] is colored in GreenYellow
-note bottom
-v1.28 正式发布，引入时间应该更早。
-v1.20 List API 除了报告 CPU Core 和内存，还增加了 NUMA Node 位置。
-v1.21 增加了 GetAllocatableResources 函数。
-end note
-
-' TODO 要不要加这个正式版里程碑？
-[Pod Resources API 正式版] starts at [v1.28.0]'s start with Lime bold link
-[Pod Resources API 正式版] happens at [v1.28.0]'s start
-
-[Startup Probe] as [StartupProbe] starts at [v1.16.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
-[StartupProbe] is colored in GreenYellow
-note bottom
-v1.16 引入，v1.20 达到 Stable 阶段。
-end note
-
-[CRI 规范] as [CRISpec] starts at [v1.5.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
-[CRISpec] is colored in GreenYellow
-'note bottom
-'v1.16 引入，v1.20 达到 Stable 阶段。
-'end note
-
-[RuntimeClass] as [RuntimeClass] starts at [v1.12.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
-[RuntimeClass] is colored in GreenYellow
-note bottom
-v1.12 引入，v1.20 达到 Stable 阶段。用于指定不同的容器运行时。
-end note
-
-[kube-proxy/Proxy] as [kube-proxy/Proxy] starts at [v0.2]'s start with Lime bold link and ends %date("YYYY-MM-dd")
-[kube-proxy/Proxy] is colored in GreenYellow
-note bottom
-怀疑这种 TCP/UDP 代理模式已经被废弃了。
-只是目前不知道废弃时间。
-end note
-
-[kube-proxy/iptables] as [kube-proxy/iptables] starts at [v1.2.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
-[kube-proxy/iptables] is colored in GreenYellow
-note bottom
-从 v1.2 改为默认模式，引入的时间应该更早。
-end note
-
-[kube-proxy/IPVS] as [kube-proxy/IPVS] starts at [v1.8.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
-[kube-proxy/IPVS] is colored in GreenYellow
-note bottom
-v1.8 引入，v1.11 达到稳定版。
-end note
-
-[Job 对象的垃圾清理] as [JobGC] starts at [v1.23.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
-[JobGC] is colored in GreenYellow
-note bottom
-v1.23 达到稳定版，引入的时间应该更早。
-end note
-
-[PersistentVolume deletion protection finalizer] as [PVdpf] starts at [v1.23.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
-[PVdpf] is colored in GreenYellow
-note bottom
-v1.23 Alpha
-end note
 
 [磁盘充足时删除长期未使用的镜像] as [deleteUnusefulImage] starts at [v1.29.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
 [deleteUnusefulImage] is colored in GreenYellow
 
-[Pod间的亲和性和反亲和性调度策略] as [PodAffinity] starts at [v1.4.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
-[PodAffinity] is colored in GreenYellow
 
 footer D瓜哥 · ""https://www.diguage.com"" · 出品
 @endgantt
