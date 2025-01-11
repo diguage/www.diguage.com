@@ -1,7 +1,7 @@
 ---
 title: "killercoda CKA：Storage"
 date: 2024-12-19T19:54:28+08:00
-draft: true
+draft: false
 keywords: ["Kubernetes", "CKA"]
 tags: ["Kubernetes","Linux"]
 categories: ["系统架构"]
@@ -23,167 +23,927 @@ weight: 1
 // . 各个常用资源的 apiGroup 不是特别清楚
 // . Pod 对 Volume 的使用，以及结合 ConfigMap 的使用
 // . etcd 的基本运维操作
+// . 对 Ingress 的一些 Annotation 不熟悉
+// . 可以使用 run 来启动一个 Pod，不能使用 create 创建
+// . 对 NetworkPolicy 的规则不了解
+// . PersistentVolume 不能使用命令行创建，
+// . 节点亲和性不熟悉
+// .
+// .
+// .
 
 :sectnums:
 
 
 == Storage - Persistent Volume
 
-[Storage - Persistent Volume^]
+https://killercoda.com/sachin/course/CKA/pv[Storage - Persistent Volume^]
 
 ****
+Create a PersistentVolume (PV) named `black-pv-cka` with the following specifications:
 
+* Volume Type: `hostPath`
+* Path: `/opt/black-pv-cka`
+* Capacity: `50Mi`
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ vim pv.yaml
+# 编写 YAML 文件
 
+$ cat pv.yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: black-pv-cka
+spec:
+  capacity:
+    storage: 50Mi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: /opt/black-pv-cka
+
+$ kubectl apply -f pv.yaml
+persistentvolume/black-pv-cka created
 ----
 
 
 == Storage - Persistent Volume Claim 
 
-[Storage - Persistent Volume Claim^]
+https://killercoda.com/sachin/course/CKA/pvc[Storage - Persistent Volume Claim^]
 
 ****
+A persistent volume named `red-pv-cka` is available. Your task is to create a PersistentVolumeClaim (PVC) named `red-pvc-cka` and request `30Mi` of storage from the `red-pv-cka` PersistentVolume (PV).
 
+Ensure the following criteria are met:
+
+* Access mode: `ReadWriteOnce`
+* Storage class: `manual`
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ kubectl get pv red-pv-cka -o wide
+NAME         CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS      CLAIM   STORAGECLASS   VOLUMEATTRIBUTESCLASS   REASON   AGE   VOLUMEMODE
+red-pv-cka   50Mi       RWO            Retain           Available           manual         <unset>                          59s   Filesystem
 
+$ vim pvc.yaml
+# 编写 YAML 文件
+
+$ cat pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: red-pvc-cka
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 30Mi
+  storageClassName: manual
+
+$ kubectl apply -f pvc.yaml
+persistentvolumeclaim/red-pvc-cka created
+
+$ kubectl get pvc -o wide
+NAME          STATUS   VOLUME       CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE   VOLUMEMODE
+red-pvc-cka   Bound    red-pv-cka   50Mi       RWO            manual         <unset>                 7s    Filesystem
 ----
 
 
 == Storage - Persistent Volume Claim Resize 
 
-[Storage - Persistent Volume Claim Resize^]
+https://killercoda.com/sachin/course/CKA/pvc-resize[Storage - Persistent Volume Claim Resize^]
 
 ****
-
+Modify the size of the existing Persistent Volume Claim (PVC) named `yellow-pvc-cka` to request `60Mi` of storage from the `yellow-pv-cka` volume. Ensure that the PVC successfully resizes to the new size and remains in the `Bound` state.
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ kubectl get pv -o wide
+NAME            CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                    STORAGECLASS     VOLUMEATTRIBUTESCLASS   REASON   AGE   VOLUMEMODE
+yellow-pv-cka   100Mi      RWO            Retain           Bound    default/yellow-pvc-cka   yellow-stc-cka   <unset>                          57s   Filesystem
 
+$ kubectl get pvc -o wide
+NAME             STATUS   VOLUME          CAPACITY   ACCESS MODES   STORAGECLASS     VOLUMEATTRIBUTESCLASS   AGE   VOLUMEMODE
+yellow-pvc-cka   Bound    yellow-pv-cka   100Mi      RWO            yellow-stc-cka   <unset>                 70s   Filesystem
+
+$ kubectl get pvc yellow-pvc-cka -o yaml | tee pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","kind":"PersistentVolumeClaim","metadata":{"annotations":{},"name":"yellow-pvc-cka","namespace":"default"},"spec":{"accessModes":["ReadWriteOnce"],"resources":{"requests":{"storage":"40Mi"}},"storageClassName":"yellow-stc-cka","volumeName":"yellow-pv-cka"}}
+    pv.kubernetes.io/bind-completed: "yes"
+  creationTimestamp: "2025-01-11T00:57:43Z"
+  finalizers:
+  - kubernetes.io/pvc-protection
+  name: yellow-pvc-cka
+  namespace: default
+  resourceVersion: "6605"
+  uid: cd2d8e0d-d565-4332-9ecd-b9a9f0e87d36
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 40Mi
+  storageClassName: yellow-stc-cka
+  volumeMode: Filesystem
+  volumeName: yellow-pv-cka
+status:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 100Mi
+  phase: Bound
+
+$ vim pvc.yaml
+# 修改 resources 的值为 60Mi
+
+$ cat pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","kind":"PersistentVolumeClaim","metadata":{"annotations":{},"name":"yellow-pvc-cka","namespace":"default"},"spec":{"accessModes":["ReadWriteOnce"],"resources":{"requests":{"storage":"40Mi"}},"storageClassName":"yellow-stc-cka","volumeName":"yellow-pv-cka"}}
+    pv.kubernetes.io/bind-completed: "yes"
+  creationTimestamp: "2025-01-11T00:57:43Z"
+  finalizers:
+  - kubernetes.io/pvc-protection
+  name: yellow-pvc-cka
+  namespace: default
+  resourceVersion: "6605"
+  uid: cd2d8e0d-d565-4332-9ecd-b9a9f0e87d36
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 60Mi
+  storageClassName: yellow-stc-cka
+  volumeMode: Filesystem
+  volumeName: yellow-pv-cka
+
+$ kubectl replace -f pvc.yaml
+persistentvolumeclaim/yellow-pvc-cka replaced
+
+$ kubectl get pvc -o wide
+NAME             STATUS   VOLUME          CAPACITY   ACCESS MODES   STORAGECLASS     VOLUMEATTRIBUTESCLASS   AGE     VOLUMEMODE
+yellow-pvc-cka   Bound    yellow-pv-cka   100Mi      RWO            yellow-stc-cka   <unset>                 2m34s   Filesystem
+
+$ kubectl get pvc yellow-pvc-cka -o yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","kind":"PersistentVolumeClaim","metadata":{"annotations":{"pv.kubernetes.io/bind-completed":"yes"},"creationTimestamp":"2025-01-11T00:57:43Z","finalizers":["kubernetes.io/pvc-protection"],"name":"yellow-pvc-cka","namespace":"default","resourceVersion":"6605","uid":"cd2d8e0d-d565-4332-9ecd-b9a9f0e87d36"},"spec":{"accessModes":["ReadWriteOnce"],"resources":{"requests":{"storage":"60Mi"}},"storageClassName":"yellow-stc-cka","volumeMode":"Filesystem","volumeName":"yellow-pv-cka"}}
+    pv.kubernetes.io/bind-completed: "yes"
+  creationTimestamp: "2025-01-11T00:57:43Z"
+  finalizers:
+  - kubernetes.io/pvc-protection
+  name: yellow-pvc-cka
+  namespace: default
+  resourceVersion: "6786"
+  uid: cd2d8e0d-d565-4332-9ecd-b9a9f0e87d36
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 60Mi
+  storageClassName: yellow-stc-cka
+  volumeMode: Filesystem
+  volumeName: yellow-pv-cka
+status:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 100Mi
+  phase: Bound
 ----
 
 
 == Storage - Persistent Volume Claim, Pod 
 
-[Storage - Persistent Volume Claim, Pod^]
+https://killercoda.com/sachin/course/CKA/pvc-pod[Storage - Persistent Volume Claim, Pod^]
 
 ****
+A Kubernetes pod definition file named `nginx-pod-cka.yaml` is available. Your task is to make the following modifications to the manifest file:
 
+* Create a Persistent Volume Claim (PVC) with the name `nginx-pvc-cka` . This PVC should request `80Mi` of storage from an existing Persistent Volume (PV) named `nginx-pv-cka` and Storage Class named `nginx-stc-cka`. Use the access mode `ReadWriteOnce`.
+* Add the created `nginx-pvc-cka` PVC to the existing `nginx-pod-cka` POD definition.
+* Mount the volume claimed by `nginx-pvc-cka` at the path `/var/www/html` within the `nginx-pod-cka` POD.
+* Add tolerations with the key `node-role.kubernetes.io/control-plane` set to `Exists` and effect `NoSchedule` to the `nginx-pod-cka` Pod
+* Ensure that the `peach-pod-cka05-str` POD is running and that the Persistent Volume (PV) is successfully `bound`.
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ kubectl get  pv -o wide
+NAME           CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS      CLAIM   STORAGECLASS    VOLUMEATTRIBUTESCLASS   REASON   AGE     VOLUMEMODE
+nginx-pv-cka   100Mi      RWO            Retain           Available           nginx-stc-cka   <unset>                          2m45s   Filesystem
 
+$ cat nginx-pod-cka.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-pod-cka
+spec:
+  containers:
+    - name: my-container
+      image: nginx:latest
+
+$ vim nginx-pod-cka.yaml
+# 编写 YAML 文件
+
+$ cat nginx-pod-cka.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-pod-cka
+spec:
+  containers:
+    - name: my-container
+      image: nginx:latest
+      volumeMounts:
+      - mountPath: "/var/www/html"
+        name: vo-nginx-pvc
+  volumes:
+    - name: vo-nginx-pvc
+      persistentVolumeClaim:
+        claimName: nginx-pvc-cka
+  tolerations:
+  - key: "node-role.kubernetes.io/control-plane"
+    operator: "Exists"
+    effect: "NoSchedule"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nginx-pvc-cka
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 80Mi
+  storageClassName: nginx-stc-cka
+
+$ kubectl apply -f nginx-pod-cka.yaml
+pod/nginx-pod-cka created
+persistentvolumeclaim/nginx-pvc-cka created
+
+$ kubectl get pvc
+NAME            STATUS   VOLUME         CAPACITY   ACCESS MODES   STORAGECLASS    VOLUMEATTRIBUTESCLASS   AGE
+nginx-pvc-cka   Bound    nginx-pv-cka   100Mi      RWO            nginx-stc-cka   <unset>                 10s
+
+$ kubectl get pv
+NAME           CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                   STORAGECLASS    VOLUMEATTRIBUTESCLASS   REASON   AGE
+nginx-pv-cka   100Mi      RWO            Retain           Bound    default/nginx-pvc-cka   nginx-stc-cka   <unset>                          9m35s
+
+$ kubectl get  pod
+NAME            READY   STATUS    RESTARTS   AGE
+nginx-pod-cka   1/1     Running   0          20s
 ----
 
 
 == Storage - Persistent Volume, Persistent Volume Claim 
 
-[Storage - Persistent Volume, Persistent Volume Claim^]
+https://killercoda.com/sachin/course/CKA/pv-pvc[Storage - Persistent Volume, Persistent Volume Claim^]
 
 ****
+Create a PersistentVolume (PV) and a PersistentVolumeClaim (PVC) using an existing storage class named `gold-stc-cka` to meet the following requirements:
 
+Step 1: Create a Persistent Volume (PV)
+
+* Name the PV as `gold-pv-cka`.
+* Set the capacity to `50Mi`.
+* Use the volume type `hostpath` with the path `/opt/gold-stc-cka`.
+* Assign the storage class as `gold-stc-cka`.
+* Ensure that the PV is created on `node01` , where the `/opt/gold-stc-cka` directory already exists.
+* Apply a label to the PV with key `tier` and value `white` .
+
+Step 2: Create a Persistent Volume Claim (PVC)
+
+* Name the PVC as `gold-pvc-cka`.
+* Request `30Mi` of storage from the PV `gold-pv-cka` using the matchLabels criterion.
+* Use the `gold-stc-cka` storage class.
+* Set the access mode to `ReadWriteMany` .
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ kubectl get storageclasses -o wide
+NAME                   PROVISIONER                    RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
+gold-stc-cka           kubernetes.io/no-provisioner   Delete          WaitForFirstConsumer   false                  2m29s
+local-path (default)   rancher.io/local-path          Delete          WaitForFirstConsumer   false                  8d
 
+$ kubectl get nodes node01 -o yaml
+apiVersion: v1
+kind: Node
+metadata:
+  annotations:
+    flannel.alpha.coreos.com/backend-data: '{"VNI":1,"VtepMAC":"7e:db:36:b7:d8:41"}'
+    flannel.alpha.coreos.com/backend-type: vxlan
+    flannel.alpha.coreos.com/kube-subnet-manager: "true"
+    flannel.alpha.coreos.com/public-ip: 172.30.2.2
+    kubeadm.alpha.kubernetes.io/cri-socket: unix:///var/run/containerd/containerd.sock
+    node.alpha.kubernetes.io/ttl: "0"
+    projectcalico.org/IPv4Address: 172.30.2.2/24
+    projectcalico.org/IPv4IPIPTunnelAddr: 192.168.1.1
+    volumes.kubernetes.io/controller-managed-attach-detach: "true"
+  creationTimestamp: "2025-01-02T10:03:01Z"
+  labels:
+    beta.kubernetes.io/arch: amd64
+    beta.kubernetes.io/os: linux
+    kubernetes.io/arch: amd64
+    kubernetes.io/hostname: node01
+    kubernetes.io/os: linux
+  name: node01
+  resourceVersion: "4019"
+  uid: 93743255-7b3e-4e81-a8a8-4a071984de9a
+# 省略无用内容
+
+$ cat pv.yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: gold-pv-cka
+  labels:
+    tier: white
+spec:
+  storageClassName: gold-stc-cka
+  capacity:
+    storage: 50Mi
+  accessModes:
+    - ReadWriteMany
+  volumeMode: Filesystem
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    type: Directory
+    path: /opt/gold-stc-cka
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+            - node01
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: gold-pvc-cka
+spec:
+  storageClassName: gold-stc-cka
+  accessModes:
+    - ReadWriteMany
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 30Mi
+  selector:
+    matchLabels:
+      tier: white
+
+$ kubectl apply -f pv.yaml
+persistentvolume/gold-pv-cka created
+persistentvolumeclaim/gold-pvc-cka created
+
+$ kubectl get pv -o wide
+NAME          CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS      CLAIM   STORAGECLASS   VOLUMEATTRIBUTESCLASS   REASON   AGE   VOLUMEMODE
+gold-pv-cka   50Mi       RWX            Retain           Available           gold-stc-cka   <unset>                          4s    Filesystem
+
+$ kubectl get pvc -o wide
+NAME           STATUS    VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE   VOLUMEMODE
+gold-pvc-cka   Pending                                      gold-stc-cka   <unset>                 21s   Filesystem
+
+$ kubectl describe pv gold-pv-cka
+Name:              gold-pv-cka
+Labels:            tier=white
+Annotations:       <none>
+Finalizers:        [kubernetes.io/pv-protection]
+StorageClass:      gold-stc-cka
+Status:            Available
+Claim:
+Reclaim Policy:    Retain
+Access Modes:      RWX
+VolumeMode:        Filesystem
+Capacity:          50Mi
+Node Affinity:
+  Required Terms:
+    Term 0:        kubernetes.io/hostname in [node01]
+Message:
+Source:
+    Type:          HostPath (bare host directory volume)
+    Path:          /opt/gold-stc-cka
+    HostPathType:  Directory
+Events:            <none>
+
+$ kubectl describe pvc gold-pvc-cka
+Name:          gold-pvc-cka
+Namespace:     default
+StorageClass:  gold-stc-cka
+Status:        Pending
+Volume:
+Labels:        <none>
+Annotations:   <none>
+Finalizers:    [kubernetes.io/pvc-protection]
+Capacity:
+Access Modes:
+VolumeMode:    Filesystem
+Used By:       <none>
+Events:
+  Type    Reason                Age               From                         Message
+  ----    ------                ----              ----                         -------
+  Normal  WaitForFirstConsumer  9s (x5 over 59s)  persistentvolume-controller  waiting for first consumer to be created before binding
 ----
 
 
 == Storage - Persistent Volume, Persistent Volume Claim, Pod 
 
-[Storage - Persistent Volume, Persistent Volume Claim, Pod^]
+https://killercoda.com/sachin/course/CKA/pv-pvc-pod[Storage - Persistent Volume, Persistent Volume Claim, Pod^]
 
 ****
+You are responsible for provisioning storage for a Kubernetes cluster. Your task is to create a PersistentVolume (PV), a PersistentVolumeClaim (PVC), and deploy a pod that uses the PVC for shared storage.
 
+Here are the specific requirements:
+
+* Create a PersistentVolume (PV) named `my-pv-cka` with the following properties:
+** Storage capacity: `100Mi`
+** Access mode: `ReadWriteOnce`
+** Host path: `/mnt/data`
+** Storage class: `standard`
+* Create a PersistentVolumeClaim (PVC) named `my-pvc-cka` to claim storage from the `my-pv-cka` PV, with the following properties:
+** Storage class: `standard`
+** request storage: `100Mi` (less than)
+* Deploy a pod named `my-pod-cka` using the `nginx` container image.
+* Mount the PVC, `my-pvc-cka` , to the pod at the path `/var/www/html` . Ensure that the PV, PVC, and pod are successfully created, and the pod is in a Running state.
+
+Note: Binding and Pod might take time to come up, please have patience
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ vim pod.yaml
+# 输入 YAML 文件
 
+$ cat pod.yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: my-pv-cka
+spec:
+  capacity:
+    storage: 100Mi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: standard
+  hostPath:
+    type: DirectoryOrCreate
+    path: /mnt/data
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: my-pvc-cka
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 100Mi
+  storageClassName: standard
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-pod-cka
+spec:
+  containers:
+    - name: nginx
+      image: nginx
+      volumeMounts:
+      - mountPath: "/var/www/html"
+        name: mypd
+  volumes:
+    - name: mypd
+      persistentVolumeClaim:
+        claimName: my-pvc-cka
+
+$ kubectl apply -f pod.yaml
+persistentvolume/my-pv-cka created
+persistentvolumeclaim/my-pvc-cka created
+pod/my-pod-cka created
+
+$ kubectl get pv -o wide
+NAME        CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                STORAGECLASS   VOLUMEATTRIBUTESCLASS   REASON   AGE   VOLUMEMODE
+my-pv-cka   100Mi      RWO            Retain           Bound    default/my-pvc-cka   standard       <unset>                          80s   Filesystem
+
+$ kubectl get pvc -o wide
+NAME         STATUS   VOLUME      CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE   VOLUMEMODE
+my-pvc-cka   Bound    my-pv-cka   100Mi      RWO            standard       <unset>                 85s   Filesystem
+
+$ kubectl get pod -o wide
+NAME         READY   STATUS    RESTARTS   AGE   IP            NODE     NOMINATED NODE   READINESS GATES
+my-pod-cka   1/1     Running   0          21s   192.168.1.6   node01   <none>           <none>
 ----
 
 
 == Storage - Shared Volume 
 
-[Storage - Shared Volume^]
+https://killercoda.com/sachin/course/CKA/Shared-Volume[Storage - Shared Volume^]
 
 ****
+An existing nginx pod, `my-pod-cka` and Persistent Volume Claim (PVC) named `my-pvc-cka` are available. Your task is to implement the following modifications:
 
+* NOTE:- PVC to PV binding and `my-pod-cka` pods sometimes takes around 2Mins to Up & Running So Please wait
+* Update the pod to include a sidecar container that uses the `busybox` image. Ensure that this sidecar container remains operational by including an appropriate command `"tail -f /dev/null"` .
+* Share the `shared-storage` volume between the main application and the sidecar container, mounting it at the path `/var/www/shared` . Additionally, ensure that the sidecar container has `read-only` access to this shared volume.
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ kubectl get pod my-pod-cka -o yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    cni.projectcalico.org/containerID: a1c711296b2f99bbbfe744fb53274d404be6ba1cbd13228a5c93e745769387f6
+    cni.projectcalico.org/podIP: 192.168.1.5/32
+    cni.projectcalico.org/podIPs: 192.168.1.5/32
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","kind":"Pod","metadata":{"annotations":{},"name":"my-pod-cka","namespace":"default"},"spec":{"containers":[{"image":"nginx","name":"nginx-container","volumeMounts":[{"mountPath":"/var/www/html","name":"shared-storage"}]}],"volumes":[{"name":"shared-storage","persistentVolumeClaim":{"claimName":"my-pvc-cka"}}]}}
+  creationTimestamp: "2025-01-11T09:16:53Z"
+  name: my-pod-cka
+  namespace: default
+  resourceVersion: "4706"
+  uid: f38ff097-f5b6-465a-9497-c34a9f4f8a73
+spec:
+  containers:
+  - image: nginx
+    imagePullPolicy: Always
+    name: nginx-container
+    resources: {}
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /var/www/html
+      name: shared-storage
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: kube-api-access-jxknh
+      readOnly: true
+  dnsPolicy: ClusterFirst
+  enableServiceLinks: true
+  nodeName: node01
+  preemptionPolicy: PreemptLowerPriority
+  priority: 0
+  restartPolicy: Always
+  schedulerName: default-scheduler
+  securityContext: {}
+  serviceAccount: default
+  serviceAccountName: default
+  terminationGracePeriodSeconds: 30
+  tolerations:
+  - effect: NoExecute
+    key: node.kubernetes.io/not-ready
+    operator: Exists
+    tolerationSeconds: 300
+  - effect: NoExecute
+    key: node.kubernetes.io/unreachable
+    operator: Exists
+    tolerationSeconds: 300
+  volumes:
+  - name: shared-storage
+    persistentVolumeClaim:
+      claimName: my-pvc-cka
+  - name: kube-api-access-jxknh
+    projected:
+      defaultMode: 420
+      sources:
+      - serviceAccountToken:
+          expirationSeconds: 3607
+          path: token
+      - configMap:
+          items:
+          - key: ca.crt
+            path: ca.crt
+          name: kube-root-ca.crt
+      - downwardAPI:
+          items:
+          - fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+            path: namespace
+# 省略 status 字段
 
+# 从 .metadata.annotations.kubectl.kubernetes.io/last-applied-configuration 改的
+$ cat pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-pod-cka
+  namespace: default
+spec:
+  containers:
+    - image: nginx
+      name: nginx-container
+      volumeMounts:
+        - mountPath: /var/www/html
+          name: shared-storage
+  initContainers:
+    - image: busybox
+      name: busybox
+      restartPolicy: Always
+      volumeMounts:
+        - mountPath: /var/www/shared
+          name: shared-storage
+          readOnly: true
+      command:
+        - tail
+        - -f
+        - /dev/null
+  volumes:
+    - name: shared-storage
+      persistentVolumeClaim:
+        claimName: my-pvc-cka
+
+$ kubectl get pv
+NAME                                       CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                STORAGECLASS   VOLUMEATTRIBUTESCLASS   REASON   AGE
+pvc-11a0fa6f-b3f0-4751-8bd1-2fde422b503c   100Mi      RWO            Delete           Bound    default/my-pvc-cka   local-path     <unset>                          20m
+
+$ kubectl get pvc
+NAME         STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+my-pvc-cka   Bound    pvc-11a0fa6f-b3f0-4751-8bd1-2fde422b503c   100Mi      RWO            local-path     <unset>                 21m
+
+$ kubectl get pod -o wide
+NAME         READY   STATUS    RESTARTS   AGE   IP            NODE     NOMINATED NODE   READINESS GATES
+my-pod-cka   2/2     Running   0          29s   192.168.1.9   node01   <none>           <none>
 ----
 
+NOTE: 题目要求都满足了，但是检查没通过！奇怪！
 
 == Storage - Storage Class 
 
-[Storage - Storage Class^]
+https://killercoda.com/sachin/course/CKA/Storage-class[Storage - Storage Class^]
 
 ****
+Create a storage class called `green-stc`  as per the properties given below:
 
+* Provisioner should be `kubernetes.io/no-provisioner`.
+* Volume binding mode should be `WaitForFirstConsumer`.
+** Volume expansion should be enabled .
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ vim stc.yaml
+# 编写 YAML 文件
+$ cat stc.yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: green-stc
+provisioner: kubernetes.io/no-provisioner
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
 
+$ kubectl apply -f stc.yaml
+storageclass.storage.k8s.io/green-stc created
+
+$ kubectl get storageclass
+NAME                   PROVISIONER                    RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
+green-stc              kubernetes.io/no-provisioner   Retain          WaitForFirstConsumer   true                   10s
 ----
 
 
 == Storage - Persistent Volume, Persistent Volume Claim, Storage Class 
 
-[Storage - Persistent Volume, Persistent Volume Claim, Storage Class^]
+https://killercoda.com/sachin/course/CKA/sc-pv-pvc[Storage - Persistent Volume, Persistent Volume Claim, Storage Class^]
 
 ****
+Your task involves setting up storage components in a Kubernetes cluster. Follow these steps:
 
+Step 1: Create a Storage Class named `blue-stc-cka` with the following properties:
+
+* Provisioner: `kubernetes.io/no-provisioner`
+* Volume binding mode: `WaitForFirstConsumer`
+
+Step 2: Create a Persistent Volume (PV) named `blue-pv-cka` with the following properties:
+
+* Capacity: `100Mi`
+* Access mode: `ReadWriteOnce`
+* Reclaim policy: `Retain`
+* Storage class: `blue-stc-cka`
+* Local path: `/opt/blue-data-cka`
+* Node affinity: Set node affinity to create this PV on `controlplane` .
+
+Step 3: Create a Persistent Volume Claim (PVC) named `blue-pvc-cka` with the following properties:
+
+* Access mode: `ReadWriteOnce`
+* Storage class: `blue-stc-cka`
+* Storage request: `50Mi`
+* The volume should be bound to `blue-pv-cka`.
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ vim pv.yaml
+# 编写 YAML 文件
 
+$ cat pv.yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: blue-stc-cka
+provisioner: kubernetes.io/no-provisioner
+reclaimPolicy: Retain
+#allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: blue-pv-cka
+spec:
+  volumeMode: Filesystem
+  storageClassName: blue-stc-cka
+  persistentVolumeReclaimPolicy: Retain
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 100Mi
+  local:
+    path: /opt/blue-data-cka
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+          - key: kubernetes.io/hostname
+            operator: In
+            values:
+            - controlplane
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: blue-pvc-cka
+spec:
+  volumeMode: Filesystem
+  storageClassName: blue-stc-cka
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Mi
+
+$ kubectl apply -f pv.yaml
+storageclass.storage.k8s.io/blue-stc-cka created
+persistentvolume/blue-pv-cka created
+persistentvolumeclaim/blue-pvc-cka created
+
+$ kubectl get storageclasses
+NAME                   PROVISIONER                    RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
+blue-stc-cka           kubernetes.io/no-provisioner   Retain          WaitForFirstConsumer   false                  2m45s
+local-path (default)   rancher.io/local-path          Delete          WaitForFirstConsumer   false                  9d
+
+$ kubectl get pv
+NAME          CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS      CLAIM   STORAGECLASS   VOLUMEATTRIBUTESCLASS   REASON   AGE
+blue-pv-cka   100Mi      RWO            Retain           Available           blue-stc-cka   <unset>                          2m52s
+
+$ kubectl get pvc
+NAME           STATUS    VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+blue-pvc-cka   Pending                                      blue-stc-cka   <unset>                 2m55s
 ----
+
+NOTE: 没有发现什么错误，但是检查没通过！
 
 
 == Storage - Storage Class, Persistent Volume, Persistent Volume Claim, Pod 
 
-[Storage - Storage Class, Persistent Volume, Persistent Volume Claim, Pod^]
+https://killercoda.com/sachin/course/CKA/sc-pv-pvc-pod[Storage - Storage Class, Persistent Volume, Persistent Volume Claim, Pod^]
 
 ****
-
+* Create a Storage Class named `fast-storage` with a provisioner of `kubernetes.io/no-provisioner` and a `volumeBindingMode` of Immediate .
+* Create a Persistent Volume (PV) named `fast-pv-cka` with a storage capacity of `50Mi` using the `fast-storage` Storage Class with `ReadWriteOnce` permission and host path `/tmp/fast-data`.
+* Create a Persistent Volume Claim (PVC) named `fast-pvc-cka` that requests `30Mi` of storage from the `fast-pv-cka` PV(using the `fast-storage` Storage Class).
+* Create a Pod named `fast-pod-cka` with `nginx:latest` image that uses the `fast-pvc-cka` PVC and mounts the volume at the path `/app/data`.
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ vim pv.yaml
+# 编写 Yaml 文件
 
+$ cat pv.yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: fast-storage
+provisioner: kubernetes.io/no-provisioner
+reclaimPolicy: Retain
+volumeBindingMode: Immediate
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: fast-pv-cka
+spec:
+  capacity:
+    storage: 50Mi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: fast-storage
+  hostPath:
+    type: DirectoryOrCreate
+    path: /tmp/fast-data
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: fast-pvc-cka
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 30Mi
+  storageClassName: fast-storage
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: fast-pod-cka
+spec:
+  containers:
+    - name: nginx
+      image: nginx:latest
+      volumeMounts:
+      - mountPath: "/app/data"
+        name: mypd
+  volumes:
+    - name: mypd
+      persistentVolumeClaim:
+        claimName: fast-pvc-cka
+
+$ kubectl apply -f pv.yaml
+storageclass.storage.k8s.io/fast-storage created
+persistentvolume/fast-pv-cka created
+persistentvolumeclaim/fast-pvc-cka created
+pod/fast-pod-cka created
+
+$ kubectl get storageclasses  fast-storage
+NAME           PROVISIONER                    RECLAIMPOLICY   VOLUMEBINDINGMODE   ALLOWVOLUMEEXPANSION   AGE
+fast-storage   kubernetes.io/no-provisioner   Retain          Immediate           false                  35s
+
+$ kubectl get pv
+NAME          CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                  STORAGECLASS   VOLUMEATTRIBUTESCLASS   REASON   AGE
+fast-pv-cka   50Mi       RWO            Retain           Bound    default/fast-pvc-cka   fast-storage   <unset>                          43s
+
+$ kubectl get pvc
+NAME           STATUS   VOLUME        CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+fast-pvc-cka   Bound    fast-pv-cka   50Mi       RWO            fast-storage   <unset>                 45s
+
+$ kubectl get pod fast-pod-cka -o wide
+NAME           READY   STATUS    RESTARTS   AGE   IP            NODE     NOMINATED NODE   READINESS GATES
+fast-pod-cka   1/1     Running   0          56s   192.168.1.5   node01   <none>           <none>
 ----
-
-
