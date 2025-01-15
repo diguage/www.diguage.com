@@ -1,7 +1,7 @@
 ---
 title: "killercoda CKA：Workloads & Scheduling"
 date: 2024-12-20T19:54:28+08:00
-draft: true
+draft: false
 keywords: ["Kubernetes", "CKA"]
 tags: ["Kubernetes","Linux"]
 categories: ["系统架构"]
@@ -23,183 +23,932 @@ weight: 1
 // . 各个常用资源的 apiGroup 不是特别清楚
 // . Pod 对 Volume 的使用，以及结合 ConfigMap 的使用
 // . etcd 的基本运维操作
+// . 对 Ingress 的一些 Annotation 不熟悉
+// . 可以使用 run 来启动一个 Pod，不能使用 create 创建
+// . 对 NetworkPolicy 的规则不了解
+// . 对 rollout 等一些命令行的操作还不是很熟悉
+// .
+// .
 
 :sectnums:
 
 
 == Workloads & Scheduling - Pod
 
-[Workloads & Scheduling - Pod^]
+https://killercoda.com/sachin/course/CKA/pod[Workloads & Scheduling - Pod^]
 
 ****
+Fresher deployed a pod named `my-pod`. However, while specifying the resource limits, they mistakenly given `100Mi` storage limit instead of `50Mi`
 
+* node doesn't have sufficient resources, So change it to `50Mi` only.
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ kubectl get pod my-pod -o yaml | tee pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    cni.projectcalico.org/containerID: 8414bfefda21fa6ca74ef8d499c92a22ae6cc0dbb6d0bc4d82eb0129a795d75d
+    cni.projectcalico.org/podIP: 192.168.1.4/32
+    cni.projectcalico.org/podIPs: 192.168.1.4/32
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","kind":"Pod","metadata":{"annotations":{},"name":"my-pod","namespace":"default"},"spec":{"containers":[{"image":"nginx:latest","name":"my-container","resources":{"limits":{"memory":"100Mi"},"requests":{"memory":"50Mi"}}}]}}
+  creationTimestamp: "2025-01-14T07:53:50Z"
+  name: my-pod
+  namespace: default
+  resourceVersion: "2026"
+  uid: fcf1e97e-cec0-45b0-b82d-766ad0c51823
+spec:
+  containers:
+  - image: nginx:latest
+    imagePullPolicy: Always
+    name: my-container
+    resources:
+      limits:
+        memory: 100Mi
+      requests:
+        memory: 50Mi
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: kube-api-access-thchj
+      readOnly: true
+  dnsPolicy: ClusterFirst
+  enableServiceLinks: true
+  nodeName: node01
+  preemptionPolicy: PreemptLowerPriority
+  priority: 0
+  restartPolicy: Always
+  schedulerName: default-scheduler
+  securityContext: {}
+  serviceAccount: default
+  serviceAccountName: default
+  terminationGracePeriodSeconds: 30
+  tolerations:
+  - effect: NoExecute
+    key: node.kubernetes.io/not-ready
+    operator: Exists
+    tolerationSeconds: 300
+  - effect: NoExecute
+    key: node.kubernetes.io/unreachable
+    operator: Exists
+    tolerationSeconds: 300
+  volumes:
+  - name: kube-api-access-thchj
+    projected:
+      defaultMode: 420
+      sources:
+      - serviceAccountToken:
+          expirationSeconds: 3607
+          path: token
+      - configMap:
+          items:
+          - key: ca.crt
+            path: ca.crt
+          name: kube-root-ca.crt
+      - downwardAPI:
+          items:
+          - fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+            path: namespace
+# 省略没用的 status 字段
 
+$ vim pod.yaml
+# 将 limit 中，100Mi 改为 50Mi
+
+$ kubectl delete -f pod.yaml --force --grace-period 0
+Warning: Immediate deletion does not wait for confirmation that the running resource has been terminated. The resource may continue to run on the cluster indefinitely.
+pod "my-pod" force deleted
+
+$ kubectl apply -f pod.yaml
+pod/my-pod created
 ----
+
+NOTE: 检查结果，题目要求都满足，但验证失败。
 
 
 == Workloads & Scheduling - Pod, Service 
 
-[Workloads & Scheduling - Pod, Service ^]
+https://killercoda.com/sachin/course/CKA/pod-svc[Workloads & Scheduling - Pod, Service^]
 
 ****
+You need to create a Kubernetes Pod and a Service to host a simple web application that prints "It works!" when accessed. Follow these steps:
 
+Create a Pod named `app-pod` with the following specifications:
+
+* Container name: `app-container`
+* Container image: `httpd:latest`
+* Container port: `80`
+
+Create a Service named `app-svc` with the following specifications:
+
+* Select the Pod with the label app: `app-lab`.
+* Service port: `80`
+* Target port: `80`
+* Service type: `ClusterIP`
+* kubectl port-forward to forward a local port to the Pod's port
+* Access the web application using `curl` on another terminal
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ kubectl run app-pod  --image httpd:latest --port 80
+pod/app-pod created
 
+$ kubectl get pod app-pod | tee pod.yaml
+
+$ kubectl create service clusterip app-svc --tcp 80:80
+service/app-svc created
+
+$ kubectl get svc app-svc -o yaml | tee -a pod.yaml
+
+# 可以通过命令来创建资源，然后导出到文件中，再修改文件
+
+$ cat pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    run: app-pod
+  name: app-pod
+spec:
+  containers:
+  - image: httpd:latest
+    name: app-container
+    ports:
+    - containerPort: 80
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-svc
+  labels:
+    app: app-lab
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    run: app-pod
+  type: ClusterIP
+
+$ kubectl apply -f pod.yaml
+pod/app-pod created
+service/app-svc created
+
+$ kubectl get pod app-pod --show-labels -o wide
+NAME      READY   STATUS    RESTARTS   AGE   IP            NODE     NOMINATED NODE   READINESS GATES   LABELS
+app-pod   1/1     Running   0          20s   192.168.1.6   node01   <none>           <none>            run=app-pod
+
+$ kubectl get svc app-svc --show-labels -o wide
+NAME      TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)   AGE   SELECTOR      LABELS
+app-svc   ClusterIP   10.102.214.213   <none>        80/TCP    39s   run=app-pod   app=app-lab
+
+$ kubectl port-forward services/app-svc 8080:80
+Forwarding from 127.0.0.1:8080 -> 80
+Forwarding from [::1]:8080 -> 80
+Handling connection for 8080
+
+# 打开另外一个终端
+$ curl localhost:8080
+<html><body><h1>It works!</h1></body></html>
 ----
 
 
 == Workloads & Scheduling - Pod, Service - 1 
 
-[Workloads & Scheduling - Pod, Service - 1 ^]
+https://killercoda.com/sachin/course/CKA/pod-svc-1[Workloads & Scheduling - Pod, Service - 1^]
 
 ****
-
+Create a pod named `ubuntu-pod` using the `ubuntu` image with the labels set to `app=os` . Now, create a service named `ubuntu-service` to expose the `ubuntu-pod` application within the cluster on port `8080` .
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ vim pod.yaml
+# 输入 YAML 文件
 
+$ cat pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ubuntu-pod
+  labels:
+    app: os
+spec:
+  containers:
+  - name: ubuntu
+    image: ubuntu
+    ports:
+    - containerPort: 80
+    command:
+      - sleep
+      - "3600"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ubuntu-service
+spec:
+  selector:
+    app: os
+  ports:
+    - name: ubuntu
+      protocol: TCP
+      port: 80
+      targetPort: 8080
+
+$ kubectl apply -f pod.yaml
+pod/ubuntu-pod created
+
+$ kubectl get pod --show-labels
+NAME         READY   STATUS    RESTARTS   AGE   LABELS
+ubuntu-pod   1/1     Running   0          25s   app=os
+
+$ kubectl get svc -o wide
+NAME             TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE   SELECTOR
+ubuntu-service   ClusterIP   10.111.7.177   <none>        80/TCP    15s   app=os
 ----
+
+TIP: 感觉这个题目有点莫名其妙！
 
 
 == Workloads & Scheduling - Deployment 
 
-[Workloads & Scheduling - Deployment ^]
+https://killercoda.com/sachin/course/CKA/deployment[Workloads & Scheduling - Deployment^]
 
 ****
-
+Create a deployment named `nginx-app-deployment` using the `nginx` image and scale the application pods to `3` .
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ kubectl create deployment nginx-app-deployment --image nginx --replicas 3
+deployment.apps/nginx-app-deployment created
 
+$ kubectl get deployments.apps
+NAME                   READY   UP-TO-DATE   AVAILABLE   AGE
+nginx-app-deployment   0/3     3            0           9s
+
+$ kubectl get pod --show-labels
+NAME                                    READY   STATUS    RESTARTS   AGE   LABELS
+nginx-app-deployment-695848b9f7-m6gl8   1/1     Running   0          19s   app=nginx-app-deployment,pod-template-hash=695848b9f7
+nginx-app-deployment-695848b9f7-r9x8c   1/1     Running   0          19s   app=nginx-app-deployment,pod-template-hash=695848b9f7
+nginx-app-deployment-695848b9f7-xltpp   1/1     Running   0          19s   app=nginx-app-deployment,pod-template-hash=695848b9f7
 ----
 
 
 == Workloads & Scheduling - ConfigMap, Deployment 
 
-[Workloads & Scheduling - ConfigMap, Deployment ^]
+https://killercoda.com/sachin/course/CKA/configmap-deploy[Workloads & Scheduling - ConfigMap, Deployment^]
 
 ****
+Within the default namespace, there is a web application deployment named `webapp-deployment` that relies on an environment variable that can change frequently. You need to manage this environment variable using a ConfigMap. Follow these steps:
 
+* Create a new ConfigMap named `webapp-deployment-config-map` with the key-value pair `APPLICATION=web-app`.
+* Update the deployment `webapp-deployment` to utilize the newly created ConfigMap.
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ cat cfg.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: webapp-deployment-config-map
+data:
+  APPLICATION: web-app
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp-deployment
+  namespace: default
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: webapp-deployment
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: webapp-deployment
+    spec:
+      containers:
+      - env:
+        - name: APPLICATION
+          valueFrom:
+            configMapKeyRef:
+              name: webapp-deployment-config-map
+              key: APPLICATION
+        image: nginx:latest
+        imagePullPolicy: Always
+        name: webapp-container
+        ports:
+        - containerPort: 80
+          protocol: TCP
 
+$ kubectl apply -f cfg.yaml
+configmap/webapp-deployment-config-map created
+deployment.apps/webapp-deployment created
+
+$ kubectl get configmaps webapp-deployment-config-map -o yaml
+apiVersion: v1
+data:
+  APPLICATION: web-app
+kind: ConfigMap
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","data":{"APPLICATION":"web-app"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"webapp-deployment-config-map","namespace":"default"}}
+  creationTimestamp: "2025-01-14T09:14:21Z"
+  name: webapp-deployment-config-map
+  namespace: default
+  resourceVersion: "3241"
+  uid: 406ebf46-e6c0-4d77-bfc7-b3efcf6eb491
+
+$ kubectl get deployments.apps webapp-deployment -o wide
+NAME                READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS         IMAGES         SELECTOR
+webapp-deployment   2/2     2            2           33s   webapp-container   nginx:latest   app=webapp-deployment
+
+$ kubectl get pod -o wide --show-labels
+NAME                                READY   STATUS    RESTARTS   AGE   IP            NODE     NOMINATED NODE   READINESS GATES   LABELS
+webapp-deployment-7d77d9db7-gt2j4   1/1     Running   0          52s   192.168.1.6   node01   <none>           <none>            app=webapp-deployment,pod-template-hash=7d77d9db7
+webapp-deployment-7d77d9db7-hjjf5   1/1     Running   0          52s   192.168.1.7   node01   <none>           <none>            app=webapp-deployment,pod-template-hash=7d77d9db7
 ----
 
 
 == Workloads & Scheduling - Deployment, Secret 
 
-[Workloads & Scheduling - Deployment, Secret ^]
+https://killercoda.com/sachin/course/CKA/deployment-secret[Workloads & Scheduling - Deployment, Secret^]
 
 ****
+Currently, the `webapp-deployment` is running with sensitive database environment variables directly embedded in the deployment YAML. To enhance security and protect the sensitive data, perform the following steps:
 
+* Create a Kubernetes Secret named `db-secret` with the below sensitive database environment variable values:
+** Key: `DB_Host` , Value: `mysql-host`
+** Key: `DB_User` , Value: `root`
+** Key: `DB_Password` , Value: `dbpassword`
+* Update the `webapp-deployment` to load the sensitive database environment variables from the newly created `db-secret` Secret.
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ kubectl create secret generic db-secret \
+     --from-literal DB_Host=mysql-host \
+     --from-literal DB_User=root \
+     --from-literal DB_Password=dbpassword
+secret/db-secret created
+$ kubectl get secrets db-secret
+NAME        TYPE     DATA   AGE
+db-secret   Opaque   3      69s
+$ kubectl get secrets db-secret  -o yaml
+apiVersion: v1
+data:
+  DB_Host: bXlzcWwtaG9zdA==
+  DB_Password: ZGJwYXNzd29yZA==
+  DB_User: cm9vdA==
+kind: Secret
+metadata:
+  creationTimestamp: "2025-01-14T09:28:46Z"
+  name: db-secret
+  namespace: default
+  resourceVersion: "2865"
+  uid: a133a00a-81f2-4e66-ad1b-cc2ba3e5dde7
+type: Opaque
 
+$ kubectl get deployments.apps webapp-deployment -o yaml | tee sec.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp-deployment
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webapp
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: webapp
+    spec:
+      containers:
+      - env:
+        - name: DB_Host
+          value: mysql-host
+        - name: DB_User
+          value: root
+        - name: DB_Password
+          value: dbpassword
+        image: nginx:latest
+        imagePullPolicy: Always
+        name: webapp-container
+        ports:
+        - containerPort: 80
+          protocol: TCP
+
+$ vim sec.yaml
+# 修改变量获取方式
+
+$ cat sec.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp-deployment
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webapp
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: webapp
+    spec:
+      containers:
+      - env:
+        - name: DB_Host
+          valueFrom:
+            secretKeyRef:
+              name: db-secret
+              key:  DB_Host
+        - name: DB_User
+          valueFrom:
+            secretKeyRef:
+              name: db-secret
+              key: DB_User
+        - name: DB_Password
+          valueFrom:
+            secretKeyRef:
+              name: db-secret
+              key: DB_Password
+        image: nginx:latest
+        imagePullPolicy: Always
+        name: webapp-container
+        ports:
+        - containerPort: 80
+          protocol: TCP
+
+$ kubectl apply -f sec.yaml
+deployment.apps/webapp-deployment created
+
+$ kubectl get deployments.apps webapp-deployment
+NAME                READY   UP-TO-DATE   AVAILABLE   AGE
+webapp-deployment   1/1     1            1           78s
+
+$ kubectl get pod -o wide --show-labels
+NAME                                READY   STATUS    RESTARTS   AGE   IP            NODE     NOMINATED NODE   READINESS GATES   LABELS
+webapp-deployment-75c764cbf-rx7hd   1/1     Running   0          99s   192.168.1.5   node01   <none>           <none>            app=webapp,pod-template-hash=75c764cbf
 ----
 
 
 == Workloads & Scheduling - Deployment History 
 
-[Workloads & Scheduling - Deployment History ^]
+https://killercoda.com/sachin/course/CKA/deployment-history[Workloads & Scheduling - Deployment History^]
 
 ****
-
+The deployment named `video-app` has experienced multiple rolling updates and rollbacks. Your task is to total revision of this deployment and record the image name used in 3rd revision to file `app-file.txt` in this format `REVISION_TOTAL_COUNT,IMAGE_NAME`.
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ kubectl rollout history deployment video-app | grep -E "^[1-9]+" | wc -l
+3
 
+$ CNT=$(kubectl rollout history deployment video-app | grep -E "^[1-9]+" | wc -l)
+
+$ kubectl rollout history deployment video-app --revision=3 -o jsonpath='{.spec.template.spec.containers}'
+[{"image":"redis:7.0.13","imagePullPolicy":"IfNotPresent","name":"redis","resources":{},"terminationMessagePath":"/dev/termination-log","terminationMessagePolicy":"File"}]
+
+$ IMG=$(kubectl rollout history deployment video-app --revision=3 -o jsonpath='{.spec.template.spec.containers[*].image}')
+
+$ echo "$CNT,$IMG" | tee file.txt
+3,redis:7.0.13
 ----
+
+NOTE: 验证没通过，不知道哪里的问题？
 
 
 == Workloads & Scheduling - Deployment Issue 
 
-[Workloads & Scheduling - Deployment Issue ^]
+https://killercoda.com/sachin/course/CKA/deployment-1[Workloads & Scheduling - Deployment Issue^]
 
 ****
+There is a issue in `my-app-deployment.yaml` manifest file, fix the issues, After fixing make sure pod are running state.
 
+Note: Don't remove any specification
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ cat my-app-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+      - name: my-app-container
+        image: nginx:latets
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            memory: "1000Mi"
+            cpu: "5.0"
+          limits:
+            memory: "100Mi"
+            cpu: "0.5"
 
+$ kubectl apply -f my-app-deployment.yaml
+The Deployment "my-app-deployment" is invalid:
+* spec.template.spec.containers[0].resources.requests: Invalid value: "1000Mi": must be less than or equal to memory limit of 100Mi
+* spec.template.spec.containers[0].resources.requests: Invalid value: "5": must be less than or equal to cpu limit of 500m
+
+# 修改 resources 定义，向下兼容
+
+$ kubectl apply -f my-app-deployment.yaml
+deployment.apps/my-app-deployment created
+
+$ kubectl get pod
+NAME                                 READY   STATUS             RESTARTS   AGE
+my-app-deployment-6ff85cfb8c-9fxf8   0/1     Pending            0          57s
+my-app-deployment-6ff85cfb8c-h2vnd   0/1     ImagePullBackOff   0          57s
+
+$ kubectl describe pod my-app-deployment-6ff85cfb8c-h2vnd
+Name:             my-app-deployment-6ff85cfb8c-h2vnd
+Namespace:        default
+Priority:         0
+Service Account:  default
+Node:             node01/172.30.2.2
+Start Time:       Tue, 14 Jan 2025 11:40:43 +0000
+Labels:           app=my-app
+                  pod-template-hash=6ff85cfb8c
+Annotations:      cni.projectcalico.org/containerID: 7564620113d373c5518963d0957c33a54508c38cf41cab99ffc32d63a385c5ef
+                  cni.projectcalico.org/podIP: 192.168.1.4/32
+                  cni.projectcalico.org/podIPs: 192.168.1.4/32
+Status:           Pending
+IP:               192.168.1.4
+IPs:
+  IP:           192.168.1.4
+Controlled By:  ReplicaSet/my-app-deployment-6ff85cfb8c
+Containers:
+  my-app-container:
+    Container ID:
+    Image:          nginx:latets
+    Image ID:
+    Port:           80/TCP
+    Host Port:      0/TCP
+    State:          Waiting
+      Reason:       ImagePullBackOff
+    Ready:          False
+    Restart Count:  0
+    Limits:
+      cpu:     500m
+      memory:  100Mi
+    Requests:
+      cpu:        500m
+      memory:     100Mi
+    Environment:  <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-wn6mr (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True
+  Initialized                 True
+  Ready                       False
+  ContainersReady             False
+  PodScheduled                True
+Volumes:
+  kube-api-access-wn6mr:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    ConfigMapOptional:       <nil>
+    DownwardAPI:             true
+QoS Class:                   Guaranteed
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type     Reason     Age                 From               Message
+  ----     ------     ----                ----               -------
+  Normal   Scheduled  109s                default-scheduler  Successfully assigned default/my-app-deployment-6ff85cfb8c-h2vnd to node01
+  Normal   BackOff    26s (x4 over 101s)  kubelet            Back-off pulling image "nginx:latets"
+  Warning  Failed     26s (x4 over 101s)  kubelet            Error: ImagePullBackOff
+  Normal   Pulling    12s (x4 over 108s)  kubelet            Pulling image "nginx:latets"
+  Warning  Failed     7s (x4 over 102s)   kubelet            Failed to pull image "nginx:latets": failed to pull and unpack image "docker.io/library/nginx:latets": failed to resolve reference "docker.io/library/nginx:latets": unexpected status from HEAD request to https://docker-mirror.killer.sh/v2/library/nginx/manifests/latets?ns=docker.io: 526
+  Warning  Failed     7s (x4 over 102s)   kubelet            Error: ErrImagePull
+
+# 修改镜像版本
+
+$ kubectl describe pod my-app-deployment-59675fc77f-xc8xc
+Name:             my-app-deployment-59675fc77f-xc8xc
+Namespace:        default
+Priority:         0
+Service Account:  default
+Node:             <none>
+Labels:           app=my-app
+                  pod-template-hash=59675fc77f
+Annotations:      <none>
+Status:           Pending
+IP:
+IPs:              <none>
+Controlled By:    ReplicaSet/my-app-deployment-59675fc77f
+Containers:
+  my-app-container:
+    Image:      nginx:latest
+    Port:       80/TCP
+    Host Port:  0/TCP
+    Limits:
+      cpu:     500m
+      memory:  100Mi
+    Requests:
+      cpu:        500m
+      memory:     100Mi
+    Environment:  <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-lbb8n (ro)
+Conditions:
+  Type           Status
+  PodScheduled   False
+Volumes:
+  kube-api-access-lbb8n:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    ConfigMapOptional:       <nil>
+    DownwardAPI:             true
+QoS Class:                   Guaranteed
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type     Reason            Age   From               Message
+  ----     ------            ----  ----               -------
+  Warning  FailedScheduling  52s   default-scheduler  0/2 nodes are available: 1 Insufficient cpu, 1 node(s) had untolerated taint {node-role.kubernetes.io/control-plane: }. preemption: 0/2 nodes are available: 1 No preemption victims found for incoming pod, 1 Preemption is not helpful for scheduling.
+$ kubectl get nodes
+NAME           STATUS   ROLES           AGE   VERSION
+controlplane   Ready    control-plane   12d   v1.31.0
+node01         Ready    <none>          12d   v1.31.0
+
+# 增加容忍度
+
+$ cat my-app-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+      - name: my-app-container
+        image: nginx:latest
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            memory: "100Mi"
+            cpu: "0.5"
+          limits:
+            memory: "100Mi"
+            cpu: "0.5"
+      tolerations:
+      - key: "node-role.kubernetes.io/control-plane"
+        operator: "Exists"
+        effect: "NoSchedule"
+
+$ kubectl apply -f my-app-deployment.yaml
+deployment.apps/my-app-deployment created
+
+$ kubectl get pod -o wide
+NAME                                READY   STATUS    RESTARTS   AGE   IP            NODE           NOMINATED NODE   READINESS GATES
+my-app-deployment-c6447b984-4j57x   1/1     Running   0          19s   192.168.1.6   node01         <none>           <none>
+my-app-deployment-c6447b984-w6287   1/1     Running   0          19s   192.168.0.4   controlplane   <none>           <none>
 ----
 
 
 == Workloads & Scheduling - Deployment Scale 
 
-[Workloads & Scheduling - Deployment Scale ^]
+https://killercoda.com/sachin/course/CKA/deployment-scale[Workloads & Scheduling - Deployment Scale^]
 
 ****
-
+There is `redis-deploy` deployment in `redis-ns` namespace with replica `1` , your task is to scale it to `3`.
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ kubectl get deployments.apps redis-deploy -n redis-ns
+NAME           READY   UP-TO-DATE   AVAILABLE   AGE
+redis-deploy   1/1     1            1           40s
 
+$ kubectl -n redis-ns scale deployment redis-deploy --replicas 3
+deployment.apps/redis-deploy scaled
+
+$ kubectl get deployments.apps redis-deploy -n redis-ns
+NAME           READY   UP-TO-DATE   AVAILABLE   AGE
+redis-deploy   3/3     3            3           70s
 ----
 
 
 == Workloads & Scheduling - Deployment, Rollout 
 
-[Workloads & Scheduling - Deployment, Rollout ^]
+https://killercoda.com/sachin/course/CKA/deployment-rollout[Workloads & Scheduling - Deployment, Rollout^]
 
 ****
+Create a new deployment named `cache-deployment` in the default namespace using a custom image `redis:7.0.13`. Ensure that the deployment has the following specifications:
 
+* Set the replica count to `2` .
+* Set the strategy type `RollingUpdate`
+* Configure the `MaxUnavailable` field to `30%` and the `MaxSurge` field to `45%`.
+* Deploy the `cache-deployment` deployment and ensure that all pods are in a ready state.
+* Now, Perform an image upgrade to `redis:7.2.1`.
+* Examine the rolling history of the deployment, and save the Total revision count to the `total-revision.txt`.
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ kubectl create deployment cache-deployment --image redis:7.0.13 --replicas 2
+deployment.apps/cache-deployment created
 
+$ kubectl describe nodes | grep "Taints"
+Taints:             node-role.kubernetes.io/control-plane:NoSchedule
+Taints:             <none>
+
+$ kubectl get deployments.apps cache-deployment -o yaml | tee deploy.yaml
+
+$ vim deploy.yaml
+# 修改YAML 文件
+
+$ cat deploy.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: cache-deployment
+  name: cache-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cache-deployment
+  strategy:
+    rollingUpdate:
+      maxSurge: 45%
+      maxUnavailable: 30%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: cache-deployment
+    spec:
+      containers:
+      - image: redis:7.0.13
+        imagePullPolicy: IfNotPresent
+        name: redis
+      dnsPolicy: ClusterFirst
+      tolerations:
+      - key: "node-role.kubernetes.io/control-plane"
+        operator: "Exists"
+        effect: "NoSchedule"
+
+$ kubectl apply -f deploy.yaml
+deployment.apps/cache-deployment created
+
+$ kubectl get pod -o wide
+NAME                                READY   STATUS    RESTARTS   AGE   IP            NODE           NOMINATED NODE   READINESS GATES
+cache-deployment-794b6979cf-99hvq   1/1     Running   0          11s   192.168.1.8   node01         <none>           <none>
+cache-deployment-794b6979cf-kh2xd   1/1     Running   0          11s   192.168.0.4   controlplane   <none>           <none>
+
+$ kubectl edit deployments.apps cache-deployment
+deployment.apps/cache-deployment edited
+# 按照题目要求修改镜像版本
+
+$ kubectl get pod
+NAME                                READY   STATUS              RESTARTS   AGE
+cache-deployment-6464797bb-4tbxn    0/1     ContainerCreating   0          0s
+cache-deployment-6464797bb-8rpt4    1/1     Running             0          7s
+cache-deployment-794b6979cf-99hvq   1/1     Terminating         0          69s
+cache-deployment-794b6979cf-kh2xd   1/1     Running             0          69s
+
+$ kubectl get deployments.apps
+NAME               READY   UP-TO-DATE   AVAILABLE   AGE
+cache-deployment   2/2     2            2           78s
+
+$ kubectl rollout history deployment cache-deployment
+deployment.apps/cache-deployment
+REVISION  CHANGE-CAUSE
+1         <none>
+2         <none>
+
+$ kubectl rollout history deployment cache-deployment \
+    | grep -E "^[1-9]+" | wc -l \
+    | tee total-revision.txt
+2
 ----
 
+NOTE: 已经全部符合题目要求，但是检查没通过。
 
 == Workloads & Scheduling - Rollback 
 
-[Workloads & Scheduling - Rollback ^]
+https://killercoda.com/sachin/course/CKA/rollback[Workloads & Scheduling - Rollback^]
 
 ****
-
+Due to a missing feature in the current version. To resolve this issue, perform a rollback of the deployment `redis-deployment` to the previous version. After rolling back the deployment, save the image currently in use to the `rolling-back-image.txt` file, and finally increase the replica count to `3` ."
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ kubectl get deployments.apps redis-deployment
+NAME               READY   UP-TO-DATE   AVAILABLE   AGE
+redis-deployment   1/1     1            1           2m
 
+$ kubectl get pod --show-labels
+NAME                                READY   STATUS    RESTARTS   AGE     LABELS
+redis-deployment-7476f8d456-rwxcf   1/1     Running   0          2m27s   app=redis-deployment,pod-template-hash=7476f8d456
+
+$ kubectl get pod redis-deployment-7476f8d456-rwxcf \
+    -o jsonpath='{.spec.containers[0].image}'
+redis:7.2.1
+
+$ kubectl rollout undo deployment redis-deployment
+deployment.apps/redis-deployment rolled back
+
+$ kubectl get pod
+NAME                               READY   STATUS    RESTARTS   AGE
+redis-deployment-b9cf66d47-btbpv   1/1     Running   0          7s
+
+$ kubectl get pod redis-deployment-b9cf66d47-btbpv \
+   -o jsonpath='{.spec.containers[0].image}' \
+   | tee -a rolling-back-image.txt
+redis:7.0.13
+
+$ kubectl scale deployment redis-deployment --replicas 3
+deployment.apps/redis-deployment scaled
 ----
 
 

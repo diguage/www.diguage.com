@@ -1,5 +1,5 @@
 @startgantt
-header D瓜哥 · ""https://www.diguage.com""
+header D瓜哥 · ""https://www.diguage.com @ %date("YYYY-MM-dd")""
 
 title **Kubernetes 发行版及特性**
 
@@ -7,7 +7,12 @@ language zh
 
 skinparamlocked defaultFontSize 18
 skinparamlocked titleFontSize 30
+skinparamlocked headerFontSize 20
 skinparamlocked footerFontSize 20
+
+'skinparam defaultFontName Source Han Serif SC
+skinparam titleFontName Source Han Sans SC
+skinparam defaultMonospacedFontName JetBrains Mono
 
 'projectscale monthly
 projectscale quarterly zoom 1.1
@@ -167,11 +172,11 @@ end legend
 
 ' v1.22
 
-[admissionregistration.k8s.io/v1beta1/Webhook/MutatingWebhookConfiguration] starts 2014-09-09 and ends at [v1.22.0]'s start
-[admissionregistration.k8s.io/v1beta1/Webhook/MutatingWebhookConfiguration] is colored in Red
+[admissionregistration.k8s.io/v1beta1/MutatingWebhookConfiguration] starts 2014-09-09 and ends at [v1.22.0]'s start
+[admissionregistration.k8s.io/v1beta1/MutatingWebhookConfiguration] is colored in Red
 
-[admissionregistration.k8s.io/v1beta1/Webhook/ValidatingWebhookConfiguration] starts 2014-09-09 and ends at [v1.22.0]'s start
-[admissionregistration.k8s.io/v1beta1/Webhook/ValidatingWebhookConfiguration] is colored in Red
+[admissionregistration.k8s.io/v1beta1/ValidatingWebhookConfiguration] starts 2014-09-09 and ends at [v1.22.0]'s start
+[admissionregistration.k8s.io/v1beta1/ValidatingWebhookConfiguration] is colored in Red
 
 [admissionregistration.k8s.io/v1/Webhook] starts at [v1.16.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
 [admissionregistration.k8s.io/v1/Webhook] is colored in GreenYellow
@@ -498,11 +503,20 @@ Scheduler：为调度器的优先级算法引入 Map/Reduce 计算模式。
 end note
 
 
-[RBAC 基于角色的访问控制] as [RBAC] starts at [v1.6.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[RBAC 基于角色的访问控制] as [RBAC] starts at [v1.5.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
 [RBAC] is colored in GreenYellow
 note bottom
-' TODO ？？
+v1.5 引入，v1.6 达到 Beta，v1.8 达到稳定版。
 结合 ServiceAccount 进行权限管理。
+end note
+
+
+[授权规则的自动恢复（Auto-reconciliation）] as [AutoReconciliation] starts at [v1.6.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[AutoReconciliation] is colored in GreenYellow
+note bottom
+v1.6 引入。
+每次集群重启，API Server 都会更新默认的集群角色的缺少权限。
+防止破坏性修改；集群升级时，权限设置及时更新。
 end note
 
 
@@ -613,6 +627,14 @@ note bottom
 end note
 
 
+[Service Account Issuer Discovery] as [IssuerDiscovery] starts at [v1.18.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[IssuerDiscovery] is colored in GreenYellow
+note bottom
+v1.18 新增，v1.20 默认启用。
+允许 Kubernetes 集群作为 OIDC Server 发布出去。
+end note
+
+
 [Scheduler 所有策略全部组件化] as [SchedulerPredicatesPriorities] starts at [v1.18.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
 [SchedulerPredicatesPriorities] is colored in GreenYellow
 note bottom
@@ -671,6 +693,14 @@ v1.20 引入，v1.26 达到 Stable 阶段。
 end note
 
 
+[Bound ServiceAccount Token] as [BoundTokens] starts at [v1.20.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[BoundTokens] is colored in GreenYellow
+note bottom
+v1.20 达到 Stable 阶段，则引入时间更早。
+Token 绑定到具体的 Pod 实例。
+end note
+
+
 [NUMA/(Memory Manager)] as [MemoryManager] starts at [v1.21.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
 [MemoryManager] is colored in GreenYellow
 note bottom
@@ -704,6 +734,7 @@ end note
 [ProjectedTokens] is colored in GreenYellow
 note bottom
 ' TODO ？？
+莫非这个是 TokenRequest API？
 更安全、更短有效期、更灵活。
 end note
 
@@ -722,6 +753,15 @@ note bottom
 v1.26.0 达到正式版，引入时间应该更早。
 在 /var/lib/kubelet/device-plugins/kubelet.sock 启动
 套接字，启动 gRPC Server 服务，以此来注册设备。
+end note
+
+
+[Validating Admission Policy 验证准入策略] as [AdmissionPolicy] starts at [v1.26.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[AdmissionPolicy] is colored in GreenYellow
+note bottom
+v1.26.0 引入，v.128 达到 Beta
+通过 Admission Controller （准入控制插件）机制实现的。
+用于替代之前 Webhook 外挂是的用户授权和鉴权验证机制。
 end note
 
 
