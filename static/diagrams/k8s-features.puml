@@ -394,14 +394,6 @@ end legend
 ' v1.32
 
 
-[支持交换内存] as [swap] starts at [v1.22.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
-[swap] is colored in GreenYellow
-note bottom
-v1.22 引入，v1.28 Beta。
-注：仅 cgroup v2 支持 NodeSwap。
-end note
-
-
 -- 权威指南 --
 
 [kube-proxy/Proxy] as [kube-proxy/Proxy] starts at [v0.2]'s start with Lime bold link and ends %date("YYYY-MM-dd")
@@ -416,6 +408,15 @@ end note
 [ServiceAccount] is colored in GreenYellow
 note bottom
 v0.18 引入
+end note
+
+
+[SecurityContext] as [SecurityContext] starts at [v1.0.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[SecurityContext] is colored in GreenYellow
+note bottom
+v1.0 引入，v1.8 达到生产标准。
+用于设置 Pod 或容器安全性的配置项。
+'NOTE：ChatGPT 的回答。
 end note
 
 
@@ -450,6 +451,14 @@ end note
 
 [支持 rtk 容器] as [rtk] starts at [v1.3.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
 [rtk] is colored in GreenYellow
+note bottom
+从 v1.3 开始支持
+end note
+
+
+
+[NetworkPolicy 网络安全策略] as [NetworkPolicy] starts at [v1.3.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[NetworkPolicy] is colored in GreenYellow
 note bottom
 从 v1.3 开始支持
 end note
@@ -508,6 +517,13 @@ end note
 note bottom
 v1.5 引入，v1.6 达到 Beta，v1.8 达到稳定版。
 结合 ServiceAccount 进行权限管理。
+end note
+
+
+[Pod Security Policy] as [PodSecurityPolicy] starts at [v1.5.0]'s start with Lime bold link and ends at [v1.25.0]'s start
+[PodSecurityPolicy] is colored in Red
+note bottom
+v1.5 引入，v1.18 达到 Beta，v1.21 废弃，v.125 删除。
 end note
 
 
@@ -716,6 +732,24 @@ v1.22.0 引入，v1.27.0 成为 Alpha 版本。通过 Cgroups V2 实现。
 end note
 
 
+[支持交换内存] as [swap] starts at [v1.22.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[swap] is colored in GreenYellow
+note bottom
+v1.22 引入，v1.28 Beta。
+注：仅 cgroup v2 支持 NodeSwap。
+end note
+
+
+[Default Profiles for Seccomp] as [SeccompProfiles] starts at [v1.22.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[SeccompProfiles] is colored in GreenYellow
+note bottom
+v1.22 引入
+强制应用容器运行时的 DefaultProfile。
+Kubernetes 中称之为 RuntimeDefaultProfile。
+' Seccomp 即 Secure Computing，是 Linux 内核支持的安全特性之一，限制接口调用。
+end note
+
+
 [Job 对象的垃圾清理] as [JobGC] starts at [v1.23.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
 [JobGC] is colored in GreenYellow
 note bottom
@@ -727,6 +761,14 @@ end note
 [PVdpf] is colored in GreenYellow
 note bottom
 v1.23 Alpha
+end note
+
+
+[PodSecurity 安全机制即 Pod Security Standards（Pod 安全标准规范）] as [PodSecurity] starts at [v1.23.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[PodSecurity] is colored in GreenYellow
+note bottom
+v1.23 Beta 引入，v1.25 达到稳定。
+配合 Pod Security Admission 对 Pod 做安全检查。
 end note
 
 
