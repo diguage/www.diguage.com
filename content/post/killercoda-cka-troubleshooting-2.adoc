@@ -27,25 +27,10 @@ weight: 1
 :sectnums:
 // TODO 如何设置章节起始数
 
-== Troubleshooting - Network Policy Issue
-
-[Troubleshooting - Network Policy Issue^]
-
-****
-
-****
-
-[source%nowrap,bash,{source_attr}]
-----
-# @author D瓜哥 · https://www.diguage.com
-
-
-----
-
 
 == Troubleshooting - Persistent Volume, Persistent Volume Claim - Issue
 
-[Troubleshooting - Persistent Volume, Persistent Volume Claim - Issue^]
+https://killercoda.com/sachin/course/CKA/pv-pvc-issue[Troubleshooting - Persistent Volume, Persistent Volume Claim - Issue^]
 
 ****
 
@@ -61,39 +46,7 @@ weight: 1
 
 == Troubleshooting - CronJob Issue
 
-[Troubleshooting - CronJob Issue^]
-
-****
-
-****
-
-[source%nowrap,bash,{source_attr}]
-----
-# @author D瓜哥 · https://www.diguage.com
-
-
-----
-
-
-== Troubleshooting - Service account, role, role binding Issue
-
-[Troubleshooting - Service account, role, role binding Issue^]
-
-****
-
-****
-
-[source%nowrap,bash,{source_attr}]
-----
-# @author D瓜哥 · https://www.diguage.com
-
-
-----
-
-
-== Troubleshooting - Service account, role, role binding Issue
-
-[Troubleshooting - Service account, role, role binding Issue^]
+https://killercoda.com/sachin/course/CKA/cronjob-issue[Troubleshooting - CronJob Issue^]
 
 ****
 
@@ -109,7 +62,7 @@ weight: 1
 
 == Troubleshooting - DaemonSet Issue
 
-[Troubleshooting - DaemonSet Issue^]
+https://killercoda.com/sachin/course/CKA/ds-issue[Troubleshooting - DaemonSet Issue^]
 
 ****
 
@@ -125,7 +78,7 @@ weight: 1
 
 == Troubleshooting - Deployment Issue
 
-[Troubleshooting - Deployment Issue^]
+https://killercoda.com/sachin/course/CKA/deployment-issue[Troubleshooting - Deployment Issue^]
 
 ****
 
@@ -141,7 +94,7 @@ weight: 1
 
 == Troubleshooting - Deployment Issue 1
 
-[Troubleshooting - Deployment Issue 1^]
+https://killercoda.com/sachin/course/CKA/deployment-issue-1[Troubleshooting - Deployment Issue 1^]
 
 ****
 
@@ -157,7 +110,7 @@ weight: 1
 
 == Troubleshooting - Deployment Issue 2
 
-[Troubleshooting - Deployment Issue 2^]
+https://killercoda.com/sachin/course/CKA/deployment-issue-2[Troubleshooting - Deployment Issue 2^]
 
 ****
 
@@ -171,4 +124,50 @@ weight: 1
 ----
 
 
+== Troubleshooting - Deployment Issue 3
+
+https://killercoda.com/sachin/course/CKA/deployment-issue-3[Troubleshooting - Deployment Issue 3^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+
+----
+
+
+== Troubleshooting - Deployment Issue 4
+
+https://killercoda.com/sachin/course/CKA/deployment-issue-4[Troubleshooting - Deployment Issue 4^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+
+----
+
+
+== Troubleshooting - Deployment Not UP-TO-DATE
+
+https://killercoda.com/sachin/course/CKA/deployment-rollout-resume[Troubleshooting - Deployment Not UP-TO-DATE^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+
+----
 

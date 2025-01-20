@@ -1,7 +1,7 @@
 ---
 title: "killercoda CKA：Troubleshooting - 1"
 date: 2024-12-22T19:54:28+08:00
-draft: true
+draft: false
 keywords: ["Kubernetes", "CKA"]
 tags: ["Kubernetes","Linux"]
 categories: ["系统架构"]
@@ -23,48 +23,288 @@ weight: 1
 // . 各个常用资源的 apiGroup 不是特别清楚
 // . Pod 对 Volume 的使用，以及结合 ConfigMap 的使用
 // . etcd 的基本运维操作
+// . 对 Ingress 的一些 Annotation 不熟悉
+// . 可以使用 run 来启动一个 Pod，不能使用 create 创建
+// . 对 NetworkPolicy 的规则不了解
+// . 对 rollout 等一些命令行的操作还不是很熟悉
+// .
+// .
 
 :sectnums:
 
 
 == Troubleshooting - Pod Issue
 
-[Troubleshooting - Pod Issue^]
+https://killercoda.com/sachin/course/CKA/pod-issue[Troubleshooting - Pod Issue^]
 
 ****
-
+`hello-kubernetes` pod not running, fix that issue
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ kubectl get pod
+NAME               READY   STATUS              RESTARTS     AGE
+hello-kubernetes   0/1     RunContainerError   2 (6s ago)   29s
 
+$ kubectl describe pod hello-kubernetes
+Name:             hello-kubernetes
+Namespace:        default
+Priority:         0
+Service Account:  default
+Node:             node01/172.30.2.2
+Start Time:       Mon, 20 Jan 2025 07:21:57 +0000
+Labels:           <none>
+Annotations:      cni.projectcalico.org/containerID: 2e010161283b56bfd70d604c31ece3dc3189882f1e24c2ea57647dbaec3b2bdb
+                  cni.projectcalico.org/podIP: 192.168.1.4/32
+                  cni.projectcalico.org/podIPs: 192.168.1.4/32
+Status:           Running
+IP:               192.168.1.4
+IPs:
+  IP:  192.168.1.4
+Containers:
+  echo-container:
+    Container ID:  containerd://4f01851fcb908cd7bd1031a1726b8b75873d69fb246a5eebdd5c3dc003be7c19
+    Image:         redis
+    Image ID:      docker.io/library/redis@sha256:ca65ea36ae16e709b0f1c7534bc7e5b5ac2e5bb3c97236e4fec00e3625eb678d
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      shell
+      -c
+      while true; do echo 'Hello Kubernetes'; sleep 5; done
+    State:          Waiting
+      Reason:       CrashLoopBackOff
+    Last State:     Terminated
+      Reason:       StartError
+      Message:      failed to create containerd task: failed to create shim task: OCI runtime create failed: runc create failed: unable to start container process: exec: "shell": executable file not found in $PATH: unknown
+      Exit Code:    128
+      Started:      Thu, 01 Jan 1970 00:00:00 +0000
+      Finished:     Mon, 20 Jan 2025 07:22:20 +0000
+    Ready:          False
+    Restart Count:  2
+    Environment:    <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-xk5qj (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True
+  Initialized                 True
+  Ready                       False
+  ContainersReady             False
+  PodScheduled                True
+Volumes:
+  kube-api-access-xk5qj:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    ConfigMapOptional:       <nil>
+    DownwardAPI:             true
+QoS Class:                   BestEffort
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type     Reason     Age                From               Message
+  ----     ------     ----               ----               -------
+  Normal   Scheduled  41s                default-scheduler  Successfully assigned default/hello-kubernetes to node01
+  Normal   Pulled     35s                kubelet            Successfully pulled image "redis" in 5.57s (5.57s including waiting). Image size: 45006722 bytes.
+  Normal   Pulled     33s                kubelet            Successfully pulled image "redis" in 422ms (422ms including waiting). Image size: 45006722 bytes.
+  Normal   Pulling    19s (x3 over 40s)  kubelet            Pulling image "redis"
+  Normal   Created    18s (x3 over 35s)  kubelet            Created container echo-container
+  Warning  Failed     18s (x3 over 34s)  kubelet            Error: failed to create containerd task: failed to create shim task: OCI runtime create failed: runc create failed: unable to start container process: exec: "shell": executable file not found in $PATH: unknown
+  Normal   Pulled     18s                kubelet            Successfully pulled image "redis" in 467ms (467ms including waiting). Image size: 45006722 bytes.
+  Warning  BackOff    6s (x4 over 32s)   kubelet            Back-off restarting failed container echo-container in pod hello-kubernetes_default(5a459cd4-866a-4e57-8d44-ae83156e1e0b)
+
+$ kubectl get pod hello-kubernetes -o yaml | tee pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    cni.projectcalico.org/containerID: 2e010161283b56bfd70d604c31ece3dc3189882f1e24c2ea57647dbaec3b2bdb
+    cni.projectcalico.org/podIP: 192.168.1.4/32
+    cni.projectcalico.org/podIPs: 192.168.1.4/32
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","kind":"Pod","metadata":{"annotations":{},"name":"hello-kubernetes","namespace":"default"},"spec":{"containers":[{"command":["shell","-c","while true; do echo 'Hello Kubernetes'; sleep 5; done"],"image":"redis","name":"echo-container"}]}}
+  creationTimestamp: "2025-01-20T07:21:57Z"
+  name: hello-kubernetes
+  namespace: default
+  resourceVersion: "2157"
+  uid: 5a459cd4-866a-4e57-8d44-ae83156e1e0b
+spec:
+  containers:
+  - command:
+    - shell
+    - -c
+    - while true; do echo 'Hello Kubernetes'; sleep 5; done
+    image: redis
+    imagePullPolicy: Always
+    name: echo-container
+    resources: {}
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: kube-api-access-xk5qj
+      readOnly: true
+  dnsPolicy: ClusterFirst
+  enableServiceLinks: true
+  nodeName: node01
+  preemptionPolicy: PreemptLowerPriority
+  priority: 0
+  restartPolicy: Always
+  schedulerName: default-scheduler
+  securityContext: {}
+  serviceAccount: default
+  serviceAccountName: default
+  terminationGracePeriodSeconds: 30
+  tolerations:
+  - effect: NoExecute
+    key: node.kubernetes.io/not-ready
+    operator: Exists
+    tolerationSeconds: 300
+  - effect: NoExecute
+    key: node.kubernetes.io/unreachable
+    operator: Exists
+    tolerationSeconds: 300
+  volumes:
+  - name: kube-api-access-xk5qj
+    projected:
+      defaultMode: 420
+      sources:
+      - serviceAccountToken:
+          expirationSeconds: 3607
+          path: token
+      - configMap:
+          items:
+          - key: ca.crt
+            path: ca.crt
+          name: kube-root-ca.crt
+      - downwardAPI:
+          items:
+          - fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+            path: namespace
+# 省略了 status 字段
+
+$ vim pod.yaml
+# 根据提示，没有 shell，将 shell 修改为 sh 即可。
+
+$ kubectl replace -f pod.yaml
+Error from server (Conflict): error when replacing "pod.yaml": Operation cannot be fulfilled on pods "hello-kubernetes": the object has been modified; please apply your changes to the latest version and try again
+
+# 不能替换，就直接删除，再重建
+
+$ kubectl delete -f pod.yaml --force --grace-period 0
+Warning: Immediate deletion does not wait for confirmation that the running resource has been terminated. The resource may continue to run on the cluster indefinitely.
+pod "hello-kubernetes" force deleted
+
+$ kubectl apply -f pod.yaml
+pod/hello-kubernetes created
+
+$ kubectl get pod
+NAME               READY   STATUS    RESTARTS   AGE
+hello-kubernetes   1/1     Running   0          5s
 ----
 
 
 == Troubleshooting - Pod Issue - 1
 
-[Troubleshooting - Pod Issue - 1^]
+https://killercoda.com/sachin/course/CKA/pod-issue-1[Troubleshooting - Pod Issue - 1^]
 
 ****
-
+`nginx-pod` pod not running, fix that issue
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ kubectl get pod nginx-pod
+NAME        READY   STATUS             RESTARTS   AGE
+nginx-pod   0/1     ImagePullBackOff   0          31s
 
+$ kubectl describe pod nginx-pod
+Name:             nginx-pod
+Namespace:        default
+Priority:         0
+Service Account:  default
+Node:             node01/172.30.2.2
+Start Time:       Mon, 20 Jan 2025 07:32:35 +0000
+Labels:           <none>
+Annotations:      cni.projectcalico.org/containerID: 679da851e43d9739baa09cb3e074cc798ca5f98444b0b997f593de3e7dfdeff0
+                  cni.projectcalico.org/podIP: 192.168.1.4/32
+                  cni.projectcalico.org/podIPs: 192.168.1.4/32
+Status:           Pending
+IP:               192.168.1.4
+IPs:
+  IP:  192.168.1.4
+Containers:
+  nginx-container:
+    Container ID:
+    Image:          nginx:ltest
+    Image ID:
+    Port:           <none>
+    Host Port:      <none>
+    State:          Waiting
+      Reason:       ErrImagePull
+    Ready:          False
+    Restart Count:  0
+    Environment:    <none>
+    Mounts:
+      /var/log/nginx from log-volume (rw)
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-qz5bt (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True
+  Initialized                 True
+  Ready                       False
+  ContainersReady             False
+  PodScheduled                True
+Volumes:
+  log-volume:
+    Type:       EmptyDir (a temporary directory that shares a pod's lifetime)
+    Medium:
+    SizeLimit:  <unset>
+  kube-api-access-qz5bt:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    ConfigMapOptional:       <nil>
+    DownwardAPI:             true
+QoS Class:                   BestEffort
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type     Reason     Age                From               Message
+  ----     ------     ----               ----               -------
+  Normal   Scheduled  40s                default-scheduler  Successfully assigned default/nginx-pod to node01
+  Normal   Pulling    22s (x2 over 39s)  kubelet            Pulling image "nginx:ltest"
+  Warning  Failed     20s (x2 over 37s)  kubelet            Failed to pull image "nginx:ltest": failed to pull and unpack image "docker.io/library/nginx:ltest": failed to resolve reference "docker.io/library/nginx:ltest": unexpected status from HEAD request to https://docker-mirror.killer.sh/v2/library/nginx/manifests/ltest?ns=docker.io: 526
+  Warning  Failed     20s (x2 over 37s)  kubelet            Error: ErrImagePull
+  Normal   BackOff    7s (x2 over 36s)   kubelet            Back-off pulling image "nginx:ltest"
+  Warning  Failed     7s (x2 over 36s)   kubelet            Error: ImagePullBackOff
+
+$ kubectl edit pod nginx-pod
+# 根据描述，镜像版本号写错了，将版本号修改为 latest 即可。
+pod/nginx-pod edited
+
+$ kubectl get pod nginx-pod
+NAME        READY   STATUS    RESTARTS   AGE
+nginx-pod   1/1     Running   0          85s
 ----
 
 
 == Troubleshooting - Pod Issue - 2
 
-[Troubleshooting - Pod Issue - 2^]
+https://killercoda.com/sachin/course/CKA/pod-issue-2[Troubleshooting - Pod Issue - 2^]
 
 ****
-
+`redis-pod` pod not running, fix that issue
 ****
 
 [source%nowrap,bash,{source_attr}]
@@ -72,15 +312,438 @@ weight: 1
 # @author D瓜哥 · https://www.diguage.com
 
 
+$ kubectl get pod redis-pod
+NAME        READY   STATUS    RESTARTS   AGE
+redis-pod   0/1     Pending   0          48s
+
+$ kubectl describe pod redis-pod
+Name:             redis-pod
+Namespace:        default
+Priority:         0
+Service Account:  default
+Node:             <none>
+Labels:           <none>
+Annotations:      <none>
+Status:           Pending
+IP:
+IPs:              <none>
+Containers:
+  redis-container:
+    Image:        redis:latested
+    Port:         6379/TCP
+    Host Port:    0/TCP
+    Environment:  <none>
+    Mounts:
+      /data from redis-data (rw)
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-mcdm9 (ro)
+Conditions:
+  Type           Status
+  PodScheduled   False
+Volumes:
+  redis-data:
+    Type:       PersistentVolumeClaim (a reference to a PersistentVolumeClaim in the same namespace)
+    ClaimName:  pvc-redis
+    ReadOnly:   false
+  kube-api-access-mcdm9:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    ConfigMapOptional:       <nil>
+    DownwardAPI:             true
+QoS Class:                   BestEffort
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type     Reason            Age   From               Message
+  ----     ------            ----  ----               -------
+  Warning  FailedScheduling  59s   default-scheduler  0/2 nodes are available: persistentvolumeclaim "pvc-redis" not found. preemption: 0/2 nodes are available: 2 Preemption is not helpful for scheduling.
+
+$ kubectl get pvc  -o wide
+NAME        STATUS    VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE     VOLUMEMODE
+redis-pvc   Pending                                      manually       <unset>                 6m55s   Filesystem
+
+$ kubectl get pvc redis-pvc -o yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","kind":"PersistentVolumeClaim","metadata":{"annotations":{},"name":"redis-pvc","namespace":"default"},"spec":{"accessModes":["ReadWriteOnce"],"resources":{"requests":{"storage":"80Mi"}},"storageClassName":"manually"}}
+  creationTimestamp: "2025-01-20T07:36:34Z"
+  finalizers:
+  - kubernetes.io/pvc-protection
+  name: redis-pvc
+  namespace: default
+  resourceVersion: "1960"
+  uid: 8c736c46-7de8-47f9-82ad-0fdac49bd102
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 80Mi
+  storageClassName: manually
+  volumeMode: Filesystem
+# 省略了 status 字段
+
+$ kubectl get pv -o wide
+NAME       CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS      CLAIM   STORAGECLASS   VOLUMEATTRIBUTESCLASS   REASON   AGE     VOLUMEMODE
+redis-pv   100Mi      RWO            Retain           Available           manual         <unset>                          7m25s   Filesystem
+
+$ kubectl get pvc redis-pvc -o yaml | tee pod.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","kind":"PersistentVolumeClaim","metadata":{"annotations":{},"name":"redis-pvc","namespace":"default"},"spec":{"accessModes":["ReadWriteOnce"],"resources":{"requests":{"storage":"80Mi"}},"storageClassName":"manually"}}
+  creationTimestamp: "2025-01-20T07:36:34Z"
+  finalizers:
+  - kubernetes.io/pvc-protection
+  name: redis-pvc
+  namespace: default
+  resourceVersion: "1960"
+  uid: 8c736c46-7de8-47f9-82ad-0fdac49bd102
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 80Mi
+  storageClassName: manually
+  volumeMode: Filesystem
+status:
+  phase: Pending
+
+$ kubectl get pod redis-pod -o yaml | tee -a pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","kind":"Pod","metadata":{"annotations":{},"name":"redis-pod","namespace":"default"},"spec":{"containers":[{"image":"redis:latested","name":"redis-container","ports":[{"containerPort":6379,"name":"redis"}],"volumeMounts":[{"mountPath":"/data","name":"redis-data"}]}],"volumes":[{"name":"redis-data","persistentVolumeClaim":{"claimName":"pvc-redis"}}]}}
+  creationTimestamp: "2025-01-20T07:36:34Z"
+  name: redis-pod
+  namespace: default
+  resourceVersion: "1964"
+  uid: 250b8589-179d-4bfa-b88b-395732848380
+spec:
+  containers:
+  - image: redis:latested
+    imagePullPolicy: IfNotPresent
+    name: redis-container
+    ports:
+    - containerPort: 6379
+      name: redis
+      protocol: TCP
+    resources: {}
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /data
+      name: redis-data
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: kube-api-access-mcdm9
+      readOnly: true
+  dnsPolicy: ClusterFirst
+  enableServiceLinks: true
+  preemptionPolicy: PreemptLowerPriority
+  priority: 0
+  restartPolicy: Always
+  schedulerName: default-scheduler
+  securityContext: {}
+  serviceAccount: default
+  serviceAccountName: default
+  terminationGracePeriodSeconds: 30
+  tolerations:
+  - effect: NoExecute
+    key: node.kubernetes.io/not-ready
+    operator: Exists
+    tolerationSeconds: 300
+  - effect: NoExecute
+    key: node.kubernetes.io/unreachable
+    operator: Exists
+    tolerationSeconds: 300
+  volumes:
+  - name: redis-data
+    persistentVolumeClaim:
+      claimName: pvc-redis
+  - name: kube-api-access-mcdm9
+    projected:
+      defaultMode: 420
+      sources:
+      - serviceAccountToken:
+          expirationSeconds: 3607
+          path: token
+      - configMap:
+          items:
+          - key: ca.crt
+            path: ca.crt
+          name: kube-root-ca.crt
+      - downwardAPI:
+          items:
+          - fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+            path: namespace
+# 省略了 status 字段
+
+$ vim pod.yaml
+# 以为只有 PVC 名称错误，修改 PVC 名称
+
+$ kubectl delete -f pod.yaml --force --grace-period 0
+Warning: Immediate deletion does not wait for confirmation that the running resource has been terminated. The resource may continue to run on the cluster indefinitely.
+persistentvolumeclaim "redis-pvc" force deleted
+pod "redis-pod" force deleted
+
+$ kubectl apply -f pod.yaml
+persistentvolumeclaim/redis-pvc created
+pod/redis-pod created
+
+$ kubectl get pod
+NAME        READY   STATUS         RESTARTS   AGE
+redis-pod   0/1     ErrImagePull   0          19s
+
+$ vim pod.yaml
+# 镜像版本号错误，修改为 latest
+
+$ kubectl delete -f pod.yaml --force --grace-period 0
+Warning: Immediate deletion does not wait for confirmation that the running resource has been terminated. The resource may continue to run on the cluster indefinitely.
+persistentvolumeclaim "redis-pvc" force deleted
+pod "redis-pod" force deleted
+
+$ kubectl apply -f pod.yaml
+persistentvolumeclaim/redis-pvc created
+pod/redis-pod created
+
+$ kubectl get pod
+NAME        READY   STATUS    RESTARTS   AGE
+redis-pod   0/1     Pending   0          5s
+
+$ kubectl get pod
+NAME        READY   STATUS    RESTARTS   AGE
+redis-pod   0/1     Pending   0          8s
+
+$ kubectl describe pod redis-pod
+Name:             redis-pod
+Namespace:        default
+Priority:         0
+Service Account:  default
+Node:             <none>
+Labels:           <none>
+Annotations:      <none>
+Status:           Pending
+IP:
+IPs:              <none>
+Containers:
+  redis-container:
+    Image:        redis:latest
+    Port:         6379/TCP
+    Host Port:    0/TCP
+    Environment:  <none>
+    Mounts:
+      /data from redis-data (rw)
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-mcdm9 (ro)
+Conditions:
+  Type           Status
+  PodScheduled   False
+Volumes:
+  redis-data:
+    Type:       PersistentVolumeClaim (a reference to a PersistentVolumeClaim in the same namespace)
+    ClaimName:  redis-pvc
+    ReadOnly:   false
+  kube-api-access-mcdm9:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    ConfigMapOptional:       <nil>
+    DownwardAPI:             true
+QoS Class:                   BestEffort
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type     Reason            Age   From               Message
+  ----     ------            ----  ----               -------
+  Warning  FailedScheduling  19s   default-scheduler  0/2 nodes are available: pod has unbound immediate PersistentVolumeClaims. preemption: 0/2 nodes are available: 2 Preemption is not helpful for scheduling.
+
+$ kubectl get pvc
+NAME        STATUS    VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+redis-pvc   Pending                                      manual         <unset>                 40s
+
+$ kubectl get pv redis-pv -o yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","kind":"PersistentVolume","metadata":{"annotations":{},"name":"redis-pv"},"spec":{"accessModes":["ReadWriteOnce"],"capacity":{"storage":"100Mi"},"hostPath":{"path":"/mnt/data/redis"},"persistentVolumeReclaimPolicy":"Retain","storageClassName":"manual","volumeMode":"Filesystem"}}
+    pv.kubernetes.io/bound-by-controller: "yes"
+  creationTimestamp: "2025-01-20T07:36:34Z"
+  finalizers:
+  - kubernetes.io/pv-protection
+  name: redis-pv
+  resourceVersion: "3798"
+  uid: d6946802-a2dc-493e-9aaa-d74978c8a49c
+spec:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 100Mi
+  claimRef:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    name: redis-pvc
+    namespace: default
+    resourceVersion: "3699"
+    uid: 7b1eecf9-ba50-41e5-ac97-71af6c60c889
+  hostPath:
+    path: /mnt/data/redis
+    type: ""
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: manual
+  volumeMode: Filesystem
+status:
+  lastPhaseTransitionTime: "2025-01-20T07:57:41Z"
+  phase: Released
+
+$ kubectl get pvc redis-pvc -o yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","kind":"PersistentVolumeClaim","metadata":{"annotations":{},"creationTimestamp":"2025-01-20T07:36:34Z","finalizers":["kubernetes.io/pvc-protection"],"name":"redis-pvc","namespace":"default","resourceVersion":"1960","uid":"8c736c46-7de8-47f9-82ad-0fdac49bd102"},"spec":{"accessModes":["ReadWriteOnce"],"resources":{"requests":{"storage":"80Mi"}},"storageClassName":"manual","volumeMode":"Filesystem"},"status":{"phase":"Pending"}}
+  creationTimestamp: "2025-01-20T07:57:46Z"
+  finalizers:
+  - kubernetes.io/pvc-protection
+  name: redis-pvc
+  namespace: default
+  resourceVersion: "3805"
+  uid: 133b03c5-58ab-45bb-8e33-3517813f3d32
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 80Mi
+  storageClassName: manual
+  volumeMode: Filesystem
+status:
+  phase: Pending
+
+$ kubectl describe pvc redis-pvc
+Name:          redis-pvc
+Namespace:     default
+StorageClass:  manual
+Status:        Pending
+Volume:
+Labels:        <none>
+Annotations:   <none>
+Finalizers:    [kubernetes.io/pvc-protection]
+Capacity:
+Access Modes:
+VolumeMode:    Filesystem
+Used By:       redis-pod
+Events:
+  Type     Reason              Age                   From                         Message
+  ----     ------              ----                  ----                         -------
+  Warning  ProvisioningFailed  13s (x10 over 2m16s)  persistentvolume-controller  storageclass.storage.k8s.io "manual" not found
+
+$ kubectl get storageclass
+NAME                   PROVISIONER             RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
+local-path (default)   rancher.io/local-path   Delete          WaitForFirstConsumer   false                  17d
+
+$ echo "---" | tee -a pod.yaml
+---
+
+$ kubectl get pv redis-pv -o yaml | tee -a pod.yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","kind":"PersistentVolume","metadata":{"annotations":{},"name":"redis-pv"},"spec":{"accessModes":["ReadWriteOnce"],"capacity":{"storage":"100Mi"},"hostPath":{"path":"/mnt/data/redis"},"persistentVolumeReclaimPolicy":"Retain","storageClassName":"manual","volumeMode":"Filesystem"}}
+    pv.kubernetes.io/bound-by-controller: "yes"
+  creationTimestamp: "2025-01-20T07:36:34Z"
+  finalizers:
+  - kubernetes.io/pv-protection
+  name: redis-pv
+  resourceVersion: "3798"
+  uid: d6946802-a2dc-493e-9aaa-d74978c8a49c
+spec:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 100Mi
+  claimRef:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    name: redis-pvc
+    namespace: default
+    resourceVersion: "3699"
+    uid: 7b1eecf9-ba50-41e5-ac97-71af6c60c889
+  hostPath:
+    path: /mnt/data/redis
+    type: ""
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: manual
+  volumeMode: Filesystem
+status:
+  lastPhaseTransitionTime: "2025-01-20T07:57:41Z"
+  phase: Released
+
+$ vim pod.yaml
+# 1、PV 和 PVC 的 storageClass 不一样，修改成一样的，提示找不到 manual。
+# 2、有默认的 StorageClass，直接删除掉 storageClass 字段的定义
+
+$ kubectl delete -f pod.yaml --force --grace-period 0
+Warning: Immediate deletion does not wait for confirmation that the running resource has been terminated. The resource may continue to run on the cluster indefinitely.
+persistentvolumeclaim "redis-pvc" force deleted
+pod "redis-pod" force deleted
+persistentvolume "redis-pv" force deleted
+
+$ kubectl apply -f pod.yaml
+persistentvolumeclaim/redis-pvc created
+pod/redis-pod created
+Error from server (BadRequest): error when creating "pod.yaml": PersistentVolume in version "v1" cannot be handled as a PersistentVolume: strict decoding error: unknown field "spec.phase"
+
+$ kubectl delete -f pod.yaml --force --grace-period 0
+Warning: Immediate deletion does not wait for confirmation that the running resource has been terminated. The resource may continue to run on the cluster indefinitely.
+persistentvolumeclaim "redis-pvc" force deleted
+pod "redis-pod" force deleted
+Error from server (NotFound): error when deleting "pod.yaml": persistentvolumes "redis-pv" not found
+
+$ vim pod.yaml
+
+$ kubectl apply -f pod.yaml
+persistentvolumeclaim/redis-pvc created
+pod/redis-pod created
+persistentvolume/redis-pv created
+
+$ kubectl get pvc redis-pvc
+NAME        STATUS   VOLUME     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+redis-pvc   Bound    redis-pv   100Mi      RWO            local-path     <unset>                 8s
+
+$ kubectl get pv
+NAME       CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM               STORAGECLASS   VOLUMEATTRIBUTESCLASS   REASON   AGE
+redis-pv   100Mi      RWO            Retain           Bound    default/redis-pvc                  <unset>                          13s
+
+$ kubectl get pod
+NAME        READY   STATUS    RESTARTS   AGE
+redis-pod   1/1     Running   0          18s
 ----
 
 
 == Troubleshooting - Pod Issue - 3
 
-[Troubleshooting - Pod Issue - 3^]
+https://killercoda.com/sachin/course/CKA/pod-issue-3[Troubleshooting - Pod Issue - 3^]
 
 ****
+`frontend` pod is in Pending state, not running, fix that issue
 
+Note: Don't remove any specification in `frontend` pod
 ****
 
 [source%nowrap,bash,{source_attr}]
@@ -88,63 +751,882 @@ weight: 1
 # @author D瓜哥 · https://www.diguage.com
 
 
+$ kubectl get pod -o wide
+NAME       READY   STATUS    RESTARTS   AGE   IP       NODE     NOMINATED NODE   READINESS GATES
+frontend   0/1     Pending   0          77s   <none>   <none>   <none>           <none>
+
+$ kubectl describe pod frontend
+Name:             frontend
+Namespace:        default
+Priority:         0
+Service Account:  default
+Node:             <none>
+Labels:           <none>
+Annotations:      <none>
+Status:           Pending
+IP:
+IPs:              <none>
+Containers:
+  my-container:
+    Image:        nginx:latest
+    Port:         <none>
+    Host Port:    <none>
+    Environment:  <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-hvf7v (ro)
+Conditions:
+  Type           Status
+  PodScheduled   False
+Volumes:
+  kube-api-access-hvf7v:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    ConfigMapOptional:       <nil>
+    DownwardAPI:             true
+QoS Class:                   BestEffort
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type     Reason            Age   From               Message
+  ----     ------            ----  ----               -------
+  Warning  FailedScheduling  90s   default-scheduler  0/2 nodes are available: 1 node(s) didn't match Pod's node affinity/selector, 1 node(s) had untolerated taint {node-role.kubernetes.io/control-plane: }. preemption: 0/2 nodes are available: 2 Preemption is not helpful for scheduling.
+
+$ kubectl get pod frontend -o yaml | tee  pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","kind":"Pod","metadata":{"annotations":{},"name":"frontend","namespace":"default"},"spec":{"affinity":{"nodeAffinity":{"requiredDuringSchedulingIgnoredDuringExecution":{"nodeSelectorTerms":[{"matchExpressions":[{"key":"NodeName","operator":"In","values":["frontend"]}]}]}}},"containers":[{"image":"nginx:latest","name":"my-container"}]}}
+  creationTimestamp: "2025-01-20T08:20:55Z"
+  name: frontend
+  namespace: default
+  resourceVersion: "1974"
+  uid: 6845876f-0a48-4404-a335-3192b3d74bf0
+spec:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: NodeName
+            operator: In
+            values:
+            - frontend
+  containers:
+  - image: nginx:latest
+    imagePullPolicy: Always
+    name: my-container
+    resources: {}
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: kube-api-access-hvf7v
+      readOnly: true
+  dnsPolicy: ClusterFirst
+  enableServiceLinks: true
+  preemptionPolicy: PreemptLowerPriority
+  priority: 0
+  restartPolicy: Always
+  schedulerName: default-scheduler
+  securityContext: {}
+  serviceAccount: default
+  serviceAccountName: default
+  terminationGracePeriodSeconds: 30
+  tolerations:
+  - effect: NoExecute
+    key: node.kubernetes.io/not-ready
+    operator: Exists
+    tolerationSeconds: 300
+  - effect: NoExecute
+    key: node.kubernetes.io/unreachable
+    operator: Exists
+    tolerationSeconds: 300
+  volumes:
+  - name: kube-api-access-hvf7v
+    projected:
+      defaultMode: 420
+      sources:
+      - serviceAccountToken:
+          expirationSeconds: 3607
+          path: token
+      - configMap:
+          items:
+          - key: ca.crt
+            path: ca.crt
+          name: kube-root-ca.crt
+      - downwardAPI:
+          items:
+          - fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+            path: namespace
+# 省略了 status 字段
+
+$ kubectl get node -o yaml | grep NodeName
+      NodeName: frontendnodes
+
+$ kubectl get node -o yaml
+apiVersion: v1
+items:
+- apiVersion: v1
+  kind: Node
+  metadata:
+    annotations:
+      flannel.alpha.coreos.com/backend-data: '{"VNI":1,"VtepMAC":"d6:55:ea:c6:55:44"}'
+      flannel.alpha.coreos.com/backend-type: vxlan
+      flannel.alpha.coreos.com/kube-subnet-manager: "true"
+      flannel.alpha.coreos.com/public-ip: 172.30.1.2
+      kubeadm.alpha.kubernetes.io/cri-socket: unix:///var/run/containerd/containerd.sock
+      node.alpha.kubernetes.io/ttl: "0"
+      projectcalico.org/IPv4Address: 172.30.1.2/24
+      projectcalico.org/IPv4IPIPTunnelAddr: 192.168.0.1
+      volumes.kubernetes.io/controller-managed-attach-detach: "true"
+    creationTimestamp: "2025-01-02T09:48:11Z"
+    labels:
+      beta.kubernetes.io/arch: amd64
+      beta.kubernetes.io/os: linux
+      kubernetes.io/arch: amd64
+      kubernetes.io/hostname: controlplane
+      kubernetes.io/os: linux
+      node-role.kubernetes.io/control-plane: ""
+      node.kubernetes.io/exclude-from-external-load-balancers: ""
+    name: controlplane
+    resourceVersion: "2312"
+    uid: 3128acc2-f3b1-4321-829a-338be43290e3
+  spec:
+    podCIDR: 192.168.0.0/24
+    podCIDRs:
+    - 192.168.0.0/24
+    taints:
+    - effect: NoSchedule
+      key: node-role.kubernetes.io/control-plane
+  status:
+    addresses:
+    - address: 172.30.1.2
+      type: InternalIP
+    - address: controlplane
+      type: Hostname
+    allocatable:
+      cpu: "1"
+      ephemeral-storage: "19586931083"
+      hugepages-2Mi: "0"
+      memory: 1928540Ki
+      pods: "110"
+    capacity:
+      cpu: "1"
+      ephemeral-storage: 20134592Ki
+      hugepages-2Mi: "0"
+      memory: 2030940Ki
+      pods: "110"
+    conditions:
+    - lastHeartbeatTime: "2025-01-20T08:20:08Z"
+      lastTransitionTime: "2025-01-20T08:20:08Z"
+      message: Flannel is running on this node
+      reason: FlannelIsUp
+      status: "False"
+      type: NetworkUnavailable
+    - lastHeartbeatTime: "2025-01-20T08:24:56Z"
+      lastTransitionTime: "2025-01-02T09:48:09Z"
+      message: kubelet has sufficient memory available
+      reason: KubeletHasSufficientMemory
+      status: "False"
+      type: MemoryPressure
+    - lastHeartbeatTime: "2025-01-20T08:24:56Z"
+      lastTransitionTime: "2025-01-02T09:48:09Z"
+      message: kubelet has no disk pressure
+      reason: KubeletHasNoDiskPressure
+      status: "False"
+      type: DiskPressure
+    - lastHeartbeatTime: "2025-01-20T08:24:56Z"
+      lastTransitionTime: "2025-01-02T09:48:09Z"
+      message: kubelet has sufficient PID available
+      reason: KubeletHasSufficientPID
+      status: "False"
+      type: PIDPressure
+    - lastHeartbeatTime: "2025-01-20T08:24:56Z"
+      lastTransitionTime: "2025-01-02T09:48:25Z"
+      message: kubelet is posting ready status
+      reason: KubeletReady
+      status: "True"
+      type: Ready
+    daemonEndpoints:
+      kubeletEndpoint:
+        Port: 10250
+    images:
+    - names:
+      - docker.io/calico/cni@sha256:e60b90d7861e872efa720ead575008bc6eca7bee41656735dcaa8210b688fcd9
+      - docker.io/calico/cni:v3.24.1
+      sizeBytes: 87382462
+    - names:
+      - docker.io/calico/node@sha256:43f6cee5ca002505ea142b3821a76d585aa0c8d22bc58b7e48589ca7deb48c13
+      - docker.io/calico/node:v3.24.1
+      sizeBytes: 80180860
+    - names:
+      - registry.k8s.io/etcd@sha256:a6dc63e6e8cfa0307d7851762fa6b629afb18f28d8aa3fab5a6e91b4af60026a
+      - registry.k8s.io/etcd:3.5.15-0
+      sizeBytes: 56909194
+    - names:
+      - docker.io/calico/kube-controllers@sha256:4010b2739792ae5e77a750be909939c0a0a372e378f3c81020754efcf4a91efa
+      - docker.io/calico/kube-controllers:v3.24.1
+      sizeBytes: 31125927
+    - names:
+      - registry.k8s.io/kube-proxy@sha256:c727efb1c6f15a68060bf7f207f5c7a765355b7e3340c513e582ec819c5cd2fe
+      - registry.k8s.io/kube-proxy:v1.31.0
+      sizeBytes: 30207900
+    - names:
+      - registry.k8s.io/kube-apiserver@sha256:470179274deb9dc3a81df55cfc24823ce153147d4ebf2ed649a4f271f51eaddf
+      - registry.k8s.io/kube-apiserver:v1.31.0
+      sizeBytes: 28063421
+    - names:
+      - registry.k8s.io/kube-controller-manager@sha256:f6f3c33dda209e8434b83dacf5244c03b59b0018d93325ff21296a142b68497d
+      - registry.k8s.io/kube-controller-manager:v1.31.0
+      sizeBytes: 26240868
+    - names:
+      - quay.io/coreos/flannel@sha256:9a296fbb67790659adc3701e287adde3c59803b7fcefe354f1fc482840cdb3d9
+      - quay.io/coreos/flannel:v0.15.1
+      sizeBytes: 21673107
+    - names:
+      - registry.k8s.io/kube-scheduler@sha256:96ddae9c9b2e79342e0551e2d2ec422c0c02629a74d928924aaa069706619808
+      - registry.k8s.io/kube-scheduler:v1.31.0
+      sizeBytes: 20196722
+    - names:
+      - docker.io/rancher/local-path-provisioner@sha256:34cb52f4b1c8fba0f27e0c9a15141bbe08200145775ec272a678cdea3959dec1
+      - docker.io/rancher/local-path-provisioner:master-head
+      sizeBytes: 18584853
+    - names:
+      - registry.k8s.io/coredns/coredns@sha256:1eeb4c7316bacb1d4c8ead65571cd92dd21e27359f0d4917f1a5822a73b75db1
+      - registry.k8s.io/coredns/coredns:v1.11.1
+      sizeBytes: 18182961
+    - names:
+      - registry.k8s.io/pause@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a
+      - registry.k8s.io/pause:3.10
+      sizeBytes: 320368
+    - names:
+      - registry.k8s.io/pause@sha256:1ff6c18fbef2045af6b9c16bf034cc421a29027b800e4f9b68ae9b1cb3e9ae07
+      - registry.k8s.io/pause:3.5
+      sizeBytes: 301416
+    nodeInfo:
+      architecture: amd64
+      bootID: 22476fbf-51cc-4d99-b3b5-347a2c022cf9
+      containerRuntimeVersion: containerd://1.7.13
+      kernelVersion: 5.4.0-131-generic
+      kubeProxyVersion: ""
+      kubeletVersion: v1.31.0
+      machineID: 388a2d0f867a4404bc12a0093bd9ed8d
+      operatingSystem: linux
+      osImage: Ubuntu 20.04.5 LTS
+      systemUUID: 91ccc19f-6510-4f60-80db-c1261467f7b1
+- apiVersion: v1
+  kind: Node
+  metadata:
+    annotations:
+      flannel.alpha.coreos.com/backend-data: '{"VNI":1,"VtepMAC":"8a:bd:1a:96:46:5a"}'
+      flannel.alpha.coreos.com/backend-type: vxlan
+      flannel.alpha.coreos.com/kube-subnet-manager: "true"
+      flannel.alpha.coreos.com/public-ip: 172.30.2.2
+      kubeadm.alpha.kubernetes.io/cri-socket: unix:///var/run/containerd/containerd.sock
+      node.alpha.kubernetes.io/ttl: "0"
+      projectcalico.org/IPv4Address: 172.30.2.2/24
+      projectcalico.org/IPv4IPIPTunnelAddr: 192.168.1.1
+      volumes.kubernetes.io/controller-managed-attach-detach: "true"
+    creationTimestamp: "2025-01-02T10:03:01Z"
+    labels:
+      NodeName: frontendnodes
+      beta.kubernetes.io/arch: amd64
+      beta.kubernetes.io/os: linux
+      kubernetes.io/arch: amd64
+      kubernetes.io/hostname: node01
+      kubernetes.io/os: linux
+    name: node01
+    resourceVersion: "2311"
+    uid: 93743255-7b3e-4e81-a8a8-4a071984de9a
+  spec:
+    podCIDR: 192.168.1.0/24
+    podCIDRs:
+    - 192.168.1.0/24
+  status:
+    addresses:
+    - address: 172.30.2.2
+      type: InternalIP
+    - address: node01
+      type: Hostname
+    allocatable:
+      cpu: "1"
+      ephemeral-storage: "19586931083"
+      hugepages-2Mi: "0"
+      memory: 1928540Ki
+      pods: "110"
+    capacity:
+      cpu: "1"
+      ephemeral-storage: 20134592Ki
+      hugepages-2Mi: "0"
+      memory: 2030940Ki
+      pods: "110"
+    conditions:
+    - lastHeartbeatTime: "2025-01-20T08:20:00Z"
+      lastTransitionTime: "2025-01-20T08:20:00Z"
+      message: Flannel is running on this node
+      reason: FlannelIsUp
+      status: "False"
+      type: NetworkUnavailable
+    - lastHeartbeatTime: "2025-01-20T08:24:56Z"
+      lastTransitionTime: "2025-01-02T10:03:01Z"
+      message: kubelet has sufficient memory available
+      reason: KubeletHasSufficientMemory
+      status: "False"
+      type: MemoryPressure
+    - lastHeartbeatTime: "2025-01-20T08:24:56Z"
+      lastTransitionTime: "2025-01-02T10:03:01Z"
+      message: kubelet has no disk pressure
+      reason: KubeletHasNoDiskPressure
+      status: "False"
+      type: DiskPressure
+    - lastHeartbeatTime: "2025-01-20T08:24:56Z"
+      lastTransitionTime: "2025-01-02T10:03:01Z"
+      message: kubelet has sufficient PID available
+      reason: KubeletHasSufficientPID
+      status: "False"
+      type: PIDPressure
+    - lastHeartbeatTime: "2025-01-20T08:24:56Z"
+      lastTransitionTime: "2025-01-02T10:03:11Z"
+      message: kubelet is posting ready status
+      reason: KubeletReady
+      status: "True"
+      type: Ready
+    daemonEndpoints:
+      kubeletEndpoint:
+        Port: 10250
+    images:
+    - names:
+      - docker.io/calico/cni@sha256:e60b90d7861e872efa720ead575008bc6eca7bee41656735dcaa8210b688fcd9
+      - docker.io/calico/cni:v3.24.1
+      sizeBytes: 87382462
+    - names:
+      - docker.io/calico/node@sha256:43f6cee5ca002505ea142b3821a76d585aa0c8d22bc58b7e48589ca7deb48c13
+      - docker.io/calico/node:v3.24.1
+      sizeBytes: 80180860
+    - names:
+      - registry.k8s.io/kube-proxy@sha256:c727efb1c6f15a68060bf7f207f5c7a765355b7e3340c513e582ec819c5cd2fe
+      - registry.k8s.io/kube-proxy:v1.31.0
+      sizeBytes: 30207900
+    - names:
+      - quay.io/coreos/flannel@sha256:9a296fbb67790659adc3701e287adde3c59803b7fcefe354f1fc482840cdb3d9
+      - quay.io/coreos/flannel:v0.15.1
+      sizeBytes: 21673107
+    - names:
+      - registry.k8s.io/coredns/coredns@sha256:1eeb4c7316bacb1d4c8ead65571cd92dd21e27359f0d4917f1a5822a73b75db1
+      - registry.k8s.io/coredns/coredns:v1.11.1
+      sizeBytes: 18182961
+    - names:
+      - registry.k8s.io/pause@sha256:1ff6c18fbef2045af6b9c16bf034cc421a29027b800e4f9b68ae9b1cb3e9ae07
+      - registry.k8s.io/pause:3.5
+      sizeBytes: 301416
+    nodeInfo:
+      architecture: amd64
+      bootID: eedf56bc-b003-40d2-8a3f-247310eea457
+      containerRuntimeVersion: containerd://1.7.13
+      kernelVersion: 5.4.0-131-generic
+      kubeProxyVersion: ""
+      kubeletVersion: v1.31.0
+      machineID: 388a2d0f867a4404bc12a0093bd9ed8d
+      operatingSystem: linux
+      osImage: Ubuntu 20.04.5 LTS
+      systemUUID: 71c9a271-19c8-473b-a0d6-49c4f8ee48a5
+kind: List
+metadata:
+  resourceVersion: ""
+
+$ vim pod.yaml
+# 经过多次探索，发现是由于 Pod 定义了节点亲和性，
+# 检查发现 NodeName 标签定义在 node01 上，
+# 修改 Pod 中 NodeName 字段值即可。
+
+$ kubectl delete -f pod.yaml --force --grace-period 0
+Warning: Immediate deletion does not wait for confirmation that the running resource has been terminated. The resource may continue to run on the cluster indefinitely.
+pod "frontend" force deleted
+
+$ kubectl apply -f pod.yaml
+pod/frontend created
+
+$ kubectl get pod
+NAME       READY   STATUS    RESTARTS   AGE
+frontend   1/1     Running   0          14s
 ----
 
 
 == Troubleshooting - Pod Issue - 4
 
-[Troubleshooting - Pod Issue - 4^]
+https://killercoda.com/sachin/course/CKA/pod-issue-4[Troubleshooting - Pod Issue - 4^]
 
 ****
+`postgres-pod.yaml` is there, currently not able to deploy pod. check and fix that issue
 
+Note: Don't remove any specification in `postgres-pod`
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ kubectl apply -f postgres-pod.yaml
+Error from server (BadRequest): error when creating "postgres-pod.yaml": Pod in version "v1" cannot be handled as a Pod: strict decoding error: unknown field "spec.containers[0].livenessProbe.tcpSocket.command", unknown field "spec.containers[0].readinessProbe.exec.cmd"
 
+$ cat postgres-pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: postgres-pod
+spec:
+  containers:
+    - name: postgres
+      image: postgres:latest
+      env:
+        - name: POSTGRES_PASSWORD
+          value: dbpassword
+        - name: POSTGRES_DB
+          value: database
+      ports:
+        - containerPort: 5432
+      livenessProbe:
+        tcpSocket:
+          command:
+            arg: 5432
+        initialDelaySeconds: 30
+        periodSeconds: 10
+      readinessProbe:
+        exec:
+          cmd:
+            - "psql"
+            - "-h"
+            - "localhost"
+            - "-U"
+            - "postgres"
+            - "-c"
+            - "SELECT 1"
+        initialDelaySeconds: 5
+        periodSeconds: 5
+
+$ vim postgres-pod.yaml
+# 探针里面，没有 cmd，是 command
+
+$ kubectl apply -f postgres-pod.yaml
+Error from server (BadRequest): error when creating "postgres-pod.yaml": Pod in version "v1" cannot be handled as a Pod: strict decoding error: unknown field "spec.containers[0].livenessProbe.tcpSocket.command"
+
+$ vim postgres-pod.yaml
+# 探针中，tcpSocket 下面直接是 port 的定义
+
+$ kubectl apply -f postgres-pod.yaml
+pod/postgres-pod created
+
+$ kubectl get pod
+NAME           READY   STATUS    RESTARTS   AGE
+postgres-pod   1/1     Running   0          33s
+
+$ cat postgres-pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: postgres-pod
+spec:
+  containers:
+    - name: postgres
+      image: postgres:latest
+      env:
+        - name: POSTGRES_PASSWORD
+          value: dbpassword
+        - name: POSTGRES_DB
+          value: database
+      ports:
+        - containerPort: 5432
+      livenessProbe:
+        tcpSocket:
+          port: 5432
+        initialDelaySeconds: 30
+        periodSeconds: 10
+      readinessProbe:
+        exec:
+          command:
+            - "psql"
+            - "-h"
+            - "localhost"
+            - "-U"
+            - "postgres"
+            - "-c"
+            - "SELECT 1"
+        initialDelaySeconds: 5
+        periodSeconds: 5
 ----
 
 
 == Troubleshooting - Pod Issue - 5
 
-[Troubleshooting - Pod Issue - 5^]
+https://killercoda.com/sachin/course/CKA/pod-issue-5[Troubleshooting - Pod Issue - 5^]
 
 ****
+something wrong in `redis-pod.yaml` pod template, fix that issue
 
+Note: Don't remove any specification
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ cat redis-pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: redis-pod
+spec:
+  containers:
+    - name: redis-container
+      image: redis:latest
+      resources:
+        requests:
+          memory: "150Mi"
+          cpu: "15m"
+        limits:
+          memory: "100Mi"
+          cpu: "10m"
 
+$ kubectl apply -f redis-pod.yaml
+The Pod "redis-pod" is invalid:
+* spec.containers[0].resources.requests: Invalid value: "15m": must be less than or equal to cpu limit of 10m
+* spec.containers[0].resources.requests: Invalid value: "150Mi": must be less than or equal to memory limit of 100Mi
+
+$ vim redis-pod.yaml
+# 把 resources 中 requests 和 limits 的值改成一样即可。
+
+$ kubectl apply -f redis-pod.yaml
+pod/redis-pod created
+
+$ kubectl get pod
+NAME        READY   STATUS    RESTARTS   AGE
+redis-pod   1/1     Running   0          15s
 ----
 
 
 == Troubleshooting - Pod Issue - 6
 
-[Troubleshooting - Pod Issue - 6^]
+https://killercoda.com/sachin/course/CKA/pod-issue-6[Troubleshooting - Pod Issue - 6^]
 
 ****
+`my-pod-cka` pod is stuck in a Pending state, Fix this issue
 
+Note: Don't remove any specification
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ kubectl get pod
+NAME         READY   STATUS    RESTARTS   AGE
+my-pod-cka   0/1     Pending   0          29s
 
+$ kubectl describe pod my-pod-cka
+Name:             my-pod-cka
+Namespace:        default
+Priority:         0
+Service Account:  default
+Node:             <none>
+Labels:           <none>
+Annotations:      <none>
+Status:           Pending
+IP:
+IPs:              <none>
+Containers:
+  nginx-container:
+    Image:        nginx
+    Port:         <none>
+    Host Port:    <none>
+    Environment:  <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-8v4pv (ro)
+      /var/www/html from shared-storage (rw)
+Conditions:
+  Type           Status
+  PodScheduled   False
+Volumes:
+  shared-storage:
+    Type:       PersistentVolumeClaim (a reference to a PersistentVolumeClaim in the same namespace)
+    ClaimName:  my-pvc-cka
+    ReadOnly:   false
+  kube-api-access-8v4pv:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    ConfigMapOptional:       <nil>
+    DownwardAPI:             true
+QoS Class:                   BestEffort
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type     Reason            Age   From               Message
+  ----     ------            ----  ----               -------
+  Warning  FailedScheduling  39s   default-scheduler  0/2 nodes are available: pod has unbound immediate PersistentVolumeClaims. preemption: 0/2 nodes are available: 2 Preemption is not helpful for scheduling.
+
+$ kubectl get pvc -o wide
+NAME         STATUS    VOLUME      CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE   VOLUMEMODE
+my-pvc-cka   Pending   my-pv-cka   0                         standard       <unset>                 55s   Filesystem
+
+$ kubectl get pv -o wide
+NAME        CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS      CLAIM   STORAGECLASS   VOLUMEATTRIBUTESCLASS   REASON   AGE   VOLUMEMODE
+my-pv-cka   100Mi      RWO            Retain           Available           standard       <unset>                          71s   Filesystem
+
+$ kubectl get pv my-pv-cka -o yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","kind":"PersistentVolume","metadata":{"annotations":{},"name":"my-pv-cka"},"spec":{"accessModes":["ReadWriteOnce"],"capacity":{"storage":"100Mi"},"hostPath":{"path":"/mnt/data"},"storageClassName":"standard"}}
+  creationTimestamp: "2025-01-20T12:07:08Z"
+  finalizers:
+  - kubernetes.io/pv-protection
+  name: my-pv-cka
+  resourceVersion: "1986"
+  uid: 84613e9c-d841-461a-bdff-2726287bd570
+spec:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 100Mi
+  hostPath:
+    path: /mnt/data
+    type: ""
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: standard
+  volumeMode: Filesystem
+status:
+  lastPhaseTransitionTime: "2025-01-20T12:07:08Z"
+  phase: Available
+
+$ kubectl get pvc my-pvc-cka -o yaml | tee pod.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","kind":"PersistentVolumeClaim","metadata":{"annotations":{},"name":"my-pvc-cka","namespace":"default"},"spec":{"accessModes":["ReadWriteMany"],"resources":{"requests":{"storage":"100Mi"}},"storageClassName":"standard","volumeName":"my-pv-cka"}}
+  creationTimestamp: "2025-01-20T12:07:08Z"
+  finalizers:
+  - kubernetes.io/pvc-protection
+  name: my-pvc-cka
+  namespace: default
+  resourceVersion: "1987"
+  uid: b2e53ab7-d565-49a4-9356-2e81602f41ff
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 100Mi
+  storageClassName: standard
+  volumeMode: Filesystem
+  volumeName: my-pv-cka
+status:
+  phase: Pending
+
+$ echo "---" | tee -a pod.yaml
+---
+
+$ kubectl get pod my-pod-cka -o yaml | tee -a pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","kind":"Pod","metadata":{"annotations":{},"name":"my-pod-cka","namespace":"default"},"spec":{"containers":[{"image":"nginx","name":"nginx-container","volumeMounts":[{"mountPath":"/var/www/html","name":"shared-storage"}]}],"volumes":[{"name":"shared-storage","persistentVolumeClaim":{"claimName":"my-pvc-cka"}}]}}
+  creationTimestamp: "2025-01-20T12:07:08Z"
+  name: my-pod-cka
+  namespace: default
+  resourceVersion: "1990"
+  uid: c8cfae81-10b4-43e1-931f-104303f84829
+spec:
+  containers:
+  - image: nginx
+    imagePullPolicy: Always
+    name: nginx-container
+    resources: {}
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /var/www/html
+      name: shared-storage
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: kube-api-access-8v4pv
+      readOnly: true
+  dnsPolicy: ClusterFirst
+  enableServiceLinks: true
+  preemptionPolicy: PreemptLowerPriority
+  priority: 0
+  restartPolicy: Always
+  schedulerName: default-scheduler
+  securityContext: {}
+  serviceAccount: default
+  serviceAccountName: default
+  terminationGracePeriodSeconds: 30
+  tolerations:
+  - effect: NoExecute
+    key: node.kubernetes.io/not-ready
+    operator: Exists
+    tolerationSeconds: 300
+  - effect: NoExecute
+    key: node.kubernetes.io/unreachable
+    operator: Exists
+    tolerationSeconds: 300
+  volumes:
+  - name: shared-storage
+    persistentVolumeClaim:
+      claimName: my-pvc-cka
+  - name: kube-api-access-8v4pv
+    projected:
+      defaultMode: 420
+      sources:
+      - serviceAccountToken:
+          expirationSeconds: 3607
+          path: token
+      - configMap:
+          items:
+          - key: ca.crt
+            path: ca.crt
+          name: kube-root-ca.crt
+      - downwardAPI:
+          items:
+          - fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+            path: namespace
+# 省略 status 字段
+
+$ vim pod.yaml
+# PVC 和 PV 的 accessModes 定义不一致导致的
+# 将 PVC 中的 accessModes 修改成 ReadWriteOnce 即可
+
+$ kubectl delete -f pod.yaml --force --grace-period 0
+Warning: Immediate deletion does not wait for confirmation that the running resource has been terminated. The resource may continue to run on the cluster indefinitely.
+persistentvolumeclaim "my-pvc-cka" force deleted
+pod "my-pod-cka" force deleted
+
+$ kubectl apply -f pod.yaml
+persistentvolumeclaim/my-pvc-cka created
+pod/my-pod-cka created
+
+$ kubectl get pvc my-pvc-cka
+NAME         STATUS   VOLUME      CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+my-pvc-cka   Bound    my-pv-cka   100Mi      RWO            standard       <unset>                 38s
+
+$ kubectl get pod my-pod-cka
+NAME         READY   STATUS    RESTARTS   AGE
+my-pod-cka   1/1     Running   0          49s
+
+$ cat pod.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","kind":"PersistentVolumeClaim","metadata":{"annotations":{},"name":"my-pvc-cka","namespace":"default"},"spec":{"accessModes":["ReadWriteMany"],"resources":{"requests":{"storage":"100Mi"}},"storageClassName":"standard","volumeName":"my-pv-cka"}}
+  creationTimestamp: "2025-01-20T12:07:08Z"
+  finalizers:
+  - kubernetes.io/pvc-protection
+  name: my-pvc-cka
+  namespace: default
+  resourceVersion: "1987"
+  uid: b2e53ab7-d565-49a4-9356-2e81602f41ff
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+  storageClassName: standard
+  volumeMode: Filesystem
+  volumeName: my-pv-cka
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","kind":"Pod","metadata":{"annotations":{},"name":"my-pod-cka","namespace":"default"},"spec":{"containers":[{"image":"nginx","name":"nginx-container","volumeMounts":[{"mountPath":"/var/www/html","name":"shared-storage"}]}],"volumes":[{"name":"shared-storage","persistentVolumeClaim":{"claimName":"my-pvc-cka"}}]}}
+  creationTimestamp: "2025-01-20T12:07:08Z"
+  name: my-pod-cka
+  namespace: default
+  resourceVersion: "1990"
+  uid: c8cfae81-10b4-43e1-931f-104303f84829
+spec:
+  containers:
+  - image: nginx
+    imagePullPolicy: Always
+    name: nginx-container
+    resources: {}
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /var/www/html
+      name: shared-storage
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: kube-api-access-8v4pv
+      readOnly: true
+  dnsPolicy: ClusterFirst
+  enableServiceLinks: true
+  preemptionPolicy: PreemptLowerPriority
+  priority: 0
+  restartPolicy: Always
+  schedulerName: default-scheduler
+  securityContext: {}
+  serviceAccount: default
+  serviceAccountName: default
+  terminationGracePeriodSeconds: 30
+  tolerations:
+  - effect: NoExecute
+    key: node.kubernetes.io/not-ready
+    operator: Exists
+    tolerationSeconds: 300
+  - effect: NoExecute
+    key: node.kubernetes.io/unreachable
+    operator: Exists
+    tolerationSeconds: 300
+  volumes:
+  - name: shared-storage
+    persistentVolumeClaim:
+      claimName: my-pvc-cka
+  - name: kube-api-access-8v4pv
+    projected:
+      defaultMode: 420
+      sources:
+      - serviceAccountToken:
+          expirationSeconds: 3607
+          path: token
+      - configMap:
+          items:
+          - key: ca.crt
+            path: ca.crt
+          name: kube-root-ca.crt
+      - downwardAPI:
+          items:
+          - fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+            path: namespace
 ----
 
 
 == Troubleshooting - Pod Issue - 7
 
-[Troubleshooting - Pod Issue - 7^]
+https://killercoda.com/sachin/course/CKA/pod-issue-7[Troubleshooting - Pod Issue - 7^]
 
 ****
+just tainted node `node01` , update `tolerations` in this `application-deployment.yaml` pod template and create pod object
 
+Note: Don't remove any specification
 ****
 
 [source%nowrap,bash,{source_attr}]
@@ -152,20 +1634,141 @@ weight: 1
 # @author D瓜哥 · https://www.diguage.com
 
 
+$ kubectl get nodes node01 -o yaml
+apiVersion: v1
+kind: Node
+metadata:
+  annotations:
+    flannel.alpha.coreos.com/backend-data: '{"VNI":1,"VtepMAC":"f6:56:fb:ca:7c:16"}'
+    flannel.alpha.coreos.com/backend-type: vxlan
+    flannel.alpha.coreos.com/kube-subnet-manager: "true"
+    flannel.alpha.coreos.com/public-ip: 172.30.2.2
+    kubeadm.alpha.kubernetes.io/cri-socket: unix:///var/run/containerd/containerd.sock
+    node.alpha.kubernetes.io/ttl: "0"
+    projectcalico.org/IPv4Address: 172.30.2.2/24
+    projectcalico.org/IPv4IPIPTunnelAddr: 192.168.1.1
+    volumes.kubernetes.io/controller-managed-attach-detach: "true"
+  creationTimestamp: "2025-01-02T10:03:01Z"
+  labels:
+    beta.kubernetes.io/arch: amd64
+    beta.kubernetes.io/os: linux
+    kubernetes.io/arch: amd64
+    kubernetes.io/hostname: node01
+    kubernetes.io/os: linux
+  name: node01
+  resourceVersion: "2434"
+  uid: 93743255-7b3e-4e81-a8a8-4a071984de9a
+spec:
+  podCIDR: 192.168.1.0/24
+  podCIDRs:
+  - 192.168.1.0/24
+  taints:
+  - effect: NoSchedule
+    key: nodeName
+    value: workerNode01
+# 省略 status 字段
+
+$ cat application-deployment.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: redis-pod
+spec:
+  containers:
+    - name: redis-container
+      image: redis:latest
+      ports:
+        - containerPort: 6379
+
+$ vim application-deployment.yaml
+# 增加 Pod 容忍度即可
+
+$ kubectl apply -f application-deployment.yaml
+pod/redis-pod created
+
+$ kubectl get pod
+NAME        READY   STATUS    RESTARTS   AGE
+redis-pod   1/1     Running   0          41s
+
+$ cat application-deployment.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: redis-pod
+spec:
+  containers:
+    - name: redis-container
+      image: redis:latest
+      ports:
+        - containerPort: 6379
+  tolerations:
+  - key: "nodeName"
+    operator: "Equal"
+    value: "workerNode01"
+    effect: "NoSchedule"
 ----
 
 
 == Troubleshooting - Pod Issue - 8
 
-[Troubleshooting - Pod Issue - 8^]
+https://killercoda.com/sachin/course/CKA/pod-issue-8[Troubleshooting - Pod Issue - 8^]
 
 ****
+`nginx-pod` exposed to service `nginx-service` ,
 
+when port-forwarded `kubectl port-forward svc/nginx-service 8080:80` it is stuck, so unable to access application `curl http://localhost:8080`
+
+fix this issue
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ kubectl get pod --show-labels
+NAME        READY   STATUS    RESTARTS   AGE   LABELS
+nginx-pod   1/1     Running   0          75s   <none>
 
+$ kubectl get service nginx-service -o wide
+NAME            TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE   SELECTOR
+nginx-service   ClusterIP   10.102.182.12   <none>        80/TCP    94s   app=nginx-pod
+
+# Pod 没有标签，给 Pod 加上 Service 的标签即可
+$ kubectl label pod nginx-pod app=nginx-pod
+pod/nginx-pod labeled
+
+$ kubectl get pod --show-labels
+NAME        READY   STATUS    RESTARTS   AGE    LABELS
+nginx-pod   1/1     Running   0          2m8s   app=nginx-pod
+
+$ kubectl port-forward svc/nginx-service 8080:80
+Forwarding from 127.0.0.1:8080 -> 80
+Forwarding from [::1]:8080 -> 80
+Handling connection for 8080
+
+# 另外一个终端
+$ curl http://localhost:8080
+<!DOCTYPE html>
+<html>
+<head>
+<title>Welcome to nginx!</title>
+<style>
+html { color-scheme: light dark; }
+body { width: 35em; margin: 0 auto;
+font-family: Tahoma, Verdana, Arial, sans-serif; }
+</style>
+</head>
+<body>
+<h1>Welcome to nginx!</h1>
+<p>If you see this page, the nginx web server is successfully installed and
+working. Further configuration is required.</p>
+
+<p>For online documentation and support please refer to
+<a href="http://nginx.org/">nginx.org</a>.<br/>
+Commercial support is available at
+<a href="http://nginx.com/">nginx.com</a>.</p>
+
+<p><em>Thank you for using nginx.</em></p>
+</body>
+</html>
 ----

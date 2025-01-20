@@ -28,25 +28,9 @@ weight: 1
 // TODO 如何设置章节起始数
 
 
-== Troubleshooting - Deployment Issue 3
+== Troubleshooting - Service account, role, role binding Issue
 
-[Troubleshooting - Deployment Issue 3^]
-
-****
-
-****
-
-[source%nowrap,bash,{source_attr}]
-----
-# @author D瓜哥 · https://www.diguage.com
-
-
-----
-
-
-== Troubleshooting - Deployment Issue 4
-
-[Troubleshooting - Deployment Issue 4^]
+https://killercoda.com/sachin/course/CKA/sa-cr-crb-issue[Troubleshooting - Service account, role, role binding Issue^]
 
 ****
 
@@ -60,9 +44,25 @@ weight: 1
 ----
 
 
-== Troubleshooting - Deployment Not UP-TO-DATE
+== Troubleshooting - Service account, role, role binding Issue
 
-[Troubleshooting - Deployment Not UP-TO-DATE^]
+https://killercoda.com/sachin/course/CKA/sa-cr-crb-issue-1[Troubleshooting - Service account, role, role binding Issue^]
+
+****
+
+****
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com
+
+
+----
+
+
+== Troubleshooting - Network Policy Issue
+
+https://killercoda.com/sachin/course/CKA/network-policy-issue[Troubleshooting - Network Policy Issue^]
 
 ****
 
