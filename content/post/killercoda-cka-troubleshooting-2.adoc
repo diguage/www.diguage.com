@@ -1,7 +1,7 @@
 ---
 title: "killercoda CKA：Troubleshooting - 2"
 date: 2024-12-24T19:54:28+08:00
-draft: true
+draft: false
 keywords: ["Kubernetes", "CKA"]
 tags: ["Kubernetes","Linux"]
 categories: ["系统架构"]
@@ -33,14 +33,86 @@ weight: 1
 https://killercoda.com/sachin/course/CKA/pv-pvc-issue[Troubleshooting - Persistent Volume, Persistent Volume Claim - Issue^]
 
 ****
-
+`my-pvc` Persistent Volume Claim is stuck in a Pending state, fix this issue, make sure it is in Bound state
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ kubectl get pvc my-pvc -o wide
+NAME     STATUS    VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE   VOLUMEMODE
+my-pvc   Pending                                      standard       <unset>                 38s   Filesystem
 
+$ kubectl get pv my-pv -o wide
+NAME    CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS      CLAIM   STORAGECLASS   VOLUMEATTRIBUTESCLASS   REASON   AGE   VOLUMEMODE
+my-pv   100Mi      RWO            Retain           Available           standard       <unset>                          51s   Filesystem
+
+$ kubectl get pvc my-pvc -o yaml | tee pv.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","kind":"PersistentVolumeClaim","metadata":{"annotations":{},"name":"my-pvc","namespace":"default"},"spec":{"accessModes":["ReadWriteMany"],"resources":{"requests":{"storage":"150Mi"}},"storageClassName":"standard"}}
+  creationTimestamp: "2025-01-20T13:08:41Z"
+  finalizers:
+  - kubernetes.io/pvc-protection
+  name: my-pvc
+  namespace: default
+  resourceVersion: "2002"
+  uid: a4c6c044-4118-47a4-97b9-ceb69fac3bc2
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 150Mi
+  storageClassName: standard
+  volumeMode: Filesystem
+status:
+  phase: Pending
+
+$ kubectl get pv my-pv -o yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","kind":"PersistentVolume","metadata":{"annotations":{},"name":"my-pv"},"spec":{"accessModes":["ReadWriteOnce"],"capacity":{"storage":"100Mi"},"hostPath":{"path":"/mnt/data"},"persistentVolumeReclaimPolicy":"Retain","storageClassName":"standard"}}
+  creationTimestamp: "2025-01-20T13:08:41Z"
+  finalizers:
+  - kubernetes.io/pv-protection
+  name: my-pv
+  resourceVersion: "2003"
+  uid: 85a371c4-0931-4b57-87ea-fc1fceb674c1
+spec:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 100Mi
+  hostPath:
+    path: /mnt/data
+    type: ""
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: standard
+  volumeMode: Filesystem
+
+$ vim pv.yaml
+# 两个问题：
+# 1、 PVC 和 PV 的 accessModes 不一致，改为 ReadWriteOnce即可
+# 2、 PVC 的存储是 150Mi，而 PV 只有 100Mi，也改为 100Mi 即可。
+
+$ kubectl delete -f pv.yaml --force --grace-period 0
+Warning: Immediate deletion does not wait for confirmation that the running resource has been terminated. The resource may continue to run on the cluster indefinitely.
+persistentvolumeclaim "my-pvc" force deleted
+
+$ kubectl apply -f pv.yaml
+persistentvolumeclaim/my-pvc created
+
+$ kubectl get pvc my-pvc -o wide
+NAME     STATUS   VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE   VOLUMEMODE
+my-pvc   Bound    my-pv    100Mi      RWO            standard       <unset>                 10s   Filesystem
 ----
 
 
@@ -49,7 +121,9 @@ https://killercoda.com/sachin/course/CKA/pv-pvc-issue[Troubleshooting - Persiste
 https://killercoda.com/sachin/course/CKA/cronjob-issue[Troubleshooting - CronJob Issue^]
 
 ****
+`cka-pod` pod exposed internally within the service name `cka-service` and for `cka-pod` monitor(access through svc) purpose deployed `cka-cronjob` cronjob that run `every minute` .
 
+Now `cka-cronjob` cronjob not working as expected, fix that issue
 ****
 
 [source%nowrap,bash,{source_attr}]
@@ -57,6 +131,200 @@ https://killercoda.com/sachin/course/CKA/cronjob-issue[Troubleshooting - CronJob
 # @author D瓜哥 · https://www.diguage.com
 
 
+$ kubectl get pod
+NAME                         READY   STATUS             RESTARTS     AGE
+cka-cronjob-28957109-8r7mb   0/1     CrashLoopBackOff   1 (5s ago)   10s
+cka-pod                      1/1     Running            0            63s
+
+$ kubectl get pod --show-labels
+NAME                         READY   STATUS             RESTARTS      AGE   LABELS
+cka-cronjob-28957109-8r7mb   0/1     CrashLoopBackOff   1 (10s ago)   15s   batch.kubernetes.io/controller-uid=c9de5bf0-5cea-4564-95fb-83d4c0edb280,batch.kubernetes.io/job-name=cka-cronjob-28957109,controller-uid=c9de5bf0-5cea-4564-95fb-83d4c0edb280,job-name=cka-cronjob-28957109
+cka-pod                      1/1     Running            0             68s   <none>
+
+$ kubectl get service -o wide
+NAME          TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE   SELECTOR
+cka-service   ClusterIP   10.104.12.101   <none>        80/TCP    82s   app=cka-pod
+kubernetes    ClusterIP   10.96.0.1       <none>        443/TCP   18d   <none>
+
+$ kubectl label pod cka-pod app=cka-pod
+pod/cka-pod labeled
+# 问题1：Pod 没有打标签，Service 无法圈定 Pod，增加标签
+
+$ kubectl describe pod cka-cronjob-28957109-8r7mb
+Name:             cka-cronjob-28957109-8r7mb
+Namespace:        default
+Priority:         0
+Service Account:  default
+Node:             node01/172.30.2.2
+Start Time:       Tue, 21 Jan 2025 02:29:00 +0000
+Labels:           batch.kubernetes.io/controller-uid=c9de5bf0-5cea-4564-95fb-83d4c0edb280
+                  batch.kubernetes.io/job-name=cka-cronjob-28957109
+                  controller-uid=c9de5bf0-5cea-4564-95fb-83d4c0edb280
+                  job-name=cka-cronjob-28957109
+Annotations:      cni.projectcalico.org/containerID: 51af99d758b14174997994ffc69b03dd8cc3181e720aa556ee2e89c54c1839aa
+                  cni.projectcalico.org/podIP: 192.168.1.5/32
+                  cni.projectcalico.org/podIPs: 192.168.1.5/32
+Status:           Running
+IP:               192.168.1.5
+IPs:
+  IP:           192.168.1.5
+Controlled By:  Job/cka-cronjob-28957109
+Containers:
+  curl-container:
+    Container ID:  containerd://1ccbf47c84f56d5b560a626b742582486e85eed26049998b4e023f0e17b0f69e
+    Image:         curlimages/curl:latest
+    Image ID:      docker.io/curlimages/curl@sha256:c1fe1679c34d9784c1b0d1e5f62ac0a79fca01fb6377cdd33e90473c6f9f9a69
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      curl
+      cka-pod
+    State:          Waiting
+      Reason:       CrashLoopBackOff
+    Last State:     Terminated
+      Reason:       Error
+      Exit Code:    6
+      Started:      Tue, 21 Jan 2025 02:31:58 +0000
+      Finished:     Tue, 21 Jan 2025 02:31:58 +0000
+    Ready:          False
+    Restart Count:  5
+    Environment:    <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-hqhfx (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True
+  Initialized                 True
+  Ready                       False
+  ContainersReady             False
+  PodScheduled                True
+Volumes:
+  kube-api-access-hqhfx:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    ConfigMapOptional:       <nil>
+    DownwardAPI:             true
+QoS Class:                   BestEffort
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type     Reason     Age                   From               Message
+  ----     ------     ----                  ----               -------
+  Normal   Scheduled  3m10s                 default-scheduler  Successfully assigned default/cka-cronjob-28957109-8r7mb to node01
+  Normal   Pulled     3m7s                  kubelet            Successfully pulled image "curlimages/curl:latest" in 3.202s (3.202s including waiting). Image size: 9560620 bytes.
+  Normal   Pulled     3m6s                  kubelet            Successfully pulled image "curlimages/curl:latest" in 603ms (603ms including waiting). Image size: 9560620 bytes.
+  Normal   Pulled     2m50s                 kubelet            Successfully pulled image "curlimages/curl:latest" in 512ms (512ms including waiting). Image size: 9560620 bytes.
+  Normal   Created    2m22s (x4 over 3m7s)  kubelet            Created container curl-container
+  Normal   Started    2m22s (x4 over 3m7s)  kubelet            Started container curl-container
+  Normal   Pulled     2m22s                 kubelet            Successfully pulled image "curlimages/curl:latest" in 516ms (516ms including waiting). Image size: 9560620 bytes.
+  Warning  BackOff    114s (x7 over 3m6s)   kubelet            Back-off restarting failed container curl-container in pod cka-cronjob-28957109-8r7mb_default(df6d561f-6210-4f26-af44-f6b47e155fb7)
+  Normal   Pulling    99s (x5 over 3m11s)   kubelet            Pulling image "curlimages/curl:latest"
+  Normal   Pulled     99s                   kubelet            Successfully pulled image "curlimages/curl:latest" in 463ms (463ms including waiting). Image size: 9560620 bytes.
+
+$ kubectl get cronjobs.batch cka-cronjob -o yaml | tee job.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"batch/v1","kind":"CronJob","metadata":{"annotations":{},"name":"cka-cronjob","namespace":"default"},"spec":{"jobTemplate":{"spec":{"template":{"spec":{"containers":[{"command":["curl","cka-pod"],"image":"curlimages/curl:latest","name":"curl-container"}],"restartPolicy":"OnFailure"}}}},"schedule":"* * * * *"}}
+  creationTimestamp: "2025-01-21T02:28:07Z"
+  generation: 1
+  name: cka-cronjob
+  namespace: default
+  resourceVersion: "2466"
+  uid: 0be295fd-73c7-4560-a65e-7a0951cd495b
+spec:
+  concurrencyPolicy: Allow
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    metadata:
+      creationTimestamp: null
+    spec:
+      template:
+        metadata:
+          creationTimestamp: null
+        spec:
+          containers:
+          - command:
+            - curl
+            - cka-pod
+            image: curlimages/curl:latest
+            imagePullPolicy: Always
+            name: curl-container
+            resources: {}
+            terminationMessagePath: /dev/termination-log
+            terminationMessagePolicy: File
+          dnsPolicy: ClusterFirst
+          restartPolicy: OnFailure
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+  schedule: '* * * * *'
+  successfulJobsHistoryLimit: 3
+  suspend: false
+#省略了 status 字段
+
+$ vim job.yaml
+# 问题2： CronJob 访问的是 Pod 名称，应该访问 Service 名称，修改之
+# 问题3： 每分钟执行的 Cron 表达式应该是 '*/1 * * * *'，改正
+
+$ kubectl delete cronjobs.batch cka-cronjob --force --grace-period 0
+Warning: Immediate deletion does not wait for confirmation that the running resource has been terminated. The resource may continue to run on the cluster indefinitely.
+cronjob.batch "cka-cronjob" force deleted
+
+$ kubectl apply -f job.yaml
+cronjob.batch/cka-cronjob created
+
+$ kubectl apply -f job.yaml
+cronjob.batch/cka-cronjob created
+
+$ kubectl get cronjobs.batch
+NAME          SCHEDULE    TIMEZONE   SUSPEND   ACTIVE   LAST SCHEDULE   AGE
+cka-cronjob   * * * * *   <none>     False     0        28s             33s
+
+$ kubectl get pod
+NAME                         READY   STATUS      RESTARTS   AGE
+cka-cronjob-28957117-zmrmb   0/1     Completed   0          36s
+cka-pod                      1/1     Running     0          9m29s
+
+$ cat job.yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  generation: 1
+  name: cka-cronjob
+  namespace: default
+spec:
+  concurrencyPolicy: Allow
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    metadata:
+      creationTimestamp: null
+    spec:
+      template:
+        metadata:
+          creationTimestamp: null
+        spec:
+          containers:
+          - command:
+            - curl
+            - cka-service
+            image: curlimages/curl:latest
+            imagePullPolicy: Always
+            name: curl-container
+            resources: {}
+            terminationMessagePath: /dev/termination-log
+            terminationMessagePolicy: File
+          dnsPolicy: ClusterFirst
+          restartPolicy: OnFailure
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+  schedule: '*/1 * * * *'
+  successfulJobsHistoryLimit: 3
 ----
 
 
@@ -65,7 +333,7 @@ https://killercoda.com/sachin/course/CKA/cronjob-issue[Troubleshooting - CronJob
 https://killercoda.com/sachin/course/CKA/ds-issue[Troubleshooting - DaemonSet Issue^]
 
 ****
-
+`cache-daemonset` DaemonSet deployed, now it's not creating any pod on the `controlplane` node. fix this issue and make sure the pods are getting created on all nodes including the controlplane node as well.
 ****
 
 [source%nowrap,bash,{source_attr}]
@@ -73,6 +341,135 @@ https://killercoda.com/sachin/course/CKA/ds-issue[Troubleshooting - DaemonSet Is
 # @author D瓜哥 · https://www.diguage.com
 
 
+$ kubectl describe nodes | grep Taints
+Taints:             node-role.kubernetes.io/control-plane:NoSchedule
+Taints:             <none>
+
+$ kubectl get daemonsets.apps cache-daemonset
+NAME              DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR   AGE
+cache-daemonset   1         1         1       1            1           <none>          5m7s
+
+$ kubectl get pod
+NAME                    READY   STATUS    RESTARTS   AGE
+cache-daemonset-58q2j   1/1     Running   0          5m15s
+
+$ kubectl get daemonsets.apps cache-daemonset -o yaml | tee ds.yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  annotations:
+    deprecated.daemonset.template.generation: "1"
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"apps/v1","kind":"DaemonSet","metadata":{"annotations":{},"name":"cache-daemonset","namespace":"default"},"spec":{"selector":{"matchLabels":{"app":"cache"}},"template":{"metadata":{"labels":{"app":"cache"}},"spec":{"containers":[{"image":"redis:latest","name":"cache-container","resources":{"limits":{"cpu":"10m","memory":"100Mi"},"requests":{"cpu":"5m","memory":"50Mi"}}}]}}}}
+  creationTimestamp: "2025-01-21T02:48:22Z"
+  generation: 1
+  name: cache-daemonset
+  namespace: default
+  resourceVersion: "2066"
+  uid: 27de83c4-4080-49e8-86d0-a189bdde557a
+spec:
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: cache
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: cache
+    spec:
+      containers:
+      - image: redis:latest
+        imagePullPolicy: Always
+        name: cache-container
+        resources:
+          limits:
+            cpu: 10m
+            memory: 100Mi
+          requests:
+            cpu: 5m
+            memory: 50Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+  updateStrategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+    type: RollingUpdate
+#省略了 status 字段
+
+$ vim ds.yaml
+# 增加对 node-role.kubernetes.io/control-plane:NoSchedule 污点的容忍度
+
+$ kubectl delete -f ds.yaml --force --grace-period 0
+Warning: Immediate deletion does not wait for confirmation that the running resource has been terminated. The resource may continue to run on the cluster indefinitely.
+daemonset.apps "cache-daemonset" force deleted
+
+$ kubectl apply -f ds.yaml
+daemonset.apps/cache-daemonset created
+
+$ kubectl get pod
+NAME                    READY   STATUS    RESTARTS     AGE
+cache-daemonset-fjswc   1/1     Running   1 (8s ago)   12s
+cache-daemonset-wc6cr   1/1     Running   0            12s
+
+$ cat ds.yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  annotations:
+    deprecated.daemonset.template.generation: "1"
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"apps/v1","kind":"DaemonSet","metadata":{"annotations":{},"name":"cache-daemonset","namespace":"default"},"spec":{"selector":{"matchLabels":{"app":"cache"}},"template":{"metadata":{"labels":{"app":"cache"}},"spec":{"containers":[{"image":"redis:latest","name":"cache-container","resources":{"limits":{"cpu":"10m","memory":"100Mi"},"requests":{"cpu":"5m","memory":"50Mi"}}}]}}}}
+  creationTimestamp: "2025-01-21T02:48:22Z"
+  generation: 1
+  name: cache-daemonset
+  namespace: default
+  resourceVersion: "2066"
+  uid: 27de83c4-4080-49e8-86d0-a189bdde557a
+spec:
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: cache
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: cache
+    spec:
+      containers:
+      - image: redis:latest
+        imagePullPolicy: Always
+        name: cache-container
+        resources:
+          limits:
+            cpu: 10m
+            memory: 100Mi
+          requests:
+            cpu: 5m
+            memory: 50Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      tolerations:
+      - key: "node-role.kubernetes.io/control-plane"
+        operator: "Exists"
+        effect: "NoSchedule"
+  updateStrategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
+    type: RollingUpdate
 ----
 
 
@@ -81,14 +478,159 @@ https://killercoda.com/sachin/course/CKA/ds-issue[Troubleshooting - DaemonSet Is
 https://killercoda.com/sachin/course/CKA/deployment-issue[Troubleshooting - Deployment Issue^]
 
 ****
+`postgres-deployment.yaml` template is there, now we can't create object due to some issue in that, check and fix the issue
 
+Note: Don't remove any specification
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ kubectl apply -f postgres-deployment.yaml
+deployment.apps/postgres-deployment created
 
+$ kubectl get pod
+NAME                                  READY   STATUS              RESTARTS   AGE
+postgres-deployment-8c8466ff9-8bvlt   0/1     ContainerCreating   0          5s
+
+$ cat postgres-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres-container
+          image: postgres:latest
+          env:
+            - name: POSTGRES_DB
+              value: mydatabase
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secrte
+                  key: db_user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: db_password
+          ports:
+            - containerPort: 5432
+
+$ kubectl get pod
+NAME                                  READY   STATUS                       RESTARTS   AGE
+postgres-deployment-8c8466ff9-8bvlt   0/1     CreateContainerConfigError   0          43s
+
+$ kubectl describe pod postgres-deployment-8c8466ff9-8bvlt
+Name:             postgres-deployment-8c8466ff9-8bvlt
+Namespace:        default
+Priority:         0
+Service Account:  default
+Node:             node01/172.30.2.2
+Start Time:       Tue, 21 Jan 2025 03:04:55 +0000
+Labels:           app=postgres
+                  pod-template-hash=8c8466ff9
+Annotations:      cni.projectcalico.org/containerID: 8a8af747e876c07af783291b0b9bbb0ae69bd8aa1d280d3d2d7d40e092fe697a
+                  cni.projectcalico.org/podIP: 192.168.1.4/32
+                  cni.projectcalico.org/podIPs: 192.168.1.4/32
+Status:           Pending
+IP:               192.168.1.4
+IPs:
+  IP:           192.168.1.4
+Controlled By:  ReplicaSet/postgres-deployment-8c8466ff9
+Containers:
+  postgres-container:
+    Container ID:
+    Image:          postgres:latest
+    Image ID:
+    Port:           5432/TCP
+    Host Port:      0/TCP
+    State:          Waiting
+      Reason:       CreateContainerConfigError
+    Ready:          False
+    Restart Count:  0
+    Environment:
+      POSTGRES_DB:        mydatabase
+      POSTGRES_USER:      <set to the key 'db_user' in secret 'postgres-secrte'>      Optional: false
+      POSTGRES_PASSWORD:  <set to the key 'db_password' in secret 'postgres-secret'>  Optional: false
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-4p6bn (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True
+  Initialized                 True
+  Ready                       False
+  ContainersReady             False
+  PodScheduled                True
+Volumes:
+  kube-api-access-4p6bn:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    ConfigMapOptional:       <nil>
+    DownwardAPI:             true
+QoS Class:                   BestEffort
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type     Reason     Age                From               Message
+  ----     ------     ----               ----               -------
+  Normal   Scheduled  56s                default-scheduler  Successfully assigned default/postgres-deployment-8c8466ff9-8bvlt to node01
+  Normal   Pulled     37s                kubelet            Successfully pulled image "postgres:latest" in 18.429s (18.429s including waiting). Image size: 153797110 bytes.
+  Normal   Pulled     35s                kubelet            Successfully pulled image "postgres:latest" in 509ms (509ms including waiting). Image size: 153797110 bytes.
+  Normal   Pulled     23s                kubelet            Successfully pulled image "postgres:latest" in 469ms (469ms including waiting). Image size: 153797110 bytes.
+  Warning  Failed     12s (x4 over 37s)  kubelet            Error: secret "postgres-secrte" not found
+  Normal   Pulled     12s                kubelet            Successfully pulled image "postgres:latest" in 478ms (478ms including waiting). Image size: 153797110 bytes.
+  Normal   Pulling    0s (x5 over 55s)   kubelet            Pulling image "postgres:latest"
+
+$ kubectl get secrets
+NAME              TYPE     DATA   AGE
+postgres-secret   Opaque   2      2m51s
+
+$ kubectl get secrets postgres-secret -o yaml
+apiVersion: v1
+data:
+  password: ZGJwYXNzd29yZAo=
+  username: ZGJ1c2VyCg==
+kind: Secret
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","data":{"password":"ZGJwYXNzd29yZAo=","username":"ZGJ1c2VyCg=="},"kind":"Secret","metadata":{"annotations":{},"name":"postgres-secret","namespace":"default"},"type":"Opaque"}
+  creationTimestamp: "2025-01-21T03:04:27Z"
+  name: postgres-secret
+  namespace: default
+  resourceVersion: "2204"
+  uid: 970470ca-60aa-4777-be2b-b5a4beb01e45
+type: Opaque
+
+$ vim postgres-deployment.yaml
+# 两个问题：
+# 1、 Secret 的名称写错了
+# 2、 Secret 变量名称写的与 postgres-secret 中的定义不一致
+
+$ kubectl delete -f postgres-deployment.yaml --force --grace-period 0
+Warning: Immediate deletion does not wait for confirmation that the running resource has been terminated. The resource may continue to run on the cluster indefinitely.
+deployment.apps "postgres-deployment" force deleted
+
+$ kubectl apply -f postgres-deployment.yaml
+deployment.apps/postgres-deployment created
+
+$ kubectl get pod
+NAME                                  READY   STATUS    RESTARTS   AGE
+postgres-deployment-7cd67d47d-tdms8   1/1     Running   0          7s
 ----
 
 
@@ -97,14 +639,266 @@ https://killercoda.com/sachin/course/CKA/deployment-issue[Troubleshooting - Depl
 https://killercoda.com/sachin/course/CKA/deployment-issue-1[Troubleshooting - Deployment Issue 1^]
 
 ****
-
+`nginx-deployment` deployment pods are not running, fix that issue
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ kubectl get deployments.apps nginx-deployment -o wide
+NAME               READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS        IMAGES         SELECTOR
+nginx-deployment   0/1     1            0           69s   nginx-container   nginx:latest   app=nginx
 
+$ kubectl get pod
+NAME                                READY   STATUS     RESTARTS   AGE
+nginx-deployment-5bf48dd9b5-6nkgk   0/1     Init:0/1   0          77s
+
+$ kubectl describe pod nginx-deployment-5bf48dd9b5-6nkgk
+Name:             nginx-deployment-5bf48dd9b5-6nkgk
+Namespace:        default
+Priority:         0
+Service Account:  default
+Node:             node01/172.30.2.2
+Start Time:       Wed, 22 Jan 2025 09:01:15 +0000
+Labels:           app=nginx
+                  pod-template-hash=5bf48dd9b5
+Annotations:      <none>
+Status:           Pending
+IP:
+IPs:              <none>
+Controlled By:    ReplicaSet/nginx-deployment-5bf48dd9b5
+Init Containers:
+  init-container:
+    Container ID:
+    Image:         busybox
+    Image ID:
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      shell
+      echo 'Welcome To KillerCoda!'
+    State:          Waiting
+      Reason:       PodInitializing
+    Ready:          False
+    Restart Count:  0
+    Environment:    <none>
+    Mounts:
+      /etc/nginx/nginx.conf from nginx-config (rw)
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-8htcj (ro)
+Containers:
+  nginx-container:
+    Container ID:
+    Image:          nginx:latest
+    Image ID:
+    Port:           80/TCP
+    Host Port:      0/TCP
+    State:          Waiting
+      Reason:       PodInitializing
+    Ready:          False
+    Restart Count:  0
+    Environment:    <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-8htcj (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   False
+  Initialized                 False
+  Ready                       False
+  ContainersReady             False
+  PodScheduled                True
+Volumes:
+  nginx-config:
+    Type:      ConfigMap (a volume populated by a ConfigMap)
+    Name:      nginx-configuration
+    Optional:  false
+  kube-api-access-8htcj:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    ConfigMapOptional:       <nil>
+    DownwardAPI:             true
+QoS Class:                   BestEffort
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type     Reason       Age                From               Message
+  ----     ------       ----               ----               -------
+  Normal   Scheduled    88s                default-scheduler  Successfully assigned default/nginx-deployment-5bf48dd9b5-6nkgk to node01
+  Warning  FailedMount  24s (x8 over 87s)  kubelet            MountVolume.SetUp failed for volume "nginx-config" : configmap "nginx-configuration" not found
+
+$ kubectl get configmaps
+NAME               DATA   AGE
+kube-root-ca.crt   1      19d
+nginx-configmap    1      103s
+
+$ kubectl get configmaps nginx-configmap -o yaml
+apiVersion: v1
+data:
+  nginx.conf: |
+    server {
+        listen 80;
+        server_name localhost;
+
+        location / {
+            root /usr/share/nginx/html;
+            index index.html;
+        }
+    }
+kind: ConfigMap
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","data":{"nginx.conf":"server {\n    listen 80;\n    server_name localhost;\n\n    location / {\n        root /usr/share/nginx/html;\n        index index.html;\n    }\n}\n"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"nginx-configmap","namespace":"default"}}
+  creationTimestamp: "2025-01-22T09:01:15Z"
+  name: nginx-configmap
+  namespace: default
+  resourceVersion: "2794"
+  uid: a8153cc6-3a2c-408a-81c5-8c28eee01b04
+
+$ kubectl get deployments.apps nginx-deployment -o yaml | tee dep.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"nginx-deployment","namespace":"default"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"nginx"}},"template":{"metadata":{"labels":{"app":"nginx"}},"spec":{"containers":[{"image":"nginx:latest","name":"nginx-container","ports":[{"containerPort":80}]}],"initContainers":[{"command":["shell","echo 'Welcome To KillerCoda!'"],"image":"busybox","name":"init-container","volumeMounts":[{"mountPath":"/etc/nginx/nginx.conf","name":"nginx-config"}]}],"volumes":[{"configMap":{"name":"nginx-configuration"},"name":"nginx-config"}]}}}}
+  creationTimestamp: "2025-01-22T09:01:15Z"
+  generation: 1
+  name: nginx-deployment
+  namespace: default
+  resourceVersion: "2805"
+  uid: b7379fa9-4065-47f6-9872-c6186eb800cf
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: nginx
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - image: nginx:latest
+        imagePullPolicy: Always
+        name: nginx-container
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      initContainers:
+      - command:
+        - shell
+        - echo 'Welcome To KillerCoda!'
+        image: busybox
+        imagePullPolicy: Always
+        name: init-container
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /etc/nginx/nginx.conf
+          name: nginx-config
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: nginx-configuration
+        name: nginx-config
+# 省略 status 字段
+
+$ vim dep.yaml
+# 三个问题：
+# 1、Deployment 中，ConfigMap 名称写错，应该改为上述查询到的名称
+# 2、没有 shell 命令，改为 sh
+# 3、sh 必须配合 -c 配置项才行
+
+$ kubectl delete -f dep.yaml --force --grace-period 0
+Warning: Immediate deletion does not wait for confirmation that the running resource has been terminated. The resource may continue to run on the cluster indefinitely.
+deployment.apps "nginx-deployment" force deleted
+
+$ kubectl apply -f dep.yaml
+deployment.apps/nginx-deployment created
+
+$ kubectl get pod
+NAME                                READY   STATUS    RESTARTS   AGE
+nginx-deployment-84547955c8-pbbsp   1/1     Running   0          28s
+
+$ cat dep.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  namespace: default
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: nginx
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - image: nginx:latest
+        imagePullPolicy: Always
+        name: nginx-container
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      initContainers:
+      - command:
+        - sh
+        - "-c"
+        - echo 'Welcome To KillerCoda!'
+        image: busybox
+        imagePullPolicy: Always
+        name: init-container
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /etc/nginx/nginx.conf
+          name: nginx-config
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: nginx-configmap
+        name: nginx-config
 ----
 
 
@@ -113,14 +907,47 @@ https://killercoda.com/sachin/course/CKA/deployment-issue-1[Troubleshooting - De
 https://killercoda.com/sachin/course/CKA/deployment-issue-2[Troubleshooting - Deployment Issue 2^]
 
 ****
-
+`frontend-deployment.yaml` deployment template is there, try to deploy, if there is any issue fix that
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ cat frontend-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deployment
+  namespace: nginx-ns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: nginx-container
+          image: nginx:latest
+          ports:
+            - containerPort: 80
 
+$ kubectl apply -f frontend-deployment.yaml
+Error from server (NotFound): error when creating "frontend-deployment.yaml": namespaces "nginx-ns" not found
+
+$ kubectl create namespace nginx-ns
+namespace/nginx-ns created
+
+$ kubectl apply -f frontend-deployment.yaml
+deployment.apps/frontend-deployment created
+
+$ kubectl -n nginx-ns get pod
+NAME                                   READY   STATUS    RESTARTS   AGE
+frontend-deployment-6575f54b8f-bj9tw   1/1     Running   0          13s
 ----
 
 
@@ -129,14 +956,266 @@ https://killercoda.com/sachin/course/CKA/deployment-issue-2[Troubleshooting - De
 https://killercoda.com/sachin/course/CKA/deployment-issue-3[Troubleshooting - Deployment Issue 3^]
 
 ****
-
+`postgres-deployment` deployment pods are not running, fix that issue
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ kubectl get deployments.apps
+NAME                  READY   UP-TO-DATE   AVAILABLE   AGE
+postgres-deployment   0/1     1            0           20s
 
+$ kubectl get pod
+NAME                                   READY   STATUS                       RESTARTS   AGE
+postgres-deployment-75b4ffc554-ckjp8   0/1     CreateContainerConfigError   0          25s
+
+$ kubectl describe pod postgres-deployment-75b4ffc554-ckjp8
+Name:             postgres-deployment-75b4ffc554-ckjp8
+Namespace:        default
+Priority:         0
+Service Account:  default
+Node:             node01/172.30.2.2
+Start Time:       Tue, 21 Jan 2025 07:43:21 +0000
+Labels:           app=postgres
+                  pod-template-hash=75b4ffc554
+Annotations:      cni.projectcalico.org/containerID: f12fd2dba041db5b979492c2703270624e0c2d0cb7aeb5365badd2700297e209
+                  cni.projectcalico.org/podIP: 192.168.1.4/32
+                  cni.projectcalico.org/podIPs: 192.168.1.4/32
+Status:           Pending
+IP:               192.168.1.4
+IPs:
+  IP:           192.168.1.4
+Controlled By:  ReplicaSet/postgres-deployment-75b4ffc554
+Containers:
+  postgres-container:
+    Container ID:
+    Image:          postgres:latest
+    Image ID:
+    Port:           5432/TCP
+    Host Port:      0/TCP
+    State:          Waiting
+      Reason:       CreateContainerConfigError
+    Ready:          False
+    Restart Count:  0
+    Environment:
+      POSTGRES_DB:        <set to the key 'POSTGRES_DB' of config map 'postgres-db-config'>    Optional: false
+      POSTGRES_USER:      <set to the key 'POSTGRES_USER' of config map 'postgres-db-config'>  Optional: false
+      POSTGRES_PASSWORD:  <set to the key 'POSTGRES_PASSWORD' in secret 'postgres-db-secret'>  Optional: false
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-s95pr (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True
+  Initialized                 True
+  Ready                       False
+  ContainersReady             False
+  PodScheduled                True
+Volumes:
+  kube-api-access-s95pr:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    ConfigMapOptional:       <nil>
+    DownwardAPI:             true
+QoS Class:                   BestEffort
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type     Reason     Age               From               Message
+  ----     ------     ----              ----               -------
+  Normal   Scheduled  34s               default-scheduler  Successfully assigned default/postgres-deployment-75b4ffc554-ckjp8 to node01
+  Normal   Pulled     14s               kubelet            Successfully pulled image "postgres:latest" in 18.735s (18.735s including waiting). Image size: 153797110 bytes.
+  Normal   Pulled     14s               kubelet            Successfully pulled image "postgres:latest" in 403ms (403ms including waiting). Image size: 153797110 bytes.
+  Normal   Pulling    0s (x3 over 33s)  kubelet            Pulling image "postgres:latest"
+  Warning  Failed     0s (x3 over 14s)  kubelet            Error: configmap "postgres-db-config" not found
+  Normal   Pulled     0s                kubelet            Successfully pulled image "postgres:latest" in 334ms (334ms including waiting). Image size: 153797110 bytes.
+
+$ kubectl get configmaps
+NAME               DATA   AGE
+kube-root-ca.crt   1      18d
+postgres-config    2      44s
+
+$ kubectl get configmaps postgres-config -o yaml
+apiVersion: v1
+data:
+  POSTGRES_DB: mydatabase
+  POSTGRES_USER: myuser
+kind: ConfigMap
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","data":{"POSTGRES_DB":"mydatabase","POSTGRES_USER":"myuser"},"kind":"ConfigMap","metadata":{"annotations":{},"name":"postgres-config","namespace":"default"}}
+  creationTimestamp: "2025-01-21T07:43:21Z"
+  name: postgres-config
+  namespace: default
+  resourceVersion: "2818"
+  uid: 37338d2d-0827-4aa3-bfad-8344b4a38d75
+
+$ kubectl get secrets
+NAME              TYPE     DATA   AGE
+postgres-secret   Opaque   1      3m51s
+
+$ kubectl get secrets postgres-secret -o yaml
+apiVersion: v1
+data:
+  POSTGRES_PASSWORD: cGFzc3dvcmQK
+kind: Secret
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","data":{"POSTGRES_PASSWORD":"cGFzc3dvcmQK"},"kind":"Secret","metadata":{"annotations":{},"name":"postgres-secret","namespace":"default"},"type":"Opaque"}
+  creationTimestamp: "2025-01-21T07:43:21Z"
+  name: postgres-secret
+  namespace: default
+  resourceVersion: "2819"
+  uid: 52e5f67e-b16b-4ca1-b147-ea59badc8509
+type: Opaque
+
+$ kubectl get deployments.apps postgres-deployment -o yaml | tee dep.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"postgres-deployment","namespace":"default"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"postgres"}},"template":{"metadata":{"labels":{"app":"postgres"}},"spec":{"containers":[{"env":[{"name":"POSTGRES_DB","valueFrom":{"configMapKeyRef":{"key":"POSTGRES_DB","name":"postgres-db-config"}}},{"name":"POSTGRES_USER","valueFrom":{"configMapKeyRef":{"key":"POSTGRES_USER","name":"postgres-db-config"}}},{"name":"POSTGRES_PASSWORD","valueFrom":{"secretKeyRef":{"key":"POSTGRES_PASSWORD","name":"postgres-db-secret"}}}],"image":"postgres:latest","name":"postgres-container","ports":[{"containerPort":5432}]}]}}}}
+  creationTimestamp: "2025-01-21T07:43:21Z"
+  generation: 1
+  name: postgres-deployment
+  namespace: default
+  resourceVersion: "2828"
+  uid: 5736306d-c0fa-4ad4-b0b0-fa28e80be607
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: postgres
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - env:
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              key: POSTGRES_DB
+              name: postgres-db-config
+        - name: POSTGRES_USER
+          valueFrom:
+            configMapKeyRef:
+              key: POSTGRES_USER
+              name: postgres-db-config
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: POSTGRES_PASSWORD
+              name: postgres-db-secret
+        image: postgres:latest
+        imagePullPolicy: Always
+        name: postgres-container
+        ports:
+        - containerPort: 5432
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+# 省略了 status 字段
+
+$ vim dep.yaml
+# ConfigMap 和 Secret 的名称跟实际不一致，修改成正确的即可
+
+$ kubectl delete -f dep.yaml --force --grace-period 0
+Warning: Immediate deletion does not wait for confirmation that the running resource has been terminated. The resource may continue to run on the cluster indefinitely.
+deployment.apps "postgres-deployment" force deleted
+
+$ kubectl apply -f dep.yaml
+deployment.apps/postgres-deployment created
+
+$ kubectl get pod
+NAME                                   READY   STATUS    RESTARTS   AGE
+postgres-deployment-5c8cb5d6fc-v5c5s   1/1     Running   0          8s
+
+$ cat dep.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"postgres-deployment","namespace":"default"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"postgres"}},"template":{"metadata":{"labels":{"app":"postgres"}},"spec":{"containers":[{"env":[{"name":"POSTGRES_DB","valueFrom":{"configMapKeyRef":{"key":"POSTGRES_DB","name":"postgres-config"}}},{"name":"POSTGRES_USER","valueFrom":{"configMapKeyRef":{"key":"POSTGRES_USER","name":"postgres-config"}}},{"name":"POSTGRES_PASSWORD","valueFrom":{"secretKeyRef":{"key":"POSTGRES_PASSWORD","name":"postgres-secret"}}}],"image":"postgres:latest","name":"postgres-container","ports":[{"containerPort":5432}]}]}}}}
+  creationTimestamp: "2025-01-21T07:43:21Z"
+  generation: 1
+  name: postgres-deployment
+  namespace: default
+  resourceVersion: "2828"
+  uid: 5736306d-c0fa-4ad4-b0b0-fa28e80be607
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: postgres
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - env:
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              key: POSTGRES_DB
+              name: postgres-config
+        - name: POSTGRES_USER
+          valueFrom:
+            configMapKeyRef:
+              key: POSTGRES_USER
+              name: postgres-config
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: POSTGRES_PASSWORD
+              name: postgres-secret
+        image: postgres:latest
+        imagePullPolicy: Always
+        name: postgres-container
+        ports:
+        - containerPort: 5432
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
 ----
 
 
@@ -145,14 +1224,279 @@ https://killercoda.com/sachin/course/CKA/deployment-issue-3[Troubleshooting - De
 https://killercoda.com/sachin/course/CKA/deployment-issue-4[Troubleshooting - Deployment Issue 4^]
 
 ****
-
+`database-deployment` deployment pods are not running, fix that issue
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ kubectl get pod
+NAME                                 READY   STATUS    RESTARTS   AGE
+database-deployment-9bffdf4c-pfnwc   0/1     Pending   0          39s
 
+$ kubectl describe pod database-deployment-9bffdf4c-pfnwc
+Name:             database-deployment-9bffdf4c-pfnwc
+Namespace:        default
+Priority:         0
+Service Account:  default
+Node:             <none>
+Labels:           app=postgres
+                  pod-template-hash=9bffdf4c
+Annotations:      <none>
+Status:           Pending
+IP:
+IPs:              <none>
+Controlled By:    ReplicaSet/database-deployment-9bffdf4c
+Containers:
+  postgres-container:
+    Image:      postgres:latest
+    Port:       5432/TCP
+    Host Port:  0/TCP
+    Environment:
+      POSTGRES_DB:        mydatabase
+      POSTGRES_USER:      myuser
+      POSTGRES_PASSWORD:  <set to the key 'POSTGRES_PASSWORD' in secret 'postgres-secret'>  Optional: false
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-fzrkd (ro)
+Conditions:
+  Type           Status
+  PodScheduled   False
+Volumes:
+  postgres-storage:
+    Type:       PersistentVolumeClaim (a reference to a PersistentVolumeClaim in the same namespace)
+    ClaimName:  postgres-db-pvc
+    ReadOnly:   false
+  kube-api-access-fzrkd:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    ConfigMapOptional:       <nil>
+    DownwardAPI:             true
+QoS Class:                   BestEffort
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type     Reason            Age   From               Message
+  ----     ------            ----  ----               -------
+  Warning  FailedScheduling  47s   default-scheduler  0/2 nodes are available: persistentvolumeclaim "postgres-db-pvc" not found. preemption: 0/2 nodes are available: 2 Preemption is not helpful for scheduling.
+
+$ kubectl get pvc
+NAME           STATUS    VOLUME        CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+postgres-pvc   Pending   postgres-pv   0                         standard       <unset>                 57s
+
+$ kubectl get pvc postgres-pvc -o wide
+NAME           STATUS    VOLUME        CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE   VOLUMEMODE
+postgres-pvc   Pending   postgres-pv   0                         standard       <unset>                 71s   Filesystem
+
+$ kubectl get pv -o wide
+NAME          CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS      CLAIM   STORAGECLASS   VOLUMEATTRIBUTESCLASS   REASON   AGE   VOLUMEMODE
+postgres-pv   100Mi      RWO            Retain           Available           standard       <unset>                          83s   Filesystem
+
+$ kubectl get deployments.apps database-deployment -o yaml | tee dep.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"database-deployment","namespace":"default"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"postgres"}},"template":{"metadata":{"labels":{"app":"postgres"}},"spec":{"containers":[{"env":[{"name":"POSTGRES_DB","value":"mydatabase"},{"name":"POSTGRES_USER","value":"myuser"},{"name":"POSTGRES_PASSWORD","valueFrom":{"secretKeyRef":{"key":"POSTGRES_PASSWORD","name":"postgres-secret"}}}],"image":"postgres:latest","name":"postgres-container","ports":[{"containerPort":5432}]}],"volumes":[{"name":"postgres-storage","persistentVolumeClaim":{"claimName":"postgres-db-pvc"}}]}}}}
+  creationTimestamp: "2025-01-21T07:53:15Z"
+  generation: 1
+  name: database-deployment
+  namespace: default
+  resourceVersion: "2331"
+  uid: c22a499d-f568-4c60-a943-f748cb6a71f4
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: postgres
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - env:
+        - name: POSTGRES_DB
+          value: mydatabase
+        - name: POSTGRES_USER
+          value: myuser
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: POSTGRES_PASSWORD
+              name: postgres-secret
+        image: postgres:latest
+        imagePullPolicy: Always
+        name: postgres-container
+        ports:
+        - containerPort: 5432
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: postgres-storage
+        persistentVolumeClaim:
+          claimName: postgres-db-pvc
+#省略 status 字段
+
+$ echo "---" | tee -a dep.yaml
+---
+
+$ kubectl get pvc postgres-pvc -o yaml | tee -a dep.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","kind":"PersistentVolumeClaim","metadata":{"annotations":{},"name":"postgres-pvc","namespace":"default"},"spec":{"accessModes":["ReadWriteMany"],"resources":{"requests":{"storage":"150Mi"}},"storageClassName":"standard","volumeName":"postgres-pv"}}
+  creationTimestamp: "2025-01-21T07:53:15Z"
+  finalizers:
+  - kubernetes.io/pvc-protection
+  name: postgres-pvc
+  namespace: default
+  resourceVersion: "2316"
+  uid: 7c662eb1-770b-47b3-9d20-0eedb7c4a597
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 150Mi
+  storageClassName: standard
+  volumeMode: Filesystem
+  volumeName: postgres-pv
+status:
+  phase: Pending
+
+$ vim dep.yaml
+# 三个问题：
+# 1、 Pod 中所使用的 PVC 名称不对
+# 2、 PVC 和 PV 的 accessModes 字段不一致，修改成为 ReadWriteOnce
+# 3、 PVC 的容量超过 PV，修改成 100Mi
+
+$ kubectl delete -f dep.yaml --force --grace-period 0
+Warning: Immediate deletion does not wait for confirmation that the running resource has been terminated. The resource may continue to run on the cluster indefinitely.
+deployment.apps "database-deployment" force deleted
+persistentvolumeclaim "postgres-pvc" force deleted
+
+$ kubectl apply -f dep.yaml
+deployment.apps/database-deployment created
+persistentvolumeclaim/postgres-pvc created
+
+$ kubectl get pvc
+NAME           STATUS   VOLUME        CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+postgres-pvc   Bound    postgres-pv   100Mi      RWO            standard       <unset>                 6s
+
+$ kubectl get pod
+NAME                                   READY   STATUS              RESTARTS   AGE
+database-deployment-647c766bfd-6njck   0/1     ContainerCreating   0          14s
+
+$ kubectl get pod
+NAME                                   READY   STATUS    RESTARTS   AGE
+database-deployment-647c766bfd-6njck   1/1     Running   0          20s
+
+$ cat dep.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"apps/v1","kind":"Deployment","metadata":{"annotations":{},"name":"database-deployment","namespace":"default"},"spec":{"replicas":1,"selector":{"matchLabels":{"app":"postgres"}},"template":{"metadata":{"labels":{"app":"postgres"}},"spec":{"containers":[{"env":[{"name":"POSTGRES_DB","value":"mydatabase"},{"name":"POSTGRES_USER","value":"myuser"},{"name":"POSTGRES_PASSWORD","valueFrom":{"secretKeyRef":{"key":"POSTGRES_PASSWORD","name":"postgres-secret"}}}],"image":"postgres:latest","name":"postgres-container","ports":[{"containerPort":5432}]}],"volumes":[{"name":"postgres-storage","persistentVolumeClaim":{"claimName":"postgres-pvc"}}]}}}}
+  creationTimestamp: "2025-01-21T07:53:15Z"
+  generation: 1
+  name: database-deployment
+  namespace: default
+  resourceVersion: "2331"
+  uid: c22a499d-f568-4c60-a943-f748cb6a71f4
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: postgres
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - env:
+        - name: POSTGRES_DB
+          value: mydatabase
+        - name: POSTGRES_USER
+          value: myuser
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: POSTGRES_PASSWORD
+              name: postgres-secret
+        image: postgres:latest
+        imagePullPolicy: Always
+        name: postgres-container
+        ports:
+        - containerPort: 5432
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: postgres-storage
+        persistentVolumeClaim:
+          claimName: postgres-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","kind":"PersistentVolumeClaim","metadata":{"annotations":{},"name":"postgres-pvc","namespace":"default"},"spec":{"accessModes":["ReadWriteMany"],"resources":{"requests":{"storage":"150Mi"}},"storageClassName":"standard","volumeName":"postgres-pv"}}
+  creationTimestamp: "2025-01-21T07:53:15Z"
+  finalizers:
+  - kubernetes.io/pvc-protection
+  name: postgres-pvc
+  namespace: default
+  resourceVersion: "2316"
+  uid: 7c662eb1-770b-47b3-9d20-0eedb7c4a597
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+  storageClassName: standard
+  volumeMode: Filesystem
+  volumeName: postgres-pv
 ----
 
 
@@ -161,13 +1505,65 @@ https://killercoda.com/sachin/course/CKA/deployment-issue-4[Troubleshooting - De
 https://killercoda.com/sachin/course/CKA/deployment-rollout-resume[Troubleshooting - Deployment Not UP-TO-DATE^]
 
 ****
-
+`stream-deployment` deployment is not up to date. observed `0`  under the UP-TO-DATE it should be `1` , Troubleshoot, fix the issue and make sure deployment is up to date.
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ kubectl get deployments.apps
+NAME                READY   UP-TO-DATE   AVAILABLE   AGE
+stream-deployment   0/0     0            0           67s
 
+$ kubectl get deployments.apps stream-deployment -o yaml | tee dep.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+  creationTimestamp: "2025-01-21T08:08:41Z"
+  generation: 1
+  labels:
+    app: stream-deployment
+  name: stream-deployment
+  namespace: default
+  resourceVersion: "2055"
+  uid: f6054b5f-dc99-46d1-9956-fe096b9a8d40
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 0
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: stream-deployment
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: stream-deployment
+    spec:
+      containers:
+      - image: redis:7.2.1
+        imagePullPolicy: IfNotPresent
+        name: redis
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+# 省略 status 字段
+
+$ kubectl scale deployment stream-deployment --replicas 1
+deployment.apps/stream-deployment scaled
+# Deployment 的 replicas 为 0，扩展为 0 即可。
 ----
 

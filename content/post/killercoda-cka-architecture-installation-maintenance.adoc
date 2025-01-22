@@ -50,8 +50,10 @@ spec:
     command:
       - sleep
       - "3600"
+
 $ kubectl apply -f nginx.yaml
 pod/sleep-pod created
+
 $ kubectl get pod
 NAME        READY   STATUS    RESTARTS   AGE
 sleep-pod   1/1     Running   0          5s
@@ -73,6 +75,7 @@ https://killercoda.com/sachin/course/CKA/log-reader[Architecture, Installation &
 $ kubectl get pod
 NAME             READY   STATUS    RESTARTS   AGE
 log-reader-pod   1/1     Running   0          38s
+
 $ kubectl logs log-reader-pod | tee podalllogs.txt
 ERROR: Mon Oct 1 10:30:23 UTC 2023 Log in Error!
 INFO: Mon Oct 1 10:30:23 UTC 2023 Logged In
@@ -189,17 +192,22 @@ spec:
     configMap:
       name: log-configmap
   restartPolicy: Never
+
 $ kubectl apply -f pod.yaml
 pod/alpine-pod-pod created
+
 $ kubectl get pod
 NAME             READY   STATUS    RESTARTS   AGE
 alpine-pod-pod   1/1     Running   0          6s
 
 $ kubectl exec -it alpine-pod-pod  -- sh
+
 $ cd /config
+
 $ ls -lh
 total 0
 lrwxrwxrwx    1 root     root          14 Jan  8 12:52 log.txt -> ..data/log.txt
+
 $ cat log.txt
 <LOG DATA>
 ----
@@ -374,8 +382,10 @@ The Pod "product" is invalid: spec: Forbidden: pod updates may not change fields
 $ kubectl delete -f pod.yaml --force --grace-period 0
 Warning: Immediate deletion does not wait for confirmation that the running resource has been terminated. The resource may continue to run on the cluster indefinitely.
 pod "product" force deleted
+
 $ kubectl apply -f pod.yaml
 pod/product created
+
 $ kubectl logs product
 Sony Tv Is Good
 ----
@@ -411,8 +421,10 @@ kube-system          kube-proxy-sqc72                          1m           20Mi
 kube-system          kube-proxy-xknck                          1m           33Mi
 local-path-storage   local-path-provisioner-6c5cff8948-tmf26   1m           14Mi
 default              nginx                                     0m           2Mi
+
 $ kubectl top pod -A --sort-by cpu --no-headers | head -n 1 | awk '{print $2","$1}'
 kube-apiserver-controlplane,kube-system
+
 $ kubectl top pod -A --sort-by cpu --no-headers | head -n 1 | awk '{print $2","$1}' | tee high_cpu_pod.txt
 kube-apiserver-controlplane,kube-system
 # 如果在输出文件中，需要加标题，则可以使用
@@ -436,9 +448,11 @@ It should be in the format `kubectl get pod <pod-name> <remainingcmd>`
 
 $ cat pod-filter.sh
 #!/bin/bash
+
 $ kubectl get pod
 NAME        READY   STATUS    RESTARTS   AGE
 nginx-pod   1/1     Running   0          45s
+
 $ kubectl get pod nginx-pod -o yaml
 apiVersion: v1
 kind: Pod
@@ -466,6 +480,7 @@ $ cat pod-filter.sh
 #!/bin/bash
 
 kubectl get pod nginx-pod -o jsonpath='{.metadata.labels.application}'
+
 $ bash pod-filter.sh
 frontend
 ----
@@ -486,6 +501,7 @@ Create a Kubernetes Secret named `database-app-secret` in the default namespace 
 $ cat database-data.txt
 DB_User=REJfVXNlcj1teXVzZXI=
 DB_Password=REJfUGFzc3dvcmQ9bXlwYXNzd29yZA==
+
 $ kubectl create secret generic database-app-secret --from-file database-data.txt
 secret/database-app-secret created
 ----
@@ -515,10 +531,13 @@ metadata:
   resourceVersion: "2280"
   uid: 958a00c4-6776-4621-8d8b-94d6c31f93f9
 type: Opaque
+
 $ kubectl -n database-ns get secrets database-data -o jsonpath='{.data.DB_PASSWORD}' | base64 -d
 secret
+
 $ kubectl -n database-ns get secrets database-data -o jsonpath='{.data.DB_PASSWORD}' | base64 -d | tee decoded.txt
 secret
+
 $ cat decoded.txt
 secret
 ----
@@ -540,16 +559,20 @@ $ kubectl top node --sort-by memory
 NAME           CPU(cores)   CPU%   MEMORY(bytes)   MEMORY%
 controlplane   138m         13%    1266Mi          67%
 node01         48m          4%     761Mi           40%
+
 $ echo "$(kubectl config current-context),$(kubectl top node --sort-by memory --no-headers \
   | head -n 1 | awk '{print $1}')" | tee high_memory_node.txt
 kubernetes-admin@kubernetes,controlplane
+
 $ cat high_memory_node.txt
 kubernetes-admin@kubernetes,controlplane
 
 # 或
 
 $ context=`kubectl config current-context`
+
 $ node=$(kubectl top nodes --sort-by=memory --no-headers | head -n 1 | awk '{print $1}')
+
 $ echo "$context,$node" | tee high_memory_node.txt
 ----
 
@@ -598,12 +621,16 @@ spec:
   type: ClusterIP
 status:
   loadBalancer: {}
+
 $ kubectl get svc redis-service -o jsonpath='{.spec.ports[0].targetPort}'
 6379
+
 $ cat svc-filter.sh
 #!/bin/bash
+
 $ vim svc-filter.sh
 # 将上述命令复制到文件中
+
 $ bash svc-filter.sh
 6379
 ----
@@ -624,18 +651,23 @@ You have a service account named `group1-sa` , a ClusterRole named `group1-role-
 $ kubectl get sa
 NAME        SECRETS   AGE
 group1-sa   0         41s
+
 $ kubectl get clusterrole
 NAME                                                                   CREATED AT
 group1-role-cka                                                        2025-01-09T11:44:23Z
+
 $ kubectl get clusterRoleBinding
 NAME                                                            ROLE                                                                               AGE
 group1-role-binding-cka                                         ClusterRole/group1-role-cka                                                        81s
+
 $ kubectl get clusterrole
 NAME                                                                   CREATED AT
 group1-role-cka                                                        2025-01-09T11:44:23Z
+
 $ kubectl get clusterrole group1-role-cka
 NAME              CREATED AT
 group1-role-cka   2025-01-09T11:44:23Z
+
 
 $ kubectl get clusterrole group1-role-cka  -o yaml | tee role.yaml
 apiVersion: rbac.authorization.k8s.io/v1
@@ -652,10 +684,13 @@ rules:
   - deployments
   verbs:
   - get
+
 $ vim role.yaml
 # 增加 create、list 权限
+
 $ kubectl replace -f role.yaml
 clusterrole.rbac.authorization.k8s.io/group1-role-cka replaced
+
 $ cat role.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -690,6 +725,7 @@ Create a service account named `app-account` , a role named `app-role-cka` , and
 
 $ kubectl create sa app-account
 serviceaccount/app-account created
+
 $ kubectl get ns
 NAME                 STATUS   AGE
 default              Active   7d2h
@@ -697,10 +733,13 @@ kube-node-lease      Active   7d2h
 kube-public          Active   7d2h
 kube-system          Active   7d2h
 local-path-storage   Active   7d2h
+
 $ kubectl create role app-role-cka --resource=pods --verb=get --namespace=default
 role.rbac.authorization.k8s.io/app-role-cka created
+
 $ kubectl create rolebinding app-role-binding-cka --serviceaccount=app-account --role=app-role-cka
 error: serviceaccount must be <namespace>:<name>
+
 $ kubectl create rolebinding app-role-binding-cka --serviceaccount=default:app-account --role=app-role-cka
 rolebinding.rbac.authorization.k8s.io/app-role-binding-cka created
 ----
@@ -719,6 +758,7 @@ EXAMPLE: If current version is v1.27.1 then upgrade to v1.27.2
 
 BEFORE UPGRADE: ( v1.31.0 )
 
+[source%nowrap,bash,{source_attr}]
 ----
 $ kubeadm version
 kubeadm version: &version.Info{Major:"1", Minor:"31", GitVersion:"v1.31.0", GitCommit:"9edcffcde5595e8a5b1a35f88c421764e575afce", GitTreeState:"clean", BuildDate:"2024-08-13T07:35:57Z", GoVersion:"go1.22.5", Compiler:"gc", Platform:"linux/amd64"}
@@ -726,6 +766,7 @@ kubeadm version: &version.Info{Major:"1", Minor:"31", GitVersion:"v1.31.0", GitC
 
 AFTER UPGRADE: ( v1.31.1 )
 
+[source%nowrap,bash,{source_attr}]
 ----
 $ kubeadm version
 kubeadm version: &version.Info{Major:"1", Minor:"31", GitVersion:"v1.31.1", GitCommit:"948afe5ca072329a73c8e79ed5938717a5cb3d21", GitTreeState:"clean", BuildDate:"2024-09-11T21:26:49Z", GoVersion:"go1.22.6", Compiler:"gc", Platform:"linux/amd64"}
@@ -736,6 +777,7 @@ kubeadm version: &version.Info{Major:"1", Minor:"31", GitVersion:"v1.31.1", GitC
 
 BEFORE UPGRADE: ( v1.27.1 )
 
+[source%nowrap,bash,{source_attr}]
 ----
 $ sudo kubeadm upgrade plan
 [preflight] Running pre-flight checks.
@@ -750,6 +792,7 @@ $ sudo kubeadm upgrade plan
 
 AFTER UPGRADE: ( v1.27.2 )
 
+[source%nowrap,bash,{source_attr}]
 ----
 $ kubeadm upgrade plan
 [preflight] Running pre-flight checks.
@@ -766,6 +809,7 @@ $ kubeadm upgrade plan
 
 BEFORE UPGRADE: ( v1.31.0 )
 
+[source%nowrap,bash,{source_attr}]
 ----
 $ kubectl get  nodes
 NAME           STATUS   ROLES           AGE    VERSION
@@ -776,6 +820,7 @@ node01         Ready    <none>          7d2h   v1.31.0
 
 AFTER UPGRADE: ( v1.27.2 )
 
+[source%nowrap,bash,{source_attr}]
 ----
 $ kubectl get nodes
 NAME           STATUS   ROLES           AGE    VERSION
@@ -792,18 +837,22 @@ Similarly verify upgradation for current verion. ( ex:- v1.31.0 to v1.31.1 )
 
 $ uname -a
 Linux controlplane 5.4.0-131-generic #147-Ubuntu SMP Fri Oct 14 17:07:22 UTC 2022 x86_64 x86_64 x86_64 GNU/Linux
+
 $ lsb_release
 No LSB modules are available.
+
 $ lsb_release -a
 No LSB modules are available.
 Distributor ID: Ubuntu
 Description:    Ubuntu 20.04.5 LTS
 Release:        20.04
 Codename:       focal
+
 $ kubectl version
 Client Version: v1.31.0
 Kustomize Version: v5.4.2
 Server Version: v1.31.0
+
 $ sudo apt search kubeadm
 Sorting... Done
 Full Text Search... Done
@@ -836,8 +885,10 @@ Unpacking kubelet (1.31.1-1.1) over (1.31.0-1.1) ...
 Setting up kubeadm (1.31.1-1.1) ...
 Setting up kubectl (1.31.1-1.1) ...
 Setting up kubelet (1.31.1-1.1) ...
+
 $ kubeadm version
 kubeadm version: &version.Info{Major:"1", Minor:"31", GitVersion:"v1.31.1", GitCommit:"948afe5ca072329a73c8e79ed5938717a5cb3d21", GitTreeState:"clean", BuildDate:"2024-09-11T21:26:49Z", GoVersion:"go1.22.6", Compiler:"gc", Platform:"linux/amd64"}
+
 $ sudo kubeadm upgrade plan
 [preflight] Running pre-flight checks.
 [upgrade/config] Reading configuration from the cluster...
