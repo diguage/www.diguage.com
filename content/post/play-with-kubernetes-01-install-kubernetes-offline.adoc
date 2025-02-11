@@ -1,5 +1,5 @@
 ---
-title: "玩转 Kubernetes（一）：离线安装 Kubernetes"
+title: "玩转 Kubernetes（一）：离线安装 Kubernetes 1"
 date: 2024-12-14T16:13:19+08:00
 draft: false
 keywords: ["Kubernetes", "Kubespray"]
@@ -10,11 +10,6 @@ aliases: "/post/playing-with-kubernetes-01-install-kubernetes-offline/"
 
 weight: 1
 ---
-
-
-// image::/images/[title="",alt="",{image_attr}]
-
-
 
 在 https://www.diguage.com/post/building-a-develop-environment-based-on-docker-3/[基于 Docker 搭建开发环境（三）：链路追踪^] 等几篇文章中，D瓜哥分享了如何使用 Docker Compose 在本地搭建起来一套应用可观测性环境。感觉还不够好玩，毕竟正在在企业中，Kubernetes 已经是绝对的主流。要玩就玩最具挑战性的东西，玩最符合企业所需的技能和工具。所以，打算将上面那套简易玩具，按照企业级的要求，搬到 Kubernetes 上去。
 
@@ -42,15 +37,16 @@ weight: 1
 Vagrant.configure("2") do |config|
   # The most common configuration options are documented and commented below.
   # For a complete reference, please see the online documentation at
-  # https://docs.vagrantup.com.
+  # https://docs.vagrantup.com
 
   # 三节点集群
   (1..3).each do |i|
     config.vm.define "node#{i}" do |node|
 
       # Every Vagrant development environment requires a box. You can search for
-      # boxes at https://vagrantcloud.com/search.
-      node.vm.box = "ubuntu2404"
+      # boxes at https://vagrantcloud.com/search
+      node.vm.box = "alvistack/ubuntu-24.04"
+      node.vm.box_version = "20250210.0.0"
 
       # 设置虚拟机的主机名
       node.vm.hostname = "node#{i}"
@@ -404,6 +400,7 @@ sudo apt install caddy
 caddy file-server --root /path/to/binary-installer --listen 0.0.0.0:8888 --browse
 ----
 
+[#setup-registry]
 == 搭建容器镜像仓库
 
 从 https://github.com/diguage/k8s-packages/releases/tag/2.26.0 页面，将 https://github.com/diguage/k8s-packages/releases/download/2.26.0/container-images.tar.gz[container-images.tar.gz] 下载并解压，里面包含所有所需的镜像导出包。
@@ -667,6 +664,8 @@ docker push ${REGISTRY_HOST}/sig-storage/snapshot-controller:v7.0.2
 ----
 --
 
+TIP: 这里使用的都是魔改脚本，在 https://www.diguage.com/post/play-with-kubernetes-01-install-kubernetes-offline-2/[玩转 Kubernetes（一）：离线安装 Kubernetes 2^] 中分享了基于 Kubespray 原生支持的方案。
+
 如果有 HTTPS 证书，可以把证书下载下来，在宿主机使用 Caddy 搭建一个 Docker 镜像服务器，配置如下：
 
 [source%nowrap,bash,{source_attr}]
@@ -764,7 +763,7 @@ quay_image_repo: "{{ registry_host }}"
 说明一下：这里重点就是修改了 `files_repo` 和 `registry_host`，告诉 Kubespray 从指定的服务端下载内容。
 --
 +
-. 修改 `KUBESPRAY/inventory/kubestar/group_vars/all/offline.yml` 配置文件，打开其他一些有用的附加插件：
+. 修改 `KUBESPRAY/inventory/kubestar/group_vars/k8s_cluster/addons.yml` 配置文件，打开其他一些有用的附加插件：
 +
 --
 [source%nowrap,bash,{source_attr}]

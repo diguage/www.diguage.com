@@ -1,0 +1,143 @@
+---
+title: "玩转 Kubernetes（一）：离线安装 Kubernetes 2"
+date: 2025-02-10T21:46:32+08:00
+draft: false
+keywords: ["Kubernetes", "Kubespray"]
+tags: ["Kubernetes","Linux"]
+categories: ["开发工具","系统架构"]
+thumbnail: "images/logos/kubernetes.svg"
+
+weight: 1
+---
+
+在 https://www.diguage.com/post/play-with-kubernetes-01-install-kubernetes-offline/[玩转 Kubernetes（一）：离线安装 Kubernetes 1^] 中，D瓜哥基于 Kubespray 进行魔改的脚本搭建起来容器镜像仓库。但是，每次都魔改着实麻烦，所以，探索 Kubespray 原生支持才是更为委托的长久之计。
+
+经过多次探索，终于，可以几乎无需魔改就可以利用 Kubespray 原生支持进行 Kubernetes 的离线安装。
+
+TIP: 以下是在 Mac 上的操作，在 Linux 等系统上操作类似。
+
+== 按照 Python 依赖
+
+在 Mac 的虚拟机离线安装 Kubernetes，使用 Mac 当做容器镜像服务器和二进制安装文件下载服务器是一个非常好的选择。为此，需要在完成一些基本的操作。
+
+由于运行 Kubespray，需要一个 Python 环境以及相关依赖，所以，就需要先安装相关依赖。
+
+[source%nowrap,bash,{source_attr}]
+----
+# 进入 Kubespray 的上层目录
+cd /PATH/TO/kubespray/..
+
+# 按照 Python 相关依赖
+VENVDIR=kubespray-venv
+KUBESPRAYDIR=kubespray
+python3 -m venv $VENVDIR
+source $VENVDIR/bin/activate
+cd $KUBESPRAYDIR
+pip install -U -r requirements.txt
+----
+
+== 生成镜像列表及二进制文件列表
+
+安装完相关依赖，就需要生成相关文件列表：
+
+[source%nowrap,bash,{source_attr}]
+----
+# 生成镜像列表以及相关二进制文件列表
+cd /PATH/TO/kubespray/contrib/offline
+
+./generate_list.sh
+----
+
+TIP: 注意：大多数情况下，我们的安装目标是 Linux。所以，建议这步操作在 Linux 上完成，这样得到的下载文件列表是 Linux 格式的。在 Mac 上完成，那么部分文件的格式就是 Mac 的，不能用于 Linux 的安装。
+
+执行完如下命令，则会在 `/PATH/TO/kubespray/contrib/offline/temp` 生成出来两个文件：
+
+. `files.list` -- 这是安装 Kubernetes 的二进制文件列表
+. `images.list` -- 这是安装 Kubernetes 所需要的镜像列表
+
+WARNING: 在 `images.list` 中找到 `external_storage/cephfs-provisioner:v2.1.0-k8s1.11` 和 `external_storage/rbd-provisioner:v2.1.1-k8s1.11` 两行，并将其删除。 这两个镜像太旧了，已经不支持了，留着会影响程序执行
+
+== 下载相关镜像
+
+有了镜像列表和二进制文件列表，就可以下载相关镜像了：
+
+[source%nowrap,bash,{source_attr}]
+----
+# 下载相关镜像
+export IMAGES_FROM_FILE=/PATH/TO/kubespray/contrib/offline/temp/images.list
+
+./manage-offline-container-images.sh create
+----
+
+由于国内众所周知的网络原因，大家下载影响时，可能不是很顺利，可以尝试使用镜像源，下面是目前找到的一些可用镜像源：
+
+=== 可用的容器镜像源
+
+. <https://docker.m.daocloud.io> -- 使用说明见： https://github.com/DaoCloud/public-image-mirror
+. https://docker.1panel.top
+. https://dockerpull.pw
+. https://docker.13140521.xyz
+. https://dk.nastool.de
+. https://docker.1ms.run
+. https://docker.1panel.live
+. https://hub1.nat.tf
+. https://docker.1panel.live
+
+== 搭建容器镜像源
+
+下载好镜像文件，就可以使用镜像文件搭建镜像源服务：
+
+[source%nowrap,bash,{source_attr}]
+----
+# 加载相关镜像。
+# Setup the registry service
+docker run --restart=always -d -p 5000:5000 --name registry registry:latest
+
+export DESTINATION_REGISTRY=localhost:5000  # 如果不设置，默认生成的网址会失败
+
+export IMAGE_TAR_FILE=/PATH/TO/container-images.tar.gz
+
+# Registering images
+./manage-offline-container-images.sh register
+----
+
+执行完成后，可以访问 http://localhost:5000/v2/_catalog ，查看已经加载的镜像列表
+
+这节的操作与 https://www.diguage.com/post/play-with-kubernetes-01-install-kubernetes-offline/[玩转 Kubernetes（一）：离线安装 Kubernetes 1^] 中的“搭建容器镜像仓库”节是一样的。上文使用的是魔改脚本，这节直接基于 Kubespray 的原生支持来搞，后续升级更方便。
+
+另外，还有一点需要说明：在 Kubespray 的原生脚本中，不支持 Mac 系统，所以，D瓜哥将脚本做了微调，并向 Kubespray 发起了一个 PR： https://github.com/kubernetes-sigs/kubespray/pull/11960[Kubespray: registry support Mac^]。
+
+=== 下载 registry.k8s.io 镜像
+
+对于保存在 registry.k8s.io 的 Kubernetes 最核心的镜像，可以使用国内的镜像源下载，然后再重新打标签的方式来完成下载。
+
+[source%nowrap,bash,{source_attr}]
+----
+# 可以使用 DaoCloud 提供的镜像，直接在原网址的前面加 m.daocloud.io/ 即可
+docker pull m.daocloud.io/registry.k8s.io/kube-scheduler:v1.31.4
+
+docker tag m.daocloud.io/registry.k8s.io/kube-scheduler:v1.31.4 \
+       registry.k8s.io/kube-scheduler:v1.31.4
+
+docker rmi m.daocloud.io/registry.k8s.io/kube-scheduler:v1.31.4
+----
+
+
+== 下载二进制文件
+
+上面生成了二进制文件列表，可以根据列表下载所有相关文件：
+
+
+[source%nowrap,bash,{source_attr}]
+----
+# 下载二进制文件
+cd /PATH/TO/kubespray/contrib/offline
+
+wget -c -x -P temp/files -i temp/files.list
+----
+
+TIP: 注意：如果是在 Mac 上生成的相关文件列表，那么部分文件是 Mac 系统上的安装文件。所以，需要调整这些文件的地址。*建议在 Linux 系统中生成相关文件列表。*
+
+== 小结
+
+使用本文内容，再结合 https://www.diguage.com/post/play-with-kubernetes-01-install-kubernetes-offline/[玩转 Kubernetes（一）：离线安装 Kubernetes 1^] 中的内容，就可以非常方便地完成 Kubernetes 的离线安装。
