@@ -1,7 +1,7 @@
 ---
 title: "killercoda CKA：Troubleshooting - 3"
 date: 2024-12-26T19:54:28+08:00
-draft: true
+draft: false
 keywords: ["Kubernetes", "CKA"]
 tags: ["Kubernetes","Linux"]
 categories: ["系统架构"]
@@ -33,14 +33,89 @@ weight: 1
 https://killercoda.com/sachin/course/CKA/sa-cr-crb-issue[Troubleshooting - Service account, role, role binding Issue^]
 
 ****
-
+You have a service account named `dev-sa`, a Role named `dev-role-cka`, and a RoleBinding named `dev-role-binding-cka`. we are trying to `create`  `list`  and `get`  the `pods`  and `services`. However, using `dev-sa` service account is not able to perform these operations. fix this issue.
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ kubectl get serviceaccounts dev-sa -o yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  creationTimestamp: "2025-01-22T09:48:06Z"
+  name: dev-sa
+  namespace: default
+  resourceVersion: "2270"
+  uid: 48b68f34-8c19-4477-9631-4f368f6ecc66
 
+$ kubectl get  role dev-role-cka
+NAME           CREATED AT
+dev-role-cka   2025-01-22T09:48:06Z
+
+$ kubectl get  role dev-role-cka -o yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  creationTimestamp: "2025-01-22T09:48:06Z"
+  name: dev-role-cka
+  namespace: default
+  resourceVersion: "2271"
+  uid: 7a011481-8edd-4417-a1b8-8d15290d3e9f
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+
+$ kubectl get rolebindings dev-role-binding-cka -o yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  creationTimestamp: "2025-01-22T09:48:07Z"
+  name: dev-role-binding-cka
+  namespace: default
+  resourceVersion: "2272"
+  uid: 888af489-86b6-4d38-a723-a8ff13656d2b
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: dev-role-cka
+subjects:
+- kind: ServiceAccount
+  name: dev-sa
+  namespace: default
+
+# 将 Role 删掉，重建即可
+$ kubectl delete role dev-role-cka --force --grace-period 0
+Warning: Immediate deletion does not wait for confirmation that the running resource has been terminated. The resource may continue to run on the cluster indefinitely.
+role.rbac.authorization.k8s.io "dev-role-cka" force deleted
+
+$ kubectl create  role dev-role-cka --resource=pods,services --verb=create,list,get
+role.rbac.authorization.k8s.io/dev-role-cka created
+
+$ kubectl get role dev-role-cka -o yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  creationTimestamp: "2025-01-22T09:49:46Z"
+  name: dev-role-cka
+  namespace: default
+  resourceVersion: "2414"
+  uid: b3d7fc62-f029-4f4b-88a5-99ee9840af05
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - services
+  verbs:
+  - create
+  - list
+  - get
 ----
 
 
@@ -49,14 +124,84 @@ https://killercoda.com/sachin/course/CKA/sa-cr-crb-issue[Troubleshooting - Servi
 https://killercoda.com/sachin/course/CKA/sa-cr-crb-issue-1[Troubleshooting - Service account, role, role binding Issue^]
 
 ****
-
+You have a service account named `prod-sa`, a Role named `prod-role-cka`, and a RoleBinding named `prod-role-binding-cka`. we are trying to `create`  `list`  and `get`  the `services` . However, using `prod-sa` service account is not able to perform these operations. fix this issue.
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ kubectl get serviceaccounts prod-sa -o yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  creationTimestamp: "2025-01-22T09:51:21Z"
+  name: prod-sa
+  namespace: default
+  resourceVersion: "2069"
+  uid: 0a915925-11ef-4530-bf11-78b874d0f4d3
 
+$ kubectl get rolebindings prod-role-binding-cka -o yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  creationTimestamp: "2025-01-22T09:51:21Z"
+  name: prod-role-binding-cka
+  namespace: default
+  resourceVersion: "2071"
+  uid: 8502ca87-2511-4c0c-b275-6d21c5f470bf
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: prod-role-cka
+subjects:
+- kind: ServiceAccount
+  name: prod-sa
+  namespace: default
+
+$ kubectl get role prod-role-cka -o yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  creationTimestamp: "2025-01-22T09:51:21Z"
+  name: prod-role-cka
+  namespace: default
+  resourceVersion: "2070"
+  uid: 2a5b77cd-81f0-41c7-b2f2-2d2961377e2f
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - list
+
+# 删掉 Role，重建即可
+$ kubectl delete role prod-role-cka --force --grace-period 0
+Warning: Immediate deletion does not wait for confirmation that the running resource has been terminated. The resource may continue to run on the cluster indefinitely.
+role.rbac.authorization.k8s.io "prod-role-cka" force deleted
+
+$ kubectl create role prod-role-cka --resource=services --verb=create,list,get
+role.rbac.authorization.k8s.io/prod-role-cka created
+
+$ kubectl get role prod-role-cka -o yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  creationTimestamp: "2025-01-22T09:54:17Z"
+  name: prod-role-cka
+  namespace: default
+  resourceVersion: "2319"
+  uid: fdfe51b9-b31b-4f1d-ac01-bd4724bb5adf
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - services
+  verbs:
+  - create
+  - list
+  - get
 ----
 
 
@@ -65,110 +210,2536 @@ https://killercoda.com/sachin/course/CKA/sa-cr-crb-issue-1[Troubleshooting - Ser
 https://killercoda.com/sachin/course/CKA/network-policy-issue[Troubleshooting - Network Policy Issue^]
 
 ****
-
+`red-pod`, `green-pod`, `blue-pod` pods are running, and `red-pod` exposed within the cluster using `red-service` service. and network policy applied on `red-pod` pod. problem is now the pod `red-pod` is accessible from both `green-pod` and `blue-pod` pods. fix the issue that `green-pod` only can able access `red-pod` pod.
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ kubectl get pod --show-labels
+NAME        READY   STATUS    RESTARTS   AGE   LABELS
+blue-pod    1/1     Running   0          76s   run=blue-pod
+green-pod   1/1     Running   0          76s   run=green-pod
+red-pod     1/1     Running   0          76s   run=red-pod
 
+$ kubectl get service -o wide
+NAME          TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)   AGE   SELECTOR
+kubernetes    ClusterIP   10.96.0.1     <none>        443/TCP   20d   <none>
+red-service   ClusterIP   10.97.8.239   <none>        80/TCP    89s   run=red-pod
+
+$ kubectl get networkpolicies
+NAME                   POD-SELECTOR   AGE
+allow-green-and-blue   run=red-pod    116s
+
+$ kubectl get networkpolicies allow-green-and-blue -o yaml | tee np.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"networking.k8s.io/v1","kind":"NetworkPolicy","metadata":{"annotations":{},"name":"allow-green-and-blue","namespace":"default"},"spec":{"ingress":[{"from":[{"podSelector":{"matchLabels":{"run":"green-pod"}}},{"podSelector":{"matchLabels":{"run":"blue-pod"}}}]}],"podSelector":{"matchLabels":{"run":"red-pod"}},"policyTypes":["Ingress"]}}
+  creationTimestamp: "2025-01-22T09:55:14Z"
+  generation: 1
+  name: allow-green-and-blue
+  namespace: default
+  resourceVersion: "2012"
+  uid: 7b8ffc9d-c994-47dc-8cee-4f19e6e8edc6
+spec:
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          run: green-pod
+    - podSelector:
+        matchLabels:
+          run: blue-pod
+  podSelector:
+    matchLabels:
+      run: red-pod
+  policyTypes:
+  - Ingress
+
+$ vim np.yaml
+# 把 blue-pod 的 podSelector 过滤器删掉即可。
+
+$ kubectl delete -f np.yaml --force --grace-period 0
+Warning: Immediate deletion does not wait for confirmation that the running resource has been terminated. The resource may continue to run on the cluster indefinitely.
+networkpolicy.networking.k8s.io "allow-green-and-blue" force deleted
+
+$ kubectl apply -f np.yaml
+networkpolicy.networking.k8s.io/allow-green-and-blue created
+
+$ cat np.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-green-and-blue
+  namespace: default
+spec:
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          run: green-pod
+  podSelector:
+    matchLabels:
+      run: red-pod
+  policyTypes:
+  - Ingress
 ----
 
 
 == Troubleshooting - Kubectl - Config Issue
 
-[Troubleshooting - Kubectl - Config Issue^]
+https://killercoda.com/sachin/course/CKA/kubectl-issue[Troubleshooting - Kubectl - Config Issue^]
 
 ****
+some issue on the `controlplane` unable to run kubectl commands (EX: `kubectl get node`)
 
+kubernetes configuration file available at `.kube/config`
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ kubectl get node
+E0122 10:10:11.737969    5576 memcache.go:265] "Unhandled Error" err="couldn't get current server API group list: Get \"https://172.30.1.2:644333/api?timeout=32s\": dial tcp: address 644333: invalid port"
+E0122 10:10:11.739752    5576 memcache.go:265] "Unhandled Error" err="couldn't get current server API group list: Get \"https://172.30.1.2:644333/api?timeout=32s\": dial tcp: address 644333: invalid port"
+E0122 10:10:11.741197    5576 memcache.go:265] "Unhandled Error" err="couldn't get current server API group list: Get \"https://172.30.1.2:644333/api?timeout=32s\": dial tcp: address 644333: invalid port"
+E0122 10:10:11.743244    5576 memcache.go:265] "Unhandled Error" err="couldn't get current server API group list: Get \"https://172.30.1.2:644333/api?timeout=32s\": dial tcp: address 644333: invalid port"
+E0122 10:10:11.744923    5576 memcache.go:265] "Unhandled Error" err="couldn't get current server API group list: Get \"https://172.30.1.2:644333/api?timeout=32s\": dial tcp: address 644333: invalid port"
+Unable to connect to the server: dial tcp: address 644333: invalid port
 
+$ cat ~/.kube/config
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority-data: LS0tLS1C...
+    server: https://172.30.1.2:644333
+  name: kubernetes
+contexts:
+- context:
+    cluster: kubernetes
+    user: kubernetes-admin
+  name: kubernetes-admin@kubernetes
+current-context: kubernetes-admin@kubernetes
+kind: Config
+preferences: {}
+users:
+- name: kubernetes-admin
+  user:
+    client-certificate-data: LS0tLS1C...
+    client-key-data: LS0tLS1C...
+# 省略证书内容
+
+$ vim ~/.kube/config
+# 端口号错误，将端口号改为 6443 即可
+
+$ cat ~/.kube/config
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority-data: LS0tLS1C...
+    server: https://172.30.1.2:6443
+  name: kubernetes
+contexts:
+- context:
+    cluster: kubernetes
+    user: kubernetes-admin
+  name: kubernetes-admin@kubernetes
+current-context: kubernetes-admin@kubernetes
+kind: Config
+preferences: {}
+users:
+- name: kubernetes-admin
+  user:
+    client-certificate-data: LS0tLS1C...
+    client-key-data: LS0tLS1C...
+
+$ kubectl get nod
+error: the server doesn't have a resource type "nod"
+
+$ kubectl get node
+NAME           STATUS   ROLES           AGE   VERSION
+controlplane   Ready    control-plane   20d   v1.31.0
+node01         Ready    <none>          20d   v1.31.0
 ----
 
 
 == Troubleshooting - Kubectl - Port Issue
 
-[Troubleshooting - Kubectl - Port Issue^]
+https://killercoda.com/sachin/course/CKA/node-port-issue[Troubleshooting - Kubectl - Port Issue^]
 
 ****
+when you run `kubectl get nodes` OR `kubectl get pod -A` threw: `- The connection to the server 172.30.1.2:6443 was refused - did you specify the right host or port?`
 
+* need to wait for few seconds to make above command work again but above error will come again after few second
+* and also `kube-controller-manager-controlplane` pod continuously restarting Fix above issue
+
+Expectation: `kube-apiserver-controlplane` pods running in `kube-system` namespace
+
+You can `ssh controlplane`
+
+Note: after debugged wait for sometime, pods will come up
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ kubectl get nodes -o wide
+NAME           STATUS   ROLES           AGE   VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION      CONTAINER-RUNTIME
+controlplane   Ready    control-plane   20d   v1.31.0   172.30.1.2    <none>        Ubuntu 20.04.5 LTS   5.4.0-131-generic   containerd://1.7.13
+node01         Ready    <none>          20d   v1.31.0   172.30.2.2    <none>        Ubuntu 20.04.5 LTS   5.4.0-131-generic   containerd://1.7.13
 
+$ kubectl get pod -A
+NAMESPACE            NAME                                      READY   STATUS             RESTARTS      AGE
+kube-system          calico-kube-controllers-94fb6bc47-4wx95   1/1     Running            2 (28m ago)   20d
+kube-system          canal-mfc56                               2/2     Running            2 (28m ago)   20d
+kube-system          canal-zstf2                               2/2     Running            2 (28m ago)   20d
+kube-system          coredns-57888bfdc7-6sqfr                  1/1     Running            1 (28m ago)   20d
+kube-system          coredns-57888bfdc7-jnrx9                  1/1     Running            1 (28m ago)   20d
+kube-system          etcd-controlplane                         1/1     Running            2 (28m ago)   20d
+kube-system          kube-apiserver-controlplane               0/1     Running            4 (38s ago)   19m
+kube-system          kube-controller-manager-controlplane      0/1     CrashLoopBackOff   6 (57s ago)   20d
+kube-system          kube-proxy-sqc72                          1/1     Running            2 (28m ago)   20d
+kube-system          kube-proxy-xknck                          1/1     Running            1 (28m ago)   20d
+kube-system          kube-scheduler-controlplane               0/1     CrashLoopBackOff   6 (58s ago)   20d
+local-path-storage   local-path-provisioner-6c5cff8948-tmf26   1/1     Running            2 (28m ago)   20d
+
+$ kubectl -n kube-system describe pod kube-controller-manager-controlplane
+Name:                 kube-controller-manager-controlplane
+Namespace:            kube-system
+Priority:             2000001000
+Priority Class Name:  system-node-critical
+Node:                 controlplane/172.30.1.2
+Start Time:           Wed, 22 Jan 2025 10:06:42 +0000
+Labels:               component=kube-controller-manager
+                      tier=control-plane
+Annotations:          kubernetes.io/config.hash: a55d9c391dc5f492555b54cdef44652d
+                      kubernetes.io/config.mirror: a55d9c391dc5f492555b54cdef44652d
+                      kubernetes.io/config.seen: 2025-01-02T09:49:15.953920980Z
+                      kubernetes.io/config.source: file
+Status:               Running
+SeccompProfile:       RuntimeDefault
+IP:                   172.30.1.2
+IPs:
+  IP:           172.30.1.2
+Controlled By:  Node/controlplane
+Containers:
+  kube-controller-manager:
+    Container ID:  containerd://7cf916a69f1ae9fdafff4c03e559c847279caf25d4ae4aafdb7099fd5adb63de
+    Image:         registry.k8s.io/kube-controller-manager:v1.31.0
+    Image ID:      registry.k8s.io/kube-controller-manager@sha256:f6f3c33dda209e8434b83dacf5244c03b59b0018d93325ff21296a142b68497d
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      kube-controller-manager
+      --allocate-node-cidrs=true
+      --authentication-kubeconfig=/etc/kubernetes/controller-manager.conf
+      --authorization-kubeconfig=/etc/kubernetes/controller-manager.conf
+      --bind-address=127.0.0.1
+      --client-ca-file=/etc/kubernetes/pki/ca.crt
+      --cluster-cidr=192.168.0.0/16
+      --cluster-name=kubernetes
+      --cluster-signing-cert-file=/etc/kubernetes/pki/ca.crt
+      --cluster-signing-key-file=/etc/kubernetes/pki/ca.key
+      --controllers=*,bootstrapsigner,tokencleaner
+      --kubeconfig=/etc/kubernetes/controller-manager.conf
+      --leader-elect=true
+      --requestheader-client-ca-file=/etc/kubernetes/pki/front-proxy-ca.crt
+      --root-ca-file=/etc/kubernetes/pki/ca.crt
+      --service-account-private-key-file=/etc/kubernetes/pki/sa.key
+      --service-cluster-ip-range=10.96.0.0/12
+      --use-service-account-credentials=true
+    State:          Waiting
+      Reason:       CrashLoopBackOff
+    Last State:     Terminated
+      Reason:       Error
+      Exit Code:    1
+      Started:      Wed, 22 Jan 2025 10:30:46 +0000
+      Finished:     Wed, 22 Jan 2025 10:33:55 +0000
+    Ready:          False
+    Restart Count:  6
+    Requests:
+      cpu:        25m
+    Liveness:     http-get https://127.0.0.1:10257/healthz delay=10s timeout=15s period=10s #success=1 #failure=8
+    Startup:      http-get https://127.0.0.1:10257/healthz delay=10s timeout=15s period=10s #success=1 #failure=24
+    Environment:  <none>
+    Mounts:
+      /etc/ca-certificates from etc-ca-certificates (ro)
+      /etc/kubernetes/controller-manager.conf from kubeconfig (ro)
+      /etc/kubernetes/pki from k8s-certs (ro)
+      /etc/ssl/certs from ca-certs (ro)
+      /usr/libexec/kubernetes/kubelet-plugins/volume/exec from flexvolume-dir (rw)
+      /usr/local/share/ca-certificates from usr-local-share-ca-certificates (ro)
+      /usr/share/ca-certificates from usr-share-ca-certificates (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True
+  Initialized                 True
+  Ready                       False
+  ContainersReady             False
+  PodScheduled                True
+Volumes:
+  ca-certs:
+    Type:          HostPath (bare host directory volume)
+    Path:          /etc/ssl/certs
+    HostPathType:  DirectoryOrCreate
+  etc-ca-certificates:
+    Type:          HostPath (bare host directory volume)
+    Path:          /etc/ca-certificates
+    HostPathType:  DirectoryOrCreate
+  flexvolume-dir:
+    Type:          HostPath (bare host directory volume)
+    Path:          /usr/libexec/kubernetes/kubelet-plugins/volume/exec
+    HostPathType:  DirectoryOrCreate
+  k8s-certs:
+    Type:          HostPath (bare host directory volume)
+    Path:          /etc/kubernetes/pki
+    HostPathType:  DirectoryOrCreate
+  kubeconfig:
+    Type:          HostPath (bare host directory volume)
+    Path:          /etc/kubernetes/controller-manager.conf
+    HostPathType:  FileOrCreate
+  usr-local-share-ca-certificates:
+    Type:          HostPath (bare host directory volume)
+    Path:          /usr/local/share/ca-certificates
+    HostPathType:  DirectoryOrCreate
+  usr-share-ca-certificates:
+    Type:          HostPath (bare host directory volume)
+    Path:          /usr/share/ca-certificates
+    HostPathType:  DirectoryOrCreate
+QoS Class:         Burstable
+Node-Selectors:    <none>
+Tolerations:       :NoExecute op=Exists
+Events:
+  Type     Reason          Age                  From     Message
+  ----     ------          ----                 ----     -------
+  Normal   Pulled          20d                  kubelet  Container image "registry.k8s.io/kube-controller-manager:v1.31.0" already present on machine
+  Normal   Created         20d                  kubelet  Created container kube-controller-manager
+  Normal   Started         20d                  kubelet  Started container kube-controller-manager
+  Normal   SandboxChanged  20d                  kubelet  Pod sandbox changed, it will be killed and re-created.
+  Normal   Pulled          20d                  kubelet  Container image "registry.k8s.io/kube-controller-manager:v1.31.0" already present on machine
+  Normal   Created         20d                  kubelet  Created container kube-controller-manager
+  Normal   Started         20d                  kubelet  Started container kube-controller-manager
+  Normal   SandboxChanged  28m                  kubelet  Pod sandbox changed, it will be killed and re-created.
+  Normal   Pulled          9m52s (x4 over 28m)  kubelet  Container image "registry.k8s.io/kube-controller-manager:v1.31.0" already present on machine
+  Normal   Created         9m52s (x4 over 28m)  kubelet  Created container kube-controller-manager
+  Normal   Started         9m51s (x4 over 28m)  kubelet  Started container kube-controller-manager
+  Warning  BackOff         74s (x21 over 19m)   kubelet  Back-off restarting failed container kube-controller-manager in pod kube-controller-manager-controlplane_kube-system(a55d9c391dc5f492555b54cdef44652d)
+
+$ kubectl -n kube-system logs kube-controller-manager-controlplane
+I0122 10:31:07.464715       1 actual_state_of_world.go:540] "Failed to update statusUpdateNeeded field in actual state of world" logger="persistentvolume-attach-detach-controller" err="Failed to set statusUpdateNeeded to needed true, because nodeName=\"controlplane\" does not exist"
+I0122 10:31:07.471752       1 shared_informer.go:320] Caches are synced for TTL
+I0122 10:31:07.472665       1 actual_state_of_world.go:540] "Failed to update statusUpdateNeeded field in actual state of world" logger="persistentvolume-attach-detach-controller" err="Failed to set statusUpdateNeeded to needed true, because nodeName=\"node01\" does not exist"
+I0122 10:31:07.477722       1 shared_informer.go:320] Caches are synced for ClusterRoleAggregator
+I0122 10:31:07.481305       1 shared_informer.go:320] Caches are synced for crt configmap
+I0122 10:31:07.483384       1 shared_informer.go:313] Waiting for caches to sync for garbage collector
+I0122 10:31:07.485070       1 shared_informer.go:320] Caches are synced for certificate-csrapproving
+I0122 10:31:07.496164       1 shared_informer.go:320] Caches are synced for GC
+I0122 10:31:07.498895       1 shared_informer.go:320] Caches are synced for namespace
+I0122 10:31:07.499211       1 shared_informer.go:320] Caches are synced for endpoint
+I0122 10:31:07.499658       1 shared_informer.go:320] Caches are synced for node
+I0122 10:31:07.499842       1 range_allocator.go:171] "Sending events to api server" logger="node-ipam-controller"
+I0122 10:31:07.501394       1 range_allocator.go:177] "Starting range CIDR allocator" logger="node-ipam-controller"
+I0122 10:31:07.501596       1 shared_informer.go:313] Waiting for caches to sync for cidrallocator
+I0122 10:31:07.501733       1 shared_informer.go:320] Caches are synced for cidrallocator
+I0122 10:31:07.501947       1 range_allocator.go:241] "Successfully synced" logger="node-ipam-controller" key="controlplane"
+I0122 10:31:07.502041       1 range_allocator.go:241] "Successfully synced" logger="node-ipam-controller" key="node01"
+I0122 10:31:07.502156       1 shared_informer.go:320] Caches are synced for taint-eviction-controller
+I0122 10:31:07.502643       1 shared_informer.go:320] Caches are synced for disruption
+I0122 10:31:07.507003       1 shared_informer.go:320] Caches are synced for expand
+I0122 10:31:07.507577       1 shared_informer.go:320] Caches are synced for ReplicationController
+I0122 10:31:07.516863       1 shared_informer.go:320] Caches are synced for deployment
+I0122 10:31:07.522026       1 shared_informer.go:320] Caches are synced for stateful set
+I0122 10:31:07.526920       1 shared_informer.go:320] Caches are synced for persistent volume
+I0122 10:31:07.527760       1 shared_informer.go:320] Caches are synced for certificate-csrsigning-legacy-unknown
+I0122 10:31:07.528118       1 shared_informer.go:320] Caches are synced for certificate-csrsigning-kubelet-serving
+I0122 10:31:07.528309       1 shared_informer.go:320] Caches are synced for certificate-csrsigning-kubelet-client
+I0122 10:31:07.533341       1 shared_informer.go:320] Caches are synced for ephemeral
+I0122 10:31:07.549076       1 shared_informer.go:320] Caches are synced for HPA
+I0122 10:31:07.549368       1 shared_informer.go:320] Caches are synced for certificate-csrsigning-kube-apiserver-client
+I0122 10:31:07.556642       1 shared_informer.go:320] Caches are synced for endpoint_slice
+I0122 10:31:07.559824       1 shared_informer.go:320] Caches are synced for taint
+I0122 10:31:07.560120       1 node_lifecycle_controller.go:1232] "Initializing eviction metric for zone" logger="node-lifecycle-controller" zone=""
+I0122 10:31:07.560312       1 node_lifecycle_controller.go:884] "Missing timestamp for Node. Assuming now as a timestamp" logger="node-lifecycle-controller" node="controlplane"
+I0122 10:31:07.560466       1 node_lifecycle_controller.go:884] "Missing timestamp for Node. Assuming now as a timestamp" logger="node-lifecycle-controller" node="node01"
+I0122 10:31:07.562891       1 shared_informer.go:320] Caches are synced for service account
+I0122 10:31:07.587036       1 shared_informer.go:320] Caches are synced for job
+I0122 10:31:07.587154       1 shared_informer.go:320] Caches are synced for daemon sets
+I0122 10:31:07.587430       1 shared_informer.go:320] Caches are synced for legacy-service-account-token-cleaner
+I0122 10:31:07.587754       1 shared_informer.go:320] Caches are synced for cronjob
+I0122 10:31:07.587788       1 shared_informer.go:320] Caches are synced for endpoint_slice_mirroring
+I0122 10:31:07.587913       1 shared_informer.go:320] Caches are synced for PV protection
+I0122 10:31:07.591715       1 shared_informer.go:320] Caches are synced for ReplicaSet
+I0122 10:31:07.599025       1 topologycache.go:237] "Can't get CPU or zone information for node" logger="endpointslice-controller" node="node01"
+I0122 10:31:07.606049       1 node_lifecycle_controller.go:1078] "Controller detected that zone is now in new state" logger="node-lifecycle-controller" zone="" newState="Normal"
+I0122 10:31:07.615048       1 shared_informer.go:320] Caches are synced for TTL after finished
+I0122 10:31:07.615414       1 shared_informer.go:320] Caches are synced for PVC protection
+I0122 10:31:07.643139       1 replica_set.go:679] "Finished syncing" logger="replicaset-controller" kind="ReplicaSet" key="kube-system/calico-kube-controllers-94fb6bc47" duration="86.348µs"
+I0122 10:31:07.643557       1 replica_set.go:679] "Finished syncing" logger="replicaset-controller" kind="ReplicaSet" key="kube-system/coredns-57888bfdc7" duration="105.653µs"
+I0122 10:31:07.643856       1 replica_set.go:679] "Finished syncing" logger="replicaset-controller" kind="ReplicaSet" key="kube-system/coredns-6f6b679f8f" duration="119.561µs"
+I0122 10:31:07.644056       1 replica_set.go:679] "Finished syncing" logger="replicaset-controller" kind="ReplicaSet" key="local-path-storage/local-path-provisioner-6c5cff8948" duration="45.995µs"
+I0122 10:31:07.648059       1 shared_informer.go:320] Caches are synced for resource quota
+I0122 10:31:07.651899       1 shared_informer.go:320] Caches are synced for resource quota
+I0122 10:31:07.659814       1 shared_informer.go:320] Caches are synced for attach detach
+I0122 10:31:07.690290       1 shared_informer.go:320] Caches are synced for validatingadmissionpolicy-status
+I0122 10:31:08.120299       1 shared_informer.go:320] Caches are synced for garbage collector
+I0122 10:31:08.120612       1 garbagecollector.go:157] "All resource monitors have synced. Proceeding to collect garbage" logger="garbage-collector-controller"
+I0122 10:31:08.184489       1 shared_informer.go:320] Caches are synced for garbage collector
+I0122 10:32:26.669535       1 range_allocator.go:241] "Successfully synced" logger="node-ipam-controller" key="node01"
+I0122 10:32:30.819664       1 range_allocator.go:241] "Successfully synced" logger="node-ipam-controller" key="controlplane"
+E0122 10:33:45.075699       1 leaderelection.go:429] Failed to update lock optimitically: Put "https://172.30.1.2:6443/apis/coordination.k8s.io/v1/namespaces/kube-system/leases/kube-controller-manager?timeout=5s": dial tcp 172.30.1.2:6443: connect: connection refused, falling back to slow path
+E0122 10:33:45.075955       1 leaderelection.go:436] error retrieving resource lock kube-system/kube-controller-manager: Get "https://172.30.1.2:6443/apis/coordination.k8s.io/v1/namespaces/kube-system/leases/kube-controller-manager?timeout=5s": dial tcp 172.30.1.2:6443: connect: connection refused
+E0122 10:33:47.076955       1 leaderelection.go:429] Failed to update lock optimitically: Put "https://172.30.1.2:6443/apis/coordination.k8s.io/v1/namespaces/kube-system/leases/kube-controller-manager?timeout=5s": dial tcp 172.30.1.2:6443: connect: connection refused, falling back to slow path
+E0122 10:33:47.077696       1 leaderelection.go:436] error retrieving resource lock kube-system/kube-controller-manager: Get "https://172.30.1.2:6443/apis/coordination.k8s.io/v1/namespaces/kube-system/leases/kube-controller-manager?timeout=5s": dial tcp 172.30.1.2:6443: connect: connection refused
+E0122 10:33:49.076833       1 leaderelection.go:429] Failed to update lock optimitically: Put "https://172.30.1.2:6443/apis/coordination.k8s.io/v1/namespaces/kube-system/leases/kube-controller-manager?timeout=5s": dial tcp 172.30.1.2:6443: connect: connection refused, falling back to slow path
+E0122 10:33:49.077663       1 leaderelection.go:436] error retrieving resource lock kube-system/kube-controller-manager: Get "https://172.30.1.2:6443/apis/coordination.k8s.io/v1/namespaces/kube-system/leases/kube-controller-manager?timeout=5s": dial tcp 172.30.1.2:6443: connect: connection refused
+E0122 10:33:51.077092       1 leaderelection.go:429] Failed to update lock optimitically: Put "https://172.30.1.2:6443/apis/coordination.k8s.io/v1/namespaces/kube-system/leases/kube-controller-manager?timeout=5s": dial tcp 172.30.1.2:6443: connect: connection refused, falling back to slow path
+E0122 10:33:51.077677       1 leaderelection.go:436] error retrieving resource lock kube-system/kube-controller-manager: Get "https://172.30.1.2:6443/apis/coordination.k8s.io/v1/namespaces/kube-system/leases/kube-controller-manager?timeout=5s": dial tcp 172.30.1.2:6443: connect: connection refused
+E0122 10:33:53.076654       1 leaderelection.go:429] Failed to update lock optimitically: Put "https://172.30.1.2:6443/apis/coordination.k8s.io/v1/namespaces/kube-system/leases/kube-controller-manager?timeout=5s": dial tcp 172.30.1.2:6443: connect: connection refused, falling back to slow path
+E0122 10:33:53.077099       1 leaderelection.go:436] error retrieving resource lock kube-system/kube-controller-manager: Get "https://172.30.1.2:6443/apis/coordination.k8s.io/v1/namespaces/kube-system/leases/kube-controller-manager?timeout=5s": dial tcp 172.30.1.2:6443: connect: connection refused
+I0122 10:33:55.075456       1 leaderelection.go:297] failed to renew lease kube-system/kube-controller-manager: timed out waiting for the condition
+E0122 10:33:55.075566       1 controllermanager.go:340] "leaderelection lost"
 ----
 
+NOTE: 不知道该怎么下手了？
 
 == Troubleshooting - Kubelet Issue
 
-[Troubleshooting - Kubelet Issue^]
+https://killercoda.com/sachin/course/CKA/kubelet-issue[Troubleshooting - Kubelet Issue^]
 
 ****
+In `controlplane` node, something problem with `kubelet` configuration files, fix that issue
 
+You can `ssh controlplane`
+
+location: `/var/lib/kubelet/config.yaml` and `/etc/kubernetes/kubelet.conf`
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ kubectl get nodes -o wide
+NAME           STATUS     ROLES           AGE   VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION      CONTAINER-RUNTIME
+controlplane   NotReady   control-plane   13d   v1.31.0   172.30.1.2    <none>        Ubuntu 20.04.5 LTS   5.4.0-131-generic   containerd://1.7.22
+node01         Ready      <none>          13d   v1.31.0   172.30.2.2    <none>        Ubuntu 20.04.5 LTS   5.4.0-131-generic   containerd://1.7.22
 
+$ kubectl get nodes
+NAME           STATUS     ROLES           AGE   VERSION
+controlplane   NotReady   control-plane   13d   v1.31.0
+node01         Ready      <none>          13d   v1.31.0
+
+$ kubectl describe nodes controlplane
+Name:               controlplane
+Roles:              control-plane
+Labels:             beta.kubernetes.io/arch=amd64
+                    beta.kubernetes.io/os=linux
+                    kubernetes.io/arch=amd64
+                    kubernetes.io/hostname=controlplane
+                    kubernetes.io/os=linux
+                    node-role.kubernetes.io/control-plane=
+                    node.kubernetes.io/exclude-from-external-load-balancers=
+Annotations:        flannel.alpha.coreos.com/backend-data: {"VNI":1,"VtepMAC":"76:af:a0:b0:4b:41"}
+                    flannel.alpha.coreos.com/backend-type: vxlan
+                    flannel.alpha.coreos.com/kube-subnet-manager: true
+                    flannel.alpha.coreos.com/public-ip: 172.30.1.2
+                    kubeadm.alpha.kubernetes.io/cri-socket: unix:///var/run/containerd/containerd.sock
+                    node.alpha.kubernetes.io/ttl: 0
+                    projectcalico.org/IPv4Address: 172.30.1.2/24
+                    projectcalico.org/IPv4IPIPTunnelAddr: 192.168.0.1
+                    volumes.kubernetes.io/controller-managed-attach-detach: true
+CreationTimestamp:  Tue, 28 Jan 2025 16:04:13 +0000
+Taints:             node.kubernetes.io/unreachable:NoExecute
+                    node-role.kubernetes.io/control-plane:NoSchedule
+                    node.kubernetes.io/unreachable:NoSchedule
+Unschedulable:      false
+Lease:
+  HolderIdentity:  controlplane
+  AcquireTime:     <unset>
+  RenewTime:       Tue, 11 Feb 2025 09:06:15 +0000
+Conditions:
+  Type                 Status    LastHeartbeatTime                 LastTransitionTime                Reason              Message
+  ----                 ------    -----------------                 ------------------                ------              -------
+  NetworkUnavailable   False     Tue, 11 Feb 2025 09:05:10 +0000   Tue, 11 Feb 2025 09:05:10 +0000   FlannelIsUp         Flannel is running on this node
+  MemoryPressure       Unknown   Tue, 11 Feb 2025 09:04:53 +0000   Tue, 11 Feb 2025 09:06:55 +0000   NodeStatusUnknown   Kubelet stopped posting node status.
+  DiskPressure         Unknown   Tue, 11 Feb 2025 09:04:53 +0000   Tue, 11 Feb 2025 09:06:55 +0000   NodeStatusUnknown   Kubelet stopped posting node status.
+  PIDPressure          Unknown   Tue, 11 Feb 2025 09:04:53 +0000   Tue, 11 Feb 2025 09:06:55 +0000   NodeStatusUnknown   Kubelet stopped posting node status.
+  Ready                Unknown   Tue, 11 Feb 2025 09:04:53 +0000   Tue, 11 Feb 2025 09:06:55 +0000   NodeStatusUnknown   Kubelet stopped posting node status.
+Addresses:
+  InternalIP:  172.30.1.2
+  Hostname:    controlplane
+Capacity:
+  cpu:                1
+  ephemeral-storage:  20134592Ki
+  hugepages-2Mi:      0
+  memory:             2030940Ki
+  pods:               110
+Allocatable:
+  cpu:                1
+  ephemeral-storage:  19586931083
+  hugepages-2Mi:      0
+  memory:             1928540Ki
+  pods:               110
+System Info:
+  Machine ID:                 388a2d0f867a4404bc12a0093bd9ed8d
+  System UUID:                0e235667-c51b-41d2-ad6f-c64514563910
+  Boot ID:                    b507baf9-425b-4b36-88ea-d81538d9779a
+  Kernel Version:             5.4.0-131-generic
+  OS Image:                   Ubuntu 20.04.5 LTS
+  Operating System:           linux
+  Architecture:               amd64
+  Container Runtime Version:  containerd://1.7.22
+  Kubelet Version:            v1.31.0
+  Kube-Proxy Version:
+PodCIDR:                      192.168.0.0/24
+PodCIDRs:                     192.168.0.0/24
+Non-terminated Pods:          (8 in total)
+  Namespace                   Name                                       CPU Requests  CPU Limits  Memory Requests  Memory Limits  Age
+  ---------                   ----                                       ------------  ----------  ---------------  -------------  ---
+  kube-system                 calico-kube-controllers-94fb6bc47-rxh7x    0 (0%)        0 (0%)      0 (0%)           0 (0%)         13d
+  kube-system                 canal-zl4tq                                25m (2%)      0 (0%)      0 (0%)           0 (0%)         13d
+  kube-system                 etcd-controlplane                          25m (2%)      0 (0%)      100Mi (5%)       0 (0%)         13d
+  kube-system                 kube-apiserver-controlplane                50m (5%)      0 (0%)      0 (0%)           0 (0%)         13d
+  kube-system                 kube-controller-manager-controlplane       25m (2%)      0 (0%)      0 (0%)           0 (0%)         13d
+  kube-system                 kube-proxy-2mfwz                           0 (0%)        0 (0%)      0 (0%)           0 (0%)         13d
+  kube-system                 kube-scheduler-controlplane                25m (2%)      0 (0%)      0 (0%)           0 (0%)         13d
+  local-path-storage          local-path-provisioner-6c5cff8948-2x89z    0 (0%)        0 (0%)      0 (0%)           0 (0%)         13d
+Allocated resources:
+  (Total limits may be over 100 percent, i.e., overcommitted.)
+  Resource           Requests    Limits
+  --------           --------    ------
+  cpu                150m (15%)  0 (0%)
+  memory             100Mi (5%)  0 (0%)
+  ephemeral-storage  0 (0%)      0 (0%)
+  hugepages-2Mi      0 (0%)      0 (0%)
+Events:
+  Type     Reason                   Age                  From             Message
+  ----     ------                   ----                 ----             -------
+  Normal   Starting                 3m34s                kube-proxy
+  Normal   Starting                 13d                  kube-proxy
+  Normal   Starting                 13d                  kube-proxy
+  Normal   Starting                 13d                  kubelet          Starting kubelet.
+  Warning  CgroupV1                 13d                  kubelet          Cgroup v1 support is in maintenance mode, please migrate to Cgroup v2.
+  Normal   NodeHasSufficientPID     13d                  kubelet          Node controlplane status is now: NodeHasSufficientPID
+  Normal   NodeAllocatableEnforced  13d                  kubelet          Updated Node Allocatable limit across pods
+  Normal   NodeHasSufficientMemory  13d                  kubelet          Node controlplane status is now: NodeHasSufficientMemory
+  Normal   NodeHasNoDiskPressure    13d                  kubelet          Node controlplane status is now: NodeHasNoDiskPressure
+  Normal   RegisteredNode           13d                  node-controller  Node controlplane event: Registered Node controlplane in Controller
+  Normal   NodeReady                13d                  kubelet          Node controlplane status is now: NodeReady
+  Normal   RegisteredNode           13d                  node-controller  Node controlplane event: Registered Node controlplane in Controller
+  Normal   NodeAllocatableEnforced  13d                  kubelet          Updated Node Allocatable limit across pods
+  Normal   Starting                 13d                  kubelet          Starting kubelet.
+  Warning  CgroupV1                 13d                  kubelet          Cgroup v1 support is in maintenance mode, please migrate to Cgroup v2.
+  Normal   NodeHasSufficientMemory  13d (x8 over 13d)    kubelet          Node controlplane status is now: NodeHasSufficientMemory
+  Normal   NodeHasNoDiskPressure    13d (x7 over 13d)    kubelet          Node controlplane status is now: NodeHasNoDiskPressure
+  Normal   NodeHasSufficientPID     13d (x7 over 13d)    kubelet          Node controlplane status is now: NodeHasSufficientPID
+  Normal   RegisteredNode           13d                  node-controller  Node controlplane event: Registered Node controlplane in Controller
+  Normal   Starting                 4m5s                 kubelet          Starting kubelet.
+  Warning  CgroupV1                 4m5s                 kubelet          Cgroup v1 support is in maintenance mode, please migrate to Cgroup v2.
+  Normal   NodeHasSufficientMemory  4m4s (x8 over 4m4s)  kubelet          Node controlplane status is now: NodeHasSufficientMemory
+  Normal   NodeHasNoDiskPressure    4m4s (x7 over 4m4s)  kubelet          Node controlplane status is now: NodeHasNoDiskPressure
+  Normal   NodeHasSufficientPID     4m4s (x7 over 4m4s)  kubelet          Node controlplane status is now: NodeHasSufficientPID
+  Normal   NodeAllocatableEnforced  4m4s                 kubelet          Updated Node Allocatable limit across pods
+  Normal   RegisteredNode           3m23s                node-controller  Node controlplane event: Registered Node controlplane in Controller
+  Normal   NodeNotReady             103s                 node-controller  Node controlplane status is now: NodeNotReady
+
+$ kubectl get nodes controlplane -o yaml
+apiVersion: v1
+kind: Node
+metadata:
+  annotations:
+    flannel.alpha.coreos.com/backend-data: '{"VNI":1,"VtepMAC":"76:af:a0:b0:4b:41"}'
+    flannel.alpha.coreos.com/backend-type: vxlan
+    flannel.alpha.coreos.com/kube-subnet-manager: "true"
+    flannel.alpha.coreos.com/public-ip: 172.30.1.2
+    kubeadm.alpha.kubernetes.io/cri-socket: unix:///var/run/containerd/containerd.sock
+    node.alpha.kubernetes.io/ttl: "0"
+    projectcalico.org/IPv4Address: 172.30.1.2/24
+    projectcalico.org/IPv4IPIPTunnelAddr: 192.168.0.1
+    volumes.kubernetes.io/controller-managed-attach-detach: "true"
+  creationTimestamp: "2025-01-28T16:04:13Z"
+  labels:
+    beta.kubernetes.io/arch: amd64
+    beta.kubernetes.io/os: linux
+    kubernetes.io/arch: amd64
+    kubernetes.io/hostname: controlplane
+    kubernetes.io/os: linux
+    node-role.kubernetes.io/control-plane: ""
+    node.kubernetes.io/exclude-from-external-load-balancers: ""
+  name: controlplane
+  resourceVersion: "2144"
+  uid: 52bb0db8-eeb9-48ee-8e38-a386487ad66e
+spec:
+  podCIDR: 192.168.0.0/24
+  podCIDRs:
+  - 192.168.0.0/24
+  taints:
+  - effect: NoSchedule
+    key: node-role.kubernetes.io/control-plane
+  - effect: NoSchedule
+    key: node.kubernetes.io/unreachable
+    timeAdded: "2025-02-11T09:06:55Z"
+  - effect: NoExecute
+    key: node.kubernetes.io/unreachable
+    timeAdded: "2025-02-11T09:07:01Z"
+status:
+  addresses:
+  - address: 172.30.1.2
+    type: InternalIP
+  - address: controlplane
+    type: Hostname
+  allocatable:
+    cpu: "1"
+    ephemeral-storage: "19586931083"
+    hugepages-2Mi: "0"
+    memory: 1928540Ki
+    pods: "110"
+  capacity:
+    cpu: "1"
+    ephemeral-storage: 20134592Ki
+    hugepages-2Mi: "0"
+    memory: 2030940Ki
+    pods: "110"
+  conditions:
+  - lastHeartbeatTime: "2025-02-11T09:05:10Z"
+    lastTransitionTime: "2025-02-11T09:05:10Z"
+    message: Flannel is running on this node
+    reason: FlannelIsUp
+    status: "False"
+    type: NetworkUnavailable
+  - lastHeartbeatTime: "2025-02-11T09:04:53Z"
+    lastTransitionTime: "2025-02-11T09:06:55Z"
+    message: Kubelet stopped posting node status.
+    reason: NodeStatusUnknown
+    status: Unknown
+    type: MemoryPressure
+  - lastHeartbeatTime: "2025-02-11T09:04:53Z"
+    lastTransitionTime: "2025-02-11T09:06:55Z"
+    message: Kubelet stopped posting node status.
+    reason: NodeStatusUnknown
+    status: Unknown
+    type: DiskPressure
+  - lastHeartbeatTime: "2025-02-11T09:04:53Z"
+    lastTransitionTime: "2025-02-11T09:06:55Z"
+    message: Kubelet stopped posting node status.
+    reason: NodeStatusUnknown
+    status: Unknown
+    type: PIDPressure
+  - lastHeartbeatTime: "2025-02-11T09:04:53Z"
+    lastTransitionTime: "2025-02-11T09:06:55Z"
+    message: Kubelet stopped posting node status.
+    reason: NodeStatusUnknown
+    status: Unknown
+    type: Ready
+  daemonEndpoints:
+    kubeletEndpoint:
+      Port: 10250
+  images:
+  - names:
+    - docker.io/calico/cni@sha256:e60b90d7861e872efa720ead575008bc6eca7bee41656735dcaa8210b688fcd9
+    - docker.io/calico/cni:v3.24.1
+    sizeBytes: 87382462
+  - names:
+    - docker.io/calico/node@sha256:43f6cee5ca002505ea142b3821a76d585aa0c8d22bc58b7e48589ca7deb48c13
+    - docker.io/calico/node:v3.24.1
+    sizeBytes: 80180860
+  - names:
+    - registry.k8s.io/etcd@sha256:a6dc63e6e8cfa0307d7851762fa6b629afb18f28d8aa3fab5a6e91b4af60026a
+    - registry.k8s.io/etcd:3.5.15-0
+    sizeBytes: 56909194
+  - names:
+    - docker.io/calico/kube-controllers@sha256:4010b2739792ae5e77a750be909939c0a0a372e378f3c81020754efcf4a91efa
+    - docker.io/calico/kube-controllers:v3.24.1
+    sizeBytes: 31125927
+  - names:
+    - registry.k8s.io/kube-proxy@sha256:c727efb1c6f15a68060bf7f207f5c7a765355b7e3340c513e582ec819c5cd2fe
+    - registry.k8s.io/kube-proxy:v1.31.0
+    sizeBytes: 30207900
+  - names:
+    - registry.k8s.io/kube-apiserver@sha256:470179274deb9dc3a81df55cfc24823ce153147d4ebf2ed649a4f271f51eaddf
+    - registry.k8s.io/kube-apiserver:v1.31.0
+    sizeBytes: 28063421
+  - names:
+    - registry.k8s.io/kube-controller-manager@sha256:f6f3c33dda209e8434b83dacf5244c03b59b0018d93325ff21296a142b68497d
+    - registry.k8s.io/kube-controller-manager:v1.31.0
+    sizeBytes: 26240868
+  - names:
+    - quay.io/coreos/flannel@sha256:9a296fbb67790659adc3701e287adde3c59803b7fcefe354f1fc482840cdb3d9
+    - quay.io/coreos/flannel:v0.15.1
+    sizeBytes: 21673107
+  - names:
+    - docker.io/rancher/local-path-provisioner@sha256:349f2d75f8a90e218ce9a20e3e302368f2247cb36d676b46e9c27e1aac9ad683
+    - docker.io/rancher/local-path-provisioner:master-head
+    sizeBytes: 20727854
+  - names:
+    - registry.k8s.io/kube-scheduler@sha256:96ddae9c9b2e79342e0551e2d2ec422c0c02629a74d928924aaa069706619808
+    - registry.k8s.io/kube-scheduler:v1.31.0
+    sizeBytes: 20196722
+  - names:
+    - registry.k8s.io/coredns/coredns@sha256:1eeb4c7316bacb1d4c8ead65571cd92dd21e27359f0d4917f1a5822a73b75db1
+    - registry.k8s.io/coredns/coredns:v1.11.1
+    sizeBytes: 18182961
+  - names:
+    - registry.k8s.io/pause@sha256:ee6521f290b2168b6e0935a181d4cff9be1ac3f505666ef0e3c98fae8199917a
+    - registry.k8s.io/pause:3.10
+    sizeBytes: 320368
+  - names:
+    - registry.k8s.io/pause@sha256:1ff6c18fbef2045af6b9c16bf034cc421a29027b800e4f9b68ae9b1cb3e9ae07
+    - registry.k8s.io/pause:3.5
+    sizeBytes: 301416
+  nodeInfo:
+    architecture: amd64
+    bootID: b507baf9-425b-4b36-88ea-d81538d9779a
+    containerRuntimeVersion: containerd://1.7.22
+    kernelVersion: 5.4.0-131-generic
+    kubeProxyVersion: ""
+    kubeletVersion: v1.31.0
+    machineID: 388a2d0f867a4404bc12a0093bd9ed8d
+    operatingSystem: linux
+    osImage: Ubuntu 20.04.5 LTS
+    systemUUID: 0e235667-c51b-41d2-ad6f-c64514563910
+
+$ cat /var/lib/kubelet/config.yaml
+apiVersion: kubelet.config.k8s.io/v1beta1
+authentication:
+  anonymous:
+    enabled: false
+  webhook:
+    cacheTTL: 0s
+    enabled: true
+  x509:
+    clientCAFile: /etc/kubernetes/pki/CA.CERTIFICATE
+authorization:
+  mode: Webhook
+  webhook:
+    cacheAuthorizedTTL: 0s
+    cacheUnauthorizedTTL: 0s
+cgroupDriver: systemd
+clusterDNS:
+- 10.96.0.10
+clusterDomain: cluster.local
+containerRuntimeEndpoint: ""
+cpuManagerReconcilePeriod: 0s
+evictionPressureTransitionPeriod: 0s
+fileCheckFrequency: 0s
+healthzBindAddress: 127.0.0.1
+healthzPort: 10248
+httpCheckFrequency: 0s
+imageMaximumGCAge: 0s
+imageMinimumGCAge: 0s
+kind: KubeletConfiguration
+logging:
+  flushFrequency: 0
+  options:
+    json:
+      infoBufferSize: "0"
+    text:
+      infoBufferSize: "0"
+  verbosity: 0
+memorySwap: {}
+nodeStatusReportFrequency: 0s
+nodeStatusUpdateFrequency: 0s
+resolvConf: /run/systemd/resolve/resolv.conf
+rotateCertificates: true
+runtimeRequestTimeout: 0s
+shutdownGracePeriod: 0s
+shutdownGracePeriodCriticalPods: 0s
+staticPodPath: /etc/kubernetes/manifests
+streamingConnectionIdleTimeout: 0s
+syncFrequency: 0s
+volumeStatsAggPeriod: 0s
+# 这里藏着一个不太明显的问题原因：证书文件名 CA.CERTIFICATE 写错了。第一次做，竟然没有发现。
+
+$ cat /etc/kubernetes/kubelet.conf
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority-data: <证书内容>
+    server: https://172.30.1.2:64433333
+  name: kubernetes
+contexts:
+- context:
+    cluster: kubernetes
+    user: system:node:controlplane
+  name: system:node:controlplane@kubernetes
+current-context: system:node:controlplane@kubernetes
+kind: Config
+preferences: {}
+users:
+- name: system:node:controlplane
+  user:
+    client-certificate: /var/lib/kubelet/pki/kubelet-client-current.pem
+    client-key: /var/lib/kubelet/pki/kubelet-client-current.pem
+# 找到错误：端口号 64433333 是一个明显的配置错误。
+
+$ vim /etc/kubernetes/kubelet.conf
+# 将端口号从 64433333 改为 6443。
+
+$ kubectl get nodes
+NAME           STATUS     ROLES           AGE   VERSION
+controlplane   NotReady   control-plane   13d   v1.31.0
+node01         Ready      <none>          13d   v1.31.0
+# 还是报错
+
+$ systemctl status kubelet.service
+● kubelet.service - kubelet: The Kubernetes Node Agent
+     Loaded: loaded (/lib/systemd/system/kubelet.service; enabled; vendor preset: enabled)
+    Drop-In: /usr/lib/systemd/system/kubelet.service.d
+             └─10-kubeadm.conf
+     Active: activating (auto-restart) (Result: exit-code) since Tue 2025-02-11 09:07:56 UTC; 9s ago
+       Docs: https://kubernetes.io/docs/
+    Process: 5045 ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELET_KUBEADM_ARGS $KUBELET_EXTRA_ARGS (code=exited>
+   Main PID: 5045 (code=exited, status=1/FAILURE)
+Feb 11 09:07:56 controlplane systemd[1]: kubelet.service: Main process exited, code=exited, status=1/FAILURE
+Feb 11 09:07:56 controlplane systemd[1]: kubelet.service: Failed with result 'exit-code'.
+
+
+$ journalctl -u kubelet -f
+Feb 11 09:37:31 controlplane systemd[1]: kubelet.service: Scheduled restart job, restart counter is at 181.
+Feb 11 09:37:31 controlplane systemd[1]: Stopped kubelet: The Kubernetes Node Agent.
+Feb 11 09:37:31 controlplane systemd[1]: Started kubelet: The Kubernetes Node Agent.
+Feb 11 09:37:31 controlplane kubelet[12741]: Flag --container-runtime-endpoint has been deprecated, This parameter should be set via the config file specified by the Kubelet's --config flag. See https://kubernetes.io/docs/tasks/administer-cluster/kubelet-config-file/ for more information.
+Feb 11 09:37:31 controlplane kubelet[12741]: Flag --pod-infra-container-image has been deprecated, will be removed in a future release. Image garbage collector will get sandbox image information from CRI.
+Feb 11 09:37:31 controlplane kubelet[12741]: Flag --container-runtime-endpoint has been deprecated, This parameter should be set via the config file specified by the Kubelet's --config flag. See https://kubernetes.io/docs/tasks/administer-cluster/kubelet-config-file/ for more information.
+Feb 11 09:37:31 controlplane kubelet[12741]: Flag --cgroup-driver has been deprecated, This parameter should be set via the config file specified by the Kubelet's --config flag. See https://kubernetes.io/docs/tasks/administer-cluster/kubelet-config-file/ for more information.
+Feb 11 09:37:31 controlplane kubelet[12741]: Flag --eviction-hard has been deprecated, This parameter should be set via the config file specified by the Kubelet's --config flag. See https://kubernetes.io/docs/tasks/administer-cluster/kubelet-config-file/ for more information.
+Feb 11 09:37:31 controlplane kubelet[12741]: Flag --fail-swap-on has been deprecated, This parameter should be set via the config file specified by the Kubelet's --config flag. See https://kubernetes.io/docs/tasks/administer-cluster/kubelet-config-file/ for more information.
+Feb 11 09:37:31 controlplane kubelet[12741]: I0211 09:37:31.856566   12741 server.go:206] "--pod-infra-container-image will not be pruned by the image garbage collector in kubelet and should also be set in the remote runtime"
+Feb 11 09:37:31 controlplane kubelet[12741]: E0211 09:37:31.860454   12741 run.go:72] "command failed" err="failed to construct kubelet dependencies: unable to load client CA file /etc/kubernetes/pki/CA.CERTIFICATE: open /etc/kubernetes/pki/CA.CERTIFICATE: no such file or directory"
+Feb 11 09:37:31 controlplane systemd[1]: kubelet.service: Main process exited, code=exited, status=1/FAILURE
+Feb 11 09:37:31 controlplane systemd[1]: kubelet.service: Failed with result 'exit-code'.
+
+# 从这个日志上来看，/etc/kubernetes/pki/CA.CERTIFICATE 文件不存在
+
+$ ll /etc/kubernetes/pki
+total 68
+drwxr-xr-x 3 root root 4096 Jan 28 16:04 ./
+drwxrwxr-x 4 root root 4096 Feb 11 09:35 ../
+-rw-r--r-- 1 root root 1123 Jan 28 16:04 apiserver-etcd-client.crt
+-rw------- 1 root root 1679 Jan 28 16:04 apiserver-etcd-client.key
+-rw-r--r-- 1 root root 1176 Jan 28 16:04 apiserver-kubelet-client.crt
+-rw------- 1 root root 1675 Jan 28 16:04 apiserver-kubelet-client.key
+-rw-r--r-- 1 root root 1289 Jan 28 16:04 apiserver.crt
+-rw------- 1 root root 1679 Jan 28 16:04 apiserver.key
+-rw-r--r-- 1 root root 1107 Jan 28 16:04 ca.crt
+-rw------- 1 root root 1675 Jan 28 16:04 ca.key
+drwxr-xr-x 2 root root 4096 Jan 28 16:04 etcd/
+-rw-r--r-- 1 root root 1123 Jan 28 16:04 front-proxy-ca.crt
+-rw------- 1 root root 1679 Jan 28 16:04 front-proxy-ca.key
+-rw-r--r-- 1 root root 1119 Jan 28 16:04 front-proxy-client.crt
+-rw------- 1 root root 1675 Jan 28 16:04 front-proxy-client.key
+-rw------- 1 root root 1675 Jan 28 16:04 sa.key
+-rw------- 1 root root  451 Jan 28 16:04 sa.pub
+# 通过查看目录下的文件，应该是 ca.crt
+
+$ vim /var/lib/kubelet/config.yaml
+# 修改证书文件名
+
+$ systemctl restart kubelet.service
+
+$ systemctl status kubelet.service
+● kubelet.service - kubelet: The Kubernetes Node Agent
+     Loaded: loaded (/lib/systemd/system/kubelet.service; enabled; vendor preset: enabled)
+    Drop-In: /usr/lib/systemd/system/kubelet.service.d
+             └─10-kubeadm.conf
+     Active: active (running) since Tue 2025-02-11 09:45:36 UTC; 7s ago
+       Docs: https://kubernetes.io/docs/
+   Main PID: 15312 (kubelet)
+      Tasks: 8 (limit: 2338)
+     Memory: 27.6M
+     CGroup: /system.slice/kubelet.service
+             └─15312 /usr/bin/kubelet --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf --config=/var/lib/kubelet/config.>
+Feb 11 09:45:37 controlplane kubelet[15312]: I0211 09:45:37.459777   15312 reconciler_common.go:245] "operationExecutor.VerifyControllerAttachedVolume started for volume \"sys>
+Feb 11 09:45:37 controlplane kubelet[15312]: I0211 09:45:37.459923   15312 reconciler_common.go:245] "operationExecutor.VerifyControllerAttachedVolume started for volume \"cni>
+Feb 11 09:45:37 controlplane kubelet[15312]: I0211 09:45:37.460253   15312 reconciler_common.go:245] "operationExecutor.VerifyControllerAttachedVolume started for volume \"lib>
+Feb 11 09:45:37 controlplane kubelet[15312]: I0211 09:45:37.460475   15312 reconciler_common.go:245] "operationExecutor.VerifyControllerAttachedVolume started for volume \"cni>
+Feb 11 09:45:37 controlplane kubelet[15312]: I0211 09:45:37.460620   15312 reconciler_common.go:245] "operationExecutor.VerifyControllerAttachedVolume started for volume \"cni>
+Feb 11 09:45:37 controlplane kubelet[15312]: I0211 09:45:37.460856   15312 reconciler_common.go:245] "operationExecutor.VerifyControllerAttachedVolume started for volume \"xta>
+Feb 11 09:45:37 controlplane kubelet[15312]: I0211 09:45:37.461044   15312 reconciler_common.go:245] "operationExecutor.VerifyControllerAttachedVolume started for volume \"xta>
+Feb 11 09:45:37 controlplane kubelet[15312]: I0211 09:45:37.461238   15312 reconciler_common.go:245] "operationExecutor.VerifyControllerAttachedVolume started for volume \"pol>
+Feb 11 09:45:37 controlplane kubelet[15312]: I0211 09:45:37.461403   15312 reconciler_common.go:245] "operationExecutor.VerifyControllerAttachedVolume started for volume \"nod>
+Feb 11 09:45:37 controlplane kubelet[15312]: I0211 09:45:37.461545   15312 reconciler_common.go:245] "operationExecutor.VerifyControllerAttachedVolume started for volume \"var>
+
+$ kubectl get nodes
+NAME           STATUS   ROLES           AGE   VERSION
+controlplane   Ready    control-plane   13d   v1.31.0
+node01         Ready    <none>          13d   v1.31.0
+
+$ kubectl get pod -A
+NAMESPACE            NAME                                      READY   STATUS    RESTARTS      AGE
+kube-system          calico-kube-controllers-94fb6bc47-tlwdz   1/1     Running   0             34m
+kube-system          canal-phldr                               2/2     Running   2 (42m ago)   13d
+kube-system          canal-zl4tq                               2/2     Running   2 (42m ago)   13d
+kube-system          coredns-57888bfdc7-685jj                  1/1     Running   1 (42m ago)   13d
+kube-system          coredns-57888bfdc7-bbwzr                  1/1     Running   1 (42m ago)   13d
+kube-system          etcd-controlplane                         1/1     Running   2 (42m ago)   13d
+kube-system          kube-apiserver-controlplane               1/1     Running   2 (42m ago)   13d
+kube-system          kube-controller-manager-controlplane      1/1     Running   2 (42m ago)   13d
+kube-system          kube-proxy-2mfwz                          1/1     Running   2 (42m ago)   13d
+kube-system          kube-proxy-z2ps8                          1/1     Running   1 (42m ago)   13d
+kube-system          kube-scheduler-controlplane               1/1     Running   2 (42m ago)   13d
+local-path-storage   local-path-provisioner-6c5cff8948-2hvr9   1/1     Running   0             34m
 ----
 
 
 == Troubleshooting - Node Not Ready
 
-[Troubleshooting - Node Not Ready^]
+https://killercoda.com/sachin/course/CKA/node-notready[Troubleshooting - Node Not Ready^]
 
 ****
-
+`kubelet` service not running in `controlplane`, it will cause the `controlplane` in `NotReady` state, so fix this issue
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ kubectl get nodes
+NAME           STATUS     ROLES           AGE   VERSION
+controlplane   NotReady   control-plane   13d   v1.31.0
+node01         Ready      <none>          13d   v1.31.0
 
+$ kubectl describe nodes controlplane
+Name:               controlplane
+Roles:              control-plane
+Labels:             beta.kubernetes.io/arch=amd64
+                    beta.kubernetes.io/os=linux
+                    kubernetes.io/arch=amd64
+                    kubernetes.io/hostname=controlplane
+                    kubernetes.io/os=linux
+                    node-role.kubernetes.io/control-plane=
+                    node.kubernetes.io/exclude-from-external-load-balancers=
+Annotations:        flannel.alpha.coreos.com/backend-data: {"VNI":1,"VtepMAC":"b6:8d:41:43:0d:65"}
+                    flannel.alpha.coreos.com/backend-type: vxlan
+                    flannel.alpha.coreos.com/kube-subnet-manager: true
+                    flannel.alpha.coreos.com/public-ip: 172.30.1.2
+                    kubeadm.alpha.kubernetes.io/cri-socket: unix:///var/run/containerd/containerd.sock
+                    node.alpha.kubernetes.io/ttl: 0
+                    projectcalico.org/IPv4Address: 172.30.1.2/24
+                    projectcalico.org/IPv4IPIPTunnelAddr: 192.168.0.1
+                    volumes.kubernetes.io/controller-managed-attach-detach: true
+CreationTimestamp:  Tue, 28 Jan 2025 16:04:13 +0000
+Taints:             node.kubernetes.io/unreachable:NoExecute
+                    node-role.kubernetes.io/control-plane:NoSchedule
+                    node.kubernetes.io/unreachable:NoSchedule
+Unschedulable:      false
+Lease:
+  HolderIdentity:  controlplane
+  AcquireTime:     <unset>
+  RenewTime:       Tue, 11 Feb 2025 11:30:37 +0000
+Conditions:
+  Type                 Status    LastHeartbeatTime                 LastTransitionTime                Reason              Message
+  ----                 ------    -----------------                 ------------------                ------              -------
+  NetworkUnavailable   False     Tue, 11 Feb 2025 11:27:57 +0000   Tue, 11 Feb 2025 11:27:57 +0000   FlannelIsUp         Flannel is running on this node
+  MemoryPressure       Unknown   Tue, 11 Feb 2025 11:27:34 +0000   Tue, 11 Feb 2025 11:31:20 +0000   NodeStatusUnknown   Kubelet stopped posting node status.
+  DiskPressure         Unknown   Tue, 11 Feb 2025 11:27:34 +0000   Tue, 11 Feb 2025 11:31:20 +0000   NodeStatusUnknown   Kubelet stopped posting node status.
+  PIDPressure          Unknown   Tue, 11 Feb 2025 11:27:34 +0000   Tue, 11 Feb 2025 11:31:20 +0000   NodeStatusUnknown   Kubelet stopped posting node status.
+  Ready                Unknown   Tue, 11 Feb 2025 11:27:34 +0000   Tue, 11 Feb 2025 11:31:20 +0000   NodeStatusUnknown   Kubelet stopped posting node status.
+Addresses:
+  InternalIP:  172.30.1.2
+  Hostname:    controlplane
+Capacity:
+  cpu:                1
+  ephemeral-storage:  20134592Ki
+  hugepages-2Mi:      0
+  memory:             2030940Ki
+  pods:               110
+Allocatable:
+  cpu:                1
+  ephemeral-storage:  19586931083
+  hugepages-2Mi:      0
+  memory:             1928540Ki
+  pods:               110
+System Info:
+  Machine ID:                 388a2d0f867a4404bc12a0093bd9ed8d
+  System UUID:                48fb2326-9ee6-42f1-a8a3-a7b96c40e292
+  Boot ID:                    4076bb40-dbc3-4306-ad96-6e3ce0b2aecf
+  Kernel Version:             5.4.0-131-generic
+  OS Image:                   Ubuntu 20.04.5 LTS
+  Operating System:           linux
+  Architecture:               amd64
+  Container Runtime Version:  containerd://1.7.22
+  Kubelet Version:            v1.31.0
+  Kube-Proxy Version:
+PodCIDR:                      192.168.0.0/24
+PodCIDRs:                     192.168.0.0/24
+Non-terminated Pods:          (8 in total)
+  Namespace                   Name                                       CPU Requests  CPU Limits  Memory Requests  Memory Limits  Age
+  ---------                   ----                                       ------------  ----------  ---------------  -------------  ---
+  kube-system                 calico-kube-controllers-94fb6bc47-rxh7x    0 (0%)        0 (0%)      0 (0%)           0 (0%)         13d
+  kube-system                 canal-zl4tq                                25m (2%)      0 (0%)      0 (0%)           0 (0%)         13d
+  kube-system                 etcd-controlplane                          25m (2%)      0 (0%)      100Mi (5%)       0 (0%)         13d
+  kube-system                 kube-apiserver-controlplane                50m (5%)      0 (0%)      0 (0%)           0 (0%)         13d
+  kube-system                 kube-controller-manager-controlplane       25m (2%)      0 (0%)      0 (0%)           0 (0%)         13d
+  kube-system                 kube-proxy-2mfwz                           0 (0%)        0 (0%)      0 (0%)           0 (0%)         13d
+  kube-system                 kube-scheduler-controlplane                25m (2%)      0 (0%)      0 (0%)           0 (0%)         13d
+  local-path-storage          local-path-provisioner-6c5cff8948-2x89z    0 (0%)        0 (0%)      0 (0%)           0 (0%)         13d
+Allocated resources:
+  (Total limits may be over 100 percent, i.e., overcommitted.)
+  Resource           Requests    Limits
+  --------           --------    ------
+  cpu                150m (15%)  0 (0%)
+  memory             100Mi (5%)  0 (0%)
+  ephemeral-storage  0 (0%)      0 (0%)
+  hugepages-2Mi      0 (0%)      0 (0%)
+Events:
+  Type     Reason                   Age                    From             Message
+  ----     ------                   ----                   ----             -------
+  Normal   Starting                 3m58s                  kube-proxy
+  Normal   Starting                 13d                    kube-proxy
+  Normal   Starting                 13d                    kube-proxy
+  Normal   Starting                 13d                    kubelet          Starting kubelet.
+  Warning  CgroupV1                 13d                    kubelet          Cgroup v1 support is in maintenance mode, please migrate to Cgroup v2.
+  Normal   NodeHasSufficientPID     13d                    kubelet          Node controlplane status is now: NodeHasSufficientPID
+  Normal   NodeAllocatableEnforced  13d                    kubelet          Updated Node Allocatable limit across pods
+  Normal   NodeHasSufficientMemory  13d                    kubelet          Node controlplane status is now: NodeHasSufficientMemory
+  Normal   NodeHasNoDiskPressure    13d                    kubelet          Node controlplane status is now: NodeHasNoDiskPressure
+  Normal   RegisteredNode           13d                    node-controller  Node controlplane event: Registered Node controlplane in Controller
+  Normal   NodeReady                13d                    kubelet          Node controlplane status is now: NodeReady
+  Normal   RegisteredNode           13d                    node-controller  Node controlplane event: Registered Node controlplane in Controller
+  Normal   NodeAllocatableEnforced  13d                    kubelet          Updated Node Allocatable limit across pods
+  Normal   Starting                 13d                    kubelet          Starting kubelet.
+  Warning  CgroupV1                 13d                    kubelet          Cgroup v1 support is in maintenance mode, please migrate to Cgroup v2.
+  Normal   NodeHasSufficientMemory  13d (x8 over 13d)      kubelet          Node controlplane status is now: NodeHasSufficientMemory
+  Normal   NodeHasNoDiskPressure    13d (x7 over 13d)      kubelet          Node controlplane status is now: NodeHasNoDiskPressure
+  Normal   NodeHasSufficientPID     13d (x7 over 13d)      kubelet          Node controlplane status is now: NodeHasSufficientPID
+  Normal   RegisteredNode           13d                    node-controller  Node controlplane event: Registered Node controlplane in Controller
+  Normal   Starting                 4m28s                  kubelet          Starting kubelet.
+  Warning  CgroupV1                 4m28s                  kubelet          Cgroup v1 support is in maintenance mode, please migrate to Cgroup v2.
+  Normal   NodeAllocatableEnforced  4m27s                  kubelet          Updated Node Allocatable limit across pods
+  Normal   NodeHasSufficientMemory  4m26s (x8 over 4m27s)  kubelet          Node controlplane status is now: NodeHasSufficientMemory
+  Normal   NodeHasNoDiskPressure    4m26s (x7 over 4m27s)  kubelet          Node controlplane status is now: NodeHasNoDiskPressure
+  Normal   NodeHasSufficientPID     4m26s (x7 over 4m27s)  kubelet          Node controlplane status is now: NodeHasSufficientPID
+  Normal   RegisteredNode           3m44s                  node-controller  Node controlplane event: Registered Node controlplane in Controller
+  Normal   NodeNotReady             19s                    node-controller  Node controlplane status is now: NodeNotReady
+
+$ kubectl get pod -A
+NAMESPACE            NAME                                      READY   STATUS    RESTARTS        AGE
+kube-system          calico-kube-controllers-94fb6bc47-rxh7x   1/1     Running   2 (5m37s ago)   13d
+kube-system          canal-phldr                               2/2     Running   2 (5m43s ago)   13d
+kube-system          canal-zl4tq                               2/2     Running   2 (5m37s ago)   13d
+kube-system          coredns-57888bfdc7-685jj                  1/1     Running   1 (5m43s ago)   13d
+kube-system          coredns-57888bfdc7-bbwzr                  1/1     Running   1 (5m43s ago)   13d
+kube-system          etcd-controlplane                         1/1     Running   2 (5m37s ago)   13d
+kube-system          kube-apiserver-controlplane               1/1     Running   2 (5m37s ago)   13d
+kube-system          kube-controller-manager-controlplane      1/1     Running   2 (5m37s ago)   13d
+kube-system          kube-proxy-2mfwz                          1/1     Running   2 (5m37s ago)   13d
+kube-system          kube-proxy-z2ps8                          1/1     Running   1 (5m43s ago)   13d
+kube-system          kube-scheduler-controlplane               1/1     Running   2 (5m37s ago)   13d
+local-path-storage   local-path-provisioner-6c5cff8948-2x89z   1/1     Running   2 (5m37s ago)   13d
+
+$ systemctl status kubelet.service
+● kubelet.service - kubelet: The Kubernetes Node Agent
+     Loaded: loaded (/lib/systemd/system/kubelet.service; enabled; vendor preset: enabled)
+    Drop-In: /usr/lib/systemd/system/kubelet.service.d
+             └─10-kubeadm.conf
+     Active: inactive (dead) since Tue 2025-02-11 11:30:42 UTC; 2min 31s ago
+       Docs: https://kubernetes.io/docs/
+    Process: 1559 ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELET_KUBEADM_ARGS $KUBELET_EXTRA_ARGS (code=exited, status=0/SUCCESS)
+   Main PID: 1559 (code=exited, status=0/SUCCESS)
+
+Feb 11 11:28:07 controlplane kubelet[1559]: E0211 11:28:07.227865    1559 kuberuntime_manager.go:1477] "Failed to stop sandbox" podSandboxID={"Type":"containerd","ID>
+Feb 11 11:28:07 controlplane kubelet[1559]: E0211 11:28:07.230932    1559 log.go:32] "StopPodSandbox from runtime service failed" err="rpc error: code = Unknown desc>
+Feb 11 11:28:07 controlplane kubelet[1559]: E0211 11:28:07.231029    1559 kuberuntime_manager.go:1477] "Failed to stop sandbox" podSandboxID={"Type":"containerd","ID>
+Feb 11 11:28:07 controlplane kubelet[1559]: E0211 11:28:07.918666    1559 kuberuntime_manager.go:1077] "killPodWithSyncResult failed" err="failed to \"KillPodSandbox>
+Feb 11 11:28:07 controlplane kubelet[1559]: E0211 11:28:07.922105    1559 pod_workers.go:1301] "Error syncing pod, skipping" err="failed to \"KillPodSandbox\" for \">
+Feb 11 11:28:07 controlplane kubelet[1559]: E0211 11:28:07.936683    1559 kuberuntime_manager.go:1077] "killPodWithSyncResult failed" err="failed to \"KillPodSandbox>
+Feb 11 11:28:07 controlplane kubelet[1559]: E0211 11:28:07.936746    1559 pod_workers.go:1301] "Error syncing pod, skipping" err="failed to \"KillPodSandbox\" for \">
+Feb 11 11:30:42 controlplane systemd[1]: Stopping kubelet: The Kubernetes Node Agent...
+Feb 11 11:30:42 controlplane systemd[1]: kubelet.service: Succeeded.
+Feb 11 11:30:42 controlplane systemd[1]: Stopped kubelet: The Kubernetes Node Agent.
+
+$ cat /usr/lib/systemd/system/kubelet.service.d/10-kubeadm.conf
+# Note: This dropin only works with kubeadm and kubelet v1.11+
+[Service]
+Environment="KUBELET_KUBECONFIG_ARGS=--bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf"
+Environment="KUBELET_CONFIG_ARGS=--config=/var/lib/kubelet/config.yaml"
+# This is a file that "kubeadm init" and "kubeadm join" generates at runtime, populating the KUBELET_KUBEADM_ARGS variable dynamically
+EnvironmentFile=-/var/lib/kubelet/kubeadm-flags.env
+# This is a file that the user can use for overrides of the kubelet args as a last resort. Preferably, the user should use
+# the .NodeRegistration.KubeletExtraArgs object in the configuration files instead. KUBELET_EXTRA_ARGS should be sourced from this file.
+EnvironmentFile=-/etc/default/kubelet
+ExecStart=
+ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELET_KUBEADM_ARGS $KUBELET_EXTRA_ARGS
+
+$
+
+$
+
+$ cat /usr/lib/systemd/system/kubelet.service.d/10-kubeadm.conf
+# Note: This dropin only works with kubeadm and kubelet v1.11+
+[Service]
+Environment="KUBELET_KUBECONFIG_ARGS=--bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf"
+Environment="KUBELET_CONFIG_ARGS=--config=/var/lib/kubelet/config.yaml"
+# This is a file that "kubeadm init" and "kubeadm join" generates at runtime, populating the KUBELET_KUBEADM_ARGS variable dynamically
+EnvironmentFile=-/var/lib/kubelet/kubeadm-flags.env
+# This is a file that the user can use for overrides of the kubelet args as a last resort. Preferably, the user should use
+# the .NodeRegistration.KubeletExtraArgs object in the configuration files instead. KUBELET_EXTRA_ARGS should be sourced from this file.
+EnvironmentFile=-/etc/default/kubelet
+ExecStart=
+ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELET_KUBEADM_ARGS $KUBELET_EXTRA_ARGS
+
+$
+
+$
+
+$ cat /etc/kubernetes/bootstrap-kubelet.conf
+cat: /etc/kubernetes/bootstrap-kubelet.conf: No such file or directory
+
+$
+
+$ cat /etc/kubernetes/kubelet.conf
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority-data: 《证书内容》
+    server: https://172.30.1.2:6443
+  name: kubernetes
+contexts:
+- context:
+    cluster: kubernetes
+    user: system:node:controlplane
+  name: system:node:controlplane@kubernetes
+current-context: system:node:controlplane@kubernetes
+kind: Config
+preferences: {}
+users:
+- name: system:node:controlplane
+  user:
+    client-certificate: /var/lib/kubelet/pki/kubelet-client-current.pem
+    client-key: /var/lib/kubelet/pki/kubelet-client-current.pem
+
+$
+
+$ cat /var/lib/kubelet/config.yaml
+apiVersion: kubelet.config.k8s.io/v1beta1
+authentication:
+  anonymous:
+    enabled: false
+  webhook:
+    cacheTTL: 0s
+    enabled: true
+  x509:
+    clientCAFile: /etc/kubernetes/pki/ca.crt
+authorization:
+  mode: Webhook
+  webhook:
+    cacheAuthorizedTTL: 0s
+    cacheUnauthorizedTTL: 0s
+cgroupDriver: systemd
+clusterDNS:
+- 10.96.0.10
+clusterDomain: cluster.local
+containerRuntimeEndpoint: ""
+cpuManagerReconcilePeriod: 0s
+evictionPressureTransitionPeriod: 0s
+fileCheckFrequency: 0s
+healthzBindAddress: 127.0.0.1
+healthzPort: 10248
+httpCheckFrequency: 0s
+imageMaximumGCAge: 0s
+imageMinimumGCAge: 0s
+kind: KubeletConfiguration
+logging:
+  flushFrequency: 0
+  options:
+    json:
+      infoBufferSize: "0"
+    text:
+      infoBufferSize: "0"
+  verbosity: 0
+memorySwap: {}
+nodeStatusReportFrequency: 0s
+nodeStatusUpdateFrequency: 0s
+resolvConf: /run/systemd/resolve/resolv.conf
+rotateCertificates: true
+runtimeRequestTimeout: 0s
+shutdownGracePeriod: 0s
+shutdownGracePeriodCriticalPods: 0s
+staticPodPath: /etc/kubernetes/manifests
+streamingConnectionIdleTimeout: 0s
+syncFrequency: 0s
+volumeStatsAggPeriod: 0s
+
+$ cat /run/systemd/resolve/resolv.conf
+# This file is managed by man:systemd-resolved(8). Do not edit.
+#
+# This is a dynamic resolv.conf file for connecting local clients directly to
+# all known uplink DNS servers. This file lists all configured search domains.
+#
+# Third party programs must not access this file directly, but only through the
+# symlink at /etc/resolv.conf. To manage man:resolv.conf(5) in a different way,
+# replace this symlink by a static file or a different symlink.
+#
+# See man:systemd-resolved.service(8) for details about the supported modes of
+# operation for /etc/resolv.conf.
+
+nameserver 8.8.8.8
+nameserver 1.1.1.1
+
+
+
+## 1、使用 kubectl 命令初步检查 ######################
+$ kubectl get nodes -o wide
+NAME           STATUS     ROLES           AGE   VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION      CONTAINER-RUNTIME
+controlplane   NotReady   control-plane   13d   v1.31.0   172.30.1.2    <none>        Ubuntu 20.04.5 LTS   5.4.0-131-generic   containerd://1.7.22
+node01         Ready      <none>          13d   v1.31.0   172.30.2.2    <none>        Ubuntu 20.04.5 LTS   5.4.0-131-generic   containerd://1.7.22
+
+$ kubectl describe node controlplane
+Name:               controlplane
+Roles:              control-plane
+Labels:             beta.kubernetes.io/arch=amd64
+                    beta.kubernetes.io/os=linux
+                    kubernetes.io/arch=amd64
+                    kubernetes.io/hostname=controlplane
+                    kubernetes.io/os=linux
+                    node-role.kubernetes.io/control-plane=
+                    node.kubernetes.io/exclude-from-external-load-balancers=
+Annotations:        flannel.alpha.coreos.com/backend-data: {"VNI":1,"VtepMAC":"b6:8d:41:43:0d:65"}
+                    flannel.alpha.coreos.com/backend-type: vxlan
+                    flannel.alpha.coreos.com/kube-subnet-manager: true
+                    flannel.alpha.coreos.com/public-ip: 172.30.1.2
+                    kubeadm.alpha.kubernetes.io/cri-socket: unix:///var/run/containerd/containerd.sock
+                    node.alpha.kubernetes.io/ttl: 0
+                    projectcalico.org/IPv4Address: 172.30.1.2/24
+                    projectcalico.org/IPv4IPIPTunnelAddr: 192.168.0.1
+                    volumes.kubernetes.io/controller-managed-attach-detach: true
+CreationTimestamp:  Tue, 28 Jan 2025 16:04:13 +0000
+Taints:             node.kubernetes.io/unreachable:NoExecute
+                    node-role.kubernetes.io/control-plane:NoSchedule
+                    node.kubernetes.io/unreachable:NoSchedule
+Unschedulable:      false
+Lease:
+  HolderIdentity:  controlplane
+  AcquireTime:     <unset>
+  RenewTime:       Tue, 11 Feb 2025 11:30:37 +0000
+Conditions:
+  Type                 Status    LastHeartbeatTime                 LastTransitionTime                Reason              Message
+  ----                 ------    -----------------                 ------------------                ------              -------
+  NetworkUnavailable   False     Tue, 11 Feb 2025 11:27:57 +0000   Tue, 11 Feb 2025 11:27:57 +0000   FlannelIsUp         Flannel is running on this node
+  MemoryPressure       Unknown   Tue, 11 Feb 2025 11:27:34 +0000   Tue, 11 Feb 2025 11:31:20 +0000   NodeStatusUnknown   Kubelet stopped posting node status.
+  DiskPressure         Unknown   Tue, 11 Feb 2025 11:27:34 +0000   Tue, 11 Feb 2025 11:31:20 +0000   NodeStatusUnknown   Kubelet stopped posting node status.
+  PIDPressure          Unknown   Tue, 11 Feb 2025 11:27:34 +0000   Tue, 11 Feb 2025 11:31:20 +0000   NodeStatusUnknown   Kubelet stopped posting node status.
+  Ready                Unknown   Tue, 11 Feb 2025 11:27:34 +0000   Tue, 11 Feb 2025 11:31:20 +0000   NodeStatusUnknown   Kubelet stopped posting node status.
+Addresses:
+  InternalIP:  172.30.1.2
+  Hostname:    controlplane
+Capacity:
+  cpu:                1
+  ephemeral-storage:  20134592Ki
+  hugepages-2Mi:      0
+  memory:             2030940Ki
+  pods:               110
+Allocatable:
+  cpu:                1
+  ephemeral-storage:  19586931083
+  hugepages-2Mi:      0
+  memory:             1928540Ki
+  pods:               110
+System Info:
+  Machine ID:                 388a2d0f867a4404bc12a0093bd9ed8d
+  System UUID:                48fb2326-9ee6-42f1-a8a3-a7b96c40e292
+  Boot ID:                    4076bb40-dbc3-4306-ad96-6e3ce0b2aecf
+  Kernel Version:             5.4.0-131-generic
+  OS Image:                   Ubuntu 20.04.5 LTS
+  Operating System:           linux
+  Architecture:               amd64
+  Container Runtime Version:  containerd://1.7.22
+  Kubelet Version:            v1.31.0
+  Kube-Proxy Version:
+PodCIDR:                      192.168.0.0/24
+PodCIDRs:                     192.168.0.0/24
+Non-terminated Pods:          (8 in total)
+  Namespace                   Name                                       CPU Requests  CPU Limits  Memory Requests  Memory Limits  Age
+  ---------                   ----                                       ------------  ----------  ---------------  -------------  ---
+  kube-system                 calico-kube-controllers-94fb6bc47-rxh7x    0 (0%)        0 (0%)      0 (0%)           0 (0%)         13d
+  kube-system                 canal-zl4tq                                25m (2%)      0 (0%)      0 (0%)           0 (0%)         13d
+  kube-system                 etcd-controlplane                          25m (2%)      0 (0%)      100Mi (5%)       0 (0%)         13d
+  kube-system                 kube-apiserver-controlplane                50m (5%)      0 (0%)      0 (0%)           0 (0%)         13d
+  kube-system                 kube-controller-manager-controlplane       25m (2%)      0 (0%)      0 (0%)           0 (0%)         13d
+  kube-system                 kube-proxy-2mfwz                           0 (0%)        0 (0%)      0 (0%)           0 (0%)         13d
+  kube-system                 kube-scheduler-controlplane                25m (2%)      0 (0%)      0 (0%)           0 (0%)         13d
+  local-path-storage          local-path-provisioner-6c5cff8948-2x89z    0 (0%)        0 (0%)      0 (0%)           0 (0%)         13d
+Allocated resources:
+  (Total limits may be over 100 percent, i.e., overcommitted.)
+  Resource           Requests    Limits
+  --------           --------    ------
+  cpu                150m (15%)  0 (0%)
+  memory             100Mi (5%)  0 (0%)
+  ephemeral-storage  0 (0%)      0 (0%)
+  hugepages-2Mi      0 (0%)      0 (0%)
+Events:
+  Type     Reason                   Age                From             Message
+  ----     ------                   ----               ----             -------
+  Normal   Starting                 10m                kube-proxy
+  Normal   Starting                 13d                kube-proxy
+  Normal   Starting                 13d                kube-proxy
+  Normal   Starting                 13d                kubelet          Starting kubelet.
+  Warning  CgroupV1                 13d                kubelet          Cgroup v1 support is in maintenance mode, please migrate to Cgroup v2.
+  Normal   NodeHasSufficientPID     13d                kubelet          Node controlplane status is now: NodeHasSufficientPID
+  Normal   NodeAllocatableEnforced  13d                kubelet          Updated Node Allocatable limit across pods
+  Normal   NodeHasSufficientMemory  13d                kubelet          Node controlplane status is now: NodeHasSufficientMemory
+  Normal   NodeHasNoDiskPressure    13d                kubelet          Node controlplane status is now: NodeHasNoDiskPressure
+  Normal   RegisteredNode           13d                node-controller  Node controlplane event: Registered Node controlplane in Controller
+  Normal   NodeReady                13d                kubelet          Node controlplane status is now: NodeReady
+  Normal   RegisteredNode           13d                node-controller  Node controlplane event: Registered Node controlplane in Controller
+  Normal   NodeAllocatableEnforced  13d                kubelet          Updated Node Allocatable limit across pods
+  Normal   Starting                 13d                kubelet          Starting kubelet.
+  Warning  CgroupV1                 13d                kubelet          Cgroup v1 support is in maintenance mode, please migrate to Cgroup v2.
+  Normal   NodeHasSufficientMemory  13d (x8 over 13d)  kubelet          Node controlplane status is now: NodeHasSufficientMemory
+  Normal   NodeHasNoDiskPressure    13d (x7 over 13d)  kubelet          Node controlplane status is now: NodeHasNoDiskPressure
+  Normal   NodeHasSufficientPID     13d (x7 over 13d)  kubelet          Node controlplane status is now: NodeHasSufficientPID
+  Normal   RegisteredNode           13d                node-controller  Node controlplane event: Registered Node controlplane in Controller
+  Normal   Starting                 10m                kubelet          Starting kubelet.
+  Warning  CgroupV1                 10m                kubelet          Cgroup v1 support is in maintenance mode, please migrate to Cgroup v2.
+  Normal   NodeAllocatableEnforced  10m                kubelet          Updated Node Allocatable limit across pods
+  Normal   NodeHasSufficientMemory  10m (x8 over 10m)  kubelet          Node controlplane status is now: NodeHasSufficientMemory
+  Normal   NodeHasNoDiskPressure    10m (x7 over 10m)  kubelet          Node controlplane status is now: NodeHasNoDiskPressure
+  Normal   NodeHasSufficientPID     10m (x7 over 10m)  kubelet          Node controlplane status is now: NodeHasSufficientPID
+  Normal   RegisteredNode           10m                node-controller  Node controlplane event: Registered Node controlplane in Controller
+  Normal   NodeNotReady             6m44s              node-controller  Node controlplane status is now: NodeNotReady
+# 检查 Events 部分
+# 1、如果有 资源不足 (Insufficient CPU/Memory/Disk)，说明该节点的资源不足，Kubernetes 无法调度 Pod。
+# 2、如果有 Network 相关错误，可能是 kube-proxy 或 CNI 网络插件的问题。
+# 3、如果有 "PLEG is not healthy"，可能是容器运行时（Container Runtime）的问题。
+
+## 2、检查 kubelet 进程状态 ######################
+$ sudo  systemctl status kubelet.service
+● kubelet.service - kubelet: The Kubernetes Node Agent
+     Loaded: loaded (/lib/systemd/system/kubelet.service; enabled; vendor preset: enabled)
+    Drop-In: /usr/lib/systemd/system/kubelet.service.d
+             └─10-kubeadm.conf
+     Active: inactive (dead) since Tue 2025-02-11 11:30:42 UTC; 12min ago
+       Docs: https://kubernetes.io/docs/
+    Process: 1559 ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELET_KUBEADM_ARGS $KUBELET_EXTRA_ARGS (code=exited, status=0/SUCCESS)
+   Main PID: 1559 (code=exited, status=0/SUCCESS)
+# 这里是 inactive 状态，说明 kubelet 服务没有正常运行
+Feb 11 11:28:07 controlplane kubelet[1559]: E0211 11:28:07.227865    1559 kuberuntime_manager.go:1477] "Failed to stop sandbox" podSandboxID={"Type":"containerd","ID":"6887f95e0>
+Feb 11 11:28:07 controlplane kubelet[1559]: E0211 11:28:07.230932    1559 log.go:32] "StopPodSandbox from runtime service failed" err="rpc error: code = Unknown desc = failed to>
+Feb 11 11:28:07 controlplane kubelet[1559]: E0211 11:28:07.231029    1559 kuberuntime_manager.go:1477] "Failed to stop sandbox" podSandboxID={"Type":"containerd","ID":"08ce81ea2>
+Feb 11 11:28:07 controlplane kubelet[1559]: E0211 11:28:07.918666    1559 kuberuntime_manager.go:1077] "killPodWithSyncResult failed" err="failed to \"KillPodSandbox\" for \"0ff>
+Feb 11 11:28:07 controlplane kubelet[1559]: E0211 11:28:07.922105    1559 pod_workers.go:1301] "Error syncing pod, skipping" err="failed to \"KillPodSandbox\" for \"0ff4fb33-fde>
+Feb 11 11:28:07 controlplane kubelet[1559]: E0211 11:28:07.936683    1559 kuberuntime_manager.go:1077] "killPodWithSyncResult failed" err="failed to \"KillPodSandbox\" for \"a2c>
+Feb 11 11:28:07 controlplane kubelet[1559]: E0211 11:28:07.936746    1559 pod_workers.go:1301] "Error syncing pod, skipping" err="failed to \"KillPodSandbox\" for \"a2ca051a-3ce>
+Feb 11 11:30:42 controlplane systemd[1]: Stopping kubelet: The Kubernetes Node Agent...
+Feb 11 11:30:42 controlplane systemd[1]: kubelet.service: Succeeded.
+Feb 11 11:30:42 controlplane systemd[1]: Stopped kubelet: The Kubernetes Node Agent.
+
+$ sudo systemctl restart kubelet
+
+$ sudo  systemctl status kubelet.service
+● kubelet.service - kubelet: The Kubernetes Node Agent
+     Loaded: loaded (/lib/systemd/system/kubelet.service; enabled; vendor preset: enabled)
+    Drop-In: /usr/lib/systemd/system/kubelet.service.d
+             └─10-kubeadm.conf
+     Active: active (running) since Tue 2025-02-11 11:43:47 UTC; 11s ago
+       Docs: https://kubernetes.io/docs/
+   Main PID: 8049 (kubelet)
+      Tasks: 10 (limit: 2338)
+     Memory: 61.0M
+     CGroup: /system.slice/kubelet.service
+             └─8049 /usr/bin/kubelet --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf --config=/var/lib/kubelet/config.yam>
+
+Feb 11 11:43:52 controlplane kubelet[8049]: I0211 11:43:52.556359    8049 reconciler_common.go:159] "operationExecutor.UnmountVolume started for volume \"kube-api-access-ffnhw\">
+Feb 11 11:43:52 controlplane kubelet[8049]: I0211 11:43:52.556680    8049 reconciler_common.go:159] "operationExecutor.UnmountVolume started for volume \"kube-api-access-76v2x\">
+Feb 11 11:43:52 controlplane kubelet[8049]: I0211 11:43:52.563485    8049 operation_generator.go:803] UnmountVolume.TearDown succeeded for volume "kubernetes.io/configmap/a2ca05>
+Feb 11 11:43:52 controlplane kubelet[8049]: I0211 11:43:52.600291    8049 operation_generator.go:803] UnmountVolume.TearDown succeeded for volume "kubernetes.io/projected/a2ca05>
+Feb 11 11:43:52 controlplane kubelet[8049]: I0211 11:43:52.610885    8049 operation_generator.go:803] UnmountVolume.TearDown succeeded for volume "kubernetes.io/projected/0ff4fb>
+Feb 11 11:43:52 controlplane kubelet[8049]: I0211 11:43:52.663089    8049 reconciler_common.go:288] "Volume detached for volume \"config-volume\" (UniqueName: \"kubernetes.io/co>
+Feb 11 11:43:52 controlplane kubelet[8049]: I0211 11:43:52.665072    8049 reconciler_common.go:288] "Volume detached for volume \"kube-api-access-ffnhw\" (UniqueName: \"kubernet>
+Feb 11 11:43:52 controlplane kubelet[8049]: I0211 11:43:52.665494    8049 reconciler_common.go:288] "Volume detached for volume \"kube-api-access-76v2x\" (UniqueName: \"kubernet>
+Feb 11 11:43:54 controlplane kubelet[8049]: I0211 11:43:54.650014    8049 kubelet_volumes.go:163] "Cleaned up orphaned pod volumes dir" podUID="0ff4fb33-fde6-4587-ae22-a2a7e9ab5>
+Feb 11 11:43:54 controlplane kubelet[8049]: I0211 11:43:54.652099    8049 kubelet_volumes.go:163] "Cleaned up orphaned pod volumes dir" podUID="a2ca051a-3ced-4122-a2bc-622713bc1>
+
+$ journalctl -u kubelet -f
+-- Logs begin at Sun 2022-11-13 17:25:58 UTC. --
+Feb 11 11:43:52 controlplane kubelet[8049]: I0211 11:43:52.556359    8049 reconciler_common.go:159] "operationExecutor.UnmountVolume started for volume \"kube-api-access-ffnhw\" (UniqueName: \"kubernetes.io/projected/0ff4fb33-fde6-4587-ae22-a2a7e9ab55e6-kube-api-access-ffnhw\") pod \"0ff4fb33-fde6-4587-ae22-a2a7e9ab55e6\" (UID: \"0ff4fb33-fde6-4587-ae22-a2a7e9ab55e6\") "
+Feb 11 11:43:52 controlplane kubelet[8049]: I0211 11:43:52.556680    8049 reconciler_common.go:159] "operationExecutor.UnmountVolume started for volume \"kube-api-access-76v2x\" (UniqueName: \"kubernetes.io/projected/a2ca051a-3ced-4122-a2bc-622713bc16cf-kube-api-access-76v2x\") pod \"a2ca051a-3ced-4122-a2bc-622713bc16cf\" (UID: \"a2ca051a-3ced-4122-a2bc-622713bc16cf\") "
+Feb 11 11:43:52 controlplane kubelet[8049]: I0211 11:43:52.563485    8049 operation_generator.go:803] UnmountVolume.TearDown succeeded for volume "kubernetes.io/configmap/a2ca051a-3ced-4122-a2bc-622713bc16cf-config-volume" (OuterVolumeSpecName: "config-volume") pod "a2ca051a-3ced-4122-a2bc-622713bc16cf" (UID: "a2ca051a-3ced-4122-a2bc-622713bc16cf"). InnerVolumeSpecName "config-volume". PluginName "kubernetes.io/configmap", VolumeGidValue ""
+Feb 11 11:43:52 controlplane kubelet[8049]: I0211 11:43:52.600291    8049 operation_generator.go:803] UnmountVolume.TearDown succeeded for volume "kubernetes.io/projected/a2ca051a-3ced-4122-a2bc-622713bc16cf-kube-api-access-76v2x" (OuterVolumeSpecName: "kube-api-access-76v2x") pod "a2ca051a-3ced-4122-a2bc-622713bc16cf" (UID: "a2ca051a-3ced-4122-a2bc-622713bc16cf"). InnerVolumeSpecName "kube-api-access-76v2x". PluginName "kubernetes.io/projected", VolumeGidValue ""
+Feb 11 11:43:52 controlplane kubelet[8049]: I0211 11:43:52.610885    8049 operation_generator.go:803] UnmountVolume.TearDown succeeded for volume "kubernetes.io/projected/0ff4fb33-fde6-4587-ae22-a2a7e9ab55e6-kube-api-access-ffnhw" (OuterVolumeSpecName: "kube-api-access-ffnhw") pod "0ff4fb33-fde6-4587-ae22-a2a7e9ab55e6" (UID: "0ff4fb33-fde6-4587-ae22-a2a7e9ab55e6"). InnerVolumeSpecName "kube-api-access-ffnhw". PluginName "kubernetes.io/projected", VolumeGidValue ""
+Feb 11 11:43:52 controlplane kubelet[8049]: I0211 11:43:52.663089    8049 reconciler_common.go:288] "Volume detached for volume \"config-volume\" (UniqueName: \"kubernetes.io/configmap/a2ca051a-3ced-4122-a2bc-622713bc16cf-config-volume\") on node \"controlplane\" DevicePath \"\""
+Feb 11 11:43:52 controlplane kubelet[8049]: I0211 11:43:52.665072    8049 reconciler_common.go:288] "Volume detached for volume \"kube-api-access-ffnhw\" (UniqueName: \"kubernetes.io/projected/0ff4fb33-fde6-4587-ae22-a2a7e9ab55e6-kube-api-access-ffnhw\") on node \"controlplane\" DevicePath \"\""
+Feb 11 11:43:52 controlplane kubelet[8049]: I0211 11:43:52.665494    8049 reconciler_common.go:288] "Volume detached for volume \"kube-api-access-76v2x\" (UniqueName: \"kubernetes.io/projected/a2ca051a-3ced-4122-a2bc-622713bc16cf-kube-api-access-76v2x\") on node \"controlplane\" DevicePath \"\""
+Feb 11 11:43:54 controlplane kubelet[8049]: I0211 11:43:54.650014    8049 kubelet_volumes.go:163] "Cleaned up orphaned pod volumes dir" podUID="0ff4fb33-fde6-4587-ae22-a2a7e9ab55e6" path="/var/lib/kubelet/pods/0ff4fb33-fde6-4587-ae22-a2a7e9ab55e6/volumes"
+Feb 11 11:43:54 controlplane kubelet[8049]: I0211 11:43:54.652099    8049 kubelet_volumes.go:163] "Cleaned up orphaned pod volumes dir" podUID="a2ca051a-3ced-4122-a2bc-622713bc16cf" path="/var/lib/kubelet/pods/a2ca051a-3ced-4122-a2bc-622713bc16cf/volumes"
+
+Feb 11 11:44:48 controlplane kubelet[8049]: I0211 11:44:48.706670    8049 scope.go:117] "RemoveContainer" containerID="853884d8d9eeb5edc8af3ada0dcd987419dd156d6f2e4f94f70c0dcd810bc821"
+Feb 11 11:44:48 controlplane kubelet[8049]: I0211 11:44:48.731606    8049 scope.go:117] "RemoveContainer" containerID="af24e51735ac4c327f234fedae11265741f2094f733e2c0d41da384f93bff5a8"
+
+## 3. 检查 kube-proxy 和网络状态 ######################
+$ kubectl get pods -n kube-system -o wide | grep kube-proxy
+kube-proxy-2mfwz                          1/1     Running   2 (20m ago)   13d   172.30.1.2    controlplane   <none>           <none>
+kube-proxy-z2ps8                          1/1     Running   1 (20m ago)   13d   172.30.2.2    node01         <none>           <none>
+
+$ ip addr
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host
+       valid_lft forever preferred_lft forever
+2: enp1s0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
+    link/ether 52:54:00:51:c9:d3 brd ff:ff:ff:ff:ff:ff
+    inet 172.30.1.2/24 brd 172.30.1.255 scope global dynamic enp1s0
+       valid_lft 86311336sec preferred_lft 86311336sec
+3: docker0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1454 qdisc noqueue state DOWN group default
+    link/ether 02:42:d9:aa:43:b4 brd ff:ff:ff:ff:ff:ff
+    inet 172.17.0.1/16 brd 172.17.255.255 scope global docker0
+       valid_lft forever preferred_lft forever
+4: flannel.1: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1450 qdisc noqueue state UNKNOWN group default
+    link/ether b6:8d:41:43:0d:65 brd ff:ff:ff:ff:ff:ff
+    inet 192.168.0.0/32 brd 192.168.0.0 scope global flannel.1
+       valid_lft forever preferred_lft forever
+    inet6 fe80::b48d:41ff:fe43:d65/64 scope link
+       valid_lft forever preferred_lft forever
+
+$ sudo iptables -L -v -n
+Chain INPUT (policy ACCEPT 242K packets, 32M bytes)
+ pkts bytes target     prot opt in     out     source               destination
+ 375K   56M cali-INPUT  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* cali:Cz_u1IQiXIMmKD4c */
+ 4082  246K KUBE-PROXY-FIREWALL  all  --  *      *       0.0.0.0/0            0.0.0.0/0            ctstate NEW /* kubernetes load balancer firewall */
+ 387K   78M KUBE-NODEPORTS  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* kubernetes health check service ports */
+ 4083  247K KUBE-EXTERNAL-SERVICES  all  --  *      *       0.0.0.0/0            0.0.0.0/0            ctstate NEW /* kubernetes externally-visible service portals */
+ 397K   91M KUBE-FIREWALL  all  --  *      *       0.0.0.0/0            0.0.0.0/0
+
+Chain FORWARD (policy ACCEPT 0 packets, 0 bytes)
+ pkts bytes target     prot opt in     out     source               destination
+    1    40 cali-FORWARD  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* cali:wUHhoiAYhphO9Mso */
+    0     0 KUBE-PROXY-FIREWALL  all  --  *      *       0.0.0.0/0            0.0.0.0/0            ctstate NEW /* kubernetes load balancer firewall */
+    0     0 KUBE-FORWARD  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* kubernetes forwarding rules */
+    0     0 KUBE-SERVICES  all  --  *      *       0.0.0.0/0            0.0.0.0/0            ctstate NEW /* kubernetes service portals */
+    0     0 KUBE-EXTERNAL-SERVICES  all  --  *      *       0.0.0.0/0            0.0.0.0/0            ctstate NEW /* kubernetes externally-visible service portals */
+    0     0 DOCKER-USER  all  --  *      *       0.0.0.0/0            0.0.0.0/0
+    0     0 DOCKER-ISOLATION-STAGE-1  all  --  *      *       0.0.0.0/0            0.0.0.0/0
+    0     0 ACCEPT     all  --  *      docker0  0.0.0.0/0            0.0.0.0/0            ctstate RELATED,ESTABLISHED
+    0     0 DOCKER     all  --  *      docker0  0.0.0.0/0            0.0.0.0/0
+    0     0 ACCEPT     all  --  docker0 !docker0  0.0.0.0/0            0.0.0.0/0
+    0     0 ACCEPT     all  --  docker0 docker0  0.0.0.0/0            0.0.0.0/0
+    0     0 ACCEPT     all  --  *      *       192.168.0.0/16       0.0.0.0/0
+    0     0 ACCEPT     all  --  *      *       0.0.0.0/0            192.168.0.0/16
+    0     0 ACCEPT     all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* cali:S93hcgKJrXEqnTfs */ /* Policy explicitly accepted packet. */ mark match 0x10000/0x10000
+    0     0 MARK       all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* cali:mp77cMpurHhyjLrM */ MARK or 0x10000
+
+Chain OUTPUT (policy ACCEPT 241K packets, 35M bytes)
+ pkts bytes target     prot opt in     out     source               destination
+ 374K   74M cali-OUTPUT  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* cali:tVnHkvAo15HuiPy0 */
+ 4045  244K KUBE-PROXY-FIREWALL  all  --  *      *       0.0.0.0/0            0.0.0.0/0            ctstate NEW /* kubernetes load balancer firewall */
+ 4045  244K KUBE-SERVICES  all  --  *      *       0.0.0.0/0            0.0.0.0/0            ctstate NEW /* kubernetes service portals */
+ 397K   82M KUBE-FIREWALL  all  --  *      *       0.0.0.0/0            0.0.0.0/0
+
+Chain DOCKER (1 references)
+ pkts bytes target     prot opt in     out     source               destination
+
+Chain DOCKER-ISOLATION-STAGE-1 (1 references)
+ pkts bytes target     prot opt in     out     source               destination
+    0     0 DOCKER-ISOLATION-STAGE-2  all  --  docker0 !docker0  0.0.0.0/0            0.0.0.0/0
+    0     0 RETURN     all  --  *      *       0.0.0.0/0            0.0.0.0/0
+
+Chain DOCKER-ISOLATION-STAGE-2 (1 references)
+ pkts bytes target     prot opt in     out     source               destination
+    0     0 DROP       all  --  *      docker0  0.0.0.0/0            0.0.0.0/0
+    0     0 RETURN     all  --  *      *       0.0.0.0/0            0.0.0.0/0
+
+Chain DOCKER-USER (1 references)
+ pkts bytes target     prot opt in     out     source               destination
+    0     0 RETURN     all  --  *      *       0.0.0.0/0            0.0.0.0/0
+
+Chain KUBE-EXTERNAL-SERVICES (2 references)
+ pkts bytes target     prot opt in     out     source               destination
+
+Chain KUBE-FIREWALL (2 references)
+ pkts bytes target     prot opt in     out     source               destination
+    0     0 DROP       all  --  *      *      !127.0.0.0/8          127.0.0.0/8          /* block incoming localnet connections */ ! ctstate RELATED,ESTABLISHED,DNAT
+
+Chain KUBE-FORWARD (1 references)
+ pkts bytes target     prot opt in     out     source               destination
+    0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            ctstate INVALID nfacct-name  ct_state_invalid_dropped_pkts
+    0     0 ACCEPT     all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* kubernetes forwarding rules */ mark match 0x4000/0x4000
+    0     0 ACCEPT     all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* kubernetes forwarding conntrack rule */ ctstate RELATED,ESTABLISHED
+
+Chain KUBE-KUBELET-CANARY (0 references)
+ pkts bytes target     prot opt in     out     source               destination
+
+Chain KUBE-NODEPORTS (1 references)
+ pkts bytes target     prot opt in     out     source               destination
+
+Chain KUBE-PROXY-CANARY (0 references)
+ pkts bytes target     prot opt in     out     source               destination
+
+Chain KUBE-PROXY-FIREWALL (3 references)
+ pkts bytes target     prot opt in     out     source               destination
+
+Chain KUBE-SERVICES (2 references)
+ pkts bytes target     prot opt in     out     source               destination
+
+Chain cali-FORWARD (1 references)
+ pkts bytes target     prot opt in     out     source               destination
+    1    40 MARK       all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* cali:vjrMJCRpqwy5oRoX */ MARK and 0xfff1ffff
+    1    40 cali-from-hep-forward  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* cali:A_sPAO0mcxbT9mOV */ mark match 0x0/0x10000
+    1    40 cali-from-wl-dispatch  all  --  cali+  *       0.0.0.0/0            0.0.0.0/0            /* cali:8ZoYfO5HKXWbB3pk */
+    0     0 cali-to-wl-dispatch  all  --  *      cali+   0.0.0.0/0            0.0.0.0/0            /* cali:jdEuaPBe14V2hutn */
+    0     0 cali-to-hep-forward  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* cali:12bc6HljsMKsmfr- */
+    0     0 cali-cidr-block  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* cali:NOSxoaGx8OIstr1z */
+
+Chain cali-INPUT (1 references)
+ pkts bytes target     prot opt in     out     source               destination
+ 2222  318K cali-wl-to-host  all  --  cali+  *       0.0.0.0/0            0.0.0.0/0           [goto]  /* cali:FewJpBykm9iJ-YNH */
+    0     0 ACCEPT     all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* cali:hder3ARWznqqv8Va */ mark match 0x10000/0x10000
+ 373K   55M MARK       all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* cali:xgOu2uJft6H9oDGF */ MARK and 0xfff0ffff
+ 373K   55M cali-from-host-endpoint  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* cali:_-d-qojMfHM6NwBo */
+    0     0 ACCEPT     all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* cali:LqmE76MP94lZTGhA */ /* Host endpoint policy accepted packet. */ mark match 0x10000/0x10000
+
+Chain cali-OUTPUT (1 references)
+ pkts bytes target     prot opt in     out     source               destination
+    0     0 ACCEPT     all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* cali:Mq1_rAdXXH3YkrzW */ mark match 0x10000/0x10000
+ 2134  838K RETURN     all  --  *      cali+   0.0.0.0/0            0.0.0.0/0            /* cali:69FkRTJDvD5Vu6Vl */
+ 372K   73M MARK       all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* cali:Fskumj4SGQtDV6GC */ MARK and 0xfff0ffff
+ 370K   72M cali-to-host-endpoint  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* cali:1F4VWEsQu0QbRwKf */ ! ctstate DNAT
+    0     0 ACCEPT     all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* cali:m8Eqm15x1MjD24LD */ /* Host endpoint policy accepted packet. */ mark match 0x10000/0x10000
+
+Chain cali-cidr-block (1 references)
+ pkts bytes target     prot opt in     out     source               destination
+
+Chain cali-from-hep-forward (1 references)
+ pkts bytes target     prot opt in     out     source               destination
+
+Chain cali-from-host-endpoint (1 references)
+ pkts bytes target     prot opt in     out     source               destination
+
+Chain cali-from-wl-dispatch (2 references)
+ pkts bytes target     prot opt in     out     source               destination
+    0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* cali:zTj6P0TIgYvgz-md */ /* Unknown interface */
+
+Chain cali-to-hep-forward (1 references)
+ pkts bytes target     prot opt in     out     source               destination
+
+Chain cali-to-host-endpoint (1 references)
+ pkts bytes target     prot opt in     out     source               destination
+
+Chain cali-to-wl-dispatch (1 references)
+ pkts bytes target     prot opt in     out     source               destination
+    0     0 DROP       all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* cali:7KNphB1nNHw80nIO */ /* Unknown interface */
+
+Chain cali-wl-to-host (1 references)
+ pkts bytes target     prot opt in     out     source               destination
+ 2222  318K cali-from-wl-dispatch  all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* cali:Ee9Sbo10IpVujdIY */
+  102  6120 ACCEPT     all  --  *      *       0.0.0.0/0            0.0.0.0/0            /* cali:nSZbcOoG1xPONxb8 */ /* Configured DefaultEndpointToHostAction */
+
+## 4. 检查 CNI 网络插件 ######################
+$ ls /etc/cni/net.d/
+10-canal.conflist  calico-kubeconfig
+
+$ kubectl get pods -n kube-system | grep -E 'calico|flannel|weave|cilium'
+calico-kube-controllers-94fb6bc47-5f2hb   1/1     Running   0             31m
+
+$ kubectl get pods -n kube-system | grep etcd
+etcd-controlplane                         1/1     Running   2 (41m ago)   13d
+
+## 5. 检查 etcd 状态（仅适用于 Control Plane） ######################
+$ kubectl get pods -n kube-system | grep etcd
+etcd-controlplane                         1/1     Running   2 (41m ago)   13d
+
+$ kubectl logs -n kube-system  etcd-controlplane
+{"level":"warn","ts":"2025-02-11T11:27:56.420948Z","caller":"etcdserver/util.go:170","msg":"apply request took too long","took":"315.642782ms","expected-duration":"100ms","prefix":"read-only range ","request":"key:\"/registry/crd.projectcalico.org/kubecontrollersconfigurations/\" range_end:\"/registry/crd.projectcalico.org/kubecontrollersconfigurations0\" count_only:true ","response":"range_response_count:0 size:7"}
+{"level":"info","ts":"2025-02-11T11:37:24.009156Z","caller":"mvcc/hash.go:137","msg":"storing new hash","hash":1297372836,"revision":2391,"compact-revision":-1}
+{"level":"info","ts":"2025-02-11T11:42:23.610574Z","caller":"mvcc/index.go:214","msg":"compact tree index","revision":2822}
+# 没发现什么有价值的线索
+
+$ kubectl get pod -n kube-system  etcd-controlplane -o yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    kubeadm.kubernetes.io/etcd.advertise-client-urls: https://172.30.1.2:2379
+    kubernetes.io/config.hash: 4fb3015641784f175e793600c1e22e8c
+    kubernetes.io/config.mirror: 4fb3015641784f175e793600c1e22e8c
+    kubernetes.io/config.seen: "2025-01-28T16:05:18.818121481Z"
+    kubernetes.io/config.source: file
+  creationTimestamp: "2025-01-28T16:05:48Z"
+  labels:
+    component: etcd
+    tier: control-plane
+  name: etcd-controlplane
+  namespace: kube-system
+  ownerReferences:
+  - apiVersion: v1
+    controller: true
+    kind: Node
+    name: controlplane
+    uid: 52bb0db8-eeb9-48ee-8e38-a386487ad66e
+  resourceVersion: "3392"
+  uid: ec057033-29c2-4e99-b97e-5ffbcd859f07
+spec:
+  containers:
+  - command:
+    - etcd
+    - --advertise-client-urls=https://172.30.1.2:2379
+    - --cert-file=/etc/kubernetes/pki/etcd/server.crt
+    - --client-cert-auth=true
+    - --data-dir=/var/lib/etcd
+    - --experimental-initial-corrupt-check=true
+    - --experimental-watch-progress-notify-interval=5s
+    - --initial-advertise-peer-urls=https://172.30.1.2:2380
+    - --initial-cluster=controlplane=https://172.30.1.2:2380
+    - --key-file=/etc/kubernetes/pki/etcd/server.key
+    - --listen-client-urls=https://127.0.0.1:2379,https://172.30.1.2:2379
+    - --listen-metrics-urls=http://127.0.0.1:2381
+    - --listen-peer-urls=https://172.30.1.2:2380
+    - --name=controlplane
+    - --peer-cert-file=/etc/kubernetes/pki/etcd/peer.crt
+    - --peer-client-cert-auth=true
+    - --peer-key-file=/etc/kubernetes/pki/etcd/peer.key
+    - --peer-trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt
+    - --snapshot-count=10000
+    - --trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt
+    image: registry.k8s.io/etcd:3.5.15-0
+    imagePullPolicy: IfNotPresent
+    livenessProbe:
+      failureThreshold: 8
+      httpGet:
+        host: 127.0.0.1
+        path: /livez
+        port: 2381
+        scheme: HTTP
+      initialDelaySeconds: 10
+      periodSeconds: 10
+      successThreshold: 1
+      timeoutSeconds: 15
+    name: etcd
+    readinessProbe:
+      failureThreshold: 3
+      httpGet:
+        host: 127.0.0.1
+        path: /readyz
+        port: 2381
+        scheme: HTTP
+      periodSeconds: 1
+      successThreshold: 1
+      timeoutSeconds: 15
+    resources:
+      requests:
+        cpu: 25m
+        memory: 100Mi
+    startupProbe:
+      failureThreshold: 24
+      httpGet:
+        host: 127.0.0.1
+        path: /readyz
+        port: 2381
+        scheme: HTTP
+      initialDelaySeconds: 10
+      periodSeconds: 10
+      successThreshold: 1
+      timeoutSeconds: 15
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /var/lib/etcd
+      name: etcd-data
+    - mountPath: /etc/kubernetes/pki/etcd
+      name: etcd-certs
+  dnsPolicy: ClusterFirst
+  enableServiceLinks: true
+  hostNetwork: true
+  nodeName: controlplane
+  preemptionPolicy: PreemptLowerPriority
+  priority: 2000001000
+  priorityClassName: system-node-critical
+  restartPolicy: Always
+  schedulerName: default-scheduler
+  securityContext:
+    seccompProfile:
+      type: RuntimeDefault
+  terminationGracePeriodSeconds: 30
+  tolerations:
+  - effect: NoExecute
+    operator: Exists
+  volumes:
+  - hostPath:
+      path: /etc/kubernetes/pki/etcd
+      type: DirectoryOrCreate
+    name: etcd-certs
+  - hostPath:
+      path: /var/lib/etcd
+      type: DirectoryOrCreate
+    name: etcd-data
+status:
+  conditions:
+  - lastProbeTime: null
+    lastTransitionTime: "2025-02-11T11:43:49Z"
+    status: "True"
+    type: PodReadyToStartContainers
+  - lastProbeTime: null
+    lastTransitionTime: "2025-02-11T11:43:49Z"
+    status: "True"
+    type: Initialized
+  - lastProbeTime: null
+    lastTransitionTime: "2025-02-11T11:44:00Z"
+    status: "True"
+    type: Ready
+  - lastProbeTime: null
+    lastTransitionTime: "2025-02-11T11:44:00Z"
+    status: "True"
+    type: ContainersReady
+  - lastProbeTime: null
+    lastTransitionTime: "2025-02-11T11:43:49Z"
+    status: "True"
+    type: PodScheduled
+  containerStatuses:
+  - containerID: containerd://912d54b56de354794e7e58973102797721329dfbc16fdb25de4ff681410aff27
+    image: registry.k8s.io/etcd:3.5.15-0
+    imageID: registry.k8s.io/etcd@sha256:a6dc63e6e8cfa0307d7851762fa6b629afb18f28d8aa3fab5a6e91b4af60026a
+    lastState:
+      terminated:
+        containerID: containerd://47e2c96d8ae02c2b675900f50a5f75f5c10fdcb50b18d20c64350bb6180fcb01
+        exitCode: 255
+        finishedAt: "2025-02-11T11:27:00Z"
+        reason: Unknown
+        startedAt: "2025-01-28T16:19:06Z"
+    name: etcd
+    ready: true
+    restartCount: 2
+    started: true
+    state:
+      running:
+        startedAt: "2025-02-11T11:27:17Z"
+  hostIP: 172.30.1.2
+  hostIPs:
+  - ip: 172.30.1.2
+  phase: Running
+  podIP: 172.30.1.2
+  podIPs:
+  - ip: 172.30.1.2
+  qosClass: Burstable
+  startTime: "2025-02-11T11:43:49Z"
+
+$ ETCDCTL_API=3 etcdctl --endpoints=https://127.0.0.1:2379 endpoint status --write-out=table --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key
+{"level":"warn","ts":"2025-02-11T12:13:05.232Z","logger":"etcd-client","caller":"v3/retry_interceptor.go:62","msg":"retrying of unary invoker failed","target":"etcd-endpoints://0xc0002e0c40/#initially=[https://127.0.0.1:2379]","attempt":0,"error":"rpc error: code = DeadlineExceeded desc = latest balancer error: last connection error: connection error: desc = \"transport: authentication handshake failed: x509: certificate signed by unknown authority\""}
+Failed to get the status of endpoint https://127.0.0.1:2379 (context deadline exceeded)
++----------+----+---------+---------+-----------+------------+-----------+------------+--------------------+--------+
+| ENDPOINT | ID | VERSION | DB SIZE | IS LEADER | IS LEARNER | RAFT TERM | RAFT INDEX | RAFT APPLIED INDEX | ERRORS |
++----------+----+---------+---------+-----------+------------+-----------+------------+--------------------+--------+
++----------+----+---------+---------+-----------+------------+-----------+------------+--------------------+--------+
+
+$ ETCDCTL_API=3 etcdctl --endpoints=https://127.0.0.1:2379 endpoint status --write-out=table --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key --cacert=/etc/kubernetes/pki/etcd/ca.crt  # 增加了 CA 参数
++------------------------+------------------+---------+---------+-----------+------------+-----------+------------+--------------------+--------+
+|        ENDPOINT        |        ID        | VERSION | DB SIZE | IS LEADER | IS LEARNER | RAFT TERM | RAFT INDEX | RAFT APPLIED INDEX | ERRORS |
++------------------------+------------------+---------+---------+-----------+------------+-----------+------------+--------------------+--------+
+| https://127.0.0.1:2379 | 264d7b068180479b |  3.5.15 |  7.2 MB |      true |      false |         5 |       7012 |               7012 |        |
++------------------------+------------------+---------+---------+-----------+------------+-----------+------------+--------------------+--------+
+
+## 6. 检查 container runtime (Docker 或 containerd) ######################
+$ sudo systemctl status containerd.service
+● containerd.service - containerd container runtime
+     Loaded: loaded (/lib/systemd/system/containerd.service; enabled; vendor preset: enabled)
+     Active: active (running) since Tue 2025-02-11 13:52:25 UTC; 14min ago
+       Docs: https://containerd.io
+    Process: 673 ExecStartPre=/sbin/modprobe overlay (code=exited, status=0/SUCCESS)
+   Main PID: 676 (containerd)
+      Tasks: 123
+     Memory: 109.9M
+     CGroup: /system.slice/containerd.service
+             ├─ 676 /usr/bin/containerd
+             ├─1777 /usr/bin/containerd-shim-runc-v2 -namespace k8s.io -id 59dcf616b0a4d8ef4c20a518f0d4ba031a8935ef22aa38921bae97e314fe44d3 -address /run/containerd/containerd.sock
+             ├─1778 /usr/bin/containerd-shim-runc-v2 -namespace k8s.io -id 7da214d6618674a4808f09ed4db670440c3b0a60b75ce85dab52ddc763a5ce94 -address /run/containerd/containerd.sock
+             ├─1781 /usr/bin/containerd-shim-runc-v2 -namespace k8s.io -id e4b242f37513f75a37e0682bac345960070f1702ecca9352dea73fed18bf9572 -address /run/containerd/containerd.sock
+             ├─1799 /usr/bin/containerd-shim-runc-v2 -namespace k8s.io -id 109e3bd03077590438941feba58d3f163b9edbd51858b6df5b9b8c5a338ed06e -address /run/containerd/containerd.sock
+             ├─2517 /usr/bin/containerd-shim-runc-v2 -namespace k8s.io -id 2103e6b1f943e457bdf6bfd90e5ff085f44b723cb4c790a5cc4c98172f218e13 -address /run/containerd/containerd.sock
+             ├─2565 /usr/bin/containerd-shim-runc-v2 -namespace k8s.io -id a39609efa2fbeb39fbd2b451bc041102cbf110561485d62742f35a733be5f80b -address /run/containerd/containerd.sock
+             ├─3760 /usr/bin/containerd-shim-runc-v2 -namespace k8s.io -id 4dd757f349bdf876d1592ad9b73bfee6c5efb1289998f75472cdf898facedc3e -address /run/containerd/containerd.sock
+             └─4183 /usr/bin/containerd-shim-runc-v2 -namespace k8s.io -id 764d13ee0730c60a60b6bf3be500663d293251f96dfc7588acab7caa6b71758d -address /run/containerd/containerd.sock
+
+Feb 11 13:54:40 controlplane containerd[676]: 2025-02-11 13:54:40.367 [INFO][4531] dataplane_linux.go 520: CleanUpNamespace called with no netns name, ignoring. ContainerID="a10e7596c12e57d118895d47c8ee1bec3a05f16f9c9bbd43cc02f19054b6ee6a" iface="eth0" netns=""
+Feb 11 13:54:40 controlplane containerd[676]: 2025-02-11 13:54:40.367 [INFO][4531] k8s.go 583: Releasing IP address(es) ContainerID="a10e7596c12e57d118895d47c8ee1bec3a05f16f9c9bbd43cc02f19054b6ee6a"
+Feb 11 13:54:40 controlplane containerd[676]: 2025-02-11 13:54:40.367 [INFO][4531] utils.go 196: Calico CNI releasing IP address ContainerID="a10e7596c12e57d118895d47c8ee1bec3a05f16f9c9bbd43cc02f19054b6ee6a"
+Feb 11 13:54:40 controlplane containerd[676]: 2025-02-11 13:54:40.367 [INFO][4531] utils.go 214: Using dummy podCidrs to release the IPs ContainerID="a10e7596c12e57d118895d47c8ee1bec3a05f16f9c9bbd43cc02f19054b6ee6a" podCidrv4="0.0.0.0/0" podCidrv6="::/0"
+Feb 11 13:54:40 controlplane containerd[676]: 2025-02-11 13:54:40.368 [INFO][4531] utils.go 345: Calico CNI passing podCidr to host-local IPAM: 0.0.0.0/0 ContainerID="a10e7596c12e57d118895d47c8ee1bec3a05f16f9c9bbd43cc02f19054b6ee6a"
+Feb 11 13:54:40 controlplane containerd[676]: 2025-02-11 13:54:40.374 [INFO][4531] k8s.go 589: Teardown processing complete. ContainerID="a10e7596c12e57d118895d47c8ee1bec3a05f16f9c9bbd43cc02f19054b6ee6a"
+Feb 11 13:54:40 controlplane containerd[676]: time="2025-02-11T13:54:40.379627074Z" level=info msg="TearDown network for sandbox \"a10e7596c12e57d118895d47c8ee1bec3a05f16f9c9bbd43cc02f19054b6ee6a\" successfully"
+Feb 11 13:54:40 controlplane containerd[676]: time="2025-02-11T13:54:40.395434207Z" level=warning msg="Failed to get podSandbox status for container event for sandboxID \"a10e7596c12e57d118895d47c8ee1bec3a05f16f9c9bbd43cc02f19054b6ee6a\": an error occurred when try to find sandbox: not found. Sending the event with nil podSandboxStatus."
+Feb 11 13:54:40 controlplane containerd[676]: time="2025-02-11T13:54:40.395824835Z" level=info msg="RemovePodSandbox \"a10e7596c12e57d118895d47c8ee1bec3a05f16f9c9bbd43cc02f19054b6ee6a\" returns successfully"
+Feb 11 14:03:13 controlplane containerd[676]: time="2025-02-11T14:03:13.436751316Z" level=info msg="No cni config template is specified, wait for other system components to drop the config."
+
+## 7. 检查节点的 taint ######################
+$ kubectl describe nodes | grep Taints
+Taints:             node-role.kubernetes.io/control-plane:NoSchedule
+Taints:             <none>
+
+# 删除污点命令
+# $ kubectl taint nodes <node-name> node-role.kubernetes.io/control-plane:NoSchedule-
+
+###
+
+$ sudo systemctl restart kubelet.service
+
+$ sudo systemctl status kubelet.service
+● kubelet.service - kubelet: The Kubernetes Node Agent
+     Loaded: loaded (/lib/systemd/system/kubelet.service; enabled; vendor preset: enabled)
+    Drop-In: /usr/lib/systemd/system/kubelet.service.d
+             └─10-kubeadm.conf
+     Active: active (running) since Tue 2025-02-11 14:03:12 UTC; 15s ago
+       Docs: https://kubernetes.io/docs/
+   Main PID: 8010 (kubelet)
+      Tasks: 9 (limit: 2338)
+     Memory: 61.4M
+     CGroup: /system.slice/kubelet.service
+             └─8010 /usr/bin/kubelet --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf --co>
+Feb 11 14:03:13 controlplane kubelet[8010]: I0211 14:03:13.866052    8010 reconciler_common.go:245] "operationExecutor.VerifyControllerAttachedVo>
+Feb 11 14:03:13 controlplane kubelet[8010]: I0211 14:03:13.866259    8010 reconciler_common.go:245] "operationExecutor.VerifyControllerAttachedVo>
+Feb 11 14:03:13 controlplane kubelet[8010]: I0211 14:03:13.878484    8010 reconciler_common.go:245] "operationExecutor.VerifyControllerAttachedVo>
+Feb 11 14:03:13 controlplane kubelet[8010]: I0211 14:03:13.878976    8010 reconciler_common.go:245] "operationExecutor.VerifyControllerAttachedVo>
+Feb 11 14:03:13 controlplane kubelet[8010]: I0211 14:03:13.879326    8010 reconciler_common.go:245] "operationExecutor.VerifyControllerAttachedVo>
+Feb 11 14:03:13 controlplane kubelet[8010]: I0211 14:03:13.879591    8010 reconciler_common.go:245] "operationExecutor.VerifyControllerAttachedVo>
+Feb 11 14:03:13 controlplane kubelet[8010]: I0211 14:03:13.879837    8010 reconciler_common.go:245] "operationExecutor.VerifyControllerAttachedVo>
+Feb 11 14:03:13 controlplane kubelet[8010]: I0211 14:03:13.880117    8010 reconciler_common.go:245] "operationExecutor.VerifyControllerAttachedVo>
+Feb 11 14:03:13 controlplane kubelet[8010]: I0211 14:03:13.883482    8010 reconciler_common.go:245] "operationExecutor.VerifyControllerAttachedVo>
+Feb 11 14:03:13 controlplane kubelet[8010]: I0211 14:03:13.883896    8010 reconciler_common.go:245] "operationExecutor.VerifyControllerAttachedVo>
+
+$ kubectl get  nodes
+NAME           STATUS   ROLES           AGE   VERSION
+controlplane   Ready    control-plane   13d   v1.31.0
+node01         Ready    <none>          13d   v1.31.0
 ----
 
+TIP: 重启一下，竟然意外好了！神奇！
+
+关于节点的 `NotReady` 问题，大概有如下几个原因以及对应的排查命令：
+
+[%autowidth]
+|===
+|问题类别|检查命令
+
+|kubelet 异常
+|`systemctl status kubelet`
+
+|kube-proxy 问题
+|`kubectl get pods -n kube-system`
+
+|CNI 插件异常
+|`ls /etc/cni/net.d/`
+
+|etcd 失败
+|`kubectl get pods -n kube-system`
+
+|Docker/containerd 异常
+|`systemctl status docker` 或 `systemctl status containerd`
+
+|资源不足
+|`kubectl describe node <node-name>`
+
+|taints 影响调度
+|`kubectl describe node <node-name>`
+|===
 
 == Troubleshooting - ETCD Backup Issue
 
-[Troubleshooting - ETCD Backup Issue^]
+https://killercoda.com/sachin/course/CKA/etcd-backup-issue[Troubleshooting - ETCD Backup Issue^]
 
 ****
+something is not working at the moment on controlplane node(Cause NotReady state), check that and `etcd-controlplane` pod is running in `kube-system` environment, take backup and store it in `/opt/cluster_backup.db` file, and also store backup console output store it in `backup.txt`
 
+`ssh controlplane`
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ kubectl -n kube-system get pod
+NAME                                      READY   STATUS    RESTARTS        AGE
+calico-kube-controllers-94fb6bc47-rxh7x   1/1     Running   2 (5m15s ago)   13d
+canal-phldr                               2/2     Running   2 (5m15s ago)   13d
+canal-zl4tq                               2/2     Running   2 (5m15s ago)   13d
+coredns-57888bfdc7-685jj                  1/1     Running   1 (5m15s ago)   13d
+coredns-57888bfdc7-bbwzr                  1/1     Running   1 (5m15s ago)   13d
+etcd-controlplane                         1/1     Running   2 (5m15s ago)   13d
+kube-apiserver-controlplane               1/1     Running   2 (5m15s ago)   13d
+kube-controller-manager-controlplane      1/1     Running   2 (5m15s ago)   13d
+kube-proxy-2mfwz                          1/1     Running   2 (5m15s ago)   13d
+kube-proxy-z2ps8                          1/1     Running   1 (5m15s ago)   13d
+kube-scheduler-controlplane               1/1     Running   2 (5m15s ago)   13d
 
+$ kubectl exec -it etcd-controlplane -- sh
+Error from server (NotFound): pods "etcd-controlplane" not found
+
+$ kubectl -n kube-system exec -it etcd-controlplane -- sh
+error: Internal error occurred: error sending request: Post "https://172.30.1.2:10250/exec/kube-system/etcd-controlplane/etcd?command=sh&input=1&output=1&tty=1": dial tcp 172.30.1.2:10250: connect: connection refused
+
+$ ETCDCTL_API=3 etcdctl --endpoints=https://127.0.0.1:2379 endpoint status --write-out=table --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key --cacert=/etc/kubernetes/pki/etcd/ca.crt
++------------------------+------------------+---------+---------+-----------+------------+-----------+------------+--------------------+--------+
+|        ENDPOINT        |        ID        | VERSION | DB SIZE | IS LEADER | IS LEARNER | RAFT TERM | RAFT INDEX | RAFT APPLIED INDEX | ERRORS |
++------------------------+------------------+---------+---------+-----------+------------+-----------+------------+--------------------+--------+
+| https://127.0.0.1:2379 | 264d7b068180479b |  3.5.15 |  6.2 MB |      true |      false |         5 |       2889 |               2889 |        |
++------------------------+------------------+---------+---------+-----------+------------+-----------+------------+--------------------+--------+
+
+$ kubectl get nodes
+NAME           STATUS     ROLES           AGE   VERSION
+controlplane   NotReady   control-plane   13d   v1.31.0
+node01         Ready      <none>          13d   v1.31.0
+
+$ kubectl describe nodes controlplane
+Name:               controlplane
+Roles:              control-plane
+Labels:             beta.kubernetes.io/arch=amd64
+                    beta.kubernetes.io/os=linux
+                    kubernetes.io/arch=amd64
+                    kubernetes.io/hostname=controlplane
+                    kubernetes.io/os=linux
+                    node-role.kubernetes.io/control-plane=
+                    node.kubernetes.io/exclude-from-external-load-balancers=
+Annotations:        flannel.alpha.coreos.com/backend-data: {"VNI":1,"VtepMAC":"42:f3:52:39:a6:02"}
+                    flannel.alpha.coreos.com/backend-type: vxlan
+                    flannel.alpha.coreos.com/kube-subnet-manager: true
+                    flannel.alpha.coreos.com/public-ip: 172.30.1.2
+                    kubeadm.alpha.kubernetes.io/cri-socket: unix:///var/run/containerd/containerd.sock
+                    node.alpha.kubernetes.io/ttl: 0
+                    projectcalico.org/IPv4Address: 172.30.1.2/24
+                    projectcalico.org/IPv4IPIPTunnelAddr: 192.168.0.1
+                    volumes.kubernetes.io/controller-managed-attach-detach: true
+CreationTimestamp:  Tue, 28 Jan 2025 16:04:13 +0000
+Taints:             node.kubernetes.io/unreachable:NoExecute
+                    node-role.kubernetes.io/control-plane:NoSchedule
+                    node.kubernetes.io/unreachable:NoSchedule
+Unschedulable:      false
+Lease:
+  HolderIdentity:  controlplane
+  AcquireTime:     <unset>
+  RenewTime:       Tue, 11 Feb 2025 14:19:33 +0000
+Conditions:
+  Type                 Status    LastHeartbeatTime                 LastTransitionTime                Reason              Message
+  ----                 ------    -----------------                 ------------------                ------              -------
+  NetworkUnavailable   False     Tue, 11 Feb 2025 14:17:05 +0000   Tue, 11 Feb 2025 14:17:05 +0000   FlannelIsUp         Flannel is running on this node
+  MemoryPressure       Unknown   Tue, 11 Feb 2025 14:16:49 +0000   Tue, 11 Feb 2025 14:20:15 +0000   NodeStatusUnknown   Kubelet stopped posting node status.
+  DiskPressure         Unknown   Tue, 11 Feb 2025 14:16:49 +0000   Tue, 11 Feb 2025 14:20:15 +0000   NodeStatusUnknown   Kubelet stopped posting node status.
+  PIDPressure          Unknown   Tue, 11 Feb 2025 14:16:49 +0000   Tue, 11 Feb 2025 14:20:15 +0000   NodeStatusUnknown   Kubelet stopped posting node status.
+  Ready                Unknown   Tue, 11 Feb 2025 14:16:49 +0000   Tue, 11 Feb 2025 14:20:15 +0000   NodeStatusUnknown   Kubelet stopped posting node status.
+Addresses:
+  InternalIP:  172.30.1.2
+  Hostname:    controlplane
+Capacity:
+  cpu:                1
+  ephemeral-storage:  20134592Ki
+  hugepages-2Mi:      0
+  memory:             2030940Ki
+  pods:               110
+Allocatable:
+  cpu:                1
+  ephemeral-storage:  19586931083
+  hugepages-2Mi:      0
+  memory:             1928540Ki
+  pods:               110
+System Info:
+  Machine ID:                 388a2d0f867a4404bc12a0093bd9ed8d
+  System UUID:                8d237551-ac0a-43de-a1a6-4f0c70c32c61
+  Boot ID:                    533e1434-95b5-4104-b082-1555c3e5d9b6
+  Kernel Version:             5.4.0-131-generic
+  OS Image:                   Ubuntu 20.04.5 LTS
+  Operating System:           linux
+  Architecture:               amd64
+  Container Runtime Version:  containerd://1.7.22
+  Kubelet Version:            v1.31.0
+  Kube-Proxy Version:
+PodCIDR:                      192.168.0.0/24
+PodCIDRs:                     192.168.0.0/24
+Non-terminated Pods:          (8 in total)
+  Namespace                   Name                                       CPU Requests  CPU Limits  Memory Requests  Memory Limits  Age
+  ---------                   ----                                       ------------  ----------  ---------------  -------------  ---
+  kube-system                 calico-kube-controllers-94fb6bc47-rxh7x    0 (0%)        0 (0%)      0 (0%)           0 (0%)         13d
+  kube-system                 canal-zl4tq                                25m (2%)      0 (0%)      0 (0%)           0 (0%)         13d
+  kube-system                 etcd-controlplane                          25m (2%)      0 (0%)      100Mi (5%)       0 (0%)         13d
+  kube-system                 kube-apiserver-controlplane                50m (5%)      0 (0%)      0 (0%)           0 (0%)         13d
+  kube-system                 kube-controller-manager-controlplane       25m (2%)      0 (0%)      0 (0%)           0 (0%)         13d
+  kube-system                 kube-proxy-2mfwz                           0 (0%)        0 (0%)      0 (0%)           0 (0%)         13d
+  kube-system                 kube-scheduler-controlplane                25m (2%)      0 (0%)      0 (0%)           0 (0%)         13d
+  local-path-storage          local-path-provisioner-6c5cff8948-2x89z    0 (0%)        0 (0%)      0 (0%)           0 (0%)         13d
+Allocated resources:
+  (Total limits may be over 100 percent, i.e., overcommitted.)
+  Resource           Requests    Limits
+  --------           --------    ------
+  cpu                150m (15%)  0 (0%)
+  memory             100Mi (5%)  0 (0%)
+  ephemeral-storage  0 (0%)      0 (0%)
+  hugepages-2Mi      0 (0%)      0 (0%)
+Events:
+  Type     Reason                   Age                From             Message
+  ----     ------                   ----               ----             -------
+  Normal   Starting                 9m37s              kube-proxy
+  Normal   Starting                 13d                kube-proxy
+  Normal   Starting                 13d                kube-proxy
+  Normal   Starting                 13d                kubelet          Starting kubelet.
+  Warning  CgroupV1                 13d                kubelet          Cgroup v1 support is in maintenance mode, please migrate to Cgroup v2.
+  Normal   NodeAllocatableEnforced  13d                kubelet          Updated Node Allocatable limit across pods
+  Normal   NodeHasSufficientMemory  13d                kubelet          Node controlplane status is now: NodeHasSufficientMemory
+  Normal   NodeHasNoDiskPressure    13d                kubelet          Node controlplane status is now: NodeHasNoDiskPressure
+  Normal   NodeHasSufficientPID     13d                kubelet          Node controlplane status is now: NodeHasSufficientPID
+  Normal   RegisteredNode           13d                node-controller  Node controlplane event: Registered Node controlplane in Controller
+  Normal   NodeReady                13d                kubelet          Node controlplane status is now: NodeReady
+  Normal   RegisteredNode           13d                node-controller  Node controlplane event: Registered Node controlplane in Controller
+  Warning  CgroupV1                 13d                kubelet          Cgroup v1 support is in maintenance mode, please migrate to Cgroup v2.
+  Normal   NodeHasSufficientMemory  13d (x8 over 13d)  kubelet          Node controlplane status is now: NodeHasSufficientMemory
+  Normal   NodeHasNoDiskPressure    13d (x7 over 13d)  kubelet          Node controlplane status is now: NodeHasNoDiskPressure
+  Normal   NodeHasSufficientPID     13d (x7 over 13d)  kubelet          Node controlplane status is now: NodeHasSufficientPID
+  Normal   NodeAllocatableEnforced  13d                kubelet          Updated Node Allocatable limit across pods
+  Normal   Starting                 13d                kubelet          Starting kubelet.
+  Normal   RegisteredNode           13d                node-controller  Node controlplane event: Registered Node controlplane in Controller
+  Warning  CgroupV1                 10m                kubelet          Cgroup v1 support is in maintenance mode, please migrate to Cgroup v2.
+  Normal   Starting                 10m                kubelet          Starting kubelet.
+  Warning  InvalidDiskCapacity      10m                kubelet          invalid capacity 0 on image filesystem
+  Normal   NodeHasSufficientMemory  10m (x7 over 10m)  kubelet          Node controlplane status is now: NodeHasSufficientMemory
+  Normal   NodeHasNoDiskPressure    10m (x7 over 10m)  kubelet          Node controlplane status is now: NodeHasNoDiskPressure
+  Normal   NodeHasSufficientPID     10m (x7 over 10m)  kubelet          Node controlplane status is now: NodeHasSufficientPID
+  Normal   NodeAllocatableEnforced  10m                kubelet          Updated Node Allocatable limit across pods
+  Normal   RegisteredNode           9m25s              node-controller  Node controlplane event: Registered Node controlplane in Controller
+  Normal   NodeNotReady             6m19s              node-controller  Node controlplane status is now: NodeNotReady
+
+$ sudo systemctl status kubelet.service
+● kubelet.service - kubelet: The Kubernetes Node Agent
+     Loaded: loaded (/lib/systemd/system/kubelet.service; enabled; vendor preset: enabled)
+    Drop-In: /usr/lib/systemd/system/kubelet.service.d
+             └─10-kubeadm.conf
+     Active: inactive (dead) since Tue 2025-02-11 14:19:40 UTC; 7min ago
+       Docs: https://kubernetes.io/docs/
+    Process: 717 ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELET_KUBEADM_ARGS $KUBELET_EXTRA_ARGS (code=exited,>
+   Main PID: 717 (code=exited, status=0/SUCCESS)
+
+Feb 11 14:17:20 controlplane kubelet[717]: E0211 14:17:20.130711     717 kuberuntime_manager.go:1477] "Failed to stop sandbox" podSandboxID={"Typ>
+Feb 11 14:17:20 controlplane kubelet[717]: E0211 14:17:20.641359     717 kuberuntime_manager.go:1077] "killPodWithSyncResult failed" err="failed >
+Feb 11 14:17:20 controlplane kubelet[717]: E0211 14:17:20.644886     717 pod_workers.go:1301] "Error syncing pod, skipping" err="failed to \"Kill>
+Feb 11 14:17:21 controlplane kubelet[717]: E0211 14:17:21.209751     717 log.go:32] "StopPodSandbox from runtime service failed" err="rpc error: >
+Feb 11 14:17:21 controlplane kubelet[717]: E0211 14:17:21.209901     717 kuberuntime_manager.go:1477] "Failed to stop sandbox" podSandboxID={"Typ>
+Feb 11 14:17:21 controlplane kubelet[717]: E0211 14:17:21.212353     717 kuberuntime_manager.go:1077] "killPodWithSyncResult failed" err="failed >
+Feb 11 14:17:21 controlplane kubelet[717]: E0211 14:17:21.212405     717 pod_workers.go:1301] "Error syncing pod, skipping" err="failed to \"Kill>
+Feb 11 14:19:40 controlplane systemd[1]: Stopping kubelet: The Kubernetes Node Agent...
+Feb 11 14:19:40 controlplane systemd[1]: kubelet.service: Succeeded.
+Feb 11 14:19:40 controlplane systemd[1]: Stopped kubelet: The Kubernetes Node Agent.
+
+$ cat /usr/lib/systemd/system/kubelet.service.d/10-kubeadm.conf
+# Note: This dropin only works with kubeadm and kubelet v1.11+
+[Service]
+Environment="KUBELET_KUBECONFIG_ARGS=--bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf"
+Environment="KUBELET_CONFIG_ARGS=--config=/var/lib/kubelet/config.yaml"
+# This is a file that "kubeadm init" and "kubeadm join" generates at runtime, populating the KUBELET_KUBEADM_ARGS variable dynamically
+EnvironmentFile=-/var/lib/kubelet/kubeadm-flags.env
+# This is a file that the user can use for overrides of the kubelet args as a last resort. Preferably, the user should use
+# the .NodeRegistration.KubeletExtraArgs object in the configuration files instead. KUBELET_EXTRA_ARGS should be sourced from this file.
+EnvironmentFile=-/etc/default/kubelet
+ExecStart=
+ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELET_KUBEADM_ARGS $KUBELET_EXTRA_ARGS
+
+$ cat /etc/kubernetes/kubelet.conf
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority-data: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURCVENDQWUyZ0F3SUJBZ0lJSDdONzMyNVpVZWN3RFFZSktvWklodmNOQVFFTEJRQXdGVEVUTUJFR0ExVUUKQXhNS2EzVmlaWEp1WlhSbGN6QWVGdzB5TlRBeE1qZ3hOVFU0TlRGYUZ3MHpOVEF4TWpZeE5qQXpOVEZhTUJVeApFekFSQmdOVkJBTVRDbXQxWW1WeWJtVjBaWE13Z2dFaU1BMEdDU3FHU0liM0RRRUJBUVVBQTRJQkR3QXdnZ0VLCkFvSUJBUURkcE1QZW90TFZpN2dOcUY1Y25WQk5NdmJtUkRwRGJQQXkxSkd1dDlkVDh2SExiZFdVd2tRTFdmVE4KYnNSTkwxL1pvQXNCYmtCYTlLZHVnQjNzcDRxZ1llTjZiQmpOSG5GSkNNNEFaRGZzRFdUNHpoUzRONTUrVjdQLwpEcDZkRWtMSm1YMHQrN1NkWkFBQVdxenJUVGdhZmRCL1BOMnpwRkMrbFdNSFpBYzlQbHVPT056Y1dYOXgzNTFvCmhhMEZJdVZaYTU5cnlyWTZ2ZjRrVmJ3UmNCRWxnQUdhcGIxWGpBeWdlSzdaa3VhRTA1aGFnOHNGandsWUoyVjAKeDBuSlFVSDFJc0RnL3JkZHVYYzhnYUMzUC9BOTNlYVV4NkdBZG5LRWl0aENxT1ZsRERrZUJqWjZzRDRRZ0IrNApWL3Vnd0Zzc2Zocit2VXBKZjc4MjNvVkxpeWVsQWdNQkFBR2pXVEJYTUE0R0ExVWREd0VCL3dRRUF3SUNwREFQCkJnTlZIUk1CQWY4RUJUQURBUUgvTUIwR0ExVWREZ1FXQkJUR1E0VGVvMmRBWDB0ZGVyZTlUQnlmK24xdG1EQVYKQmdOVkhSRUVEakFNZ2dwcmRXSmxjbTVsZEdWek1BMEdDU3FHU0liM0RRRUJDd1VBQTRJQkFRQXJjMmhVRk1XSwpaQ0M5Yi9nZk1uTW05MUJoclBIbUUrU0xIcHlaWHJEWTh6TURZSFNpK3NINHdVdFlCd0pyQlgxbStwU3lWTmJ6Ckdmd1hvWHZzMElLbGhpL1pvcFdFYWJuSWMrRW9icEwzVDVSRCtMYjV6VW5HT3FsYm9wekZiQ0xER1hsNnQ2aXMKdzhTM1BDWXJnNUNkenBoTkNLUjY2aVhKbk1YbFlmVE1FQXU1N2pVWFlmbTZCejBnVnhXbHdrVXo5MlZvQVlsago5VlhzdmZIVlp1MGNXZG5KbXBkTTRxZHliT0tkcVFPN0tlbmh6YXNmRHNRYzlRRmxPR1pIbkQ2OHAxY0E5MXZtCk1Iak83WERIT0VqNzV2c21NREU2dGM3Wmprd0tKRjJuSURNVVZBZHgwc1JhQmY0VVpNOFVuWFZTZ0lwMWJsSlgKZHpxRFE4c0xKWnFZCi0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+    server: https://172.30.1.2:6443
+  name: kubernetes
+contexts:
+- context:
+    cluster: kubernetes
+    user: system:node:controlplane
+  name: system:node:controlplane@kubernetes
+current-context: system:node:controlplane@kubernetes
+kind: Config
+preferences: {}
+users:
+- name: system:node:controlplane
+  user:
+    client-certificate: /var/lib/kubelet/pki/kubelet-client-current.pem
+    client-key: /var/lib/kubelet/pki/kubelet-client-current.pem
+
+$ cat /var/lib/kubelet/config.yaml
+apiVersion: kubelet.config.k8s.io/v1beta1
+authentication:
+  anonymous:
+    enabled: false
+  webhook:
+    cacheTTL: 0s
+    enabled: true
+  x509:
+    clientCAFile: /etc/kubernetes/pki/ca.crt
+authorization:
+  mode: Webhook
+  webhook:
+    cacheAuthorizedTTL: 0s
+    cacheUnauthorizedTTL: 0s
+cgroupDriver: systemd
+clusterDNS:
+- 10.96.0.10
+clusterDomain: cluster.local
+containerRuntimeEndpoint: ""
+cpuManagerReconcilePeriod: 0s
+evictionPressureTransitionPeriod: 0s
+fileCheckFrequency: 0s
+healthzBindAddress: 127.0.0.1
+healthzPort: 10248
+httpCheckFrequency: 0s
+imageMaximumGCAge: 0s
+imageMinimumGCAge: 0s
+kind: KubeletConfiguration
+logging:
+  flushFrequency: 0
+  options:
+    json:
+      infoBufferSize: "0"
+    text:
+      infoBufferSize: "0"
+  verbosity: 0
+memorySwap: {}
+nodeStatusReportFrequency: 0s
+nodeStatusUpdateFrequency: 0s
+resolvConf: /run/systemd/resolve/resolv.conf
+rotateCertificates: true
+runtimeRequestTimeout: 0s
+shutdownGracePeriod: 0s
+shutdownGracePeriodCriticalPods: 0s
+staticPodPath: /etc/kubernetes/manifests
+streamingConnectionIdleTimeout: 0s
+syncFrequency: 0s
+volumeStatsAggPeriod: 0s
+
+$ ETCDCTL_API=3 etcdctl --endpoints=https://127.0.0.1:2379 --cert=/etc/kubernetes/pki/etcd/server.crt --key=/etc/kubernetes/pki/etcd/server.key --cacert=/etc/kubernetes/pki/etcd/ca.crt snapshot save /opt/cluster_backup.db  | tee /opt/backup.txt
+{"level":"info","ts":1739284249.253456,"caller":"snapshot/v3_snapshot.go:68","msg":"created temporary db file","path":"/opt/cluster_backup.db.part"}
+{"level":"info","ts":1739284249.2617893,"logger":"client","caller":"v3/maintenance.go:211","msg":"opened snapshot stream; downloading"}
+{"level":"info","ts":1739284249.262126,"caller":"snapshot/v3_snapshot.go:76","msg":"fetching snapshot","endpoint":"https://127.0.0.1:2379"}
+{"level":"info","ts":1739284249.4180262,"logger":"client","caller":"v3/maintenance.go:219","msg":"completed snapshot read; closing"}
+{"level":"info","ts":1739284249.4338531,"caller":"snapshot/v3_snapshot.go:91","msg":"fetched snapshot","endpoint":"https://127.0.0.1:2379","size":"7.1 MB","took":"now"}
+{"level":"info","ts":1739284249.4340887,"caller":"snapshot/v3_snapshot.go:100","msg":"saved","path":"/opt/cluster_backup.db"}
+Snapshot saved at /opt/cluster_backup.db
+
+
+$ kubectl get pods -n kube-system | grep kube-apiserver
+kube-apiserver-controlplane               1/1     Running       2 (16m ago)   13d
+
+$ sudo systemctl status kubelet
+● kubelet.service - kubelet: The Kubernetes Node Agent
+     Loaded: loaded (/lib/systemd/system/kubelet.service; enabled; vendor preset: enabled)
+    Drop-In: /usr/lib/systemd/system/kubelet.service.d
+             └─10-kubeadm.conf
+     Active: inactive (dead) since Tue 2025-02-11 14:19:40 UTC; 13min ago
+       Docs: https://kubernetes.io/docs/
+    Process: 717 ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELET_KUBEADM_ARGS $KUBELET_EXTRA_ARGS (code=>
+   Main PID: 717 (code=exited, status=0/SUCCESS)
+
+Feb 11 14:17:20 controlplane kubelet[717]: E0211 14:17:20.130711     717 kuberuntime_manager.go:1477] "Failed to stop sandbox" podSandboxI>
+Feb 11 14:17:20 controlplane kubelet[717]: E0211 14:17:20.641359     717 kuberuntime_manager.go:1077] "killPodWithSyncResult failed" err=">
+Feb 11 14:17:20 controlplane kubelet[717]: E0211 14:17:20.644886     717 pod_workers.go:1301] "Error syncing pod, skipping" err="failed to>
+Feb 11 14:17:21 controlplane kubelet[717]: E0211 14:17:21.209751     717 log.go:32] "StopPodSandbox from runtime service failed" err="rpc >
+Feb 11 14:17:21 controlplane kubelet[717]: E0211 14:17:21.209901     717 kuberuntime_manager.go:1477] "Failed to stop sandbox" podSandboxI>
+Feb 11 14:17:21 controlplane kubelet[717]: E0211 14:17:21.212353     717 kuberuntime_manager.go:1077] "killPodWithSyncResult failed" err=">
+Feb 11 14:17:21 controlplane kubelet[717]: E0211 14:17:21.212405     717 pod_workers.go:1301] "Error syncing pod, skipping" err="failed to>
+Feb 11 14:19:40 controlplane systemd[1]: Stopping kubelet: The Kubernetes Node Agent...
+Feb 11 14:19:40 controlplane systemd[1]: kubelet.service: Succeeded.
+Feb 11 14:19:40 controlplane systemd[1]: Stopped kubelet: The Kubernetes Node Agent.
+
+$ sudo systemctl restart kubelet.service
+
+$ sudo systemctl status kubelet
+● kubelet.service - kubelet: The Kubernetes Node Agent
+     Loaded: loaded (/lib/systemd/system/kubelet.service; enabled; vendor preset: enabled)
+    Drop-In: /usr/lib/systemd/system/kubelet.service.d
+             └─10-kubeadm.conf
+     Active: active (running) since Tue 2025-02-11 14:33:32 UTC; 3s ago
+       Docs: https://kubernetes.io/docs/
+   Main PID: 7121 (kubelet)
+      Tasks: 10 (limit: 2338)
+     Memory: 64.0M
+     CGroup: /system.slice/kubelet.service
+             └─7121 /usr/bin/kubelet --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.co>
+Feb 11 14:33:35 controlplane kubelet[7121]: I0211 14:33:35.010902    7121 scope.go:117] "RemoveContainer" containerID="e383cd653371b1f67e2>
+Feb 11 14:33:35 controlplane kubelet[7121]: I0211 14:33:35.266713    7121 reconciler_common.go:159] "operationExecutor.UnmountVolume start>
+Feb 11 14:33:35 controlplane kubelet[7121]: I0211 14:33:35.267086    7121 reconciler_common.go:159] "operationExecutor.UnmountVolume start>
+Feb 11 14:33:35 controlplane kubelet[7121]: I0211 14:33:35.267283    7121 reconciler_common.go:159] "operationExecutor.UnmountVolume start>
+Feb 11 14:33:35 controlplane kubelet[7121]: I0211 14:33:35.270896    7121 operation_generator.go:803] UnmountVolume.TearDown succeeded for>
+Feb 11 14:33:35 controlplane kubelet[7121]: I0211 14:33:35.292394    7121 operation_generator.go:803] UnmountVolume.TearDown succeeded for>
+Feb 11 14:33:35 controlplane kubelet[7121]: I0211 14:33:35.293432    7121 operation_generator.go:803] UnmountVolume.TearDown succeeded for>
+Feb 11 14:33:35 controlplane kubelet[7121]: I0211 14:33:35.367884    7121 reconciler_common.go:288] "Volume detached for volume \"kube-api>
+Feb 11 14:33:35 controlplane kubelet[7121]: I0211 14:33:35.368182    7121 reconciler_common.go:288] "Volume detached for volume \"config-v>
+Feb 11 14:33:35 controlplane kubelet[7121]: I0211 14:33:35.368310    7121 reconciler_common.go:288] "Volume detached for volume \"kube-api>
+
+$ kubectl get nodes
+NAME           STATUS   ROLES           AGE   VERSION
+controlplane   Ready    control-plane   13d   v1.31.0
+node01         Ready    <none>          13d   v1.31.0
+# 重启，系统恢复正常
 ----
+
+NOTE: 系统恢复正常，备份也正常保存，日志也有。但是，检查没通过。
 
 
 == Troubleshooting - Controller Manager Issue
 
-[Troubleshooting - Controller Manager Issue^]
+https://killercoda.com/sachin/course/CKA/controller-manager-issue[Troubleshooting - Controller Manager Issue^]
 
 ****
+`video-app` deployment replicas 0. fix this issue
 
+expected: 2 replicas
 ****
 
 [source%nowrap,bash,{source_attr}]
 ----
 # @author D瓜哥 · https://www.diguage.com
 
+$ kubectl get deployments.apps video-app -o wide
+NAME        READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES        SELECTOR
+video-app   0/2     0            0           94s   redis        redis:7.2.1   app=video-app
 
+$ kubectl describe deployments.apps video-app
+Name:                   video-app
+Namespace:              default
+CreationTimestamp:      Wed, 12 Feb 2025 13:32:03 +0000
+Labels:                 app=video-app
+Annotations:            <none>
+Selector:               app=video-app
+Replicas:               2 desired | 0 updated | 0 total | 0 available | 0 unavailable
+StrategyType:           RollingUpdate
+MinReadySeconds:        0
+RollingUpdateStrategy:  25% max unavailable, 25% max surge
+Pod Template:
+  Labels:  app=video-app
+  Containers:
+   redis:
+    Image:         redis:7.2.1
+    Port:          <none>
+    Host Port:     <none>
+    Environment:   <none>
+    Mounts:        <none>
+  Volumes:         <none>
+  Node-Selectors:  <none>
+  Tolerations:     <none>
+Events:            <none>
+
+$ kubectl get deployments.apps video-app -o yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: "2025-02-12T13:32:03Z"
+  generation: 1
+  labels:
+    app: video-app
+  name: video-app
+  namespace: default
+  resourceVersion: "2031"
+  uid: 6bb0d745-f901-4f19-abc8-52007c724c77
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 2
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: video-app
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: video-app
+    spec:
+      containers:
+      - image: redis:7.2.1
+        imagePullPolicy: IfNotPresent
+        name: redis
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+status: {}
+
+$ kubectl get nodes
+NAME           STATUS   ROLES           AGE   VERSION
+controlplane   Ready    control-plane   20h   v1.31.0
+node01         Ready    <none>          20h   v1.31.0
+
+$ kubectl get nodes -o wide
+NAME           STATUS   ROLES           AGE   VERSION   INTERNAL-IP   EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION      CONTAINER-RUNTIME
+controlplane   Ready    control-plane   20h   v1.31.0   172.30.1.2    <none>        Ubuntu 20.04.5 LTS   5.4.0-131-generic   containerd://1.7.22
+node01         Ready    <none>          20h   v1.31.0   172.30.2.2    <none>        Ubuntu 20.04.5 LTS   5.4.0-131-generic   containerd://1.7.22
+
+$ kubectl describe nodes | grep Taints
+Taints:             node-role.kubernetes.io/control-plane:NoSchedule
+Taints:             <none>
+
+$ kubectl get componentstatuses
+Warning: v1 ComponentStatus is deprecated in v1.19+
+NAME                 STATUS      MESSAGE                                                                                        ERROR
+controller-manager   Unhealthy   Get "https://127.0.0.1:10257/healthz": dial tcp 127.0.0.1:10257: connect: connection refused
+scheduler            Healthy     ok
+etcd-0               Healthy     ok
+
+$ kubectl get pods -n kube-system | grep kube-controller-manager
+kube-controller-manager-controlplane      0/1     CrashLoopBackOff   7 (2m22s ago)   13m
+
+$ kubectl -n kube-system describe pod kube-controller-manager-controlplane
+Name:                 kube-controller-manager-controlplane
+Namespace:            kube-system
+Priority:             2000001000
+Priority Class Name:  system-node-critical
+Node:                 controlplane/172.30.1.2
+Start Time:           Wed, 12 Feb 2025 13:31:16 +0000
+Labels:               component=kube-controller-manager
+                      tier=control-plane
+Annotations:          kubernetes.io/config.hash: b0c098fd6896ecf1d8a30f03b739da5f
+                      kubernetes.io/config.mirror: b0c098fd6896ecf1d8a30f03b739da5f
+                      kubernetes.io/config.seen: 2025-02-12T13:32:02.867060432Z
+                      kubernetes.io/config.source: file
+Status:               Running
+SeccompProfile:       RuntimeDefault
+IP:                   172.30.1.2
+IPs:
+  IP:           172.30.1.2
+Controlled By:  Node/controlplane
+Containers:
+  kube-controller-manager:
+    Container ID:  containerd://a5ff61b46d26608c4f4c301161cde11aaf1eb615abfcb57fcd441a6c3ead7b35
+    Image:         registry.k8s.io/kube-controller-manager:v1.31.0
+    Image ID:      registry.k8s.io/kube-controller-manager@sha256:f6f3c33dda209e8434b83dacf5244c03b59b0018d93325ff21296a142b68497d
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      kube-controller-manegaar
+      --allocate-node-cidrs=true
+      --authentication-kubeconfig=/etc/kubernetes/controller-manager.conf
+      --authorization-kubeconfig=/etc/kubernetes/controller-manager.conf
+      --bind-address=127.0.0.1
+      --client-ca-file=/etc/kubernetes/pki/ca.crt
+      --cluster-cidr=192.168.0.0/16
+      --cluster-name=kubernetes
+      --cluster-signing-cert-file=/etc/kubernetes/pki/ca.crt
+      --cluster-signing-key-file=/etc/kubernetes/pki/ca.key
+      --controllers=*,bootstrapsigner,tokencleaner
+      --kubeconfig=/etc/kubernetes/controller-manager.conf
+      --leader-elect=true
+      --requestheader-client-ca-file=/etc/kubernetes/pki/front-proxy-ca.crt
+      --root-ca-file=/etc/kubernetes/pki/ca.crt
+      --service-account-private-key-file=/etc/kubernetes/pki/sa.key
+      --service-cluster-ip-range=10.96.0.0/12
+      --use-service-account-credentials=true
+    State:          Waiting
+      Reason:       CrashLoopBackOff
+    Last State:     Terminated
+      Reason:       StartError
+      Message:      failed to create containerd task: failed to create shim task: OCI runtime create failed: runc create failed: unable to start container process: exec: "kube-controller-manegaar": executable file not found in $PATH: unknown
+      Exit Code:    128
+      Started:      Thu, 01 Jan 1970 00:00:00 +0000
+      Finished:     Wed, 12 Feb 2025 13:43:09 +0000
+    Ready:          False
+    Restart Count:  7
+    Requests:
+      cpu:        25m
+    Liveness:     http-get https://127.0.0.1:10257/healthz delay=10s timeout=15s period=10s #success=1 #failure=8
+    Startup:      http-get https://127.0.0.1:10257/healthz delay=10s timeout=15s period=10s #success=1 #failure=24
+    Environment:  <none>
+    Mounts:
+      /etc/ca-certificates from etc-ca-certificates (ro)
+      /etc/kubernetes/controller-manager.conf from kubeconfig (ro)
+      /etc/kubernetes/pki from k8s-certs (ro)
+      /etc/ssl/certs from ca-certs (ro)
+      /usr/libexec/kubernetes/kubelet-plugins/volume/exec from flexvolume-dir (rw)
+      /usr/local/share/ca-certificates from usr-local-share-ca-certificates (ro)
+      /usr/share/ca-certificates from usr-share-ca-certificates (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True
+  Initialized                 True
+  Ready                       False
+  ContainersReady             False
+  PodScheduled                True
+Volumes:
+  ca-certs:
+    Type:          HostPath (bare host directory volume)
+    Path:          /etc/ssl/certs
+    HostPathType:  DirectoryOrCreate
+  etc-ca-certificates:
+    Type:          HostPath (bare host directory volume)
+    Path:          /etc/ca-certificates
+    HostPathType:  DirectoryOrCreate
+  flexvolume-dir:
+    Type:          HostPath (bare host directory volume)
+    Path:          /usr/libexec/kubernetes/kubelet-plugins/volume/exec
+    HostPathType:  DirectoryOrCreate
+  k8s-certs:
+    Type:          HostPath (bare host directory volume)
+    Path:          /etc/kubernetes/pki
+    HostPathType:  DirectoryOrCreate
+  kubeconfig:
+    Type:          HostPath (bare host directory volume)
+    Path:          /etc/kubernetes/controller-manager.conf
+    HostPathType:  FileOrCreate
+  usr-local-share-ca-certificates:
+    Type:          HostPath (bare host directory volume)
+    Path:          /usr/local/share/ca-certificates
+    HostPathType:  DirectoryOrCreate
+  usr-share-ca-certificates:
+    Type:          HostPath (bare host directory volume)
+    Path:          /usr/share/ca-certificates
+    HostPathType:  DirectoryOrCreate
+QoS Class:         Burstable
+Node-Selectors:    <none>
+Tolerations:       :NoExecute op=Exists
+Events:
+  Type     Reason   Age                   From     Message
+  ----     ------   ----                  ----     -------
+  Normal   Pulled   12m (x4 over 13m)     kubelet  Container image "registry.k8s.io/kube-controller-manager:v1.31.0" already present on machine
+  Normal   Created  12m (x4 over 13m)     kubelet  Created container kube-controller-manager
+  Warning  Failed   12m (x4 over 13m)     kubelet  Error: failed to create containerd task: failed to create shim task: OCI runtime create failed: runc create failed: unable to start container process: exec: "kube-controller-manegaar": executable file not found in $PATH: unknown
+  Warning  BackOff  3m36s (x56 over 13m)  kubelet  Back-off restarting failed container kube-controller-manager in pod kube-controller-manager-controlplane_kube-system(b0c098fd6896ecf1d8a30f03b739da5f)
+# 从这里可以看出：大概率是由于命令写错了。
+
+$ cat /etc/kubernetes/manifests/kube-controller-manager.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  labels:
+    component: kube-controller-manager
+    tier: control-plane
+  name: kube-controller-manager
+  namespace: kube-system
+spec:
+  containers:
+  - command:
+    - kube-controller-manegaar
+    - --allocate-node-cidrs=true
+    - --authentication-kubeconfig=/etc/kubernetes/controller-manager.conf
+    - --authorization-kubeconfig=/etc/kubernetes/controller-manager.conf
+    - --bind-address=127.0.0.1
+    - --client-ca-file=/etc/kubernetes/pki/ca.crt
+    - --cluster-cidr=192.168.0.0/16
+    - --cluster-name=kubernetes
+    - --cluster-signing-cert-file=/etc/kubernetes/pki/ca.crt
+    - --cluster-signing-key-file=/etc/kubernetes/pki/ca.key
+    - --controllers=*,bootstrapsigner,tokencleaner
+    - --kubeconfig=/etc/kubernetes/controller-manager.conf
+    - --leader-elect=true
+    - --requestheader-client-ca-file=/etc/kubernetes/pki/front-proxy-ca.crt
+    - --root-ca-file=/etc/kubernetes/pki/ca.crt
+    - --service-account-private-key-file=/etc/kubernetes/pki/sa.key
+    - --service-cluster-ip-range=10.96.0.0/12
+    - --use-service-account-credentials=true
+    image: registry.k8s.io/kube-controller-manager:v1.31.0
+    imagePullPolicy: IfNotPresent
+    livenessProbe:
+      failureThreshold: 8
+      httpGet:
+        host: 127.0.0.1
+        path: /healthz
+        port: 10257
+        scheme: HTTPS
+      initialDelaySeconds: 10
+      periodSeconds: 10
+      timeoutSeconds: 15
+    name: kube-controller-manager
+    resources:
+      requests:
+        cpu: 25m
+    startupProbe:
+      failureThreshold: 24
+      httpGet:
+        host: 127.0.0.1
+        path: /healthz
+        port: 10257
+        scheme: HTTPS
+      initialDelaySeconds: 10
+      periodSeconds: 10
+      timeoutSeconds: 15
+    volumeMounts:
+    - mountPath: /etc/ssl/certs
+      name: ca-certs
+      readOnly: true
+    - mountPath: /etc/ca-certificates
+      name: etc-ca-certificates
+      readOnly: true
+    - mountPath: /usr/libexec/kubernetes/kubelet-plugins/volume/exec
+      name: flexvolume-dir
+    - mountPath: /etc/kubernetes/pki
+      name: k8s-certs
+      readOnly: true
+    - mountPath: /etc/kubernetes/controller-manager.conf
+      name: kubeconfig
+      readOnly: true
+    - mountPath: /usr/local/share/ca-certificates
+      name: usr-local-share-ca-certificates
+      readOnly: true
+    - mountPath: /usr/share/ca-certificates
+      name: usr-share-ca-certificates
+      readOnly: true
+  hostNetwork: true
+  priority: 2000001000
+  priorityClassName: system-node-critical
+  securityContext:
+    seccompProfile:
+      type: RuntimeDefault
+  volumes:
+  - hostPath:
+      path: /etc/ssl/certs
+      type: DirectoryOrCreate
+    name: ca-certs
+  - hostPath:
+      path: /etc/ca-certificates
+      type: DirectoryOrCreate
+    name: etc-ca-certificates
+  - hostPath:
+      path: /usr/libexec/kubernetes/kubelet-plugins/volume/exec
+      type: DirectoryOrCreate
+    name: flexvolume-dir
+  - hostPath:
+      path: /etc/kubernetes/pki
+      type: DirectoryOrCreate
+    name: k8s-certs
+  - hostPath:
+      path: /etc/kubernetes/controller-manager.conf
+      type: FileOrCreate
+    name: kubeconfig
+  - hostPath:
+      path: /usr/local/share/ca-certificates
+      type: DirectoryOrCreate
+    name: usr-local-share-ca-certificates
+  - hostPath:
+      path: /usr/share/ca-certificates
+      type: DirectoryOrCreate
+    name: usr-share-ca-certificates
+status: {}
+
+$ vim /etc/kubernetes/manifests/kube-controller-manager.yaml
+# 将命令由 kube-controller-manegaar 改为 kube-controller-manager
+
+$ kubectl -n kube-system get pod kube-controller-manager-controlplane
+NAME                                   READY   STATUS    RESTARTS   AGE
+kube-controller-manager-controlplane   1/1     Running   0          83s
+
+$ kubectl get deployments.apps video-app
+NAME        READY   UP-TO-DATE   AVAILABLE   AGE
+video-app   2/2     2            2           22m
+
+$ kubectl get pod
+NAME                         READY   STATUS    RESTARTS   AGE
+video-app-7f4f8696cd-rl7ph   1/1     Running   0          2m18s
+video-app-7f4f8696cd-vdfqw   1/1     Running   0          2m18s
+
+$ kubectl get pods -l app=video-app
+NAME                         READY   STATUS    RESTARTS   AGE
+video-app-7f4f8696cd-rl7ph   1/1     Running   0          2m39s
+video-app-7f4f8696cd-vdfqw   1/1     Running   0          2m39s
 ----
 
+除此之外，还有其他几个原因也会调度失败：
+
+. 资源不足（CPU/Memory 限制导致调度失败）。
+. `imagePullPolicy` 问题（Redis 镜像拉取失败）。
+. Pod 创建失败，但没有错误日志。
+. 检查 `kubectl get pods` 是否有相关 Pod 存在。
 

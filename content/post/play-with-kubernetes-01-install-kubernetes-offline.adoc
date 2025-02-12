@@ -1,6 +1,6 @@
 ---
 title: "玩转 Kubernetes（一）：离线安装 Kubernetes 1"
-date: 2024-12-14T16:13:19+08:00
+date: 2025-01-14T16:13:19+08:00
 draft: false
 keywords: ["Kubernetes", "Kubespray"]
 tags: ["Kubernetes","Linux"]
