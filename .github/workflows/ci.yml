@@ -100,6 +100,9 @@ jobs:
             mv $fn $f
           done
 
+      - name: Setup Docker 🐳
+        uses: docker/setup-docker-action@v4
+
       - name: Add Watermark to Images 🎖
         run: |
           # sudo add-apt-repository -y ppa:strukturag/libheif
@@ -109,8 +112,9 @@ jobs:
           # sudo apt install -y libde265-dev
           
           # sudo apt update -y # 不再重复执行
-          sudo apt install imagemagick
+          # sudo apt install imagemagick
           # t=$(mktemp) && wget 'https://dist.1-2.dev/imei.sh' -qO "$t" && sudo bash "$t" && rm "$t"
+          docker pull dpokidov/imagemagick
           
           cd public/images
           wget https://github.com/diguage/open-fonts/releases/download/latest/SourceCodePro-Semibold.otf 1>/dev/null 2>&1 &
@@ -118,9 +122,9 @@ jobs:
           
           # 异步加水印
           # JPG
-          find . -type f -name "*.jpg" | grep -v "goodbye-2019-hello-2020\|wx-jikerizhi-qrcode.jpg\|wx-jikerizhi.jpg\|wxpay.jpg\|avatar.jpg" | sed "s/.jpg$//g" | xargs -I {} convert -compress JPEG2000 -strip -thumbnail 960 -quality 75 -font ./SourceCodePro-Semibold.otf -pointsize 30 -gravity southeast -fill "#DE282A" -draw 'text 15,18 "https://www.diguage.com"' {}.jpg {}-mark.jpg 1>/dev/null 2>&1 &
+          find . -type f -name "*.jpg" | grep -v "goodbye-2019-hello-2020\|wx-jikerizhi-qrcode.jpg\|wx-jikerizhi.jpg\|wxpay.jpg\|avatar.jpg" | sed "s/.jpg$//g" | xargs -I {} docker run -v ${BASEDIR}:/imgs dpokidov/imagemagick -compress JPEG2000 -strip -thumbnail 960 -quality 75 -font /imgs/SourceCodePro-Semibold.otf -pointsize 30 -gravity southeast -fill "#DE282A" -draw 'text 15,18 "https://www.diguage.com"' /imgs/{}.jpg /imgs/{}-mark.jpg 1>/dev/null 2>&1 &
           # JPEG
-          find . -type f -name "*.jpeg" | sed "s/.jpeg$//g" | xargs -I {} convert -compress JPEG2000 -strip -thumbnail 960 -quality 75 -font ./SourceCodePro-Semibold.otf -pointsize 30 -gravity southeast -fill "#DE282A" -draw 'text 15,18 "https://www.diguage.com"' {}.jpeg {}-mark.jpeg 1>/dev/null 2>&1 &
+          find . -type f -name "*.jpeg" | sed "s/.jpeg$//g" | xargs -I {} docker run -v ${BASEDIR}:/imgs dpokidov/imagemagick -compress JPEG2000 -strip -thumbnail 960 -quality 75 -font /imgs/SourceCodePro-Semibold.otf -pointsize 30 -gravity southeast -fill "#DE282A" -draw 'text 15,18 "https://www.diguage.com"' /imgs/{}.jpeg /imgs/{}-mark.jpeg 1>/dev/null 2>&1 &
           echo "$(date +%T) wait for adding watermark"
           
           # 等待水印加完后再执行后续操作
