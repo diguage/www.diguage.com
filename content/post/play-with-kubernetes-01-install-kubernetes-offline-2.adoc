@@ -81,7 +81,6 @@ export IMAGES_FROM_FILE=/PATH/TO/kubespray/contrib/offline/temp/images.list
 . https://docker.1ms.run
 . https://docker.1panel.live
 . https://hub1.nat.tf
-. https://docker.1panel.live
 
 == 搭建容器镜像源
 
@@ -137,6 +136,37 @@ wget -c -x -P temp/files -i temp/files.list
 ----
 
 TIP: 注意：如果是在 Mac 上生成的相关文件列表，那么部分文件是 Mac 系统上的安装文件。所以，需要调整这些文件的地址。*建议在 Linux 系统中生成相关文件列表。*
+
+== HTTP 服务器
+
+在 Caddy 2.9.1 中，Caddy 似乎打开了自动将 HTTP 请求重定向为 HTTPS 请求，另外，使用 `caddy run` 启动时，似乎会自动监听 `80` 端口，这两个改变给安装带来了一些小麻烦。所以，重新配置了一下 `Caddyfile` 文件：
+
+[source%nowrap,bash,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com/
+
+# 下载二进制文件
+{
+	debug
+	auto_https off
+	log {
+		output stdout
+	}
+}
+
+docker.example.com:443 {
+	# 网站的域名信息
+	tls fullchain3.pem privkey3.pem # 证书和密钥的 PEM 格式的文件路径
+	reverse_proxy localhost:5000 # 反向代理
+}
+
+app.example.com:80 {
+	root * /PATH/TO/binary-installer
+	file_server
+}
+----
+
+更多 Web Server 的搭建办法见： https://gist.github.com/willurd/5720255[Big list of http static server one-liners^]（可能需要科学上网）。
 
 == 小结
 

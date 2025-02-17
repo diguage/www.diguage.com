@@ -207,6 +207,7 @@ K8S_VERSION='1.30.4'
 
 # 检查 /etc/containerd/config.toml 文件是否存在，存在则修改配置
 # https://blog.csdn.net/yang_song_yao/article/details/124017139
+# 注意：在 v1.7.24 中，会自动生成目录的配置方式。
 while true
 do
   if [ -f ${CONFIG_FILE} ]; then
@@ -239,11 +240,46 @@ sudo mkdir -p  ${BASE_DIR}/docker.io/
 # docker hub镜像加速
 sudo tee ${BASE_DIR}/docker.io/hosts.toml << EOF
 server = "https://docker.io"
-[host."https://cjie.eu.org"]
+
+[host."https://docker.1panel.top"]
   capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://dockerpull.pw"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://docker.13140521.xyz"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://dk.nastool.de"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://docker.1ms.run"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://docker.1panel.live"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://hub1.nat.tf"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
 
 [host."https://docker.m.daocloud.io"]
   capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
 EOF
 
 
@@ -254,11 +290,45 @@ sudo mkdir -p ${BASE_DIR}/registry.k8s.io
 sudo tee ${BASE_DIR}/registry.k8s.io/hosts.toml << 'EOF'
 server = "https://registry.k8s.io"
 
-[host."https://k8s.m.daocloud.io"]
-  capabilities = ["pull", "resolve", "push"]
+[host."https://docker.1panel.top"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
 
-[host."https://cjie.eu.org"]
-  capabilities = ["pull", "resolve", "push"]
+[host."https://dockerpull.pw"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://docker.13140521.xyz"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://dk.nastool.de"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://docker.1ms.run"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://docker.1panel.live"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://hub1.nat.tf"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://docker.m.daocloud.io"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
 EOF
 
 
@@ -269,11 +339,45 @@ sudo mkdir -p ${BASE_DIR}/gcr.io
 sudo tee ${BASE_DIR}/gcr.io/hosts.toml << 'EOF'
 server = "https://gcr.io"
 
-[host."https://gcr.m.daocloud.io"]
-  capabilities = ["pull", "resolve", "push"]
+[host."https://docker.1panel.top"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
 
-[host."https://cjie.eu.org"]
-  capabilities = ["pull", "resolve", "push"]
+[host."https://dockerpull.pw"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://docker.13140521.xyz"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://dk.nastool.de"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://docker.1ms.run"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://docker.1panel.live"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://hub1.nat.tf"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://docker.m.daocloud.io"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
 EOF
 
 
@@ -284,11 +388,45 @@ sudo mkdir -p ${BASE_DIR}/ghcr.io
 sudo tee ${BASE_DIR}/ghcr.io/hosts.toml << 'EOF'
 server = "https://ghcr.io"
 
-[host."https://cjie.eu.org"]
-  capabilities = ["pull", "resolve", "push"]
+[host."https://docker.1panel.top"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
 
-[host."https://ghcr.m.daocloud.io"]
-  capabilities = ["pull", "resolve", "push"]
+[host."https://dockerpull.pw"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://docker.13140521.xyz"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://dk.nastool.de"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://docker.1ms.run"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://docker.1panel.live"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://hub1.nat.tf"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://docker.m.daocloud.io"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
 EOF
 
 
@@ -299,11 +437,45 @@ sudo mkdir -p ${BASE_DIR}/k8s.gcr.io
 sudo tee ${BASE_DIR}/k8s.gcr.io/hosts.toml << 'EOF'
 server = "https://k8s.gcr.io"
 
-[host."https://k8s-gcr.m.daocloud.io"]
-  capabilities = ["pull", "resolve", "push"]
+[host."https://docker.1panel.top"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
 
-[host."https://cjie.eu.org"]
-  capabilities = ["pull", "resolve", "push"]
+[host."https://dockerpull.pw"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://docker.13140521.xyz"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://dk.nastool.de"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://docker.1ms.run"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://docker.1panel.live"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://hub1.nat.tf"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://docker.m.daocloud.io"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
 EOF
 
 # docker.elastic.co镜像加速
@@ -311,11 +483,45 @@ sudo mkdir -p ${BASE_DIR}/docker.elastic.co
 sudo tee ${BASE_DIR}/docker.elastic.co/hosts.toml << 'EOF'
 server = "https://docker.elastic.co"
 
-[host."https://elastic.m.daocloud.io"]
-  capabilities = ["pull", "resolve", "push"]
+[host."https://docker.1panel.top"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
 
-[host."https://cjie.eu.org"]
-  capabilities = ["pull", "resolve", "push"]
+[host."https://dockerpull.pw"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://docker.13140521.xyz"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://dk.nastool.de"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://docker.1ms.run"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://docker.1panel.live"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://hub1.nat.tf"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://docker.m.daocloud.io"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
 EOF
 
 # mcr.m.daocloud.io镜像加速
@@ -323,11 +529,45 @@ sudo mkdir -p ${BASE_DIR}/mcr.microsoft.com
 sudo tee ${BASE_DIR}/mcr.microsoft.com/hosts.toml << 'EOF'
 server = "https://mcr.microsoft.com"
 
-[host."https://mcr.m.daocloud.io"]
-  capabilities = ["pull", "resolve", "push"]
+[host."https://docker.1panel.top"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
 
-[host."https://cjie.eu.org"]
-  capabilities = ["pull", "resolve", "push"]
+[host."https://dockerpull.pw"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://docker.13140521.xyz"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://dk.nastool.de"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://docker.1ms.run"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://docker.1panel.live"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://hub1.nat.tf"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://docker.m.daocloud.io"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
 EOF
 
 # nvcr.io镜像加速
@@ -335,11 +575,45 @@ sudo mkdir -p ${BASE_DIR}/nvcr.io
 sudo tee ${BASE_DIR}/nvcr.io/hosts.toml << 'EOF'
 server = "https://nvcr.io"
 
-[host."https://nvcr.m.daocloud.io"]
-  capabilities = ["pull", "resolve", "push"]
+[host."https://docker.1panel.top"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
 
-[host."https://cjie.eu.org"]
-  capabilities = ["pull", "resolve", "push"]
+[host."https://dockerpull.pw"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://docker.13140521.xyz"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://dk.nastool.de"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://docker.1ms.run"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://docker.1panel.live"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://hub1.nat.tf"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://docker.m.daocloud.io"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
 EOF
 
 # quay.io镜像加速
@@ -347,11 +621,45 @@ sudo mkdir -p ${BASE_DIR}/quay.io
 sudo tee ${BASE_DIR}/quay.io/hosts.toml << 'EOF'
 server = "https://quay.io"
 
-[host."https://cjie.eu.org"]
-  capabilities = ["pull", "resolve", "push"]
+[host."https://docker.1panel.top"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
 
-[host."https://quay.m.daocloud.io"]
-  capabilities = ["pull", "resolve", "push"]
+[host."https://dockerpull.pw"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://docker.13140521.xyz"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://dk.nastool.de"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://docker.1ms.run"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://docker.1panel.live"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://hub1.nat.tf"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
+
+[host."https://docker.m.daocloud.io"]
+  capabilities = ["pull", "resolve"]
+  skip_verify = false
+  override_path = false
 EOF
 
 # https://blog.csdn.net/IOT_AI/article/details/131975562
