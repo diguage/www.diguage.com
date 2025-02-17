@@ -1,0 +1,461 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>逸闻趣事 on "地瓜哥"博客网</title><link>https://www.diguage.com/categories/%E9%80%B8%E9%97%BB%E8%B6%A3%E4%BA%8B/</link><description>Recent content in 逸闻趣事 on "地瓜哥"博客网</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Sat, 06 Jan 2024 13:12:47 +0800</lastBuildDate><atom:link href="https://www.diguage.com/categories/%E9%80%B8%E9%97%BB%E8%B6%A3%E4%BA%8B/index.xml" rel="self" type="application/rss+xml"/><item><title>应用程序的内存是大还是小？</title><link>https://www.diguage.com/post/large-or-small-memory-size-for-my-app/</link><pubDate>Sat, 06 Jan 2024 12:17:15 +0800</pubDate><guid>https://www.diguage.com/post/large-or-small-memory-size-for-my-app/</guid><description>&lt;div class="paragraph">
+&lt;p>应该在内存容量大的少量实例（即机器）上运行应用程序，还是在内存容量小的大量实例上运行应用程序？哪种策略是最佳的？这个问题可能会经常遇到。在开发应用程序长达 20 年，且构建了 JVM 性能工程/故障排除工具（ &lt;a href="https://gceasy.io/" target="_blank" rel="noopener">GCeasy&lt;/a>、 &lt;a href="https://fastthread.io/" target="_blank" rel="noopener">FastThread,&lt;/a>、 &lt;a href="https://heaphero.io/" target="_blank" rel="noopener">HeapHero&lt;/a>）之后，我仍然不知道这个问题的正确答案。同时，我相信这个问题也没有非黑即白的答案。在本文中，我想与大家分享一下我对这个问题的看法和经验。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_两个数十亿美元企业的故事">两个数十亿美元企业的故事&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>由于我们的 JVM 性能工程/故障排除工具已广泛应用于各大企业，因此我有机会看到世界级企业应用的实际实施情况。最近，我有机会参观了两家高速成长的科技公司（如果我说出他们的名字，读这篇文章的人都会知道）。这两家公司的总部都在硅谷。它们的业务是技术，因此在工程设计方面很有一套。它们是华尔街的宠儿，享有极高的估值。它们的市值高达数十亿美元。它们是现代企业蓬勃发展的典型代表。在我们的对话中，让我们称这两家企业为公司 A 和公司 B。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在内存大小方面，两家企业都采用了&lt;strong>两个极端&lt;/strong>，这让我感到非常惊讶。公司 A 将堆大小（即 &lt;code>-Xmx&lt;/code>）设置为 250GB，而公司 B 则将堆大小设置为 2GB：公司 A 的堆大小是公司 B 的 125 倍。两家公司都对自己的内存大小设置很自信。俗话说：&amp;#34;事实胜于雄辩&amp;#34;，两家企业都在扩大规模，处理数十亿的关键业务交易。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>两家公司都从事相同的业务，收入/市值大致相同，位于同一地理区域，在同一时间点采用两种极端的内存大小，这真是一次绝佳的体验。鉴于这种现实生活中的真实经验，正确的答案是什么？大内存还是小内存？我的结论是：如果你有一支优秀的团队，采用这两种策略都能取得成功。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_大内存容量可能很昂贵">大内存容量可能很昂贵&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>与内存容量小、实例数量多的情况相比，内存容量大、实例（即机器）数量少的情况往往成本较高。以下是基于美国东部（弗吉尼亚州北部）地区 AWS EC2 实例成本的简单计算：&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>m4.16xlarge - 256GB 内存 - Linux 按实例收费：3.2 美元/小时&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>T3a small - 2GB 内存 - Linux 按实例收费：0.0188 美元/小时&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>因此，要获得 256GB 内存容量，我们必须获得 128 个 “T3a small” 实例（即 128 个实例 x 2GB = 256GB）。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>128 x T3a small - 2GB 内存 - Linux 按实例收费：2.4064 美元/小时（即 128 x 0.0188 美元/小时）&lt;/p>
+&lt;/div></description></item><item><title>用自己的小故事致敬白衣天使</title><link>https://www.diguage.com/post/show-my-respect-to-medical-workers-by-my-story-on-medical-workers-day/</link><pubDate>Fri, 19 Aug 2022 08:55:06 +0800</pubDate><guid>https://www.diguage.com/post/show-my-respect-to-medical-workers-by-my-story-on-medical-workers-day/</guid><description>&lt;div class="paragraph">
+&lt;p>8·19中国医师节&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>致敬守护健康的白衣天使&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>虽然我一直挺健康，但我与医生的故事有好多。按时间顺序，挑选几个来说一说。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>早在 2018 年，由于智齿斜长，顶住最后大牙，担心影响到大牙的健康，就到北京大学口腔医院魏公村总院，做智齿拔除手术。由于去排队时间较晚，就被分配了一个急诊号，不知道医生是何许人也。拍片做完检查，医生说我上下有两个智齿，可以考虑一起拔除。麻药敲击拔牙，一气呵成。医生说，你可以走啦。我疑问，不是拔两颗吗？怎么只拔了一颗？医生说，两颗都拔啦。没想到这么迅速。实在是太专业啦！这名医生叫郭华秋。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在 2019 年，在盆友圈看到一个纪录片《医者·脊梁》，认识了一个医生，在业余时间，利用自己的专业知识，深入偏远地区，为这些偏远地区免费义诊，并且建立了一个基金会，为需要手术的脊柱侧弯患者承担必要的费用。经过短暂思考后就决定，要为这个基金会捐款，让他们去救助更多的人。初步定在每年六一儿童节这天，每年捐一千块钱，连续捐十年。这家基金会叫北京海鹰脊柱健康公益基金会。这名医生叫刘海鹰。（他是我的安阳老乡，也是我的大学师兄。真是荣幸之至！）放两张盆友圈截图：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/medical-workers-day/donation-2018.jpg" alt="2018年捐款" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. 2018年捐款&lt;/div>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/medical-workers-day/donation-2022.jpg" alt="2022年捐款" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 2. 2022年捐款&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>2020年，一场突如其来的疫情，让很多很多医护工作者舍小家为大家，用自己的臂膀组建了守护大家健康的卫生长城。这些医生和护士叫中国医护人员。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>感谢他们的付出，感谢他们的辛劳，也感谢他们的专业。有感于此，我在2021年初，就请我认识的每一位医护朋友吃一顿饭。可惜到现在为止，还没有成行。以后有机会一起吃饭的话，希望医护朋友不要可以客气，给我一个表达感激的机会。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/medical-workers-day/medical-1.jpg" alt="向医护人员致敬" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 3. 向医护人员致敬&lt;/div>
+&lt;/div>
+&lt;div class="sidebarblock">
+&lt;div class="content">
+&lt;div class="paragraph">
+&lt;p>这是公众号的一篇文章。昨天早晨出门吃早餐，刷朋友圈才知道昨天是医师节。在地铁上写了这篇文章。本来是昨天群发的。由于没有想尝试一次群发多篇文章，就在手机APP上先发表了附加的文章，以为只是发布而不群发。结果，搞了个乌龙，直接群发了，也没办法撤销群发。所以，这篇文章只能今天发表了。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div></description></item><item><title>文档技术方案选型：AsciiDoc vs Markdown</title><link>https://www.diguage.com/post/asciidoc-vs-markdown/</link><pubDate>Sun, 13 Feb 2022 19:56:09 +0800</pubDate><guid>https://www.diguage.com/post/asciidoc-vs-markdown/</guid><description>&lt;div class="paragraph">
+&lt;p>D瓜哥在前面的文章 &lt;a href="https://www.diguage.com/post/building-blog-with-hugo/" target="_blank" rel="noopener">使用 Hugo 搭建博客&lt;/a> 中介绍了如何用 Hugo 搭建个人博客。部门准备系统地整理一下各个小组的文档。恰好 D瓜哥 对写文档非常感兴趣，正好写个材料分享一下血泪经验。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_编辑进化之路">编辑进化之路&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="sect2">
+&lt;h3 id="_第一代wordpress">第一代：WordPress&lt;/h3>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/website/wordpress.png" alt="wordpress" width="95%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>缺点：写作和排版割裂，排版耗时且繁琐&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_第二代markdown">第二代：MarkDown&lt;/h3>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/website/markdown.png" alt="markdown" width="95%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>缺点：方言众多，工具链不够完整。&lt;/p>
+&lt;/div>
+&lt;div class="quoteblock">
+&lt;blockquote>
+&lt;div class="paragraph">
+&lt;p>现在已经改观很多。&lt;/p>
+&lt;/div>
+&lt;/blockquote>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_第三代asciidoc">第三代：AsciiDoc&lt;/h3>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/website/asciidoc.png" alt="asciidoc" width="95%"/>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_轻量级标记语言的优点">轻量级标记语言的优点&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="sect2">
+&lt;h3 id="_思路与格式融为一体">思路与格式融为一体&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>在整理文档时，随手加入格式管理，不需要为格式分心，也无须浪费时间调整排版。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_代码高亮">代码高亮&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>AsciiDoc 与 MarkDown 都支持&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="cm">/**
+ * @author D瓜哥 · &lt;a href="https://www.diguage.com/" target="_blank">https://www.diguage.com/&lt;/a>
+ */&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">Main&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="kd">public&lt;/span> &lt;span class="kd">static&lt;/span> &lt;span class="kt">void&lt;/span> &lt;span class="nf">main&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">String&lt;/span>&lt;span class="o">[]&lt;/span> &lt;span class="n">args&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="nc">System&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">out&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">println&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;Hello, D瓜哥！&amp;#34;&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="o">}&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_文本格式">文本格式&lt;/h3>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>文本格式，天然跨平台，支持性好，方便编辑与管理。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>结合 Git，支持版本管理。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_生态完善">生态完善&lt;/h3>
+&lt;div class="sect3">
+&lt;h4 id="_markdown">Markdown&lt;/h4>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo: The world’s fastest framework for building websites&lt;/a> — Hugo 使用 &lt;a href="https://github.com/yuin/goldmark" target="_blank" rel="noopener">yuin/goldmark: A markdown parser written in Go.&lt;/a> 来做转换工作。也支持 AsciiDoc，不过需要挑选比较合适的主题： &lt;a href="https://themes.gohugo.io/" target="_blank" rel="noopener">Hugo Themes&lt;/a>。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect3">
+&lt;h4 id="_asciidoc">AsciiDoc&lt;/h4>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;a href="https://antora.org/" target="_blank" rel="noopener">Antora&lt;/a> — The multi-repository documentation site generator for tech writers who writing in AsciiDoc.&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://docs.asciidoctor.org/diagram-extension/latest/" target="_blank" rel="noopener">Asciidoctor Diagram&lt;/a> — 支持多种文本画图工具。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://docs.asciidoctor.org/epub3-converter/latest/" target="_blank" rel="noopener">Asciidoctor EPUB3 Documentation&lt;/a> — 可以直接将 AsciiDoc 文档转化成 EPUB 电子书。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://asciidoctor.org/docs/asciidoctor-pdf/" target="_blank" rel="noopener">Asciidoctor PDF&lt;/a> — 可以直接将 AsciiDoc 文档转化成 PDF 文档。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>常见插件的支持：Maven、IntelliJ IDEA、VS Code 等。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div></description></item><item><title>告别 2019，迎接 2020</title><link>https://www.diguage.com/post/goodbye-2019-hello-2020/</link><pubDate>Tue, 31 Dec 2019 19:20:00 +0800</pubDate><guid>https://www.diguage.com/post/goodbye-2019-hello-2020/</guid><description>&lt;div class="sect1">
+&lt;h2 id="_我的_2019">我的 2019&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>在 2018 年底，我写了 &lt;a href="https://www.diguage.com/post/2019-plan/" target="_blank" rel="noopener">“2019 年度计划”&lt;/a> 对 2019 年做了一个简单的规划。2019 年如白驹过隙，稍纵即逝。又到一年年底，现在对这一年做一个总结。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>虽然这一年，我一直在意有这么一个计划，但是从来没有认真总结反思过。为了回顾一下，刚刚又打开计划去看，生活才发现过得如此苍白无力。抛开计划，按时间顺序，从头到尾，随意来说吧。&lt;/p>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_读书">读书&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>今年读了几本书：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>《小岛经济学》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《小王子（英文版）》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《未来世界的幸存者》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《白夜行》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《教父》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《远见》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《如何阅读一本书？》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《文明之光（第一册）》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《基督山伯爵》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《Kubernetes in Action》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《富爸爸穷爸爸》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《巴菲特与索罗斯的投资习惯》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《幸福的方法》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《魔鬼聊天术》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《拆掉思维里的墙》&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>挑选几本来简单说说吧。&lt;/p>
+&lt;/div>
+&lt;div class="sect3">
+&lt;h4 id="_小岛经济学">《小岛经济学》&lt;/h4>
+&lt;div class="paragraph">
+&lt;p>《小岛经济学》是今年读完的第一本书，也算是去年留下的一个尾巴。奥地利经济学派主张政府不干预的观点。这本书简单描述了经济发展的过程，从莽荒时代，手工作业开始，逐步引入工具，提高生产力；随着生产力的提升，人口的增多，经济活动增多，开始物物交换；从物物交换过渡到货币交易，然后银行业兴起；生产力再次提高，以及货币的增加，投资也成为必要，资本市场应运而生；随着地区优势的凸显，资源整合也势在必行，接着发展起了跨国贸易，换汇成为必要，汇率也就被引入进来；随着资本市场的繁荣，埋藏的地雷被引爆，通货膨胀，货币贬值，资本市场崩溃，社会进入大萧条，然后重置继续发展……&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>整个过程完整而清晰，犹如亲历过去发展的波澜壮阔。作为一本经济学入门教程还是很赞的。最近开始看曼昆的《经济学原理》，再来看这本书，真的只能是入门。也许智商不够用，也许对经济学的知识了解得过于浅薄，当经济发展到引入汇率之后，后面的发展过程理解的就不是很透彻了。等看一下金融的书，结合起来，希望能更好地理解。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect3">
+&lt;h4 id="_未来世界的幸存者">《未来世界的幸存者》&lt;/h4>
+&lt;div class="paragraph">
+&lt;p>在年初看完的这本书，看完后震撼很大。把当时的读后感直接贴到这里作为总结吧。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>作者站在一个技术人员的角度，去思考技术如何改变世界？未来会是什么样子？&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>作者的思考和我的思考结果是一样的：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>技术的快速发展，机器必定完成大部分重复性劳动，使得大部分劳动者被取代。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>大部分人必定只能找到低端工作，工资仅够温饱。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>贫富分化将越来越严重，而且会世袭，穷人毫无翻身的可能。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>科技发展的结果，我自己感觉是喜忧参半：&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>作为一名IT从业者，真正在用技术改变这个世界，带给大家更多的便利，这是百年难得一遇的机遇，生在这个伟大的时代，能参与这个伟大的浪潮之中，可以用自己的双手去推动世界的改变，何其幸哉！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>同时，技术带给人们的便利真是难以想象，足不出户点餐、购物、约车、娱乐…&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>但是，也有很多人是不幸的，他们没有一技之长，或者人到中年，却惨遭失业；还有一部分人，或者说大部分生活在底层的人们，因为没有一技之长（仅指不容易被技术取代的技能），也许永无翻身之日，无所事事，惶惶终日。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>技术的发展，造成人类事业，伴随而来的可能会是“黑镜第一季第二集”的样子：每人一张床，四周都是显示器，想看什么看什么，什么活也不用干，平时运动挣积分，拿积分再消费…&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>进一步发展，也许就是《西部世界》，尤其是娱乐业。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>人类本身很可能会再进化一步：进化成碳基+硅基的组合体。碳基就是目前的人（也许仅仅只需要保留大脑），硅基就是各种芯片+维持大脑活动的必要设备和机械躯体…&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>基因改造将带来彻底的不平衡：人类被分为被改造人和原始人。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect3">
+&lt;h4 id="the-long-view">《远见》&lt;/h4>
+&lt;div class="paragraph">
+&lt;p>这本书是在刷知乎时，别人推荐的书。就找来看了看。真是相见恨晚！如果在大学毕业时就看到这本书，也许……&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>简单做个摘录作为总结吧。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>本书讲人生的职业生涯分为三个阶段：&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>第一阶段是强势开局的时候。你在职业上的努力必须着重于为前方的漫长道路挖掘和装备自己。你的学习曲线要比职位、职称更加重要。在这一阶段，要为职业生涯打好基础并建立起良好的早期习惯。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>第二阶段是聚焦长板的时候。该阶段的首要目标是寻找自己的甜蜜区，即你所擅长的、所热爱的和这个世界所需要的这三者之间的交集。这个时候你要展现自我，让自己鹤立鸡群，想方设法平稳地走在那条收获最大的职场路径上。你要专注于自己的长板，且大可忽略自己的短板。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>第三阶段致力于实现持续的影响力，以及寻找一条可以稳定延续到60多岁甚至70多岁的新的可持续职业道路。你要在第三阶段完成三个关键任务：完成继任计划、保持关联性，以及为自己点燃一团新的职业之火。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>用一句话来总结：第一阶段：加添燃料，强势开局； 第二阶段：聚焦长板，达到高点； 第三阶段：优化长尾，持续发挥影响力。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>三大职场燃料来源：可迁移技能、有意义的经验和持久的关系。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>5个数字，树立正确的职场思维&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>职业生涯的长度：用62减去你目前的年龄。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>精通一项技能所需的时间：要花多少小时才能在某一方面达到“精通”？&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>40岁之后能赚到的个人财富百分比：在40岁之后，你赚到的钱会占你一生个人财富的百分之多少？大部分人的估计是60%。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>社交货币：你有多少社交网络好友？&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>职场支持者的人数：你认为能在“职业生涯的天堂”里遇到多少人，也就是说有多少人能对你的职业生涯和人生带来真正的变化？&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这本书的摘要已经发布出来，感兴趣的小伙伴请移步： &lt;a href="https://www.diguage.com/post/the-long-view/">《远见》之读书笔记&lt;/a>。&lt;/p>
+&lt;/div></description></item><item><title>只要一部计算机，就可以创造出无限的世界</title><link>https://www.diguage.com/post/computer-create-world/</link><pubDate>Tue, 21 Apr 2009 00:00:00 +0800</pubDate><guid>https://www.diguage.com/post/computer-create-world/</guid><description>&lt;div class="paragraph">
+&lt;p>曾经写给学弟学妹的一封信。我觉得还行，发出来，希望对刚学计算机专业的朋友有所帮助。当然，如果哪位朋友有更好的想法，也请留言，大家讨论讨论。原文如下：&lt;/p>
+&lt;/div>
+&lt;div class="sidebarblock">
+&lt;div class="content">
+&lt;div class="title">致师弟师妹的一封信&lt;/div>
+&lt;div class="paragraph">
+&lt;p>各位朋友：&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>大家好！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>从本周开始，我必须专心为我的前程奋斗了。很可惜不能和大家一起学习了。这封信就算是我和大家的一个告别吧。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>首先，感谢史老师给我提供这个和大家一起学习和交流的机会，让我和大家一起度过了一段特殊而愉快的时光。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>其次，我应该感谢大家。由于本人水平有限，也许我没能让大家从我这里学到太多知识，但是大家却让我学会了很多东西，锻炼了我很多方面的能力。单凭这一点，我就应该感谢大家。同时，很多人把我当朋友，更使我感激不尽。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>再次，在这短暂而又宝贵的大学时光里，大家走的路应该和我的基本一样。我以一个过来人的身份，和大家分享一下我的学习经验吧，希望可以让大家少走甚至不走弯路。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>先说一点我们所学科目的情况吧。&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>Linux：一定要动手敲指令。在我们一年半的学习时光里，我认为Linux是我们所学的所有实践性学科里面最简单的一科了！只要把指令记好用熟就行了！另外，指令不需要背，用多了自然就记住了。（相信95%的同学都知道cd是什么意思吧！为什么呢？因为用它的次数多！）多提一点，一定要多尝试！&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Java或者C#或者PHP（由于个人比较喜欢Java，所以，一下描述Java的地方，你可以同样换成C#或在PHP等）：这是我们大家必须要下苦功夫学好的课！而且一定一定要学精！它们在我们的课程体系结构中的作用，就像是地基对于这个房子的作用！根基不好，房子很难建高的！即使建好也是豆腐渣工程。毕竟“空中楼阁”只存在于我们的想象中。它们是学习JSP、ASP.NET、J2EE、“游戏开发”、网页开发等等的基础，Java或者C#或者PHP学不会，这些课很难学好！（我这里有Java的教学视频，感兴趣的同学可以来我寝室拷贝。也可以上网下载：http://www.verycd.com/topics/93279/（请下载J2SE的））&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>数据库：重点是关系模型、 SQL语句以及后面的数据库设计。做动态网站的技术、做桌面程序，甚至做手机应用等，都会用到数据库！以后工作中数据模型设计、数据查询等都要求有比较扎实的数据库基础才行。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>数据结构：我个人认为学习数据结构就是学习一种解决问题的思想。其实，类库已经实现了我们所学的所有的数据结构，到时会用就行了！&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>现在NBA正在进行季后赛，就用乔丹的一句话，作为所有学科的一个共同的建议送给大家：&lt;/p>
+&lt;/div>
+&lt;div class="quoteblock">
+&lt;blockquote>
+&lt;div class="paragraph">
+&lt;p>I can accept failure, but I can’t accept not trying.&lt;/p>
+&lt;/div>
+&lt;/blockquote>
+&lt;div class="attribution">
+— Michael Jordan
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>其实学习就是不断尝试，不断总结，不断进取的一个过程。我可以用我的尝试告你一个正确的结果，但是自己尝试出来的结果印象更加深刻！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>再说一点我的个人的学习感触吧。我个人认为，这些比我们大家在学校学到知识更为重要！知识马上就会过时，但是学习的方法却可以带领我们走的更远。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>一、享受学习。&lt;/strong>如果我们把学习当成像玩游戏、听音乐一样的娱乐活动时，我想这会给我们一种全新的感觉。Study hard，have fun，make history！ By Jeff Bezos &amp;amp; Joy Lee （努力学习，乐在其中，并创造历史！—Jeff Bezos（Amazon.com的创办者兼CEO，Joy Lee就是我。(*&lt;sup>__&lt;/sup>*) 嘻嘻…… 这句话是我从他的一句话里改编过来的！））&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>其实，学计算机学科非常有趣！Linux里面，几行指令，我们就可以顺利的让鼠标在两个操作系统自由转换！Java里面几行，几十行代码就有一个漂亮的窗口！C#里面随便一个拖拽，也是一个不错的窗口！“只要一部计算机，就可以创造出无限的世界。”（出自蔡学镛《写程序，好好玩》，《Java夜未眠》里面的一篇，本书是本很搞笑的编程感触散文集，推荐看看。）加油吧！相信你行！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>二、坚持不懈。&lt;/strong>任何事情都不是可以一蹴而就的，都需要我们坚持！再送给大家一句话：失败只有一种，那就是半途而废！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>三、舍我其谁的豪迈和霸气。&lt;/strong>“Horse’s，Gosling能创造出来Java，我就不信我学不会！一个破Java，我还不放到眼里呢！！”，“别人能创造出来，我就不相信我学不会？！”不过，也要给大家提醒一句：“战略上，藐视敌人；战术上，重视敌人”！一定要下功夫学习才行！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>四、信心。&lt;/strong>一定要相信自己的能力！你是独一无二，无可替代的！信心能让你从一个更高的角度看待你的学习！能给你一种驾驭知识的成就感！这种感觉能让你从学习中找到乐趣！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>五、行动！&lt;/strong>上面的大道理，我们大家都懂！但是，谁实际做到呢？伟大与平凡的区别也许就在于这一点吧。我以我自己的高中、大学对比来看，行动与否结果绝对是不一样的！只想不做，最多是个空想家！所以，大家一定要“坚持不懈的行动”！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>最后，送给大家一句话：&lt;strong>你充满了潜能，但你的努力还远远不够！&lt;/strong>再次怀念我们共同的学习时光！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>祝大家学有所成！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div></description></item></channel></rss>
