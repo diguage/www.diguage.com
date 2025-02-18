@@ -420,6 +420,13 @@ v1.0 引入，v1.8 达到生产标准。
 end note
 
 
+[Persistent Volume 和 Persistent Volume Claim] as [PersistentVolume] starts at [v1.0.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[PersistentVolume] is colored in GreenYellow
+note bottom
+v1.0 引入
+end note
+
+
 [kube-proxy/iptables] as [kube-proxy/iptables] starts at [v1.2.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
 [kube-proxy/iptables] is colored in GreenYellow
 note bottom
@@ -456,7 +463,6 @@ note bottom
 end note
 
 
-
 [NetworkPolicy 网络安全策略] as [NetworkPolicy] starts at [v1.3.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
 [NetworkPolicy] is colored in GreenYellow
 note bottom
@@ -479,6 +485,14 @@ end note
 [AuditLog] is colored in GreenYellow
 note bottom
 审计机制，主要体现为审计日志。
+end note
+
+
+[StorageClass] as [StorageClass] starts at [v1.4.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[StorageClass] is colored in GreenYellow
+note bottom
+v1.4 引入，v1.6 进一步完善。
+用于标记存储资源的特性和性能。
 end note
 
 
@@ -550,6 +564,17 @@ note bottom
 end note
 
 
+[CRD 校验机制] as [CRDValidation] starts at [v1.8.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[CRDValidation] is colored in GreenYellow
+note bottom
+CRD 扩展点增强：
+  1、基于 OpenAPI v3 Schema 的校验；
+  2、基于 Admission Webhook 的自定义校验机制。
+给字段设置默认值，即 Defaulting 特性，在 v1.17 达到 Stable 阶段。
+基于 CEL 的校验机制在 v1.25 达到 Beta，v1.29 到 Stable。
+end note
+
+
 [NUMA/(CPU Manager)] as [CPUManager] starts at [v1.8.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
 [CPUManager] is colored in GreenYellow
 note bottom
@@ -575,6 +600,22 @@ v1.8 引入，v1.11 达到 Beta，v1.14 达到 Stable 阶段。
 end note
 
 
+[Cluster AutoScaler 集群资源自动扩缩容] as [ClusterAutoScaler] starts at [v1.8.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[PodPriority] is colored in GreenYellow
+note bottom
+v1.8 达到 Stable 阶段。引入时间应该更早。
+自动扩展和收缩 Kubernetes 集群中 Node 数量。
+end note
+
+
+[Container Storage Interface 容器存储接口] as [CSI] starts at [v1.9.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[CSI] is colored in GreenYellow
+note bottom
+v1.9 引入，v1.10 升级 Beta，v1.13 达到 Stable 阶段。
+目标：在 Kubernetes 和外部存储系统之间建立一套标准的存储管理接口。
+end note
+
+
 [进程 PID 限制与预留] as [PID] starts at [v1.10.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
 [PID] is colored in GreenYellow
 note bottom
@@ -589,11 +630,57 @@ note bottom
 end note
 
 
+[PVC 扩容机制] as [PVCExpansion] starts at [v1.11.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[PVCExpansion] is colored in GreenYellow
+note bottom
+v1.11 引入，v1.24 达到 Stable 阶段。
+CSI 类型的 Volume 扩容在 v1.16 时达到 Beta 阶段。
+end note
+
+
+[CRD subresources 子资源] as [CRDSubresources] starts at [v1.11.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[CRDSubresources] is colored in GreenYellow
+note bottom
+CRD 扩展点增强：增加 subresources 字段及增加了 status 和 scale 两个子选项。
+end note
+
+
+[CRD 自定义输出字段] as [additionalPrinterColumns] starts at [v1.11.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[additionalPrinterColumns] is colored in GreenYellow
+note bottom
+CRD 扩展点增强：通过 additionalPrinterColumns 字段来自定义 kubectl get 输出字段。
+end note
+
+
 [RuntimeClass] as [RuntimeClass] starts at [v1.12.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
 [RuntimeClass] is colored in GreenYellow
 note bottom
 v1.12 引入，v1.20 达到 Stable 阶段。
 用于指定不同的容器运行时。
+end note
+
+
+[Volume Snapshot 存储卷快照] as [VolumeSnapshot] starts at [v1.12.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[VolumeSnapshot] is colored in GreenYellow
+note bottom
+v1.12 引入，v1.17 到 Beta，v1.20 达到 Stable 阶段。
+用于指定不同的容器运行时。
+end note
+
+
+[存储卷模式设置] as [VolumeMode] starts at [v1.13.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[VolumeMode] is colored in GreenYellow
+note bottom
+v1.13 引入，v1.18 达到 Stable 阶段。
+用于指定存储卷模式： Filesystem 或 Block。
+end note
+
+
+[CRD 版本转换特性] as [CRDVersionUpgrade] starts at [v1.13.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[CRDVersionUpgrade] is colored in GreenYellow
+note bottom
+v1.13 引入，v1.16 达到 Stable 阶段。
+CRD 扩展点增强：通过 Webhook 回调完成多版本 CRD 资源对象转换问题，方便升级。
 end note
 
 
@@ -612,6 +699,14 @@ Scheduler：实现基于 Scheduler Framework 的开发方式，开始支持组�
 end note
 
 
+[CSI Ephemeral Volume 即 CSI 临时卷] as [CSIEphemeralVolume] starts at [v1.15.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[CSIEphemeralVolume] is colored in GreenYellow
+note bottom
+v1.15 引入，v1.25 达到 Stable 阶段。
+必须由第三方 CSI 存储驱动程序提供。
+end note
+
+
 [Startup Probe] as [StartupProbe] starts at [v1.16.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
 [StartupProbe] is colored in GreenYellow
 note bottom
@@ -625,6 +720,14 @@ note bottom
 v1.16 引入 Alpha 阶段，v1.17 进入 Beta 阶段，v1.28 到 v0.0.9 阶段。
 核心设计思想：将 API Server 放置在一个独立网络中，与 Node 网络隔离，
             使用网络连通性代理（Connectivity Proxy）来连通两个网络。
+end note
+
+
+[CRD 多版本特性] as [CRDVersioning] starts at [v1.17.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[CRDVersioning] is colored in GreenYellow
+note bottom
+v1.17 达到 Stable 阶段，引入时间应该更早。
+CRD 扩展点增强：在 spec.versions 中列出支持的全部版本号。
 end note
 
 
@@ -680,6 +783,21 @@ v1.19 引入，v1.21 达到 Stable 阶段。
 end note
 
 
+[Generic Ephemeral Volume 即 通用临时卷] as [GenericEphemeralVolume] starts at [v1.19.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[GenericEphemeralVolume] is colored in GreenYellow
+note bottom
+v1.19 引入，v1.23 达到 Stable 阶段。
+通用临时卷，更加灵活，特性更丰富（支持本地磁盘及网络存储；可以设置上限；可初始化数据。）
+end note
+
+
+[Storage Capacity Tracking 即 CSI 存储容量跟踪] as [StorageCapacityTracking] starts at [v1.19.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[StorageCapacityTracking] is colored in GreenYellow
+note bottom
+v1.19 引入，v1.24 达到 Stable 阶段。v1.28 提供对集群级 API 的支持。
+end note
+
+
 [支持 SCTP 协议] as [SCTP] starts at [v1.20.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
 [SCTP] is colored in GreenYellow
 note bottom
@@ -725,6 +843,13 @@ v1.21 增加，v1.22 是 Beta 版，v1.29 达到 Stable 节点。引入时间应
 end note
 
 
+[CSI 存储卷监控检查] as [VolumeHealth] starts at [v1.21.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[VolumeHealth] is colored in GreenYellow
+note bottom
+v1.21 引入，目前还是 Alpha 阶段。
+end note
+
+
 [Quality-of-Service for Memory Resources] as [MemoryQoS] starts at [v1.22.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
 [MemoryQoS] is colored in GreenYellow
 note bottom
@@ -761,6 +886,8 @@ end note
 [PVdpf] is colored in GreenYellow
 note bottom
 v1.23 Alpha
+在删除 PV 时，通过设置 Finalizers 字段来确保只有在删除 Pod 后，
+才删除 Delete 回收策略的 PV。在此之前，PV 处于被保护的状态。
 end note
 
 
@@ -786,6 +913,22 @@ end note
 note bottom
 v1.25 达到 Stable 阶段。
 建立临时容器，与目标 Pod 共享进程命名空间来访问容器环境。
+end note
+
+
+[RetroactiveDefaultStorageClass 特性] as [RetroactiveDefaultStorageClass] starts at [v1.25.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[RetroactiveDefaultStorageClass] is colored in GreenYellow
+note bottom
+v1.25 引入，v1.28 达到 Stable 阶段。
+配置默认 StorageClass 行为：设置默认 StorageClass 后，
+可以为之前没有设置 StorageClass 的 PVC 设置为最新的默认 StorageClass。
+end note
+
+
+[CRD CEL 校验机制] as [CRDCELValidation] starts at [v1.25.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[CRDCELValidation] is colored in GreenYellow
+note bottom
+v1.25 达到 Beta，在 v1.29 达到 Stable 阶段。
 end note
 
 
@@ -816,6 +959,15 @@ Topology Manager 是NUMA 资源亲和性分配的仲裁者和判决者，
 end note
 
 
+[调整 Pod 的 CPU 和内存大小] as [ScaleCpuMem] starts at [v1.27.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[ScaleCpuMem] is colored in GreenYellow
+note bottom
+v1.27.0 Alpha 引入，
+无需重启，动态调整 Pod 的 CPU 和内存大小。
+containerd v1.6.9 以下版本不支持。
+end note
+
+
 [Sidecar Containers] as [Sidecar] starts at [v1.28.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
 [Sidecar] is colored in GreenYellow
 note bottom
@@ -827,7 +979,6 @@ end note
 
 [磁盘充足时删除长期未使用的镜像] as [deleteUnusefulImage] starts at [v1.29.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
 [deleteUnusefulImage] is colored in GreenYellow
-
 
 footer D瓜哥 · ""https://www.diguage.com"" · 出品
 @endgantt
