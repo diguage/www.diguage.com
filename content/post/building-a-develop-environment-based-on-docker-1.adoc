@@ -100,8 +100,15 @@ LANG=C.UTF-8
 ----
 -- https://stackoverflow.com/a/52899915
 
+-- 查看支持的字符集
+SHOW VARIABLES WHERE Variable_name 
+     LIKE 'character\_set\_%'
+       OR Variable_name LIKE 'collation%';
+
 -- create databases
-CREATE DATABASE IF NOT EXISTS `diguage`;
+CREATE DATABASE IF NOT EXISTS `diguage`
+    CHARACTER SET utf8mb4
+    COLLATE utf8mb4_0900_ai_ci;
 
 -- create root user and grant rights
 -- https://stackoverflow.com/a/16592722
@@ -128,7 +135,12 @@ Nacos /nɑ:kəʊs/ 是 Dynamic Naming and Configuration Service的首字母简�
 --
 [source%nowrap,sql,{source_attr}]
 ----
+CREATE DATABASE IF NOT EXISTS `nacos`
+    CHARACTER SET utf8mb4
+    COLLATE utf8mb4_0900_ai_ci;
+
 CREATE USER IF NOT EXISTS 'nacos'@'%' IDENTIFIED BY '123456';
+
 GRANT ALL ON nacos.* TO 'nacos'@'%';
 ----
 --
