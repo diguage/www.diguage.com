@@ -24,6 +24,9 @@ TIP: 以下是在 Mac 上的操作，在 Linux 等系统上操作类似。
 
 [source%nowrap,bash,{source_attr}]
 ----
+# 配置 Python 镜像
+pip config set global.index-url https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
+
 # 进入 Kubespray 的上层目录
 cd /PATH/TO/kubespray/..
 
@@ -167,6 +170,73 @@ app.example.com:80 {
 ----
 
 更多 Web Server 的搭建办法见： https://gist.github.com/willurd/5720255[Big list of http static server one-liners^]（可能需要科学上网）。
+
+== 再谈 Kubespray
+
+在 kubespray v2.27 中，把生成节点配置的脚本给删除了。尝试了一下官方文档的配置，结果提示没有配置 Host，把 v2.26 生成的配置 `hosts.yaml` 拷贝过来，放在 `KUBESPRAY/inventory/kubestar/` 之下，顺利完成安装：
+
+[source%nowrap,yaml,{source_attr}]
+----
+# @author D瓜哥 · https://www.diguage.com/
+
+all:
+  hosts:
+    node1:
+      ansible_host: 10.0.2.21
+      ip: 10.0.2.21
+      access_ip: 10.0.2.21
+    node2:
+      ansible_host: 10.0.2.22
+      ip: 10.0.2.22
+      access_ip: 10.0.2.22
+    node3:
+      ansible_host: 10.0.2.23
+      ip: 10.0.2.23
+      access_ip: 10.0.2.23
+#    node4: <1>
+#      ansible_host: 10.0.2.24
+#      ip: 10.0.2.24
+#      access_ip: 10.0.2.24
+#    node5:
+#      ansible_host: 10.0.2.25
+#      ip: 10.0.2.25
+#      access_ip: 10.0.2.25
+  children:
+    kube_control_plane:
+      hosts:
+        node1:
+        node2:
+    kube_node:
+      hosts:
+        node1:
+        node2:
+        node3:
+#        node4:
+#        node5:
+    etcd:
+      hosts:
+        node1:
+        node2:
+        node3:
+    k8s_cluster:
+      children:
+        kube_control_plane:
+        kube_node:
+    calico_rr:
+      hosts: {}
+----
+<1> 原本自动生成的是三个节点，注释掉的节点是D瓜哥后续自己手动加的。
+
+执行如下命令，即可完成安装：
+
+[source%nowrap,bash,{source_attr}]
+----
+cd /PATH/TO/kubespray/..
+
+ansible-playbook -i inventory/kubestar/ cluster.yml -b -v
+----
+
+TIP: 五个节点的安装时间明显大于三个节点。如果平时做实验，建议三个节点即可。
 
 == 小结
 
