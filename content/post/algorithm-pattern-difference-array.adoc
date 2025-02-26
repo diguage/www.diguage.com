@@ -1,0 +1,190 @@
+---
+title: "算法模式：差分数组"
+date: 2025-02-26T17:01:52+08:00
+draft: false
+keywords: ["数组","差分数组", "算法", "LeetCode"]
+tags: ["数组"]
+categories: ["算法"]
+thumbnail: "images/data-structure/array.jpg"
+weight: 1
+---
+
+Christopher Alexander 在 https://book.douban.com/subject/1177968/[《建筑的永恒之道》^] 中说：“每一个模式描述了一个在我们周围不断重复发生的问题，以及该问题的解决方案的核心。这样，你就能一次又一次地使用该方案而不必做重复劳动。”受此影响，GoF 总结经验，写出了著名的 https://book.douban.com/subject/34262305/[《设计模式》^]。
+
+在算法中，也有很多类似设计模式这样的解决方案。D瓜哥称其为“算法模式”。后面，慢慢写文章一一介绍一下。由浅及深，今天先来介绍最简单的一个模式：差分数组。
+
+== 差分数组
+
+差分数组：差分数组就是原始数组相邻元素之间的差。举例如下：
+
+|===
+|下标 |0 |1 |2 |3 |4 |5
+
+|原始数组
+|5
+|9
+|2
+|6
+|5
+|3
+
+|差分数组
+|5
+|4
+|-7
+|4
+|-1
+|-2
+|===
+
+差分数组是从原始数组构造出来的一个辅助数组，表示相邻元素直接的差值。可用于解决需要对数组一个区间内同时做加减的操作。比如：随着公交站各个站台上下车，判断公交车是否超载。
+
+== LeetCode 370. 区间加法
+
+https://leetcode.cn/problems/range-addition/[LeetCode - 370. 区间加法 ^]
+
+假设你有一个长度为 `n` 的数组，初始情况下所有的数字均为 `0`，你将会被给出 `k` 个更新的操作。
+
+其中，每个操作会被表示为一个三元组：`[startIndex, endIndex,
+inc]`，表示需要将子数组 `A[startIndex ... endIndex]`（含 `startIndex` 和
+`endIndex`）增加 `inc`。
+
+请你返回 `k` 次操作后的数组。
+
+*示例:*
+
+[source%nowrap,java,{source_attr}]
+----
+输入: length = 5, updates = [[1,3,2],[2,4,3],[0,2,-2]]
+输出: [-2,0,3,5,3]
+----
+
+*解释:*
+
+[source%nowrap,java,{source_attr}]
+----
+初始状态:
+[0,0,0,0,0]
+
+进行了操作 [1,3,2] 后的状态:
+[0,2,2,2,0]
+
+进行了操作 [2,4,3] 后的状态:
+[0,2,5,5,3]
+
+进行了操作 [0,2,-2] 后的状态:
+[-2,0,3,5,3]
+----
+
+=== 思路分析
+
+构造差分数组，把变量记录在差分数组上进行打标，全部打标完成后，再从第二项开始逐项求与前一项的累加值。
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * @author D瓜哥 · https://www.diguage.com
+ * @since 2025-02-26 19:42:50
+ */
+public int[] getModifiedArray(int length, int[][] updates) {
+  if (updates == null || updates.length == 0) {
+    return new int[length];
+  }
+  // 数组元素初始即为 0，差值也是 0，则无需多余计算差分数组
+  int[] diff = new int[length];
+
+  for (int[] update : updates) {
+    int start = update[0];
+    int end = update[1];
+    int val = update[2];
+    diff[start] += val;
+    if (end + 1 < diff.length) {
+      diff[end + 1] -= val;
+    }
+  }
+
+  for (int i = 1; i < length; i++) {
+    diff[i] += diff[i - 1];
+  }
+  return diff;
+}
+----
+
+
+== LeetCode 1094. 拼车
+
+https://leetcode.cn/problems/car-pooling/[LeetCode - 1094. 拼车 ^]
+
+车上最初有 `capacity` 个空座位。车 **只能** 向一个方向行驶（也就是说，*不允许掉头或改变方向*）
+
+给定整数 `capacity` 和一个数组 `trips`， `trip[i] = [numPassengers, from, to]` 表示第 `i` 次旅行有 `+numPassengers+`~`+i+`~ 乘客，接他们和放他们的位置分别是 `+from+`~`+i+`~ 和 `+to+`~`+i+`~ 。这些位置是从汽车的初始位置向东的公里数。
+
+当且仅当你可以在所有给定的行程中接送所有乘客时，返回 `+true+`，否则请返回
+`+false+`。
+
+*示例 1：*
+
+[source%nowrap,java,{source_attr}]
+----
+输入：trips = [[2,1,5],[3,3,7]], capacity = 4
+输出：false
+----
+
+*示例 2：*
+
+[source%nowrap,java,{source_attr}]
+----
+输入：trips = [[2,1,5],[3,3,7]], capacity = 5
+输出：true
+----
+
+*提示：*
+
+* `+1 <= trips.length <= 1000+`
+* `+trips[i].length == 3+`
+* `+1 <= numPassengers+`~`+i+`~`+ \<= 100+`
+* `+0 <= from+`~`+i+`~`+ < to+`~`+i+`~`+ \<= 1000+`
+* `+1 <= capacity <= 10+`^`+5+`^
+
+=== 思路分析
+
+这也是一个很典型的差分数组问题。题目是否可以接送所有乘客，就是判断在接送过程中是否超载。发现超载则为否，没有发现超载则可以。
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * @author D瓜哥 · https://www.diguage.com
+ * @since 2024-07-05 15:01:49
+ */
+public boolean carPooling(int[][] trips, int capacity) {
+  if (trips == null || trips.length == 0) {
+    return true;
+  }
+  int length = Integer.MIN_VALUE;
+  for (int[] trip : trips) {
+    if (trip[0] > capacity) {
+      return false;
+    }
+    length = Math.max(length, trip[2]);
+  }
+  // 差分数组
+  int[] diff = new int[length + 1];
+  for (int[] trip : trips) {
+    int cap = trip[0];
+    int start = trip[1];
+    int end = trip[2];
+    diff[start] += cap;
+    if (diff[start] > capacity) {
+      return false;
+    }
+    diff[end] -= cap;
+  }
+  for (int i = 1; i < diff.length; i++) {
+    diff[i] += diff[i - 1];
+    if (diff[i] > capacity) {
+      return false;
+    }
+  }
+  return true;
+}
+----
