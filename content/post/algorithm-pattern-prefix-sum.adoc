@@ -1,0 +1,95 @@
+---
+title: "算法模式：前缀和"
+date: 2025-02-27T19:47:34+08:00
+draft: false
+keywords: ["数组","前缀和", "算法", "LeetCode"]
+tags: ["数组"]
+categories: ["算法"]
+thumbnail: "images/data-structure/array.jpg"
+weight: 1
+---
+
+在上一篇文章 https://www.diguage.com/post/algorithm-pattern-difference-array/[算法模式：差分数组^]，本篇文章，继续介绍数组相关的算法模式：前缀和。
+
+== 前缀和
+
+前缀和可以简单理解为「数列的前 n 项的和」。具体过程如图所示：
+
+image::/images/data-structure/prefix-sum.svg[title="前缀和",alt="前缀和",{image_attr}]
+
+这是一种重要的预处理方式，也就是需要额外的空间并且提前计算好这些值。如果使用得当，能大大降低查询的时间复杂度。
+
+== LeetCode 303. 区域和检索 - 数组不可变
+
+https://leetcode.cn/problems/range-sum-query-immutable/[LeetCode - 303. 区域和检索 - 数组不可变 ^]
+
+给定一个整数数组 `nums`，处理以下类型的多个查询:
+
+. 计算索引 `left` 和 `right` （包含 `left` 和 `right`）之间的
+`nums` 元素的 *和* ，其中 `left \<= right`
+
+实现 `NumArray` 类：
+
+* `NumArray(int[] nums)` 使用数组 `nums` 初始化对象
+* `int sumRange(int left, int right)` 返回数组 `nums` 中索引 `left` 和 `right` 之间的元素的 *总和*，包含 `left` 和 `right` 两点（也就是 `nums[left] + nums[left + 1] + ... + nums[right]` )
+
+*示例 1：*
+
+[source%nowrap,java,{source_attr}]
+----
+输入：
+["NumArray", "sumRange", "sumRange", "sumRange"]
+[[[-2, 0, 3, -5, 2, -1]], [0, 2], [2, 5], [0, 5]]
+输出：
+[null, 1, -1, -3]
+
+解释：
+NumArray numArray = new NumArray([-2, 0, 3, -5, 2, -1]);
+numArray.sumRange(0, 2); // return 1 ((-2) + 0 + 3)
+numArray.sumRange(2, 5); // return -1 (3 + (-5) + 2 + (-1))
+numArray.sumRange(0, 5); // return -3 ((-2) + 0 + 3 + (-5) + 2 + (-1))
+----
+
+*提示：*
+
+* `+1 <= nums.length <= 10+`^`+4+`^
+* `+-10+`^`+5+`^`+<= nums[i] <= 10+`^`+5+`^
+* `+0 <= i <= j < nums.length+`
+* 最多调用 `+10+`^`+4+`^ 次 `+sumRange+` 方法
+
+=== 思路分析
+
+这道题最普通的解法就是每次调用 `sumRange` 方法时，就做遍历相加。但是，这样的话，算法的时间复杂度就会是 stem:[O(n)]。如果使用前缀和，则能将时间复杂度降低到 stem:[O(1)]。只不过，需要使用额外的空间，复杂度为： stem:[O(n)]。
+
+image::/images/data-structure/LeetCode-0303.svg[title="LeetCode 303. 区域和检索",alt="LeetCode 303. 区域和检索",{image_attr}]
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * @author D瓜哥 · https://www.diguage.com
+ * @since 2025-02-26 19:42:50
+ */
+class NumArray {
+  int[] sums;
+
+  public NumArray(int[] nums) {
+    sums = new int[nums.length + 1];
+    int sum = 0;
+    sums[0] = 0;
+    for (int i = 0; i < nums.length; i++) {
+      sum += nums[i];
+      sums[i + 1] = sum;
+    }
+  }
+
+  public int sumRange(int left, int right) {
+    return sums[right + 1] - sums[left];
+  }
+}
+----
+
+另外， https://leetcode.cn/problems/path-sum-iii/description/[LeetCode 437. 路径总和 III^] 也是同样的技巧，有机会再更新。
+
+== 参考资料
+
+. https://oi-wiki.org/basic/prefix-sum/[前缀和 & 差分^]
