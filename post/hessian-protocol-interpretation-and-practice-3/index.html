@@ -1,0 +1,1146 @@
+<!doctype html><html class=no-js lang=zh-cn><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><meta http-equiv=X-UA-Compatible content="IE=edge"><title>Hessian 协议解释与实战（三）：字符串 - "地瓜哥"博客网</title>
+<script>(function(e,t){e[t]=e[t].replace("no-js","js")})(document.documentElement,"className")</script><meta name=keywords content="Hessian,序列化,协议,Java,微服务,架构,程序设计,编码,字符集,UTF-8,UTF-16,Unicode,Java,微服务,架构,设计,序列化,编码,系统架构,程序设计"><meta name=description content><meta property="og:url" content="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-3/"><meta property="og:site_name" content='"地瓜哥"博客网'><meta property="og:title" content="Hessian 协议解释与实战（三）：字符串"><meta property="og:description" content=" 前段时间，翻译了 Hessian 2.0 的序列化协议，发布在了 Hessian 2.0 序列化协议（中文版）。但是，其中有很多言语不详之处。所以，接下来会用几篇文章来详细解释并实践一下 Hessian 序列化协议，以求做到知其然知其所以然。目录如下：
+Hessian 2.0 序列化协议（中文版） — Hessian 序列化协议的中文翻译版。根据后面的“协议解释与实战”系列文章，增加了协议内容错误提示。
+Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数 — 介绍布尔型数据、日期类型、浮点类型数据和整数类型数据等四种类型的数据的处理。
+Hessian 协议解释与实战（二）：长整型、二进制数据与 Null — 介绍长整数类型数据、二进制数据和 null 等三种类型的数据的处理。
+Hessian 协议解释与实战（三）：字符串 — 专门介绍了关于字符串的处理。由于字符串需要铺垫的基础知识比较多，处理细节也有繁琐，所以单独成篇来介绍。
+Hessian 源码分析（Java） — 开始第四篇分析之前，先来介绍一下 Hessian 的源码实现。方便后续展开说明。
+Hessian 协议解释与实战（四）：数组与集合 — 铺垫了一些关于实例对象的处理，重点介绍关于数组和集合的相关处理。
+Hessian 协议解释与实战（五）：对象与映射 — 重点介绍关于对象与映射的相关处理。
+Hessian、Msgpack 和 JSON 实例对比 — 用实例对比 JSON、Hessian 和 MessagePack 的区别。
+Avro、ProtoBuf、Thrift 的模式演进之路 — 翻译的 Martin Kleppmann 的文章，重点对比了 Avro、ProtoBuf、Thrift 的序列化处理思路。
+在上一篇文章 Hessian 协议解释与实战（二）：长整型、二进制数据与 Null 中研究了长整型、二进制数据与 null 等三种数据类型的处理方式。接下来，我们再来介绍字符串的处理情况。"><meta property="og:locale" content="zh_cn"><meta property="og:type" content="article"><meta property="article:section" content="post"><meta property="article:published_time" content="2022-05-04T16:09:05+00:00"><meta property="article:modified_time" content="2024-05-05T14:47:12+08:00"><meta property="article:tag" content="Java"><meta property="article:tag" content="微服务"><meta property="article:tag" content="架构"><meta property="article:tag" content="设计"><meta property="article:tag" content="序列化"><meta property="article:tag" content="编码"><meta name=twitter:card content="summary"><meta name=twitter:title content="Hessian 协议解释与实战（三）：字符串"><meta name=twitter:description content=" 前段时间，翻译了 Hessian 2.0 的序列化协议，发布在了 Hessian 2.0 序列化协议（中文版）。但是，其中有很多言语不详之处。所以，接下来会用几篇文章来详细解释并实践一下 Hessian 序列化协议，以求做到知其然知其所以然。目录如下：
+Hessian 2.0 序列化协议（中文版） — Hessian 序列化协议的中文翻译版。根据后面的“协议解释与实战”系列文章，增加了协议内容错误提示。
+Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数 — 介绍布尔型数据、日期类型、浮点类型数据和整数类型数据等四种类型的数据的处理。
+Hessian 协议解释与实战（二）：长整型、二进制数据与 Null — 介绍长整数类型数据、二进制数据和 null 等三种类型的数据的处理。
+Hessian 协议解释与实战（三）：字符串 — 专门介绍了关于字符串的处理。由于字符串需要铺垫的基础知识比较多，处理细节也有繁琐，所以单独成篇来介绍。
+Hessian 源码分析（Java） — 开始第四篇分析之前，先来介绍一下 Hessian 的源码实现。方便后续展开说明。
+Hessian 协议解释与实战（四）：数组与集合 — 铺垫了一些关于实例对象的处理，重点介绍关于数组和集合的相关处理。
+Hessian 协议解释与实战（五）：对象与映射 — 重点介绍关于对象与映射的相关处理。
+Hessian、Msgpack 和 JSON 实例对比 — 用实例对比 JSON、Hessian 和 MessagePack 的区别。
+Avro、ProtoBuf、Thrift 的模式演进之路 — 翻译的 Martin Kleppmann 的文章，重点对比了 Avro、ProtoBuf、Thrift 的序列化处理思路。
+在上一篇文章 Hessian 协议解释与实战（二）：长整型、二进制数据与 Null 中研究了长整型、二进制数据与 null 等三种数据类型的处理方式。接下来，我们再来介绍字符串的处理情况。"><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link rel=dns-prefetch href=//fonts.googleapis.com><link rel=dns-prefetch href=//fonts.gstatic.com><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Open+Sans:400,400i,700"><link rel=stylesheet href=/css/style.min.css><link rel=stylesheet href=/css/asciidoctor.css><link rel=stylesheet href=/css/rouge-monokai.css><link rel="shortcut icon" href=/favicon.ico><script async src="https://www.googletagmanager.com/gtag/js?id=G-1MMT2NLEL4"></script><script>var dnt,doNotTrack=!1;if(!1&&(dnt=navigator.doNotTrack||window.doNotTrack||navigator.msDoNotTrack,doNotTrack=dnt=="1"||dnt=="yes"),!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-1MMT2NLEL4")}</script><script id=baidu_analytics>var _hmt=_hmt||[];(function(){var e,t=document.createElement("script");t.src="https://hm.baidu.com/hm.js?e56e7dd0a120b414f5741f4c5e5218ea",e=document.getElementsByTagName("script")[0],e.parentNode.insertBefore(t,e)})()</script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css></head><body class=body><div class="container container--outer"><header class=header><div class="container header__container"><div class=logo><a class=logo__link href=/ title='"地瓜哥"博客网' rel=home><div class="logo__item logo__text"><div class=logo__title>"地瓜哥"博客网</div><div class=logo__tagline>分享技术带来的喜悦 — https://www.diguage.com/</div></div></a></div><nav class=menu><button class=menu__btn aria-haspopup=true aria-expanded=false tabindex=0>
+<span class=menu__btn-title tabindex=-1>菜单</span></button><ul class=menu__list><li class=menu__item><a class=menu__link href=/><span class=menu__text>首页</span></a></li><li class=menu__item><a class=menu__link href=/categories/><span class=menu__text>分类</span></a></li><li class=menu__item><a class=menu__link href=/about/><span class=menu__text>关于</span></a></li><li class=menu__item><a class=menu__link href=/archives/><span class=menu__text>归档</span></a></li></ul></nav></div></header><div class="wrapper flex"><div class=primary><main class=main role=main><article class=post><header class=post__header><h1 class=post__title>Hessian 协议解释与实战（三）：字符串</h1><div class="post__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2022-05-04T16:09:05Z>2022-05-04</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/ rel=category>系统架构</a>, <a class=meta__link href=/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/ rel=category>程序设计</a></span></div></div></header><figure class="post__thumbnail thumbnail"><img class=thumbnail__image src=/images/common/confused-target-vector.jpg alt="Hessian 协议解释与实战（三）：字符串"></figure><div class="content post__content clearfix"><div class=paragraph><p>前段时间，翻译了 Hessian 2.0 的序列化协议，发布在了 <a href=https://www.diguage.com/post/hessian-serialization-protocol/ target=_blank rel=noopener>Hessian 2.0 序列化协议（中文版）</a>。但是，其中有很多言语不详之处。所以，接下来会用几篇文章来详细解释并实践一下 Hessian 序列化协议，以求做到知其然知其所以然。目录如下：</p></div><div class="olist arabic"><ol class=arabic><li><p><a href=https://www.diguage.com/post/hessian-serialization-protocol/ target=_blank rel=noopener>Hessian 2.0 序列化协议（中文版）</a> — Hessian 序列化协议的中文翻译版。根据后面的“协议解释与实战”系列文章，增加了协议内容错误提示。</p></li><li><p><a href=https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/ target=_blank rel=noopener>Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数</a> — 介绍布尔型数据、日期类型、浮点类型数据和整数类型数据等四种类型的数据的处理。</p></li><li><p><a href=https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-2/ target=_blank rel=noopener>Hessian 协议解释与实战（二）：长整型、二进制数据与 Null</a> — 介绍长整数类型数据、二进制数据和 <code>null</code> 等三种类型的数据的处理。</p></li><li><p><a href=https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-3/ target=_blank rel=noopener>Hessian 协议解释与实战（三）：字符串</a> — 专门介绍了关于字符串的处理。由于字符串需要铺垫的基础知识比较多，处理细节也有繁琐，所以单独成篇来介绍。</p></li><li><p><a href=https://www.diguage.com/post/hessian-source-analysis-for-java/ target=_blank rel=noopener>Hessian 源码分析（Java）</a> — 开始第四篇分析之前，先来介绍一下 Hessian 的源码实现。方便后续展开说明。</p></li><li><p><a href=https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-4/ target=_blank rel=noopener>Hessian 协议解释与实战（四）：数组与集合</a> — 铺垫了一些关于实例对象的处理，重点介绍关于数组和集合的相关处理。</p></li><li><p><a href=https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-5/ target=_blank rel=noopener>Hessian 协议解释与实战（五）：对象与映射</a> — 重点介绍关于对象与映射的相关处理。</p></li><li><p><a href=https://www.diguage.com/post/hessian-vs-msgpack-vs-json/ target=_blank rel=noopener>Hessian、Msgpack 和 JSON 实例对比</a> — 用实例对比 JSON、Hessian 和 MessagePack 的区别。</p></li><li><p><a href=https://www.diguage.com/post/schema-evolution-in-avro-protobuf-thrift target=_blank rel=noopener>Avro、ProtoBuf、Thrift 的模式演进之路</a> — 翻译的 Martin Kleppmann 的文章，重点对比了 Avro、ProtoBuf、Thrift 的序列化处理思路。</p></li></ol></div><hr><div class=paragraph><p>在上一篇文章 <a href=https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-2/ target=_blank rel=noopener>Hessian 协议解释与实战（二）：长整型、二进制数据与 Null</a> 中研究了长整型、二进制数据与 <code>null</code> 等三种数据类型的处理方式。接下来，我们再来介绍字符串的处理情况。</p></div><div class=sect1><h2 id=_基础工具方法>基础工具方法</h2><div class=sectionbody><div class=paragraph><p>基础工具方法就不再赘述，请直接参考 <a href=https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/#helper-methods target=_blank rel=noopener>Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数：基础工具方法</a> 中提到的几个方法。</p></div></div></div><div class=sect1><h2 id=string>字符串</h2><div class=sectionbody><div class=paragraph><p>在 <a href=https://www.diguage.com/post/hessian-serialization-protocol/#string target=_blank rel=noopener>Hessian 2.0 序列化协议（中文版）：字符串类型数据</a> 中对字符串类型的数据做了描述。总得来说，还算比较清楚。但是一些细节不是特别清楚，比如“以 UTF-8 编码的 16 位 Unicode 字符串”，再比如，四个字节的 UTF-8 怎么被 16 位 Unicode 字符串表示等。这里深究一下。</p></div><div class=paragraph><p>在讲述 Hessian 如果处理字符串之前，我们先简要介绍一些编码与字符串的基础知识，方便后续内容展开。</p></div><div class=sect2><h3 id=_编码与字符集概述>编码与字符集概述</h3><div class=paragraph><p>关于字符串编码有非常非常多的计算机底层知识。在探究的过程中，还是费了不少力气。关于 Unicode、UTF-8、UTF-16（以及相关变种 UTF-16BE 和 UTF-166LE）等相关知识有非常非常多，这里不展开讲解。那里提到了相关知识，会简单诉说一下，只是做些铺垫工作。后续有机会，再发文细讲。</p></div><div class=sidebarblock><div class=content><div class=paragraph><p>关于编码与字符集的问题，专门去查了一些资料，越了解越心惊，没想到这里面的水是如此之深，不是简单几句就能说明白了。干脆给自己挖个坑，专门写一篇文章来详细说明吧。先把坑位选好： <a href=https://www.diguage.com/post/dive-into-encoding-and-character-set/ target=_blank rel=noopener>细说编码与字符集</a>。</p></div></div></div><div class=sect3><h4 id=_ascii_码>ASCII 码</h4><div class=paragraph><p>ASCII 是 American Standard Code for Information Interchange 的简称，定义了128个字符的编码规则，其字符集合叫 ASCII 字符集。完整列表如下：</p></div><div class="imageblock text-center"><div class=content><img src=/images/encoding/ascii-table.svg alt="ASCII Table" width=95%></div></div></div><div class=sect3><h4 id=_unicode>Unicode</h4><div class=paragraph><p>ASCII 码是美国制定出来针对英语的编码标准；后来，中国发展出来自己的 GB2312，后来为了增加对繁体字的支持，又扩展出来了 GB18030。其他国家也发展出来自己的编码标准。为了解决不同国家间却经常出现编码不相容的情况，发展出了 Unicode 编码。</p></div><div class=paragraph><p>在文字处理方面，Unicode 为每一个字符而非字形定义唯一的代码（即一个整数）。换句话说，统一码以一种抽象的方式（即数字）来处理字符，并将视觉上的演绎工作（例如字体大小、外观形状、字体形态、文体等）留给其他软件来处理。D瓜哥的理解就是给每个字符分配了一个身份证号。</p></div><div class=paragraph><p>在表示一个 Unicode 的字元时，通常会用 “U+” 然后紧接着一组十六进位的数字来表示这一个字元。</p></div><div class=paragraph><p>Unicode 的实现方式称为 Unicode转换格式（Unicode Transformation Format，简称为UTF）。目前，常用的为 UTF-8 和 UTF-16。</p></div></div><div class=sect3><h4 id=_utf_8_编码>UTF-8 编码</h4><div class=paragraph><p>Unicode 和 UTF-8 的转换关系比较统一。用表格展示：</p></div><div class="imageblock text-center"><div class=content><img src=/images/encoding/utf8-encoding-scheme.svg alt="Unicode 与 UTF-8 的转换" width=95%></div></div></div><div class=sect3><h4 id=utf-16>UTF-16 编码</h4><div class=paragraph><p>UTF-16 目前可以分为两种转化格式：</p></div><div class="olist arabic"><ol class=arabic><li><p>如 <code>U ∈ [U+0000, U+D7FF]</code> or <code>U ∈ [U+E000, U+FFFF]</code>，则 UTF-16 和 Unicode 相同</p></li><li><p>如果 <code>U ∈ [U+010000, U+10FFFF]</code>，则转化关系略复杂，具体如下：</p><div class=openblock><div class=content><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code>// Basic Multilingual Plane (BMP)
+U  ∈ [U+0000, U+D7FF] or U ∈ [U+E000, U+FFFF]
+U+ⒶⒷⒸⒹ → 0xⒶⒷⒸⒹ
+
+// Supplementary Planes
+U  ∈ [U+010000, U+10FFFF]                // U - 0x10000 之后，只有 20 位
+U&#39; = ⑲⑱⑰⑯⑮⑭⑬⑫⑪⑩ ⑨⑧⑦⑥⑤④③②①⓪  // U - 0x10000
+W₁ = 110110⑲⑱ ⑰⑯⑮⑭⑬⑫⑪⑩            // 0xD800 + ⑲⑱⑰⑯⑮⑭⑬⑫⑪⑩
+W₂ = 110111⑨⑧ ⑦⑥⑤④③②①⓪            // 0xDC00 + ⑨⑧⑦⑥⑤④③②①⓪</code></pre></div></div><div class="imageblock text-center"><div class=content><img src=/images/encoding/utf16-surrogate-decoder.png alt="UTF-16 surrogate decoder" width=95%></div></div><div class=paragraph><p>编码之后，每个字符的编码范围是 <code>W ∈ [0xD800, 0xDFFF]</code>，其中，high surrogate <code>W₁ ∈ [0xD800, 0xDBFF]</code>， low surrogate <code>W₂ ∈ [0xDC00, 0xDFFF]</code>，正好可以 BMP 的字区分开。</p></div></div></div></li></ol></div><div class=paragraph><p>铺垫工作基本够用了，下面开始介绍 Hessian 对字符串的处理。</p></div></div></div><div class=sect2><h3 id=_hessian_对字符串的基本处理>Hessian 对字符串的基本处理</h3><div class=paragraph><p>坦白讲，Hessian 对字符串处理的描述一脸懵逼。所以，还是直接结合 Hessian 的代码，来说明一下 Hessian 中对单个字符怎么处理的。直接上代码：</p></div><div class=listingblock><div class=title>Hessian 中 Hessian2Output#printString 的代码</div><div class=content><pre class="rouge highlight nowrap"><code data-lang=java><span class=kd>public</span> <span class=kt>void</span> <span class=nf>printString</span><span class=o>(</span><span class=nc>String</span> <span class=n>v</span><span class=o>,</span> <span class=kt>int</span> <span class=n>strOffset</span><span class=o>,</span> <span class=kt>int</span> <span class=n>length</span><span class=o>)</span>
+  <span class=kd>throws</span> <span class=nc>IOException</span>
+<span class=o>{</span>
+  <span class=kt>int</span> <span class=n>offset</span> <span class=o>=</span> <span class=n>_offset</span><span class=o>;</span>
+  <span class=kt>byte</span> <span class=o>[]</span><span class=n>buffer</span> <span class=o>=</span> <span class=n>_buffer</span><span class=o>;</span>
+
+  <span class=k>for</span> <span class=o>(</span><span class=kt>int</span> <span class=n>i</span> <span class=o>=</span> <span class=mi>0</span><span class=o>;</span> <span class=n>i</span> <span class=o>&lt;</span> <span class=n>length</span><span class=o>;</span> <span class=n>i</span><span class=o>++)</span> <span class=o>{</span>
+    <span class=k>if</span> <span class=o>(</span><span class=no>SIZE</span> <span class=o>&lt;=</span> <span class=n>offset</span> <span class=o>+</span> <span class=mi>16</span><span class=o>)</span> <span class=o>{</span>
+      <span class=n>_offset</span> <span class=o>=</span> <span class=n>offset</span><span class=o>;</span>
+      <span class=n>flushBuffer</span><span class=o>();</span>
+      <span class=n>offset</span> <span class=o>=</span> <span class=n>_offset</span><span class=o>;</span>
+    <span class=o>}</span>
+
+    <span class=kt>char</span> <span class=n>ch</span> <span class=o>=</span> <span class=n>v</span><span class=o>.</span><span class=na>charAt</span><span class=o>(</span><span class=n>i</span> <span class=o>+</span> <span class=n>strOffset</span><span class=o>);</span>
+
+    <span class=k>if</span> <span class=o>(</span><span class=n>ch</span> <span class=o>&lt;</span> <span class=mh>0x80</span><span class=o>)</span>
+      <span class=n>buffer</span><span class=o>[</span><span class=n>offset</span><span class=o>++]</span> <span class=o>=</span> <span class=o>(</span><span class=kt>byte</span><span class=o>)</span> <span class=o>(</span><span class=n>ch</span><span class=o>);</span>
+    <span class=k>else</span> <span class=nf>if</span> <span class=o>(</span><span class=n>ch</span> <span class=o>&lt;</span> <span class=mh>0x800</span><span class=o>)</span> <span class=o>{</span>
+      <span class=n>buffer</span><span class=o>[</span><span class=n>offset</span><span class=o>++]</span> <span class=o>=</span> <span class=o>(</span><span class=kt>byte</span><span class=o>)</span> <span class=o>(</span><span class=mh>0xc0</span> <span class=o>+</span> <span class=o>((</span><span class=n>ch</span> <span class=o>&gt;&gt;</span> <span class=mi>6</span><span class=o>)</span> <span class=o>&amp;</span> <span class=mh>0x1f</span><span class=o>));</span>
+      <span class=n>buffer</span><span class=o>[</span><span class=n>offset</span><span class=o>++]</span> <span class=o>=</span> <span class=o>(</span><span class=kt>byte</span><span class=o>)</span> <span class=o>(</span><span class=mh>0x80</span> <span class=o>+</span> <span class=o>(</span><span class=n>ch</span> <span class=o>&amp;</span> <span class=mh>0x3f</span><span class=o>));</span>
+    <span class=o>}</span>
+    <span class=k>else</span> <span class=o>{</span>
+      <span class=n>buffer</span><span class=o>[</span><span class=n>offset</span><span class=o>++]</span> <span class=o>=</span> <span class=o>(</span><span class=kt>byte</span><span class=o>)</span> <span class=o>(</span><span class=mh>0xe0</span> <span class=o>+</span> <span class=o>((</span><span class=n>ch</span> <span class=o>&gt;&gt;</span> <span class=mi>12</span><span class=o>)</span> <span class=o>&amp;</span> <span class=mh>0xf</span><span class=o>));</span>
+      <span class=n>buffer</span><span class=o>[</span><span class=n>offset</span><span class=o>++]</span> <span class=o>=</span> <span class=o>(</span><span class=kt>byte</span><span class=o>)</span> <span class=o>(</span><span class=mh>0x80</span> <span class=o>+</span> <span class=o>((</span><span class=n>ch</span> <span class=o>&gt;&gt;</span> <span class=mi>6</span><span class=o>)</span> <span class=o>&amp;</span> <span class=mh>0x3f</span><span class=o>));</span>
+      <span class=n>buffer</span><span class=o>[</span><span class=n>offset</span><span class=o>++]</span> <span class=o>=</span> <span class=o>(</span><span class=kt>byte</span><span class=o>)</span> <span class=o>(</span><span class=mh>0x80</span> <span class=o>+</span> <span class=o>(</span><span class=n>ch</span> <span class=o>&amp;</span> <span class=mh>0x3f</span><span class=o>));</span>
+    <span class=o>}</span>
+  <span class=o>}</span>
+
+  <span class=n>_offset</span> <span class=o>=</span> <span class=n>offset</span><span class=o>;</span>
+<span class=o>}</span></code></pre></div></div><div class=paragraph><p>这段代码中，关于字符（<code>char</code>）的处理有三个分支，分开来说明一下：</p></div><div class="olist arabic"><ol class=arabic><li><p>第一个分支条件 <code>ch &lt; 0x80</code>，这里的 <code>0x80</code> 等价于 <code>8*16 + 0 = 128</code>，正好是 ASCII 编码范围内的字符。所以，这个分支的意思就很明确了： ASCII 编码范围内的字符直接使用其编码来作为序列化的结果。另外，UTF-8 在 ASCII 编码范围内，与之相同。所以，这和标准中提到的使用 UTF-8 编码是没有冲突的。</p></li><li><p>第二个分支 <code>ch &lt; 0x800</code>，坦白讲，最初看到这个数字是懵逼的。不知道这个 <code>0x800</code>。在查相关资料时，看到了 UTF-8 编码的氛围划分，在 <a href=https://en.wikipedia.org/wiki/UTF-8#Encoding target=_blank rel=noopener>UTF-8 - Wikipedia</a> 中看到有 <code>U+0800</code>。在其上的一行内容显示为两个字节的 UTF-8 编码范围是 <code>U+0080</code> ~ <code>U+07FF</code> ，其二进制表示是 <code>110xxxxx</code> + <code>10xxxxxx</code>。这里的 <code>U+07FF</code> 和 <code>0x800</code> 正好相邻，结合序列化的结果来看，两个字节表示的 UTF-8 的字符直接是使用 UTF-8 编码来作为其序列化结果。所以，从这点可以看出，这里的 <code>0x800</code> 就是两个字节表示的 UTF-8 的字符的上限。另外， UTF-8 编码范围的 <code>U+0080</code> 和上面的 <code>0x80</code> 也是相吻合的。</p><div class=openblock><div class=content><div class="imageblock text-center"><div class=content><img src=/images/encoding/code-point-utf8-conversion.png alt="code point utf8 conversion" width=95%></div></div></div></div></li><li><p>第三个情况就比较复杂了。我们先来看看 <a href=https://docs.oracle.com/javase/specs/jls/se17/html/index.html target=_blank rel=noopener>《The Java® Language Specification》</a> 中怎么来定义字符的。这里直接摘录规范原文：</p><div class=openblock><div class=content><div class=quoteblock><blockquote><div class=paragraph><p>The Unicode standard was originally designed as a fixed-width 16-bit character encoding. It has since been changed to allow for characters whose representation requires more than 16 bits. The range of legal code points is now U+0000 to U+10FFFF, using the hexadecimal U+n notation. Characters whose code points are greater than U+FFFF are called supplementary characters. To represent the complete range of characters using only 16-bit units, the Unicode standard defines an encoding called UTF-16. In this encoding, supplementary characters are represented as pairs of 16-bit code units, the first from the high-surrogates range (U+D800 to U+DBFF), and the second from the low-surrogates range (U+DC00 to U+DFFF).</p></div><div class=paragraph><p>The Java programming language represents text in sequences of 16-bit code units, using the UTF-16 encoding.</p></div></blockquote><div class=attribution>— The Java® Language Specification<br><cite>Java SE 17 Edition</cite></div></div><div class=paragraph><p>从这个规范中可以看出，Java 使用 UTF-16 编码来表示文本。</p></div><div class=paragraph><p>另外，在 <a href=https://en.wikipedia.org/wiki/UTF-16 target=_blank rel=noopener>UTF-16 - Wikipedia</a> 中有如下描述：</p></div><div class=quoteblock><blockquote><div class=paragraph><p>Code points from the other planes (called Supplementary Planes) are encoded as two 16-bit code units called a surrogate pair。</p></div><div class=paragraph><p>……</p></div><div class=paragraph><p>Java originally used UCS-2, and added UTF-16 supplementary character support in J2SE 5.0.</p></div></blockquote><div class=attribution>— UTF-16<br><cite>Wikipedia</cite></div></div><div class=paragraph><p>从这些描述中，可以看出，在 Java 中，在表示 <a href=https://en.wikipedia.org/wiki/Plane_(Unicode)#Basic_Multilingual_Plane target=_blank rel=noopener>BMP (Basic Multilingual Plane)</a> 的字符时，使用一个 <code>char</code> 字符来表示，而且 <code>char</code> 值等于字符的 UTF-16 编码；在表示除 BMP 之外的 <strong>supplementary</strong> 字符时，使用两个 <code>char</code> 表示，两个 <code>char</code> 的值是 UTF-16 编码。</p></div><div class=paragraph><p>基本的铺垫工作已经够了，我们来结合示例看一下 Hessian 对字符串的处理过程。</p></div></div></div></li></ol></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code data-lang=java><span class=cm>/**
+ * @author D瓜哥 · <a href=https://www.diguage.com/ target=_blank>https://www.diguage.com/</a>
+ */</span>
+<span class=nd>@Test</span>
+<span class=kd>public</span> <span class=kt>void</span> <span class=nf>testString</span><span class=o>()</span> <span class=kd>throws</span> <span class=nc>Throwable</span> <span class=o>{</span>
+    <span class=c1>// 单字节字符串</span>
+    <span class=n>stringTo</span><span class=o>(</span><span class=s>&#34;D&#34;</span><span class=o>);</span>
+    <span class=c1>// 双字节字符串</span>
+    <span class=n>stringTo</span><span class=o>(</span><span class=s>&#34;Å&#34;</span><span class=o>);</span>
+    <span class=c1>// 三字节字符串</span>
+    <span class=n>stringTo</span><span class=o>(</span><span class=s>&#34;瓜&#34;</span><span class=o>);</span>
+    <span class=c1>// 四字节字符串</span>
+    <span class=n>stringTo</span><span class=o>(</span><span class=s>&#34;😂&#34;</span><span class=o>);</span>
+    <span class=c1>// 😂 = U+1f602</span>
+    <span class=c1>// 第一步，先将 Unicode 转换成 UTF-16 编码；</span>
+    <span class=c1>//      对于超过 BMP 的字符，UTF-16 会将其拆</span>
+    <span class=c1>//      分成两个字符来处理。由于 Java 内部，char</span>
+    <span class=c1>//      类型的数据就是使用 UTF-16 编码的，所以，</span>
+    <span class=c1>//      这一步已经提前完成，无需再做处理。</span>
+    <span class=c1>// (打开调试，查看 char 的内容即可确认)</span>
+    <span class=c1>// 这里演示一下从 Unicode 转 UTF-16 的过程：</span>
+    <span class=c1>// U+1f602 - 0x10000 = 0x0f602</span>
+    <span class=c1>// 0x0f602 = 00 0011 1101, 10 0000 0010</span>
+    <span class=c1>//   00 0011 1101 + 0XD800</span>
+    <span class=c1>// =         00 0011 1101</span>
+    <span class=c1>//   + 11011000 0000 0000</span>
+    <span class=c1>// ----------------------</span>
+    <span class=c1>// =   11011000 0011 1101</span>
+    <span class=c1>// = d83d</span>
+    <span class=c1>//</span>
+    <span class=c1>//   10 0000 0010 + 0xDC00</span>
+    <span class=c1>// =         10 0000 0010</span>
+    <span class=c1>//   + 11011100 0000 0000</span>
+    <span class=c1>// ----------------------</span>
+    <span class=c1>// =   11011110 0000 0010</span>
+    <span class=c1>// = de02</span>
+    <span class=c1>//</span>
+    <span class=c1>// 第二步，`char` 值大于等于 `0x800` 的 `char`，会将其</span>
+    <span class=c1>//      “值”当做 Unicode 然后转换成“3个字节的UTF-8”。</span>
+    <span class=c1>//      如果是需要两个 `char` 表示的字符，则当做两个 “Unicode 值”</span>
+    <span class=c1>//      处理，则 会转成两个“3 个字节的 UTF-8”，就是六个字节。</span>
+    <span class=c1>// 注：这里的“3个字节的UTF-8”，并不是通常说的 UTF-8 编码，</span>
+    <span class=c1>//     只是借用了“3个字节的UTF-8”的编码格式，徒有其表而已。</span>
+    <span class=c1>// 11011000 0011 1101 → 11101101 10100000 10111101</span>
+    <span class=c1>// 11011110 0000 0010 → 11101101 10111000 10000010</span>
+    <span class=c1>// 转换算法见上面的“Unicode 与 UTF-8 的转换”图表。</span>
+
+    <span class=c1>// 大家可以试试 👍 的转换： 👍 = U+1F44D</span>
+    <span class=n>stringTo</span><span class=o>(</span><span class=s>&#34;👍&#34;</span><span class=o>);</span>
+
+    <span class=c1>// 更长久的长字符串处理示例</span>
+    <span class=nc>ByteArrayOutputStream</span> <span class=n>bos</span> <span class=o>=</span> <span class=k>new</span> <span class=nc>ByteArrayOutputStream</span><span class=o>();</span>
+    <span class=nc>Hessian2Output</span> <span class=n>out</span> <span class=o>=</span> <span class=n>getHessian2Output</span><span class=o>(</span><span class=n>bos</span><span class=o>);</span>
+    <span class=n>out</span><span class=o>.</span><span class=na>writeString</span><span class=o>(</span><span class=s>&#34;D瓜哥&#34;</span><span class=o>);</span>
+    <span class=n>out</span><span class=o>.</span><span class=na>writeString</span><span class=o>(</span><span class=s>&#34;https://www.diguage.com&#34;</span><span class=o>);</span>
+    <span class=n>out</span><span class=o>.</span><span class=na>writeString</span><span class=o>(</span><span class=s>&#34;👍👍👍，老李卖瓜，自卖自夸，😂😂😂&#34;</span><span class=o>);</span>
+    <span class=n>out</span><span class=o>.</span><span class=na>close</span><span class=o>();</span>
+    <span class=kt>byte</span><span class=o>[]</span> <span class=n>hessianBytes</span> <span class=o>=</span> <span class=n>bos</span><span class=o>.</span><span class=na>toByteArray</span><span class=o>();</span>
+    <span class=nc>ByteArrayInputStream</span> <span class=n>bais</span> <span class=o>=</span> <span class=k>new</span> <span class=nc>ByteArrayInputStream</span><span class=o>(</span><span class=n>hessianBytes</span><span class=o>);</span>
+    <span class=nc>Hessian2Input</span> <span class=n>hessian2Input</span> <span class=o>=</span> <span class=n>getHessian2Input</span><span class=o>(</span><span class=n>bais</span><span class=o>);</span>
+    <span class=nc>String</span> <span class=n>s1</span> <span class=o>=</span> <span class=n>hessian2Input</span><span class=o>.</span><span class=na>readString</span><span class=o>();</span>
+    <span class=nc>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=n>s1</span><span class=o>);</span>
+    <span class=nc>String</span> <span class=n>s2</span> <span class=o>=</span> <span class=n>hessian2Input</span><span class=o>.</span><span class=na>readString</span><span class=o>();</span>
+    <span class=nc>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=n>s2</span><span class=o>);</span>
+    <span class=nc>String</span> <span class=n>s3</span> <span class=o>=</span> <span class=n>hessian2Input</span><span class=o>.</span><span class=na>readString</span><span class=o>();</span>
+    <span class=nc>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=n>s3</span><span class=o>);</span>
+    <span class=n>hessian2Input</span><span class=o>.</span><span class=na>close</span><span class=o>();</span>
+    <span class=n>bais</span><span class=o>.</span><span class=na>close</span><span class=o>();</span>
+<span class=o>}</span>
+
+<span class=cm>/**
+ * @author D瓜哥 · <a href=https://www.diguage.com/ target=_blank>https://www.diguage.com/</a>
+ */</span>
+<span class=kd>public</span> <span class=kt>void</span> <span class=nf>stringTo</span><span class=o>(</span><span class=nc>String</span> <span class=n>value</span><span class=o>)</span> <span class=kd>throws</span> <span class=nc>Throwable</span> <span class=o>{</span>
+    <span class=nc>ByteArrayOutputStream</span> <span class=n>bos</span> <span class=o>=</span> <span class=k>new</span> <span class=nc>ByteArrayOutputStream</span><span class=o>();</span>
+    <span class=nc>Hessian2Output</span> <span class=n>out</span> <span class=o>=</span> <span class=n>getHessian2Output</span><span class=o>(</span><span class=n>bos</span><span class=o>);</span>
+
+    <span class=n>out</span><span class=o>.</span><span class=na>writeString</span><span class=o>(</span><span class=n>value</span><span class=o>);</span>
+    <span class=n>out</span><span class=o>.</span><span class=na>close</span><span class=o>();</span>
+    <span class=kt>byte</span><span class=o>[]</span> <span class=n>result</span> <span class=o>=</span> <span class=n>bos</span><span class=o>.</span><span class=na>toByteArray</span><span class=o>();</span>
+
+    <span class=nc>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=s>&#34;\n== string: &#34;</span> <span class=o>+</span> <span class=n>value</span> <span class=o>+</span> <span class=s>&#34; ==&#34;</span><span class=o>);</span>
+    <span class=kt>byte</span><span class=o>[]</span> <span class=n>utf8Bytes</span> <span class=o>=</span> <span class=n>value</span><span class=o>.</span><span class=na>getBytes</span><span class=o>(</span><span class=nc>StandardCharsets</span><span class=o>.</span><span class=na>UTF_8</span><span class=o>);</span>
+    <span class=nc>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=s>&#34;== string: value UTF-8 bytes ==&#34;</span><span class=o>);</span>
+    <span class=n>printBytes</span><span class=o>(</span><span class=n>utf8Bytes</span><span class=o>);</span>
+
+    <span class=kt>byte</span><span class=o>[]</span> <span class=n>utf16Bytes</span> <span class=o>=</span> <span class=n>value</span><span class=o>.</span><span class=na>getBytes</span><span class=o>(</span><span class=nc>StandardCharsets</span><span class=o>.</span><span class=na>UTF_16</span><span class=o>);</span>
+    <span class=nc>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=s>&#34;== string: value UTF-16 bytes ==&#34;</span><span class=o>);</span>
+    <span class=n>printBytes</span><span class=o>(</span><span class=n>utf16Bytes</span><span class=o>);</span>
+
+    <span class=kt>byte</span><span class=o>[]</span> <span class=n>utf16beBytes</span> <span class=o>=</span> <span class=n>value</span><span class=o>.</span><span class=na>getBytes</span><span class=o>(</span><span class=nc>StandardCharsets</span><span class=o>.</span><span class=na>UTF_16BE</span><span class=o>);</span>
+    <span class=nc>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=s>&#34;== string: value UTF-16BE bytes ==&#34;</span><span class=o>);</span>
+    <span class=n>printBytes</span><span class=o>(</span><span class=n>utf16beBytes</span><span class=o>);</span>
+
+    <span class=kt>byte</span><span class=o>[]</span> <span class=n>utf16leBytes</span> <span class=o>=</span> <span class=n>value</span><span class=o>.</span><span class=na>getBytes</span><span class=o>(</span><span class=nc>StandardCharsets</span><span class=o>.</span><span class=na>UTF_16LE</span><span class=o>);</span>
+    <span class=nc>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=s>&#34;== string: value UTF-16LE bytes ==&#34;</span><span class=o>);</span>
+    <span class=n>printBytes</span><span class=o>(</span><span class=n>utf16leBytes</span><span class=o>);</span>
+
+    <span class=nc>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=s>&#34;== string: hessian result ==&#34;</span><span class=o>);</span>
+    <span class=n>printBytes</span><span class=o>(</span><span class=n>result</span><span class=o>);</span>
+<span class=o>}</span>
+
+
+<span class=c1>// -- 输出结果 ------------------------------------------------</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=no>D</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>8</span> <span class=n>bytes</span> <span class=o>==</span>
+  <span class=mi>68</span> <span class=mh>0x44</span> <span class=mo>01000100</span> <span class=no>D</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>16</span> <span class=n>bytes</span> <span class=o>==</span>
+  <span class=o>-</span><span class=mi>2</span> <span class=mh>0xFE</span> <span class=mi>11111110</span>
+  <span class=o>-</span><span class=mi>1</span> <span class=mh>0xFF</span> <span class=mi>11111111</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>68</span> <span class=mh>0x44</span> <span class=mo>01000100</span> <span class=no>D</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>16</span><span class=no>BE</span> <span class=n>bytes</span> <span class=o>==</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>68</span> <span class=mh>0x44</span> <span class=mo>01000100</span> <span class=no>D</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>16L</span><span class=no>E</span> <span class=n>bytes</span> <span class=o>==</span>
+  <span class=mi>68</span> <span class=mh>0x44</span> <span class=mo>01000100</span> <span class=no>D</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+   <span class=mi>1</span> <span class=mh>0x01</span> <span class=mo>00000001</span> <span class=err></span>
+  <span class=mi>68</span> <span class=mh>0x44</span> <span class=mo>01000100</span> <span class=no>D</span>
+
+<span class=o>==</span> <span class=nl>string:</span> <span class=no>Å</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>8</span> <span class=n>bytes</span> <span class=o>==</span>
+ <span class=o>-</span><span class=mi>61</span> <span class=mh>0xC3</span> <span class=mi>11000011</span>
+<span class=o>-</span><span class=mi>123</span> <span class=mh>0x85</span> <span class=mi>10000101</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>16</span> <span class=n>bytes</span> <span class=o>==</span>
+  <span class=o>-</span><span class=mi>2</span> <span class=mh>0xFE</span> <span class=mi>11111110</span>
+  <span class=o>-</span><span class=mi>1</span> <span class=mh>0xFF</span> <span class=mi>11111111</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+ <span class=o>-</span><span class=mi>59</span> <span class=mh>0xC5</span> <span class=mi>11000101</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>16</span><span class=no>BE</span> <span class=n>bytes</span> <span class=o>==</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+ <span class=o>-</span><span class=mi>59</span> <span class=mh>0xC5</span> <span class=mi>11000101</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>16L</span><span class=no>E</span> <span class=n>bytes</span> <span class=o>==</span>
+ <span class=o>-</span><span class=mi>59</span> <span class=mh>0xC5</span> <span class=mi>11000101</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+   <span class=mi>1</span> <span class=mh>0x01</span> <span class=mo>00000001</span> <span class=err></span>
+ <span class=o>-</span><span class=mi>61</span> <span class=mh>0xC3</span> <span class=mi>11000011</span>
+<span class=o>-</span><span class=mi>123</span> <span class=mh>0x85</span> <span class=mi>10000101</span>
+
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>瓜</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>8</span> <span class=n>bytes</span> <span class=o>==</span>
+ <span class=o>-</span><span class=mi>25</span> <span class=mh>0xE7</span> <span class=mi>11100111</span>
+<span class=o>-</span><span class=mi>109</span> <span class=mh>0x93</span> <span class=mi>10010011</span>
+<span class=o>-</span><span class=mi>100</span> <span class=mh>0x9C</span> <span class=mi>10011100</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>16</span> <span class=n>bytes</span> <span class=o>==</span>
+  <span class=o>-</span><span class=mi>2</span> <span class=mh>0xFE</span> <span class=mi>11111110</span>
+  <span class=o>-</span><span class=mi>1</span> <span class=mh>0xFF</span> <span class=mi>11111111</span>
+ <span class=mi>116</span> <span class=mh>0x74</span> <span class=mo>01110100</span> <span class=n>t</span>
+ <span class=o>-</span><span class=mi>36</span> <span class=mh>0xDC</span> <span class=mi>11011100</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>16</span><span class=no>BE</span> <span class=n>bytes</span> <span class=o>==</span>
+ <span class=mi>116</span> <span class=mh>0x74</span> <span class=mo>01110100</span> <span class=n>t</span>
+ <span class=o>-</span><span class=mi>36</span> <span class=mh>0xDC</span> <span class=mi>11011100</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>16L</span><span class=no>E</span> <span class=n>bytes</span> <span class=o>==</span>
+ <span class=o>-</span><span class=mi>36</span> <span class=mh>0xDC</span> <span class=mi>11011100</span>
+ <span class=mi>116</span> <span class=mh>0x74</span> <span class=mo>01110100</span> <span class=n>t</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+   <span class=mi>1</span> <span class=mh>0x01</span> <span class=mo>00000001</span> <span class=err></span>
+ <span class=o>-</span><span class=mi>25</span> <span class=mh>0xE7</span> <span class=mi>11100111</span>
+<span class=o>-</span><span class=mi>109</span> <span class=mh>0x93</span> <span class=mi>10010011</span>
+<span class=o>-</span><span class=mi>100</span> <span class=mh>0x9C</span> <span class=mi>10011100</span>
+
+<span class=o>==</span> <span class=nl>string:</span> <span class=err>😂</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>8</span> <span class=n>bytes</span> <span class=o>==</span>
+ <span class=o>-</span><span class=mi>16</span> <span class=mh>0xF0</span> <span class=mi>11110000</span>
+ <span class=o>-</span><span class=mi>97</span> <span class=mh>0x9F</span> <span class=mi>10011111</span>
+<span class=o>-</span><span class=mi>104</span> <span class=mh>0x98</span> <span class=mi>10011000</span>
+<span class=o>-</span><span class=mi>126</span> <span class=mh>0x82</span> <span class=mi>10000010</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>16</span> <span class=n>bytes</span> <span class=o>==</span>
+  <span class=o>-</span><span class=mi>2</span> <span class=mh>0xFE</span> <span class=mi>11111110</span>
+  <span class=o>-</span><span class=mi>1</span> <span class=mh>0xFF</span> <span class=mi>11111111</span>
+ <span class=o>-</span><span class=mi>40</span> <span class=mh>0xD8</span> <span class=mi>11011000</span>
+  <span class=mi>61</span> <span class=mh>0x3D</span> <span class=mo>00111101</span> <span class=o>=</span>
+ <span class=o>-</span><span class=mi>34</span> <span class=mh>0xDE</span> <span class=mi>11011110</span>
+   <span class=mi>2</span> <span class=mh>0x02</span> <span class=mo>00000010</span> <span class=err></span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>16</span><span class=no>BE</span> <span class=n>bytes</span> <span class=o>==</span>
+ <span class=o>-</span><span class=mi>40</span> <span class=mh>0xD8</span> <span class=mi>11011000</span>
+  <span class=mi>61</span> <span class=mh>0x3D</span> <span class=mo>00111101</span> <span class=o>=</span>
+ <span class=o>-</span><span class=mi>34</span> <span class=mh>0xDE</span> <span class=mi>11011110</span>
+   <span class=mi>2</span> <span class=mh>0x02</span> <span class=mo>00000010</span> <span class=err></span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>16L</span><span class=no>E</span> <span class=n>bytes</span> <span class=o>==</span>
+  <span class=mi>61</span> <span class=mh>0x3D</span> <span class=mo>00111101</span> <span class=o>=</span>
+ <span class=o>-</span><span class=mi>40</span> <span class=mh>0xD8</span> <span class=mi>11011000</span>
+   <span class=mi>2</span> <span class=mh>0x02</span> <span class=mo>00000010</span> <span class=err></span>
+ <span class=o>-</span><span class=mi>34</span> <span class=mh>0xDE</span> <span class=mi>11011110</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+   <span class=mi>2</span> <span class=mh>0x02</span> <span class=mo>00000010</span> <span class=err></span>
+ <span class=o>-</span><span class=mi>19</span> <span class=mh>0xED</span> <span class=mi>11101101</span>
+ <span class=o>-</span><span class=mi>96</span> <span class=mh>0xA0</span> <span class=mi>10100000</span>
+ <span class=o>-</span><span class=mi>67</span> <span class=mh>0xBD</span> <span class=mi>10111101</span>
+ <span class=o>-</span><span class=mi>19</span> <span class=mh>0xED</span> <span class=mi>11101101</span>
+ <span class=o>-</span><span class=mi>72</span> <span class=mh>0xB8</span> <span class=mi>10111000</span>
+<span class=o>-</span><span class=mi>126</span> <span class=mh>0x82</span> <span class=mi>10000010</span>
+
+<span class=o>==</span> <span class=nl>string:</span> <span class=err>👍</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>8</span> <span class=n>bytes</span> <span class=o>==</span>
+ <span class=o>-</span><span class=mi>16</span> <span class=mh>0xF0</span> <span class=mi>11110000</span>
+ <span class=o>-</span><span class=mi>97</span> <span class=mh>0x9F</span> <span class=mi>10011111</span>
+<span class=o>-</span><span class=mi>111</span> <span class=mh>0x91</span> <span class=mi>10010001</span>
+<span class=o>-</span><span class=mi>115</span> <span class=mh>0x8D</span> <span class=mi>10001101</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>16</span> <span class=n>bytes</span> <span class=o>==</span>
+  <span class=o>-</span><span class=mi>2</span> <span class=mh>0xFE</span> <span class=mi>11111110</span>
+  <span class=o>-</span><span class=mi>1</span> <span class=mh>0xFF</span> <span class=mi>11111111</span>
+ <span class=o>-</span><span class=mi>40</span> <span class=mh>0xD8</span> <span class=mi>11011000</span>
+  <span class=mi>61</span> <span class=mh>0x3D</span> <span class=mo>00111101</span> <span class=o>=</span>
+ <span class=o>-</span><span class=mi>36</span> <span class=mh>0xDC</span> <span class=mi>11011100</span>
+  <span class=mi>77</span> <span class=mh>0x4D</span> <span class=mo>01001101</span> <span class=no>M</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>16</span><span class=no>BE</span> <span class=n>bytes</span> <span class=o>==</span>
+ <span class=o>-</span><span class=mi>40</span> <span class=mh>0xD8</span> <span class=mi>11011000</span>
+  <span class=mi>61</span> <span class=mh>0x3D</span> <span class=mo>00111101</span> <span class=o>=</span>
+ <span class=o>-</span><span class=mi>36</span> <span class=mh>0xDC</span> <span class=mi>11011100</span>
+  <span class=mi>77</span> <span class=mh>0x4D</span> <span class=mo>01001101</span> <span class=no>M</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>16L</span><span class=no>E</span> <span class=n>bytes</span> <span class=o>==</span>
+  <span class=mi>61</span> <span class=mh>0x3D</span> <span class=mo>00111101</span> <span class=o>=</span>
+ <span class=o>-</span><span class=mi>40</span> <span class=mh>0xD8</span> <span class=mi>11011000</span>
+  <span class=mi>77</span> <span class=mh>0x4D</span> <span class=mo>01001101</span> <span class=no>M</span>
+ <span class=o>-</span><span class=mi>36</span> <span class=mh>0xDC</span> <span class=mi>11011100</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+   <span class=mi>2</span> <span class=mh>0x02</span> <span class=mo>00000010</span> <span class=err></span>
+ <span class=o>-</span><span class=mi>19</span> <span class=mh>0xED</span> <span class=mi>11101101</span>
+ <span class=o>-</span><span class=mi>96</span> <span class=mh>0xA0</span> <span class=mi>10100000</span>
+ <span class=o>-</span><span class=mi>67</span> <span class=mh>0xBD</span> <span class=mi>10111101</span>
+ <span class=o>-</span><span class=mi>19</span> <span class=mh>0xED</span> <span class=mi>11101101</span>
+ <span class=o>-</span><span class=mi>79</span> <span class=mh>0xB1</span> <span class=mi>10110001</span>
+<span class=o>-</span><span class=mi>115</span> <span class=mh>0x8D</span> <span class=mi>10001101</span>
+<span class=c1>// 你算对了吗？</span>
+
+<span class=nc>D瓜哥</span>
+<span class=nl>https:</span><span class=c1>//www.diguage.com</span>
+<span class=err>👍👍👍，</span><span class=n>老李卖瓜</span><span class=err>，</span><span class=n>自卖自夸</span><span class=err>，😂😂😂</span></code></pre></div></div><div class=paragraph><p>这里对于 Unicode 值大于等于 <code>0x800</code> 的字符的处理过程做个总结：</p></div><div class="olist arabic"><ol class=arabic><li><p>第一步，先将 Unicode 转换成 UTF-16 编码；对于超过 BMP 的字符，UTF-16 会将其拆分成两个字符来处理。由于 Java 内部， <code>char</code> 类型的数据就是使用 UTF-16 编码的，所以，这一步已经提前完成，无需再做处理。</p></li><li><p>第二步，<code>char</code> 值大于等于 <code>0x800</code> 的 <code>char</code>，会将其“值”当做 Unicode 然后转换成“3个字节的UTF-8”。如果是需要两个 <code>char</code> 表示的字符，则当做两个“Unicode 值”处理，则 会转成两个“3个字节的UTF-8”，就是六个字节。转换过程如下：</p><div class="imageblock text-center"><div class=content><img src=/images/marshal/hessian-string-800.svg alt="Hessian 字符串(string) 0x800+ 的处理" width=95%></div></div></li></ol></div></div><div class=sect2><h3 id=_hessian_对字符串的切割处理>Hessian 对字符串的“切割”处理</h3><div class=paragraph><p>要测试 Hessian 对字符串的切割，则会使用非常长的字符串，将其编码全部打印出来意义不大。所以，在开始讲解之前，先对之前的工具方法 <code>printBytes</code> 进行适当的改造。</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code data-lang=java><span class=cm>/**
+ * 打印字节数组
+ *
+ * @author D瓜哥 · <a href=https://www.diguage.com/ target=_blank>https://www.diguage.com/</a>
+ */</span>
+<span class=kd>private</span> <span class=kt>void</span> <span class=nf>printBytes</span><span class=o>(</span><span class=kt>byte</span><span class=o>[]</span> <span class=n>result</span><span class=o>)</span> <span class=o>{</span>
+    <span class=kt>int</span> <span class=n>chunk</span> <span class=o>=</span> <span class=mh>0x8000</span><span class=o>;</span>
+    <span class=k>if</span> <span class=o>(</span><span class=mi>0</span> <span class=o>&lt;</span> <span class=n>result</span><span class=o>.</span><span class=na>length</span> <span class=o>&amp;&amp;</span> <span class=n>chunk</span> <span class=o>&lt;</span> <span class=n>result</span><span class=o>.</span><span class=na>length</span> <span class=o>&amp;</span> <span class=n>result</span><span class=o>[</span><span class=mi>0</span><span class=o>]</span> <span class=o>==</span> <span class=sc>&#39;R&#39;</span><span class=o>)</span> <span class=o>{</span>
+        <span class=k>for</span> <span class=o>(</span><span class=kt>int</span> <span class=n>i</span> <span class=o>=</span> <span class=mi>0</span><span class=o>;</span> <span class=n>i</span> <span class=o>&lt;</span> <span class=n>result</span><span class=o>.</span><span class=na>length</span><span class=o>;</span> <span class=n>i</span> <span class=o>+=</span> <span class=o>(</span><span class=n>chunk</span> <span class=o>+</span> <span class=mi>3</span><span class=o>))</span> <span class=o>{</span>
+            <span class=kt>int</span> <span class=n>j</span> <span class=o>=</span> <span class=nc>Math</span><span class=o>.</span><span class=na>max</span><span class=o>(</span><span class=n>i</span> <span class=o>-</span> <span class=mi>1</span><span class=o>,</span> <span class=mi>0</span><span class=o>);</span>
+            <span class=kt>int</span> <span class=n>end</span> <span class=o>=</span> <span class=nc>Math</span><span class=o>.</span><span class=na>min</span><span class=o>(</span><span class=n>i</span> <span class=o>+</span> <span class=mi>4</span><span class=o>,</span> <span class=n>result</span><span class=o>.</span><span class=na>length</span><span class=o>);</span>
+            <span class=nc>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=s>&#34;.... &#34;</span> <span class=o>+</span> <span class=n>j</span> <span class=o>+</span> <span class=s>&#34; ~ &#34;</span> <span class=o>+</span> <span class=n>end</span> <span class=o>+</span> <span class=s>&#34; ....&#34;</span><span class=o>);</span>
+            <span class=k>for</span> <span class=o>(;</span> <span class=n>j</span> <span class=o>&lt;</span> <span class=n>end</span><span class=o>;</span> <span class=n>j</span><span class=o>++)</span> <span class=o>{</span>
+                <span class=n>printByte</span><span class=o>(</span><span class=n>result</span><span class=o>[</span><span class=n>j</span><span class=o>]);</span>
+            <span class=o>}</span>
+        <span class=o>}</span>
+        <span class=nc>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=s>&#34;...... &#34;</span> <span class=o>+</span> <span class=n>result</span><span class=o>.</span><span class=na>length</span><span class=o>);</span>
+    <span class=o>}</span> <span class=k>else</span> <span class=o>{</span>
+        <span class=kt>int</span> <span class=n>max</span> <span class=o>=</span> <span class=mi>10</span><span class=o>;</span>
+        <span class=k>for</span> <span class=o>(</span><span class=kt>int</span> <span class=n>i</span> <span class=o>=</span> <span class=mi>0</span><span class=o>;</span> <span class=n>i</span> <span class=o>&lt;</span> <span class=n>result</span><span class=o>.</span><span class=na>length</span> <span class=o>&amp;&amp;</span> <span class=n>i</span> <span class=o>&lt;</span> <span class=n>max</span><span class=o>;</span> <span class=n>i</span><span class=o>++)</span> <span class=o>{</span>
+            <span class=n>printByte</span><span class=o>(</span><span class=n>result</span><span class=o>[</span><span class=n>i</span><span class=o>]);</span>
+        <span class=o>}</span>
+        <span class=k>if</span> <span class=o>(</span><span class=n>result</span><span class=o>.</span><span class=na>length</span> <span class=o>&gt;</span> <span class=n>max</span><span class=o>)</span> <span class=o>{</span>
+            <span class=nc>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=s>&#34;...... &#34;</span> <span class=o>+</span> <span class=n>result</span><span class=o>.</span><span class=na>length</span><span class=o>);</span>
+        <span class=o>}</span>
+    <span class=o>}</span>
+<span class=o>}</span>
+
+<span class=cm>/**
+ * 打印单个字节
+ *
+ * @author D瓜哥 · <a href=https://www.diguage.com/ target=_blank>https://www.diguage.com/</a>
+ */</span>
+<span class=kd>private</span> <span class=kt>void</span> <span class=nf>printByte</span><span class=o>(</span><span class=kt>byte</span> <span class=n>b</span><span class=o>)</span> <span class=o>{</span>
+    <span class=nc>String</span> <span class=n>bitx</span> <span class=o>=</span> <span class=nc>Integer</span><span class=o>.</span><span class=na>toBinaryString</span><span class=o>(</span><span class=nc>Byte</span><span class=o>.</span><span class=na>toUnsignedInt</span><span class=o>(</span><span class=n>b</span><span class=o>));</span>
+    <span class=nc>String</span> <span class=n>zbits</span> <span class=o>=</span> <span class=nc>String</span><span class=o>.</span><span class=na>format</span><span class=o>(</span><span class=s>&#34;%8s&#34;</span><span class=o>,</span> <span class=n>bitx</span><span class=o>).</span><span class=na>replace</span><span class=o>(</span><span class=sc>&#39; &#39;</span><span class=o>,</span> <span class=sc>&#39;0&#39;</span><span class=o>);</span>
+    <span class=k>if</span> <span class=o>(</span><span class=mi>0</span> <span class=o>&lt;=</span> <span class=n>b</span><span class=o>)</span> <span class=o>{</span>
+        <span class=nc>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>printf</span><span class=o>(</span><span class=s>&#34;%4d 0x%02X %8s %c %n&#34;</span><span class=o>,</span> <span class=n>b</span><span class=o>,</span> <span class=n>b</span><span class=o>,</span> <span class=n>zbits</span><span class=o>,</span> <span class=n>b</span><span class=o>);</span>
+    <span class=o>}</span> <span class=k>else</span> <span class=o>{</span>
+        <span class=nc>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>printf</span><span class=o>(</span><span class=s>&#34;%4d 0x%02X %8s %n&#34;</span><span class=o>,</span> <span class=n>b</span><span class=o>,</span> <span class=n>b</span><span class=o>,</span> <span class=n>zbits</span><span class=o>);</span>
+    <span class=o>}</span>
+<span class=o>}</span></code></pre></div></div><div class=paragraph><p>Hessian 中对字符串的处理，根据长度可分不同的几种情况：</p></div><div class=ulist><ul><li><p>长度小于 32 的字符串可以用一个字节长度编码 <code>[x00-x1f]</code>。</p></li><li><p><code>[x30-x33] b0 &lt;utf8-data></code></p></li><li><p><code>x52 b1 b0 &lt;utf8-data> string</code></p></li><li><p><code>S b1 b0 &lt;utf8-data></code></p></li><li><p>字符串被编码成块。<code>x53</code>（<code>S</code>）表示最终块，<code>x52</code>（<code>R</code>）表示任何非最终块。每个块有一个 16 位无符号整型长度值。</p></li></ul></div><div class=paragraph><p>由此可知，Hessian 对不同长度的字符串，在编码时，前置标志符是不一样的。测试代码如下：</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code data-lang=java><span class=cm>/**
+ * 测试字符串的处理
+ *
+ * @author D瓜哥 · <a href=https://www.diguage.com/ target=_blank>https://www.diguage.com/</a>
+ */</span>
+<span class=nd>@Test</span>
+<span class=kd>public</span> <span class=kt>void</span> <span class=nf>testString</span><span class=o>()</span> <span class=kd>throws</span> <span class=nc>Throwable</span> <span class=o>{</span>
+    <span class=c1>// 0x00~0x31 0~31</span>
+    <span class=c1>// 32~255 的前置标志位是 0x30，然后从 256 开始，每隔 256 个一个标志位。</span>
+    <span class=c1>// 0x30 32~255</span>
+    <span class=c1>// 0x31 256~511</span>
+    <span class=c1>// 0x32 512~767</span>
+    <span class=c1>// 0x33 768~1023</span>
+    <span class=c1>// 之所以这样，是因为使用一个字节来表示“长度”；而 0、1、2、3 保存在前置标志位的末尾。</span>
+    <span class=c1>// 这里又有一个错误：Hessian2Constants.STRING_SHORT_MAX = 0x3ff 最大值是 1023，</span>
+    <span class=c1>// 对应 0x33。所以，0x34 不会出现的。超过 1023 之后，前置标志位就是 S 了。</span>
+    <span class=n>stringTo</span><span class=o>(</span><span class=s>&#34;&#34;</span><span class=o>);</span>
+    <span class=c1>// 0~31 之间，直接使用一个字符进行编码</span>
+    <span class=n>stringTo</span><span class=o>(</span><span class=n>getStringByLength</span><span class=o>(</span><span class=s>&#34;a&#34;</span><span class=o>,</span> <span class=mi>31</span><span class=o>));</span>
+    <span class=n>stringTo</span><span class=o>(</span><span class=n>getStringByLength</span><span class=o>(</span><span class=s>&#34;a&#34;</span><span class=o>,</span> <span class=mi>32</span><span class=o>));</span>
+    <span class=c1>// 32~255 之间，使用一个前缀标志符 0x30(0) + 一个字符进行编码</span>
+    <span class=n>stringTo</span><span class=o>(</span><span class=n>getStringByLength</span><span class=o>(</span><span class=s>&#34;a&#34;</span><span class=o>,</span> <span class=mi>255</span><span class=o>));</span>
+    <span class=n>stringTo</span><span class=o>(</span><span class=n>getStringByLength</span><span class=o>(</span><span class=s>&#34;a&#34;</span><span class=o>,</span> <span class=mi>256</span><span class=o>));</span>
+    <span class=c1>// 256~511 之间，使用一个前缀标志符 0x31(1) + 一个字符进行编码</span>
+    <span class=n>stringTo</span><span class=o>(</span><span class=n>getStringByLength</span><span class=o>(</span><span class=s>&#34;a&#34;</span><span class=o>,</span> <span class=mi>511</span><span class=o>));</span>
+    <span class=n>stringTo</span><span class=o>(</span><span class=n>getStringByLength</span><span class=o>(</span><span class=s>&#34;a&#34;</span><span class=o>,</span> <span class=mi>512</span><span class=o>));</span>
+    <span class=c1>// 512~767 之间，使用一个前缀标志符 0x32(2) + 一个字符进行编码</span>
+    <span class=n>stringTo</span><span class=o>(</span><span class=n>getStringByLength</span><span class=o>(</span><span class=s>&#34;a&#34;</span><span class=o>,</span> <span class=mi>767</span><span class=o>));</span>
+    <span class=n>stringTo</span><span class=o>(</span><span class=n>getStringByLength</span><span class=o>(</span><span class=s>&#34;a&#34;</span><span class=o>,</span> <span class=mi>768</span><span class=o>));</span>
+    <span class=c1>// 768~1023 之间，使用一个前缀标志符 0x33(3) + 一个字符进行编码</span>
+    <span class=n>stringTo</span><span class=o>(</span><span class=n>getStringByLength</span><span class=o>(</span><span class=s>&#34;a&#34;</span><span class=o>,</span> <span class=mi>1023</span><span class=o>));</span>
+    <span class=n>stringTo</span><span class=o>(</span><span class=n>getStringByLength</span><span class=o>(</span><span class=s>&#34;a&#34;</span><span class=o>,</span> <span class=mi>1024</span><span class=o>));</span>
+    <span class=c1>// 1024~32768 之间，使用一个前缀标志符 0x53(S) + 两个字符进行编码</span>
+
+    <span class=c1>// 测试字符串分块</span>
+    <span class=c1>// 根据协议中对于字符串的“长度为 0-65535 的字符串”的描述，65535 为分块大小的界限。</span>
+    <span class=c1>// 那么，长度为 65535 应该不分块，a*65535 序列化后，长度应该是 65535 + 3。</span>
+    <span class=c1>// 但是，实际实验的结果为 65535 + 6。那么协议描述有问题。</span>
+    <span class=c1>// stringTo(getStringByLength(&#34;a&#34;, 65535));</span>
+    <span class=c1>//</span>
+    <span class=c1>// 查看代码，分块相关代码的判断条件是 length &gt; 0x8000，那么分块边界</span>
+    <span class=c1>// 为 0x8000 = 32768。根据输出，跟代码是吻合的。</span>
+    <span class=c1>// 另外，协议中“`x53`（`S`）表示最终块” 的表述不正确！最终块的前置标志符是什么，</span>
+    <span class=c1>// 得看截取完前面的分块之后，剩余的字符的个数。如果大于 1023 才会以 `x53`（`S`）开头。</span>
+    <span class=c1>// 最终块的前置标志符。</span>
+    <span class=n>stringTo</span><span class=o>(</span><span class=n>getStringByLength</span><span class=o>(</span><span class=s>&#34;a&#34;</span><span class=o>,</span> <span class=mi>32768</span><span class=o>));</span>
+    <span class=n>stringTo</span><span class=o>(</span><span class=n>getStringByLength</span><span class=o>(</span><span class=s>&#34;a&#34;</span><span class=o>,</span> <span class=mi>32768</span> <span class=o>+</span> <span class=mi>1</span><span class=o>));</span>
+    <span class=n>stringTo</span><span class=o>(</span><span class=n>getStringByLength</span><span class=o>(</span><span class=s>&#34;a&#34;</span><span class=o>,</span> <span class=mi>32768</span> <span class=o>+</span> <span class=mi>32</span><span class=o>));</span>
+    <span class=n>stringTo</span><span class=o>(</span><span class=n>getStringByLength</span><span class=o>(</span><span class=s>&#34;a&#34;</span><span class=o>,</span> <span class=mi>32768</span> <span class=o>+</span> <span class=mi>256</span><span class=o>));</span>
+    <span class=n>stringTo</span><span class=o>(</span><span class=n>getStringByLength</span><span class=o>(</span><span class=s>&#34;a&#34;</span><span class=o>,</span> <span class=mi>32768</span> <span class=o>+</span> <span class=mi>512</span><span class=o>));</span>
+    <span class=n>stringTo</span><span class=o>(</span><span class=n>getStringByLength</span><span class=o>(</span><span class=s>&#34;a&#34;</span><span class=o>,</span> <span class=mi>32768</span> <span class=o>+</span> <span class=mi>768</span><span class=o>));</span>
+    <span class=n>stringTo</span><span class=o>(</span><span class=n>getStringByLength</span><span class=o>(</span><span class=s>&#34;a&#34;</span><span class=o>,</span> <span class=mi>32768</span> <span class=o>+</span> <span class=mi>1024</span><span class=o>));</span>
+<span class=o>}</span>
+
+<span class=cm>/**
+ * 根据字符串和长度生成对应长的字符串
+ *
+ * @author D瓜哥 · <a href=https://www.diguage.com/ target=_blank>https://www.diguage.com/</a>
+ */</span>
+<span class=kd>private</span> <span class=nc>String</span> <span class=nf>getStringByLength</span><span class=o>(</span><span class=nc>String</span> <span class=n>item</span><span class=o>,</span> <span class=kt>int</span> <span class=n>length</span><span class=o>)</span> <span class=o>{</span>
+    <span class=nc>StringBuilder</span> <span class=n>sb</span> <span class=o>=</span> <span class=k>new</span> <span class=nc>StringBuilder</span><span class=o>(</span><span class=n>length</span><span class=o>);</span>
+    <span class=k>for</span> <span class=o>(</span><span class=kt>int</span> <span class=n>i</span> <span class=o>=</span> <span class=mi>0</span><span class=o>;</span> <span class=n>i</span> <span class=o>&lt;</span> <span class=n>length</span><span class=o>;</span> <span class=n>i</span><span class=o>++)</span> <span class=o>{</span>
+        <span class=n>sb</span><span class=o>.</span><span class=na>append</span><span class=o>(</span><span class=n>item</span><span class=o>);</span>
+    <span class=o>}</span>
+    <span class=k>return</span> <span class=n>sb</span><span class=o>.</span><span class=na>toString</span><span class=o>();</span>
+<span class=o>}</span>
+
+
+<span class=c1>// -- 输出结果 ------------------------------------------------</span>
+<span class=o>==</span> <span class=nl>string:</span>  <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>length</span> <span class=o>=</span> <span class=mi>0</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>8</span> <span class=n>bytes</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>16</span><span class=no>BE</span> <span class=n>bytes</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>aaaaaaaaaa</span><span class=o>...</span><span class=mi>31</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>length</span> <span class=o>=</span> <span class=mi>31</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>8</span> <span class=n>bytes</span> <span class=o>==</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>31</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>16</span><span class=no>BE</span> <span class=n>bytes</span> <span class=o>==</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>62</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+  <span class=mi>31</span> <span class=mh>0x1F</span> <span class=mo>00011111</span> <span class=err></span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>32</span>
+
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>aaaaaaaaaa</span><span class=o>...</span><span class=mi>32</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>length</span> <span class=o>=</span> <span class=mi>32</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>8</span> <span class=n>bytes</span> <span class=o>==</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>32</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>16</span><span class=no>BE</span> <span class=n>bytes</span> <span class=o>==</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>64</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+  <span class=mi>48</span> <span class=mh>0x30</span> <span class=mo>00110000</span> <span class=mi>0</span>
+  <span class=mi>32</span> <span class=mh>0x20</span> <span class=mo>00100000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>34</span>
+
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>aaaaaaaaaa</span><span class=o>...</span><span class=mi>255</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>length</span> <span class=o>=</span> <span class=mi>255</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>8</span> <span class=n>bytes</span> <span class=o>==</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>255</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>16</span><span class=no>BE</span> <span class=n>bytes</span> <span class=o>==</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>510</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+  <span class=mi>48</span> <span class=mh>0x30</span> <span class=mo>00110000</span> <span class=mi>0</span>
+  <span class=o>-</span><span class=mi>1</span> <span class=mh>0xFF</span> <span class=mi>11111111</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>257</span>
+
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>aaaaaaaaaa</span><span class=o>...</span><span class=mi>256</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>length</span> <span class=o>=</span> <span class=mi>256</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>8</span> <span class=n>bytes</span> <span class=o>==</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>256</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>16</span><span class=no>BE</span> <span class=n>bytes</span> <span class=o>==</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>512</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+  <span class=mi>49</span> <span class=mh>0x31</span> <span class=mo>00110001</span> <span class=mi>1</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>258</span>
+
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>aaaaaaaaaa</span><span class=o>...</span><span class=mi>511</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>length</span> <span class=o>=</span> <span class=mi>511</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>8</span> <span class=n>bytes</span> <span class=o>==</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>511</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>16</span><span class=no>BE</span> <span class=n>bytes</span> <span class=o>==</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>1022</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+  <span class=mi>49</span> <span class=mh>0x31</span> <span class=mo>00110001</span> <span class=mi>1</span>
+  <span class=o>-</span><span class=mi>1</span> <span class=mh>0xFF</span> <span class=mi>11111111</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>513</span>
+
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>aaaaaaaaaa</span><span class=o>...</span><span class=mi>512</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>length</span> <span class=o>=</span> <span class=mi>512</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>8</span> <span class=n>bytes</span> <span class=o>==</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>512</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>16</span><span class=no>BE</span> <span class=n>bytes</span> <span class=o>==</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>1024</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+  <span class=mi>50</span> <span class=mh>0x32</span> <span class=mo>00110010</span> <span class=mi>2</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>514</span>
+
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>aaaaaaaaaa</span><span class=o>...</span><span class=mi>767</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>length</span> <span class=o>=</span> <span class=mi>767</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>8</span> <span class=n>bytes</span> <span class=o>==</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>767</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>16</span><span class=no>BE</span> <span class=n>bytes</span> <span class=o>==</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>1534</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+  <span class=mi>50</span> <span class=mh>0x32</span> <span class=mo>00110010</span> <span class=mi>2</span>
+  <span class=o>-</span><span class=mi>1</span> <span class=mh>0xFF</span> <span class=mi>11111111</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>769</span>
+
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>aaaaaaaaaa</span><span class=o>...</span><span class=mi>768</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>length</span> <span class=o>=</span> <span class=mi>768</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>8</span> <span class=n>bytes</span> <span class=o>==</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>768</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>16</span><span class=no>BE</span> <span class=n>bytes</span> <span class=o>==</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>1536</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+  <span class=mi>51</span> <span class=mh>0x33</span> <span class=mo>00110011</span> <span class=mi>3</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>770</span>
+
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>aaaaaaaaaa</span><span class=o>...</span><span class=mi>1023</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>length</span> <span class=o>=</span> <span class=mi>1023</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>8</span> <span class=n>bytes</span> <span class=o>==</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>1023</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>16</span><span class=no>BE</span> <span class=n>bytes</span> <span class=o>==</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>2046</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+  <span class=mi>51</span> <span class=mh>0x33</span> <span class=mo>00110011</span> <span class=mi>3</span>
+  <span class=o>-</span><span class=mi>1</span> <span class=mh>0xFF</span> <span class=mi>11111111</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>1025</span>
+
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>aaaaaaaaaa</span><span class=o>...</span><span class=mi>1024</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>length</span> <span class=o>=</span> <span class=mi>1024</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>8</span> <span class=n>bytes</span> <span class=o>==</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>1024</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>16</span><span class=no>BE</span> <span class=n>bytes</span> <span class=o>==</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>2048</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+  <span class=mi>83</span> <span class=mh>0x53</span> <span class=mo>01010011</span> <span class=no>S</span>
+   <span class=mi>4</span> <span class=mh>0x04</span> <span class=mo>00000100</span> <span class=err></span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>1027</span>
+
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>aaaaaaaaaa</span><span class=o>...</span><span class=mi>32768</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>length</span> <span class=o>=</span> <span class=mi>32768</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>8</span> <span class=n>bytes</span> <span class=o>==</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>32768</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>16</span><span class=no>BE</span> <span class=n>bytes</span> <span class=o>==</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>65536</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+  <span class=mi>83</span> <span class=mh>0x53</span> <span class=mo>01010011</span> <span class=no>S</span>
+<span class=o>-</span><span class=mi>128</span> <span class=mh>0x80</span> <span class=mi>10000000</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>32771</span>
+
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>aaaaaaaaaa</span><span class=o>...</span><span class=mi>32769</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>length</span> <span class=o>=</span> <span class=mi>32769</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>8</span> <span class=n>bytes</span> <span class=o>==</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>32769</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>16</span><span class=no>BE</span> <span class=n>bytes</span> <span class=o>==</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>65538</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+<span class=o>....</span> <span class=mi>0</span> <span class=o>~</span> <span class=mi>4</span> <span class=o>....</span>
+  <span class=mi>82</span> <span class=mh>0x52</span> <span class=mo>01010010</span> <span class=no>R</span>
+<span class=o>-</span><span class=mi>128</span> <span class=mh>0x80</span> <span class=mi>10000000</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>....</span> <span class=mi>32770</span> <span class=o>~</span> <span class=mi>32773</span> <span class=o>....</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>1</span> <span class=mh>0x01</span> <span class=mo>00000001</span> <span class=err></span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>32773</span>
+
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>aaaaaaaaaa</span><span class=o>...</span><span class=mi>32800</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>length</span> <span class=o>=</span> <span class=mi>32800</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>8</span> <span class=n>bytes</span> <span class=o>==</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>32800</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>16</span><span class=no>BE</span> <span class=n>bytes</span> <span class=o>==</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>65600</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+<span class=o>....</span> <span class=mi>0</span> <span class=o>~</span> <span class=mi>4</span> <span class=o>....</span>
+  <span class=mi>82</span> <span class=mh>0x52</span> <span class=mo>01010010</span> <span class=no>R</span>
+<span class=o>-</span><span class=mi>128</span> <span class=mh>0x80</span> <span class=mi>10000000</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>....</span> <span class=mi>32770</span> <span class=o>~</span> <span class=mi>32775</span> <span class=o>....</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>48</span> <span class=mh>0x30</span> <span class=mo>00110000</span> <span class=mi>0</span>
+  <span class=mi>32</span> <span class=mh>0x20</span> <span class=mo>00100000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>32805</span>
+
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>aaaaaaaaaa</span><span class=o>...</span><span class=mi>33024</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>length</span> <span class=o>=</span> <span class=mi>33024</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>8</span> <span class=n>bytes</span> <span class=o>==</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>33024</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>16</span><span class=no>BE</span> <span class=n>bytes</span> <span class=o>==</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>66048</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+<span class=o>....</span> <span class=mi>0</span> <span class=o>~</span> <span class=mi>4</span> <span class=o>....</span>
+  <span class=mi>82</span> <span class=mh>0x52</span> <span class=mo>01010010</span> <span class=no>R</span>
+<span class=o>-</span><span class=mi>128</span> <span class=mh>0x80</span> <span class=mi>10000000</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>....</span> <span class=mi>32770</span> <span class=o>~</span> <span class=mi>32775</span> <span class=o>....</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>49</span> <span class=mh>0x31</span> <span class=mo>00110001</span> <span class=mi>1</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>33029</span>
+
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>aaaaaaaaaa</span><span class=o>...</span><span class=mi>33280</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>length</span> <span class=o>=</span> <span class=mi>33280</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>8</span> <span class=n>bytes</span> <span class=o>==</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>33280</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>16</span><span class=no>BE</span> <span class=n>bytes</span> <span class=o>==</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>66560</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+<span class=o>....</span> <span class=mi>0</span> <span class=o>~</span> <span class=mi>4</span> <span class=o>....</span>
+  <span class=mi>82</span> <span class=mh>0x52</span> <span class=mo>01010010</span> <span class=no>R</span>
+<span class=o>-</span><span class=mi>128</span> <span class=mh>0x80</span> <span class=mi>10000000</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>....</span> <span class=mi>32770</span> <span class=o>~</span> <span class=mi>32775</span> <span class=o>....</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>50</span> <span class=mh>0x32</span> <span class=mo>00110010</span> <span class=mi>2</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>33285</span>
+
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>aaaaaaaaaa</span><span class=o>...</span><span class=mi>33536</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>length</span> <span class=o>=</span> <span class=mi>33536</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>8</span> <span class=n>bytes</span> <span class=o>==</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>33536</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>16</span><span class=no>BE</span> <span class=n>bytes</span> <span class=o>==</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>67072</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+<span class=o>....</span> <span class=mi>0</span> <span class=o>~</span> <span class=mi>4</span> <span class=o>....</span>
+  <span class=mi>82</span> <span class=mh>0x52</span> <span class=mo>01010010</span> <span class=no>R</span>
+<span class=o>-</span><span class=mi>128</span> <span class=mh>0x80</span> <span class=mi>10000000</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>....</span> <span class=mi>32770</span> <span class=o>~</span> <span class=mi>32775</span> <span class=o>....</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>51</span> <span class=mh>0x33</span> <span class=mo>00110011</span> <span class=mi>3</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>33541</span>
+
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>aaaaaaaaaa</span><span class=o>...</span><span class=mi>33792</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>length</span> <span class=o>=</span> <span class=mi>33792</span> <span class=o>==</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>8</span> <span class=n>bytes</span> <span class=o>==</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>33792</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>value</span> <span class=no>UTF</span><span class=o>-</span><span class=mi>16</span><span class=no>BE</span> <span class=n>bytes</span> <span class=o>==</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>67584</span>
+<span class=o>==</span> <span class=nl>string:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+<span class=o>....</span> <span class=mi>0</span> <span class=o>~</span> <span class=mi>4</span> <span class=o>....</span>
+  <span class=mi>82</span> <span class=mh>0x52</span> <span class=mo>01010010</span> <span class=no>R</span>
+<span class=o>-</span><span class=mi>128</span> <span class=mh>0x80</span> <span class=mi>10000000</span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>....</span> <span class=mi>32770</span> <span class=o>~</span> <span class=mi>32775</span> <span class=o>....</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>83</span> <span class=mh>0x53</span> <span class=mo>01010011</span> <span class=no>S</span>
+   <span class=mi>4</span> <span class=mh>0x04</span> <span class=mo>00000100</span> <span class=err></span>
+   <span class=mi>0</span> <span class=mh>0x00</span> <span class=mo>00000000</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+<span class=o>......</span> <span class=mi>33798</span></code></pre></div></div><div class=paragraph><p>经过上面的测试可以得出：</p></div><div class="olist arabic"><ol class=arabic><li><p><code>0</code> ~ <code>31</code> 之间，直接使用一个字符进行编码</p></li><li><p><code>32</code> ~ <code>255</code> 之间，使用一个前缀标志符 <code>0x30(0)</code> + 一个字符进行编码</p></li><li><p><code>256</code> ~ <code>511</code> 之间，使用一个前缀标志符 <code>0x31(1)</code> + 一个字符进行编码</p></li><li><p><code>512</code> ~ <code>767</code> 之间，使用一个前缀标志符 <code>0x32(2)</code> + 一个字符进行编码</p></li><li><p><code>768</code> ~ <code>1023</code> 之间，使用一个前缀标志符 <code>0x33(3)</code> + 一个字符进行编码</p></li><li><p><code>1024</code> ~ <code>32768</code> 之间，使用一个前缀标志符 <code>0x53(S)</code> + 两个字符进行编码</p></li><li><p>如果字符串长度大于 <code>32768</code>，则会先截取成长度为 <code>32768</code> 的一个或多个块，使用一个前缀标志符 <code>0x52(R)</code> + 两个字符进行编码； 不够 <code>32768</code> 的部分，根据以上条规则进行编码。</p></li></ol></div><div class=paragraph><p>有一点需要强调： <code>32768</code> 也不是一成不变的。根据截取字符串的最后一个 <code>char</code> 来判断。如果最后一个字符是 high surrogate，
+即 <code>0xD800 &lt;= Value &lt;= 0xDBFF</code>，则会长度减一，即减少一个 <code>char</code>，来保证后面字符的完整性。</p></div><div class="admonitionblock note"><table><tbody><tr><td class=icon><i class="fa icon-note" title=Note></i></td><td class=content>关于 “high surrogate” 请问 <a href=#utf-16>UTF-16 编码</a>。</td></tr></tbody></table></div><div class=paragraph><p>另外，上文提到的“字符串长度”并不表示我们通常意义的“字”的个数；而是，Java 内部表示字符串的 char 数组的长度。
+比如，一个 Emoji 表情就是用两个 char 来表示，则长度为 2。</p></div><div class=paragraph><p>Hessian 协议中，有两处描述不严谨甚至错误的地方，这里也重点说明一下：</p></div><div class="olist arabic"><ol class=arabic><li><p>根据协议中对于字符串的“长度为 <code>0</code> - <code>65535</code> 的字符串”的描述，<code>65535</code> 为分块大小的界限。 那么，长度为 <code>65535</code> 应该不分块，<code>a*65535</code> 序列化后，长度应该是 <code>65535 + 3</code>。但是，实际实验的结果为 <code>65535 + 6</code>。那么协议描述有问题。查看代码，分块相关代码的判断条件是 <code>length > 0x8000</code>，那么分块边界为 <code>0x8000 = 32768</code>。根据输出，跟代码是吻合的。</p></li><li><p>协议中“<code>x53</code>（<code>S</code>）表示最终块” 的表述不正确！最终块的前置标志符是什么， 得看截取完前面的分块之后，剩余的字符的个数。如果大于 1023 才会以 <code>x53</code>（<code>S</code>）开头。</p></li></ol></div><div class="imageblock text-center"><div class=content><img src=/images/marshal/hessian-string.svg alt="Hessian 字符串(string)的处理" width=95%></div></div><div class=paragraph><p>再补充一句：D瓜哥以为，对于分块的处理，使用长度为 <code>32767</code> 更为合理。现在使用 <code>32768</code>，长度标志符的编码为 <code>10000000 00000000</code>；而非终块的长度标志符的编码也是 <code>10000000 00000000</code>，有些重叠！使用 <code>32767</code>，则标志符的编码为 `01111111 11111111，这样就可以和非终块的长度标志位区分开。当然，这是个人意见。</p></div></div></div></div><div class=sect1><h2 id=_参考资料>参考资料</h2><div class=sectionbody><div class="olist arabic"><ol class=arabic><li><p><a href=https://en.wikipedia.org/wiki/UTF-8 target=_blank rel=noopener>UTF-8 - Wikipedia</a></p></li><li><p><a href=https://en.wikipedia.org/wiki/Latin-script_alphabet target=_blank rel=noopener>Latin-script alphabet - Wikipedia</a></p></li><li><p><a href=https://stackoverflow.com/questions/2241348/what-are-unicode-utf-8-and-utf-16 target=_blank rel=noopener>encoding - What are Unicode, UTF-8, and UTF-16?</a></p></li><li><p><a href=http://www.unicode.org/notes/tn23/ target=_blank rel=noopener>UTN #23: To the BMP and Beyond</a></p></li><li><p><a href=http://www.unicode.org/notes/tn23/Muller-Slides+Narr.pdf target=_blank rel=noopener>To the BMP and beyond! - Eric Muller</a></p></li><li><p><a href=https://www.iteye.com/topic/216577 target=_blank rel=noopener>JAVA面试题解惑系列（六）——字符串（String）杂谈</a></p></li><li><p><a href=https://docs.oracle.com/javase/specs/jls/se17/html/jls-3.html#jls-3.1 target=_blank rel=noopener>The Java® Language Specification: Chapter 3. Lexical Structure / 3.1. Unicode</a></p></li></ol></div></div></div></div><footer class=post__footer><div class="post__tags tags clearfix"><svg class="tags__badge icon icon-tag" width="16" height="16" viewBox="0 0 32 32"><path d="M32 19c0 1-1 2-1 2L21 31s-1 1-2 1-2-1-2-1L2 16c-1-1-1.4-2-1.4-2S0 12.5.0 11V3C0 1.5.8.8.8.8S1.5.0 3 0h8c1.5.0 3 .6 3 .6S15 1 16 2l15 15s1 1 1 2zM7 10a3 3 0 100-6 3 3 0 000 6z"/></svg><ul class=tags__list><li class=tags__item><a class="tags__link btn" href=/tags/java/ rel=tag>Java</a></li><li class=tags__item><a class="tags__link btn" href=/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/ rel=tag>微服务</a></li><li class=tags__item><a class="tags__link btn" href=/tags/%E6%9E%B6%E6%9E%84/ rel=tag>架构</a></li><li class=tags__item><a class="tags__link btn" href=/tags/%E8%AE%BE%E8%AE%A1/ rel=tag>设计</a></li><li class=tags__item><a class="tags__link btn" href=/tags/%E5%BA%8F%E5%88%97%E5%8C%96/ rel=tag>序列化</a></li><li class=tags__item><a class="tags__link btn" href=/tags/%E7%BC%96%E7%A0%81/ rel=tag>编码</a></li></ul></div></footer></article></main><div class=clearfix><h3>看在D瓜哥码字的辛苦上，请友情支持一下，D瓜哥感激不尽，😜</h3><table><tr><td><img alt=微信打赏码 src=/images/wxpay.jpg></td><td><img alt=支付宝打赏码 src=/images/alipay.png></td></tr></table></div><br><div class=clearfix><h3>欢迎关注D瓜哥的微信公众号，在公众号可以获取我的微信二维码：</h3><img alt=微信公众号 src=/images/wx-jikerizhi.jpg></div><div class="admonitionblock tip"><table><tbody><tr><td class=icon><i class="fa icon-tip" title=Tip></i></td><td class=content><strong>公众号的微信号是: <code>jikerizhi</code></strong>。如果图片加载不出来，可以直接通过搜索公众号的微信号来查找D瓜哥的公众号。</td></tr></tbody></table></div><div class="authorbox clearfix"><figure class=authorbox__avatar><a target=_blank href=/about/><img alt="D瓜哥 avatar" src=/images/avatar.jpg class=avatar height=110 width=110></a></figure><div class=authorbox__header><span class=authorbox__name>关于 D瓜哥</span></div><div class=authorbox__description>厨艺界最好的码农，挨踢界最棒的厨师。<ul><li><a target=_blank href=https://wordpress.diguage.com/>旧版“地瓜哥”博客网</a></li><li><a target=_blank href=https://notes.diguage.com/mysql/>MySQL 学习笔记<sup>Alpha</sup></a></li><li><a target=_blank href=https://diguage.github.io/jdk-source-analysis/>JDK 源码分析<sup>Alpha</sup></a></li></ul></div></div><nav class="pager flex"><div class="pager__item pager__item--prev"><a class=pager__link href=/post/hessian-protocol-interpretation-and-practice-2/ rel=prev><span class=pager__subtitle>«&#8201;上一篇</span><p class=pager__title>Hessian 协议解释与实战（二）：长整型、二进制数据与 Null</p></a></div><div class="pager__item pager__item--next"><a class=pager__link href=/post/hessian-source-analysis-for-java/ rel=next><span class=pager__subtitle>下一篇&#8201;»</span><p class=pager__title>Hessian 源码分析（Java）</p></a></div></nav><section class=comments><div id=SOHUCS sid=/post/hessian-protocol-interpretation-and-practice-3/></div><script type=text/javascript>(function(){if(window.location.hostname==="localhost")return;var n,e="cyuuTeBp3",t="prod_2906c47c31e735e0ed518282fec489a6",s=window.innerWidth||document.documentElement.clientWidth;s<960?window.document.write('<script id="changyan_mobile_js" charset="utf-8" type="text/javascript" src="https://changyan.sohu.com/upload/mobile/wap-js/changyan_mobile.js?client_id='+e+"&conf="+t+'"><\/script>'):(n=function(e,t){var s=document.getElementsByTagName("head")[0]||document.head||document.documentElement,n=document.createElement("script");n.setAttribute("type","text/javascript"),n.setAttribute("charset","UTF-8"),n.setAttribute("src",e),typeof t=="function"&&(window.attachEvent?n.onreadystatechange=function(){var e=n.readyState;(e==="loaded"||e==="complete")&&(n.onreadystatechange=null,t())}:n.onload=t),s.appendChild(n)},n("https://changyan.sohu.com/upload/changyan.js",function(){window.changyan.api.config({appid:e,conf:t})}))})()</script></section></div><aside class=sidebar><div class="widget-search widget"><form class=widget-search__form role=search method=get action=https://google.com/search><label><input class=widget-search__field type=search placeholder=搜索… name=q aria-label=搜索…>
+</label><input class=widget-search__submit type=submit value=Search>
+<input type=hidden name=sitesearch value=https://www.diguage.com/></form></div><div class="widget-wechat widget"><h4 class=widget__title>微信公众号</h4><img alt=微信公众号 class=center src=/images/wx-jikerizhi-qrcode.jpg></div><div class="widget-wechat widget"><h4 class=widget__title>知识星球</h4><img alt=微信公众号 class=center src=/images/zhishixingqiu.png></div><div class="widget-recent widget"><h4 class=widget__title>近期文章</h4><div class=widget__content><ul class=widget__list><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-prefix-sum/>算法模式：前缀和</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-difference-array/>算法模式：差分数组</a></li><li class=widget__item><a class=widget__link href=/post/play-with-kubernetes-01-install-kubernetes-offline-2/>玩转 Kubernetes（一）：离线安装 Kubernetes 2</a></li><li class=widget__item><a class=widget__link href=/post/play-with-kubernetes-01-install-kubernetes-offline/>玩转 Kubernetes（一）：离线安装 Kubernetes 1</a></li><li class=widget__item><a class=widget__link href=/post/killercoda-cka-troubleshooting-3/>killercoda CKA：Troubleshooting - 3</a></li><li class=widget__item><a class=widget__link href=/post/killercoda-cka-troubleshooting-2/>killercoda CKA：Troubleshooting - 2</a></li><li class=widget__item><a class=widget__link href=/post/killercoda-cka-troubleshooting-1/>killercoda CKA：Troubleshooting - 1</a></li><li class=widget__item><a class=widget__link href=/post/killercoda-cka-workloads-scheduling/>killercoda CKA：Workloads & Scheduling</a></li><li class=widget__item><a class=widget__link href=/post/killercoda-cka-storage/>killercoda CKA：Storage</a></li><li class=widget__item><a class=widget__link href=/post/killercoda-cka-services-networking/>killercoda CKA：Services & Networking</a></li><li class=widget__item><a class=widget__link href=/post/killercoda-cka-architecture-installation-maintenance/>killercoda CKA：Architecture, Installation & Maintenance</a></li><li class=widget__item><a class=widget__link href=/post/understanding-database-sharding/>理解数据库分片</a></li><li class=widget__item><a class=widget__link href=/post/building-a-develop-environment-based-on-docker-3/>基于 Docker 搭建开发环境（三）：链路追踪</a></li><li class=widget__item><a class=widget__link href=/post/building-a-develop-environment-based-on-docker-2/>基于 Docker 搭建开发环境（二）：EFK 日志套件</a></li><li class=widget__item><a class=widget__link href=/post/building-a-develop-environment-based-on-docker-1/>基于 Docker 搭建开发环境（一）：数据库+监控</a></li><li class=widget__item><a class=widget__link href=/post/is-ddd-a-silver-bullet-2/>再谈 DDD 是银弹吗？</a></li><li class=widget__item><a class=widget__link href=/post/is-ddd-a-silver-bullet/>DDD 是银弹吗？</a></li><li class=widget__item><a class=widget__link href=/post/some-tips-for-high-school/>关于高中求学的一些问答及提醒</a></li><li class=widget__item><a class=widget__link href=/post/dive-into-beanfactorypostprocessor/>深入研究 BeanFactoryPostProcessor</a></li><li class=widget__item><a class=widget__link href=/post/java-21-boot-parameters-in-the-production/>生产环境中 Java 21 启动参数</a></li></ul></div></div><div class="widget-categories widget"><h4 class=widget__title>分类</h4><div class=widget__content><ul class=widget__list><li class=widget__item><a class=widget__link href=/categories/%E4%B8%AA%E4%BA%BA%E6%88%90%E9%95%BF/>个人成长</a></li><li class=widget__item><a class=widget__link href=/categories/%E5%88%86%E5%B8%83%E5%BC%8F/>分布式</a></li><li class=widget__item><a class=widget__link href=/categories/%E5%BC%80%E5%8F%91%E5%B7%A5%E5%85%B7/>开发工具</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/>性能优化</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/>操作系统</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%95%B0%E6%8D%AE%E5%AD%98%E5%82%A8/>数据存储</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%96%87%E5%AD%A6/>文学</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%96%B9%E6%B3%95%E8%AE%BA/>方法论</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/>程序设计</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%AE%97%E6%B3%95/>算法</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/>系统架构</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%BB%8F%E6%B5%8E%E9%87%91%E8%9E%8D/>经济金融</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/>编程语言</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%BD%91%E7%BB%9C/>网络</a></li><li class=widget__item><a class=widget__link href=/categories/%E8%81%8C%E4%B8%9A%E5%8F%91%E5%B1%95/>职业发展</a></li><li class=widget__item><a class=widget__link href=/categories/%E8%BD%AF%E4%BB%B6%E5%B7%A5%E7%A8%8B/>软件工程</a></li><li class=widget__item><a class=widget__link href=/categories/%E9%80%B8%E9%97%BB%E8%B6%A3%E4%BA%8B/>逸闻趣事</a></li><li class=widget__item><a class=widget__link href=/categories/%E9%98%85%E8%AF%BB%E6%91%98%E8%A6%81/>阅读摘要</a></li></ul></div></div><div class="widget-taglist widget"><h4 class=widget__title>标签</h4><div class=widget__content><a class="widget-taglist__link widget__link btn" href=/tags/gc/ title=GC>GC (9)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/http/ title=HTTP>HTTP (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/java/ title=Java>Java (63)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/jvm/ title=JVM>JVM (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/kpi/ title=KPI>KPI (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/kubernetes/ title=Kubernetes>Kubernetes (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/linux/ title=Linux>Linux (12)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/okr/ title=OKR>OKR (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/redis/ title=Redis>Redis (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/shell/ title=Shell>Shell (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/spring/ title=Spring>Spring (25)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/tcp/ title=TCP>TCP (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/udp/ title=UDP>UDP (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/zookeeper/ title=ZooKeeper>ZooKeeper (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E4%B8%AA%E4%BA%BA%E6%8F%90%E5%8D%87/ title=个人提升>个人提升 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E4%B9%A6%E7%B1%8D/ title=书籍>书籍 (15)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E4%BA%A7%E5%93%81/ title=产品>产品 (7)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%80%BA%E5%88%B8/ title=债券>债券 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%88%86%E5%B8%83%E5%BC%8F/ title=分布式>分布式 (15)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%88%86%E6%B2%BB/ title=分治>分治 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/ title=动态规划>动态规划 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9B%A2%E9%98%9F%E5%BB%BA%E8%AE%BE/ title=团队建设>团队建设 (6)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9B%A2%E9%98%9F%E6%96%87%E5%8C%96/ title=团队文化>团队文化 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9F%BA%E9%87%91/ title=基金>基金 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%AD%98%E5%82%A8/ title=存储>存储 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%B7%A5%E4%BD%9C%E6%96%B9%E6%B3%95/ title=工作方法>工作方法 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%B9%B6%E5%8F%91/ title=并发>并发 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%BA%8F%E5%88%97%E5%8C%96/ title=序列化>序列化 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/ title=微服务>微服务 (17)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%BF%83%E7%90%86%E5%AD%A6/ title=心理学>心理学 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95/ title=性能测试>性能测试 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%8A%95%E8%B5%84%E7%90%86%E8%B4%A2/ title=投资理财>投资理财 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/ title=数据库>数据库 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/ title=数据结构>数据结构 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%95%B0%E7%BB%84/ title=数组>数组 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%96%B9%E6%B3%95%E8%AE%BA/ title=方法论>方法论 (13)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%97%85%E8%A1%8C/ title=旅行>旅行 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5/ title=最佳实践>最佳实践 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%9E%B6%E6%9E%84/ title=架构>架构 (41)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%A0%88/ title=栈>栈 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%A0%91/ title=树>树 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%B2%9F%E9%80%9A%E6%8A%80%E5%B7%A7/ title=沟通技巧>沟通技巧 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/ title=源码分析>源码分析 (8)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%90%86%E8%B4%A2/ title=理财>理财 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%94%9F%E6%B4%BB/ title=生活>生活 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%AC%94%E8%AE%B0/ title=笔记>笔记 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%AE%97%E6%B3%95/ title=算法>算法 (8)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BB%8F%E6%B5%8E/ title=经济>经济 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BC%96%E7%A0%81/ title=编码>编码 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BD%91%E7%BB%9C/ title=网络>网络 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BF%BB%E8%AF%91/ title=翻译>翻译 (7)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%82%A1%E7%A5%A8/ title=股票>股票 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%84%91%E5%9B%BE/ title=脑图>脑图 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%8A%82%E6%97%A5/ title=节日>节日 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%8B%B1%E8%AF%AD/ title=英语>英语 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%99%9A%E6%8B%9F%E6%9C%BA/ title=虚拟机>虚拟机 (9)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AE%BA%E6%96%87/ title=论文>论文 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AE%BE%E8%AE%A1/ title=设计>设计 (33)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/ title=设计模式>设计模式 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AF%97%E6%AD%8C/ title=诗歌>诗歌 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AF%BB%E4%B9%A6/ title=读书>读书 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%80%92%E5%BD%92/ title=递归>递归 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%87%91%E8%9E%8D/ title=金融>金融 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1/ title=面向对象>面向对象 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%A2%86%E5%9F%9F%E9%A9%B1%E5%8A%A8%E8%AE%BE%E8%AE%A1/ title=领域驱动设计>领域驱动设计 (5)</a></div></div><div class="widget-social widget"><h4 class="widget-social__title widget__title">社交</h4><div class="widget-social__content widget__content"><div class="widget-social__item widget__item"><a class="widget-social__link widget__link btn" title=Twitter rel="noopener noreferrer" href=https://twitter.com/diguage target=_blank><svg class="widget-social__link-icon icon icon-twitter" width="24" height="24" viewBox="0 0 384 312"><path d="m384 36.9c-14.1 6.3-29.3 10.5-45.2 12.4 16.3-9.7 28.8-25.2 34.6-43.6-15.2 9-32.1 15.6-50 19.1-14.4-15.2-34.9-24.8-57.5-24.8-43.5.0-78.8 35.3-78.8 78.8.0 6.2.7 12.2 2 17.9-65.5-3.3-123.5-34.6-162.4-82.3C20 26 16.1 39.6 16.1 54c0 27.3 13.9 51.4 35 65.6-12.9-.4-25.1-4-35.7-9.9v1c0 38.2 27.2 70 63.2 77.2-6.6 1.8-13.6 2.8-20.8 2.8-5.1.0-10-.5-14.8-1.4 10 31.3 39.1 54.1 73.6 54.7-27 21.1-60.9 33.7-97.8 33.7-6.4.0-12.6-.4-18.8-1.1C34.9 299 76.3 312 120.8 312c144.9.0 224.1-120 224.1-224.1.0-3.4-.1-6.8-.2-10.2 15.4-11.1 28.7-25 39.3-40.8z"/></svg>
+<span>Twitter</span></a></div><div class="widget-social__item widget__item"><a class="widget-social__link widget__link btn" title=GitHub rel="noopener noreferrer" href=https://github.com/diguage target=_blank><svg class="widget-social__link-icon icon icon-github" width="24" height="24" viewBox="0 0 384 374"><path d="m192 0C85.9.0.0 85.8.0 191.7c0 84.7 55 156.6 131.3 181.9 9.6 1.8 13.1-4.2 13.1-9.2.0-4.6-.2-16.6-.3-32.6-53.4 11.6-64.7-25.7-64.7-25.7-8.7-22.1-21.3-28-21.3-28-17.4-11.9 1.3-11.6 1.3-11.6 19.3 1.4 29.4 19.8 29.4 19.8 17.1 29.3 44.9 20.8 55.9 15.9 1.7-12.4 6.7-20.8 12.2-25.6-42.6-4.8-87.5-21.3-87.5-94.8.0-20.9 7.5-38 19.8-51.4-2-4.9-8.6-24.3 1.9-50.7.0.0 16.1-5.2 52.8 19.7 15.3-4.2 31.7-6.4 48.1-6.5 16.3.1 32.7 2.2 48.1 6.5 36.7-24.8 52.8-19.7 52.8-19.7 10.5 26.4 3.9 45.9 1.9 50.7 12.3 13.4 19.7 30.5 19.7 51.4.0 73.7-44.9 89.9-87.7 94.6 6.9 5.9 13 17.6 13 35.5.0 25.6-.2 46.3-.2 52.6.0 5.1 3.5 11.1 13.2 9.2C329 348.2 384 276.4 384 191.7 384 85.8 298 0 192 0z"/></svg>
+<span>GitHub</span></a></div><div class="widget-social__item widget__item"><a class="widget-social__link widget__link btn" title=Email href=mailto:leejun119@gmail.com><svg class="widget-social__link-icon icon icon-mail" width="24" height="24" viewBox="0 0 416 288"><path d="m0 16v256 16h16 384 16v-16V16 0h-16H16 0zm347 16-139 92.5L69 32zM199 157.5l9 5.5 9-5.5L384 46v210H32V46z"/></svg>
+<span>leejun119@gmail.com</span></a></div></div></div></aside></div><footer class=footer><div class="container footer__container flex"><div class=footer__copyright>&copy; 2025 "地瓜哥"博客网.
+<span class=footer__copyright-credits>基于 <a href=https://gohugo.io/ rel="nofollow noopener" target=_blank>Hugo</a> 引擎和 <a href=https://github.com/Vimux/Mainroad/ rel="nofollow noopener" target=_blank>Mainroad</a> 主题</span>
+<span><a href=https://beian.miit.gov.cn/ target=_target>京ICP备14046450号-4</a></span></div></div></footer></div><script async defer src=/js/menu.js></script></body></html>

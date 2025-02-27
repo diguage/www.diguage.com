@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>数组 on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/%E6%95%B0%E7%BB%84/</link><description>Recent content in 数组 on "地瓜哥"博客网</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Thu, 27 Feb 2025 20:44:32 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/%E6%95%B0%E7%BB%84/index.xml" rel="self" type="application/rss+xml"/><item><title>算法模式：前缀和</title><link>https://www.diguage.com/post/algorithm-pattern-prefix-sum/</link><pubDate>Thu, 27 Feb 2025 19:47:34 +0800</pubDate><guid>https://www.diguage.com/post/algorithm-pattern-prefix-sum/</guid><description>&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/algorithm-pattern-difference-array/" target="_blank" rel="noopener">算法模式：差分数组&lt;/a>，本篇文章，继续介绍数组相关的算法模式：前缀和。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_前缀和">前缀和&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>前缀和可以简单理解为「数列的前 n 项的和」。具体过程如图所示：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/data-structure/prefix-sum.svg" alt="前缀和" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. 前缀和&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这是一种重要的预处理方式，也就是需要额外的空间并且提前计算好这些值。如果使用得当，能大大降低查询的时间复杂度。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_leetcode_303_区域和检索_数组不可变">LeetCode 303. 区域和检索 - 数组不可变&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>&lt;a href="https://leetcode.cn/problems/range-sum-query-immutable/" target="_blank" rel="noopener">LeetCode - 303. 区域和检索 - 数组不可变 &lt;/a>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>给定一个整数数组 &lt;code>nums&lt;/code>，处理以下类型的多个查询:&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>计算索引 &lt;code>left&lt;/code> 和 &lt;code>right&lt;/code> （包含 &lt;code>left&lt;/code> 和 &lt;code>right&lt;/code>）之间的
+&lt;code>nums&lt;/code> 元素的 &lt;strong>和&lt;/strong> ，其中 &lt;code>left &amp;lt;= right&lt;/code>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>实现 &lt;code>NumArray&lt;/code> 类：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;code>NumArray(int[] nums)&lt;/code> 使用数组 &lt;code>nums&lt;/code> 初始化对象&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>int sumRange(int left, int right)&lt;/code> 返回数组 &lt;code>nums&lt;/code> 中索引 &lt;code>left&lt;/code> 和 &lt;code>right&lt;/code> 之间的元素的 &lt;strong>总和&lt;/strong>，包含 &lt;code>left&lt;/code> 和 &lt;code>right&lt;/code> 两点（也就是 &lt;code>nums[left] + nums[left + 1] + …​ + nums[right]&lt;/code> )&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div></description></item><item><title>算法模式：差分数组</title><link>https://www.diguage.com/post/algorithm-pattern-difference-array/</link><pubDate>Wed, 26 Feb 2025 17:01:52 +0800</pubDate><guid>https://www.diguage.com/post/algorithm-pattern-difference-array/</guid><description>&lt;div class="paragraph">
+&lt;p>Christopher Alexander 在 &lt;a href="https://book.douban.com/subject/1177968/" target="_blank" rel="noopener">《建筑的永恒之道》&lt;/a> 中说：“每一个模式描述了一个在我们周围不断重复发生的问题，以及该问题的解决方案的核心。这样，你就能一次又一次地使用该方案而不必做重复劳动。”受此影响，GoF 总结经验，写出了著名的 &lt;a href="https://book.douban.com/subject/34262305/" target="_blank" rel="noopener">《设计模式》&lt;/a>。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在算法中，也有很多类似设计模式这样的解决方案。D瓜哥称其为“算法模式”。后面，慢慢写文章一一介绍一下。由浅及深，今天先来介绍最简单的一个模式：差分数组。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_差分数组">差分数组&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>差分数组：差分数组就是原始数组相邻元素之间的差。举例如下：&lt;/p>
+&lt;/div>
+&lt;table class="tableblock frame-all grid-all stretch">
+&lt;colgroup>
+&lt;col style="width: 14.2857%;"/>
+&lt;col style="width: 14.2857%;"/>
+&lt;col style="width: 14.2857%;"/>
+&lt;col style="width: 14.2857%;"/>
+&lt;col style="width: 14.2857%;"/>
+&lt;col style="width: 14.2857%;"/>
+&lt;col style="width: 14.2858%;"/>
+&lt;/colgroup>
+&lt;thead>
+&lt;tr>
+&lt;th class="tableblock halign-left valign-top">下标&lt;/th>
+&lt;th class="tableblock halign-left valign-top">0&lt;/th>
+&lt;th class="tableblock halign-left valign-top">1&lt;/th>
+&lt;th class="tableblock halign-left valign-top">2&lt;/th>
+&lt;th class="tableblock halign-left valign-top">3&lt;/th>
+&lt;th class="tableblock halign-left valign-top">4&lt;/th>
+&lt;th class="tableblock halign-left valign-top">5&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">原始数组&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">5&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">9&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">2&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">6&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">5&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">3&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">差分数组&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">5&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">4&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">-7&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">4&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">-1&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">-2&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;div class="paragraph">
+&lt;p>差分数组是从原始数组构造出来的一个辅助数组，表示相邻元素直接的差值。可用于解决需要对数组一个区间内同时做加减的操作。比如：随着公交站各个站台上下车，判断公交车是否超载。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_leetcode_370_区间加法">LeetCode 370. 区间加法&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>&lt;a href="https://leetcode.cn/problems/range-addition/" target="_blank" rel="noopener">LeetCode - 370. 区间加法 &lt;/a>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>假设你有一个长度为 &lt;code>n&lt;/code> 的数组，初始情况下所有的数字均为 &lt;code>0&lt;/code>，你将会被给出 &lt;code>k&lt;/code> 个更新的操作。&lt;/p>
+&lt;/div></description></item></channel></rss>
