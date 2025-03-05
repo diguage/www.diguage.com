@@ -45,24 +45,20 @@ https://leetcode.cn/problems/range-addition/[LeetCode - 370. 区间加法 ^]
 
 假设你有一个长度为 `n` 的数组，初始情况下所有的数字均为 `0`，你将会被给出 `k` 个更新的操作。
 
-其中，每个操作会被表示为一个三元组：`[startIndex, endIndex,
-inc]`，表示需要将子数组 `A[startIndex ... endIndex]`（含 `startIndex` 和
-`endIndex`）增加 `inc`。
+其中，每个操作会被表示为一个三元组：`[startIndex, endIndex, inc]`，表示需要将子数组 `A[startIndex ... endIndex]`（含 `startIndex` 和 `endIndex`）增加 `inc`。
 
 请你返回 `k` 次操作后的数组。
 
 *示例:*
 
-[source%nowrap,java,{source_attr}]
-----
+....
 输入: length = 5, updates = [[1,3,2],[2,4,3],[0,2,-2]]
 输出: [-2,0,3,5,3]
-----
+....
 
 *解释:*
 
-[source%nowrap,java,{source_attr}]
-----
+....
 初始状态:
 [0,0,0,0,0]
 
@@ -74,7 +70,7 @@ inc]`，表示需要将子数组 `A[startIndex ... endIndex]`（含 `startIndex`
 
 进行了操作 [0,2,-2] 后的状态:
 [-2,0,3,5,3]
-----
+....
 
 === 思路分析
 
@@ -124,27 +120,25 @@ https://leetcode.cn/problems/car-pooling/[LeetCode - 1094. 拼车 ^]
 
 *示例 1：*
 
-[source%nowrap,java,{source_attr}]
-----
+....
 输入：trips = [[2,1,5],[3,3,7]], capacity = 4
 输出：false
-----
+....
 
 *示例 2：*
 
-[source%nowrap,java,{source_attr}]
-----
+....
 输入：trips = [[2,1,5],[3,3,7]], capacity = 5
 输出：true
-----
+....
 
 *提示：*
 
 * `+1 <= trips.length <= 1000+`
 * `+trips[i].length == 3+`
-* `+1 <= numPassengers+`~`+i+`~`+ \<= 100+`
-* `+0 <= from+`~`+i+`~`+ < to+`~`+i+`~`+ \<= 1000+`
-* `+1 <= capacity <= 10+`^`+5+`^
+* `+1 <= numPassengers+`~`i`~`+ \<= 100+`
+* `+0 <= from+`~`i`~`+ < to+`~`i`~`+ \<= 1000+`
+* `+1 <= capacity <= 10+`^`5`^
 
 === 思路分析
 

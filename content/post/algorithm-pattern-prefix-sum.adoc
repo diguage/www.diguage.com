@@ -35,8 +35,7 @@ https://leetcode.cn/problems/range-sum-query-immutable/[LeetCode - 303. 区域�
 
 *示例 1：*
 
-[source%nowrap,java,{source_attr}]
-----
+....
 输入：
 ["NumArray", "sumRange", "sumRange", "sumRange"]
 [[[-2, 0, 3, -5, 2, -1]], [0, 2], [2, 5], [0, 5]]
@@ -48,14 +47,14 @@ NumArray numArray = new NumArray([-2, 0, 3, -5, 2, -1]);
 numArray.sumRange(0, 2); // return 1 ((-2) + 0 + 3)
 numArray.sumRange(2, 5); // return -1 (3 + (-5) + 2 + (-1))
 numArray.sumRange(0, 5); // return -3 ((-2) + 0 + 3 + (-5) + 2 + (-1))
-----
+....
 
 *提示：*
 
-* `+1 <= nums.length <= 10+`^`+4+`^
-* `+-10+`^`+5+`^`+<= nums[i] <= 10+`^`+5+`^
+* `+1 <= nums.length <= 10+`^`4`^
+* `+-10+`^`5`^`+<= nums[i] <= 10+`^`5`^
 * `+0 <= i <= j < nums.length+`
-* 最多调用 `+10+`^`+4+`^ 次 `+sumRange+` 方法
+* 最多调用 `10`^`4`^ 次 `sumRange` 方法
 
 === 思路分析
 
