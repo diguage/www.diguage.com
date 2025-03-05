@@ -9,7 +9,7 @@ thumbnail: "images/data-structure/array.jpg"
 weight: 1
 ---
 
-在上一篇文章 https://www.diguage.com/post/algorithm-pattern-prefix-sum/[算法模式：前缀和^]，本篇文章，继续介绍数组相关的算法模式：改进的二分查找。
+在上一篇文章 https://www.diguage.com/post/algorithm-pattern-prefix-sum/[算法模式：前缀和^] 介绍了前缀和的算法模式。本篇文章，继续介绍数组相关的算法模式：改进的二分查找。
 
 == 二分查找
 
@@ -155,6 +155,10 @@ private int binarySearchRight(int[] nums, int target) {
 
 [source%nowrap,java,{source_attr}]
 ----
+/**
+ * @author D瓜哥 · https://www.diguage.com
+ * @since 2025-03-05 14:11:58
+ */
 public int[] searchRange(int[] nums, int target) {
   int left = binarySearch(nums, target, true);
   if (left == -1) {
@@ -226,10 +230,10 @@ https://leetcode.cn/problems/search-in-rotated-sorted-array/[LeetCode - 33. 搜�
 *提示：*
 
 * `+1 <= nums.length <= 5000+`
-* `+-10+`^`+4+`^`+ <= nums[i] <= 10+`^`+4+`^
+* `+-10+`^`4`^`+<= nums[i] <= 10+`^`4`^
 * `+nums+` 中的每个值都 *独一无二*
 * 题目数据保证 `+nums+` 在预先未知的某个下标上进行了旋转
-* `+-10+`^`+4+`^`+ <= target <= 10+`^`+4+`^
+* `+-10+`^`4`^`+<= target <= 10+`^`4`^
 
 
 === 思路分析
