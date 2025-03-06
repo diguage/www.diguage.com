@@ -1,0 +1,706 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>算法 on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/%E7%AE%97%E6%B3%95/</link><description>Recent content in 算法 on "地瓜哥"博客网</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Sat, 02 Jul 2022 20:24:55 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/%E7%AE%97%E6%B3%95/index.xml" rel="self" type="application/rss+xml"/><item><title>Raft 论文摘要（二）</title><link>https://www.diguage.com/post/summary-of-the-raft-paper-2/</link><pubDate>Mon, 05 Jul 2021 19:58:32 +0800</pubDate><guid>https://www.diguage.com/post/summary-of-the-raft-paper-2/</guid><description>&lt;div class="paragraph">
+&lt;p>在上一篇文章中，通过阅读 &lt;a href="https://raft.github.io/raft.pdf">《In Search of an Understandable Consensus Algorithm》&lt;/a> 前三节的内容，对论文的大致内容做了简介，简单说明了一下 Replicated state machines 的用途以及 Paxos 本身存在的问题。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_4_designing_for_understandability">4. Designing for understandability&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="quoteblock">
+&lt;blockquote>
+&lt;div class="paragraph">
+&lt;p>several goals in designing Raft:&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>it must providea complete and practical foundation for system building;&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>it must be safe under all conditions and available under typical operating conditions;&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>it must be efficient for common operations.&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>Our most important goal — and most difficult challenge — was &lt;strong>understandability&lt;/strong>.&lt;/p>
+&lt;/div>
+&lt;/blockquote>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>从这里可以看出，Raft 设计的初衷就是为了易于理解和便于构建。&lt;/p>
+&lt;/div>
+&lt;div class="quoteblock">
+&lt;blockquote>
+There were numerous points in the design of Raft where we had to choose among alternative approaches. In these situations we evaluated the alternatives based on understandability.
+&lt;/blockquote>
+&lt;/div></description></item><item><title>Raft 论文摘要（一）</title><link>https://www.diguage.com/post/summary-of-the-raft-paper-1/</link><pubDate>Fri, 02 Jul 2021 11:42:26 +0800</pubDate><guid>https://www.diguage.com/post/summary-of-the-raft-paper-1/</guid><description>&lt;div class="paragraph">
+&lt;p>前一段时间，在一次开组会的时候，给小组成员简单介绍了一下 Raft 协议。大概四年前读过 Raft 的论文，这次分享的时候，好多好多细节都忘了。所以，再次把 &lt;a href="https://raft.github.io/raft.pdf">《In Search of an Understandable Consensus Algorithm》&lt;/a> 这篇论文找出来，重读一遍，做个笔记和摘要，方便后续学习和复习。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_abstract">Abstract&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="quoteblock">
+&lt;blockquote>
+Raft is a consensus algorithm for managing a replicated log.
+&lt;/blockquote>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>开篇摘要就点出了 Raft 的特点： Raft 是一种管理复制日志的共识算法。&lt;/p>
+&lt;/div>
+&lt;div class="quoteblock">
+&lt;blockquote>
+In order to enhance understandability, Raft separates the key elements of consensus, such as leader election, log replication, and safety, and it enforcesa stronger degree of coherency to reduce the number of states that must be considered.
+&lt;/blockquote>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>为了增强可理解性，Raft 将共识分解成几个关键元素，例如 Leader 选举，日志复制，以及安全性等；同时，为了降低需要考虑的状态的数量，还强制实施了更强的一致性。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_1_introduction">1. Introduction&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="quoteblock">
+&lt;blockquote>
+Consensus algorithms allow a collection of machines to work as a coherent group that can survive the failures of some of its members.
+&lt;/blockquote>
+&lt;/div></description></item><item><title>HikariCP 源码分析 -- FastList</title><link>https://www.diguage.com/post/hikari-cp-source-analysis-fast-list/</link><pubDate>Sun, 02 Aug 2020 15:06:02 +0800</pubDate><guid>https://www.diguage.com/post/hikari-cp-source-analysis-fast-list/</guid><description>&lt;div class="paragraph">
+&lt;p>在前面的文章 &lt;a href="https://www.diguage.com/post/hikari-cp-source-analysis-concurrent-bag/">HikariCP 源码分析 — ConcurrentBag&lt;/a> 中，D瓜哥分析了一下 HikariCP 中一个非常重要的数据结构 &lt;code>ConcurrentBag&lt;/code>。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>今天，继续再介绍 HikariCP 中另一个很关键的数据结构： &lt;code>FastList&lt;/code>。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;code>FastList&lt;/code> 本身的实现非常简单，要理解它的奥秘，就需要结合 Java 原生集合类的 &lt;code>ArrayList&lt;/code> 来比较性地看。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_构造函数">构造函数&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>先来对比一下两者的构造函数。先来看看 &lt;code>FastList&lt;/code>：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="title">&lt;code>FastList&lt;/code>&lt;/div>
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="kd">public&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">FastList&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="kd">implements&lt;/span> &lt;span class="nc">List&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">&amp;gt;,&lt;/span> &lt;span class="nc">RandomAccess&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="nc">Serializable&lt;/span>
+&lt;span class="o">{&lt;/span>
+ &lt;span class="kd">private&lt;/span> &lt;span class="kd">static&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="kt">long&lt;/span> &lt;span class="n">serialVersionUID&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="o">-&lt;/span>&lt;span class="mi">4598088075242913858L&lt;/span>&lt;span class="o">;&lt;/span>
+
+ &lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="nc">Class&lt;/span>&lt;span class="o">&amp;lt;?&amp;gt;&lt;/span> &lt;span class="n">clazz&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="kd">private&lt;/span> &lt;span class="no">T&lt;/span>&lt;span class="o">[]&lt;/span> &lt;span class="n">elementData&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="kd">private&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="n">size&lt;/span>&lt;span class="o">;&lt;/span>
+
+ &lt;span class="cm">/**
+ * Construct a FastList with a default size of 32.
+ * @param clazz the Class stored in the collection
+ */&lt;/span>
+ &lt;span class="nd">@SuppressWarnings&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;unchecked&amp;#34;&lt;/span>&lt;span class="o">)&lt;/span>
+ &lt;span class="kd">public&lt;/span> &lt;span class="nf">FastList&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">Class&lt;/span>&lt;span class="o">&amp;lt;?&amp;gt;&lt;/span> &lt;span class="n">clazz&lt;/span>&lt;span class="o">)&lt;/span>
+ &lt;span class="o">{&lt;/span>
+ &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">elementData&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">[])&lt;/span> &lt;span class="nc">Array&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">newInstance&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">clazz&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="mi">32&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">clazz&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">clazz&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>
+
+ &lt;span class="cm">/**
+ * Construct a FastList with a specified size.
+ * @param clazz the Class stored in the collection
+ * @param capacity the initial size of the FastList
+ */&lt;/span>
+ &lt;span class="nd">@SuppressWarnings&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;unchecked&amp;#34;&lt;/span>&lt;span class="o">)&lt;/span>
+ &lt;span class="kd">public&lt;/span> &lt;span class="nf">FastList&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">Class&lt;/span>&lt;span class="o">&amp;lt;?&amp;gt;&lt;/span> &lt;span class="n">clazz&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="n">capacity&lt;/span>&lt;span class="o">)&lt;/span>
+ &lt;span class="o">{&lt;/span>
+ &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">elementData&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">[])&lt;/span> &lt;span class="nc">Array&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">newInstance&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">clazz&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">capacity&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">clazz&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">clazz&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>负载均衡算法及实践</title><link>https://www.diguage.com/post/load-balancing-algorithm/</link><pubDate>Fri, 15 May 2020 11:37:25 +0800</pubDate><guid>https://www.diguage.com/post/load-balancing-algorithm/</guid><description>&lt;div class="paragraph">
+&lt;p>前几天在看一个资料时，看到关于负载均衡算法的介绍。最近也在研究 Spring Cloud 和 Apache Dubbo 等微服务框架。正好负载均衡是微服务框架中一个很重要的知识点。就动手做个整理和总结。方便后续学习。&lt;/p>
+&lt;/div>
+&lt;div class="sidebarblock">
+&lt;div class="content">
+&lt;div class="paragraph">
+&lt;p>听朋友建议，这篇文章还可以在算法对比，客户端负载均衡与服务端负载均衡区分等两方面做些补充。这些内容后续再补充加入进来。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_常见的负载均衡算法">常见的负载均衡算法&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="sect2">
+&lt;h3 id="round-robin">轮询(Round Robin)法&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>轮询选择指的是从已有的后端节点列表中按顺序依次选择一个节点出来提供服务。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/load-balancing-algorithm/round-robin.png" alt="round robin"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>优点：试图做到请求转移的绝对均衡。实现简单，使用广泛。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="weighted-round-robin">加权轮询(Weighted Round Robin)法&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>实际使用中各个节点往往都带有不同的权重，所以一般都需要实现带权重的轮询选择。 权重高的被选中的次数多，权重低的被选中的次数少。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/load-balancing-algorithm/weighted-round_robin.jpg" alt="weighted round robin"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>优点：是 &lt;a href="#round-robin">轮询(Round Robin)法&lt;/a> 改良版。适用于服务器配置不一致时，可以将配置好的服务器多干活，配置差的服务器少干活以使机器的负载达到相同的水平。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="static-round-robin">静态轮询(Static Round Robin)法&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>HAProxy 中实现的一个负载均衡算法。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>没有后台服务器的限制，服务器启动时，修改权重也不会生效。增删服务器时，服务器准备就绪后，会立即加入到服务队列中。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="random">随机(Random)法&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>通过随机函数，根据后端服务器列表的大小值来随机选择其中一台进行访问。由概率统计理论可以得知，随着调用量的增大，其实际效果越来越接近于平均分配流量到每一台后端服务器，也就是轮询的效果。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="weighted-random">加权随机(Weighted Random)法&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>与加权轮询法类似，加权随机法也是根据后端服务器不同的配置和负载情况来配置不同的权重。不同的是，它是按照权重来随机选择服务器的，而不是顺序。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="ip-hash">原地址哈希(IP Hashing)法&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>源地址哈希的思想是获取客户端访问的IP地址值，通过哈希函数计算得到一个数值，用该数值对服务器列表的大小进行取模运算，得到的结果便是要访问的服务器的序号。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>优点：保证了相同客户端 IP 地址将会被哈希到同一台后端服务器，直到后端服务器列表变更。根据此特性可以在服务消费者与服务提供者之间建立有状态的 Session 会话。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="uri-hash">URI 哈希(URI Hashing)法&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>HAProxy 中实现的一个负载均衡算法。支持部分 URI（问号之前）和完整 URI 两种模式。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这个算法可以把同一个 URI 的访问发送到同一台服务器上，以最大程度提高缓存命中率。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>该算法支持两个可选参数 &lt;code>len&lt;/code> 和 &lt;code>depth&lt;/code>，后跟一个正整数。仅在需要基于URI的开头来平衡服务器时，这些选项可能会很有用。 &lt;code>len&lt;/code> 参数指示算法仅应考虑URI开头的许多字符来计算哈希。请注意，将 &lt;code>len&lt;/code> 设置为 &lt;code>1&lt;/code> 几乎没有意义，因为大多数URI都以前导 &lt;code>/&lt;/code> 开头。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;code>depth&lt;/code> 参数指示用于计算哈希的最大目录深度。请求中的每个斜杠都计为一个级别。如果同时指定了两个参数，则在达到任意一个参数时都将停止评估。&lt;/p>
+&lt;/div></description></item><item><title>HikariCP 源码分析 -- ConcurrentBag</title><link>https://www.diguage.com/post/hikari-cp-source-analysis-concurrent-bag/</link><pubDate>Wed, 06 May 2020 17:12:55 +0800</pubDate><guid>https://www.diguage.com/post/hikari-cp-source-analysis-concurrent-bag/</guid><description>&lt;div class="paragraph">
+&lt;p>以前无意间搜资料了解到 HikariCP，一下子就被它的简洁代码和卓越性能吸引住了。以前也有翻过它的代码，但是不是很系统，最近再次翻阅，正好做些笔记，方便以后学习。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥最近在学习 Java 并发知识。那就从 HikariCP 自定义的并发集合 &lt;code>ConcurrentBag&lt;/code> 开始学习。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在 HikariCP 的 Wiki 中，有 &lt;a href="https://github.com/brettwooldridge/HikariCP/wiki/Down-the-Rabbit-Hole#concurrentbag" target="_blank" rel="noopener">Down the Rabbit Hole · ConcurrentBag&lt;/a> 的章节来专门介绍 &lt;code>ConcurrentBag&lt;/code>：&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;code>ConcurrentBag&lt;/code> 的灵感借鉴自 C# .NET 的 &lt;code>ConcurrentBag&lt;/code> 类。但是实现却是完全不同的。这里的 &lt;code>ConcurrentBag&lt;/code> 有如下特性：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>A lock-free design&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>ThreadLocal caching&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Queue-stealing&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Direct hand-off optimizations&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>下面，通过代码来对此做个说明。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在 &lt;code>ConcurrentBag&lt;/code> 类的定义中，声明了集合元素必须是 &lt;code>IConcurrentBagEntry&lt;/code> 的子类。先来看看这个接口的定义：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="kd">public&lt;/span> &lt;span class="kd">interface&lt;/span> &lt;span class="nc">IConcurrentBagEntry&lt;/span>
+&lt;span class="o">{&lt;/span>
+ &lt;span class="kt">int&lt;/span> &lt;span class="no">STATE_NOT_IN_USE&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="kt">int&lt;/span> &lt;span class="no">STATE_IN_USE&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">1&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="kt">int&lt;/span> &lt;span class="no">STATE_REMOVED&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="o">-&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="kt">int&lt;/span> &lt;span class="no">STATE_RESERVED&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="o">-&lt;/span>&lt;span class="mi">2&lt;/span>&lt;span class="o">;&lt;/span>
+
+ &lt;span class="kt">boolean&lt;/span> &lt;span class="nf">compareAndSet&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="kt">int&lt;/span> &lt;span class="n">expectState&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="n">newState&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="kt">void&lt;/span> &lt;span class="nf">setState&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="kt">int&lt;/span> &lt;span class="n">newState&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="kt">int&lt;/span> &lt;span class="nf">getState&lt;/span>&lt;span class="o">();&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>接下来，看一下成员变量：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="c1">// 存放共享元素&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="nc">CopyOnWriteArrayList&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="n">sharedList&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="kt">boolean&lt;/span> &lt;span class="n">weakThreadLocals&lt;/span>&lt;span class="o">;&lt;/span>
+
+&lt;span class="c1">// 在 ThreadLocal 缓存线程本地元素，避免线程争用&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="nc">ThreadLocal&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="nc">List&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="nc">Object&lt;/span>&lt;span class="o">&amp;gt;&amp;gt;&lt;/span> &lt;span class="n">threadList&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="nc">IBagStateListener&lt;/span> &lt;span class="n">listener&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="c1">//&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="nc">AtomicInteger&lt;/span> &lt;span class="n">waiters&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">volatile&lt;/span> &lt;span class="kt">boolean&lt;/span> &lt;span class="n">closed&lt;/span>&lt;span class="o">;&lt;/span>
+
+&lt;span class="c1">// 接力队列&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="nc">SynchronousQueue&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="n">handoffQueue&lt;/span>&lt;span class="o">;&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在 &lt;code>ConcurrentBag&lt;/code> 开头的 JavaDoc 中就做了明确说明：&lt;/p>
+&lt;/div>
+&lt;div class="sidebarblock">
+&lt;div class="content">
+&lt;div class="paragraph">
+&lt;p>Note that items that are &amp;#34;borrowed&amp;#34; from the bag are not actually removed from any collection, so garbage collection will not occur even if the reference is abandoned. Thus care must be taken to &amp;#34;requite&amp;#34; borrowed objects otherwise a memory leak will result. Only the &amp;#34;remove&amp;#34; method can completely remove an object from the bag.&lt;/p>
+&lt;/div></description></item><item><title>分布式事务概述</title><link>https://www.diguage.com/post/overview-of-distributed-transaction/</link><pubDate>Mon, 23 Mar 2020 12:36:58 +0800</pubDate><guid>https://www.diguage.com/post/overview-of-distributed-transaction/</guid><description>&lt;div class="paragraph">
+&lt;p>现在手机银行转账已经司空见惯。但是，D瓜哥一直在思考，银卡跨行转账是如何保证事务一致性的？借机就对分布式事务，做了简单地了解。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_2pc">2PC&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>两阶段提交（2pc， two-phase commit protocol），2pc是非常经典的强一致性、中心化的原子提交协议。中心化是指协议中有两类节点：一个中心化协调者节点（coordinator）和N个参与者节点（participant、cohort）。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>顾名思义，两阶段提交协议的每一次事务提交分为两个阶段：&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在第一阶段，协调者询问所有的参与者是否可以提交事务（请参与者投票），所有参与者向协调者投票。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在第二阶段，协调者根据所有参与者的投票结果做出是否事务可以全局提交的决定，并通知所有的参与者执行该决定。在一个两阶段提交流程中，参与者不能改变自己的投票结果。两阶段提交协议的可以全局提交的前提是所有的参与者都同意提交事务，只要有一个参与者投票选择放弃(abort)事务，则事务必须被放弃。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/overview-of-distributed-transaction/two-phase-commit-process.png" alt="two phase commit process"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>两阶段提交协议也依赖与日志，只要存储介质不出问题，两阶段协议就能最终达到一致的状态（成功或者回滚）&lt;/p>
+&lt;/div>
+&lt;div class="imageblock">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/overview-of-distributed-transaction/2pc-example.png" alt="2pc example"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="imageblock">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/overview-of-distributed-transaction/two-phase-commit-diagram.jpg" alt="two phase commit diagram"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_优点">优点&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>强一致性，只要节点或者网络最终恢复正常，协议就能保证顺利结束；部分关系型数据库（Oracle）、框架直接支持&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_缺点">缺点&lt;/h3>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;strong>网络抖动导致的数据不一致&lt;/strong>： 第二阶段中协调者向参与者发送commit命令之后，一旦此时发生网络抖动，导致一部分参与者接收到了commit请求并执行，可其他未接到commit请求的参与者无法执行事务提交。进而导致整个分布式系统出现了数据不一致。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>超时导致的同步阻塞问题&lt;/strong>： 2PC中的所有的参与者节点都为事务阻塞型，当某一个参与者节点出现通信超时，其余参与者都会被动阻塞占用资源不能释放。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>单点故障的风险&lt;/strong>： 由于严重的依赖协调者，一旦协调者发生故障，而此时参与者还都处于锁定资源的状态，无法完成事务commit操作。虽然协调者出现故障后，会重新选举一个协调者，可无法解决因前一个协调者宕机导致的参与者处于阻塞状态的问题。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>基于两阶段提交的分布式事务在提交事务时需要在多个节点之间进行协调,最大限度地推后了提交事务的时间点，客观上延长了事务的执行时间，这会导致事务在访问共享资源时发生冲突和死锁的概率增高，随着数据库节点的增多，这种趋势会越来越严重，从而成为系统在数据库层面上水平伸缩的&amp;#34;枷锁&amp;#34;， 这是很多Sharding系统不采用分布式事务的主要原因。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_3pc">3PC&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>三阶段提交协议（3pc Three-phase_commit_protocol）主要是为了解决两阶段提交协议的阻塞问题，从原来的两个阶段扩展为三个阶段，并且增加了超时机制。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/overview-of-distributed-transaction/three-phase-commit-protocol.png" alt="three phase commit protocol"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>3PC 的三个阶段分别是 &lt;code>CanCommit&lt;/code>、&lt;code>PreCommit&lt;/code>、&lt;code>DoCommit&lt;/code>&lt;/p>
+&lt;/div>
+&lt;div class="dlist">
+&lt;dl>
+&lt;dt class="hdlist1">CanCommit&lt;/dt>
+&lt;dd>
+&lt;p>协调者向所有参与者发送CanCommit命令，询问是否可以执行事务提交操作。如果全部响应YES则进入下一个阶段。&lt;/p>
+&lt;/dd>
+&lt;dt class="hdlist1">PreCommit&lt;/dt>
+&lt;dd>
+&lt;p>协调者向所有参与者发送PreCommit命令，询问是否可以进行事务的预提交操作，参与者接收到PreCommit请求后，如参与者成功的执行了事务操作，则返回Yes响应，进入最终commit阶段。一旦参与者中有向协调者发送了No响应，或因网络造成超时，协调者没有接到参与者的响应，协调者向所有参与者发送abort请求，参与者接受abort命令执行事务的中断。&lt;/p>
+&lt;/dd>
+&lt;dt class="hdlist1">DoCommit&lt;/dt>
+&lt;dd>
+&lt;p>在前两个阶段中所有参与者的响应反馈均是YES后，协调者向参与者发送DoCommit命令正式提交事务，如协调者没有接收到参与者发送的ACK响应，会向所有参与者发送abort请求命令，执行事务的中断。&lt;/p>
+&lt;/dd>
+&lt;/dl>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>3PC只是解决了在异常情况下2PC的阻塞问题，但导致一次提交要传递6条消息，延时很大。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_tcc">TCC&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>TCC是Try、Commit、Cancel的缩写，TCC在保证强一致性的同时，最大限度提高系统的可伸缩性与可用性。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>TCC（Try-Confirm-Cancel）又被称&lt;strong>补偿事务&lt;/strong>，TCC 与 2PC 的思想很相似，事务处理流程也很相似，但 2PC 是应用于在 DB 层面，TCC 则可以理解为在应用层面的 2PC，是需要我们编写业务逻辑来实现。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>TCC 的核心思想是：&amp;#34;针对每个操作都要注册一个与其对应的确认（Try）和补偿（Cancel）&amp;#34;。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/overview-of-distributed-transaction/tcc.jpg" alt="tcc"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>一个完整的业务包含一组子业务，Try操作完成所有的子业务检查，预留必要的业务资源，实现与其他事务的隔离；Confirm使用Try阶段预留的业务资源真正执行业务，而且Confirm操作满足幂等性，以遍支持重试；Cancel操作释放Try阶段预留的业务资源，同样也满足幂等性。“一次完整的交易由一系列微交易的Try 操作组成，如果所有的Try 操作都成功，最终由微交易框架来统一Confirm，否则统一Cancel，从而实现了类似经典两阶段提交协议（2PC）的强一致性。”&lt;/p>
+&lt;/div>
+&lt;div class="imageblock">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/overview-of-distributed-transaction/tcc-process.jpeg" alt="tcc process"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>再来一个例子：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/overview-of-distributed-transaction/tcc-example.png" alt="tcc example"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>与2PC协议比较 ，TCC拥有以下特点：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>位于业务服务层而非资源层 ，由业务层保证原子性&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>没有单独的准备(Prepare)阶段，降低了提交协议的成本&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Try操作 兼备资源操作与准备能力&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Try操作可以灵活选择业务资源的锁定粒度，而不是锁住整个资源，提高了并发度&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_缺点_2">缺点&lt;/h3>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;strong>应用侵入性强&lt;/strong>：TCC由于基于在业务层面，至使每个操作都需要有 try、confirm、cancel三个接口。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>开发难度大&lt;/strong>：代码开发量很大，要保证数据一致性 confirm 和 cancel 接口还必须实现幂等性。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div></description></item><item><title>动态规划入门</title><link>https://www.diguage.com/post/dynamic-programming/</link><pubDate>Mon, 20 Jan 2020 15:20:28 +0800</pubDate><guid>https://www.diguage.com/post/dynamic-programming/</guid><description>&lt;div class="admonitionblock tip">
+&lt;table>
+&lt;tbody>&lt;tr>
+&lt;td class="icon">
+&lt;i class="fa icon-tip" title="Tip">&lt;/i>
+&lt;/td>
+&lt;td class="content">
+&lt;div class="paragraph">
+&lt;p>本篇文章是 D瓜哥 读《算法导论》的读书笔记。记录下来是为了方便整理思路，以便啃下“动态规划”这块骨头。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>目前侧重记录书中关于“动态规划原理”的介绍。接下来会把书中的例子结合 Java 代码演绎一遍。后续会根据D瓜哥的学习和理解，逐步完善。最终希望达到通过这一篇文章，就能学会、理解动态规划。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>山高水远，道阻且长，愿一起努力！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p> — 2020年01月23日&lt;/p>
+&lt;/div>
+&lt;/td>
+&lt;/tr>
+&lt;/tbody>&lt;/table>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>动态规划（dynamic programming）与分治方法相似，都是通过组合子问题的解来求解原问题（在这里，“programming”指的是一种表格法，并非编写计算机程序）。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>分治方法将问题划分为互不相交的子问题，递归地求解子问题，再将它们的解组合起来，求出原问题的解。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>动态规划应用于子问题重叠的情况，即不同的子问题具有公共的子子问题（子问题的求解是递归进行的，将其划分为更小的子子问题）。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在这种情况下，分治算法会做许多不必要的工作，它会反复地求解那些公共子问题。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>动态规划算法对每个子子问题只求解一次，将其解保存在一个表格中，从而无需每次求解一个子子问题时都重新计算，避免了不必要的计算工作。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>动态规划方法通常用来求解最优化问题（optimization problem）。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>设计一个动态规划算法的步骤：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>刻画一个最优解的结构特征。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>递归地定义最优解的值。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>计算最优解的值，通常采用自底向上的方法。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>利用计算出的信息构造一个最优解。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_算法原理">算法原理&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>适合应用动态规划方法求解的最优化问题应该具备的两个要素：最优子结构和子问题重叠。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/dynamic-programming/dynamic-programming-methodology.png" alt="dynamic programming methodology"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_最优子结构">最优子结构&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>用动态规划方法求解最优化问题的第一步就是刻画最优解的结构。如果一个问题的最优解包含其子问题的最优解，则称此问题具有&lt;strong>最优子结构&lt;/strong>性质。因此，某个问题是否适合应用动态规划算法，它是否具有最优子结构性质是一个好线索。&lt;/p>
+&lt;/div>
+&lt;div class="sect3">
+&lt;h4 id="_发掘最优子结构性质的通过模式">发掘最优子结构性质的通过模式&lt;/h4>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>证明问题最优解的第一个组成部分是做出一个选择。做出这次选择会产生一个或多个待解的子问题。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>对于一个给定问题，在其可能的第一步选择中，你假定已经知道哪种选择才会得到最优解。你现在并不关心这种选择具体是如何得到的，只是假定已经知道了这种选择。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>给定可获得最优解的选择后，你确定这次选择会产生哪些子问题，以及如何最好地刻画子问题空间。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>利用“剪切-粘贴”（cut-and-paste）技术证明：作为构造原问题最优解的组成部分，每个子问题的解就是它本身的最优解。证明这一点是利用反证法：假定子问题的解不是其自身的最优解，那么我们就可以从原问题的解中“剪切”掉这些非最优解，将最优解“粘贴”进去，从而得到原问题一个更优的解，这与最初的解是原问题最优解的前提假设锚段。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>一个刻画子问题空间的好经验是：保持子问题空间尽可能简单，只在必要时才扩展它。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>对于不同问题领域，最优子结构的不同体现在两个方面：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>原问题的最优解中涉及多少个子问题，以及&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>在确定最优解使用哪些子问题时，我们需要考察多少种选择。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>可以用子问题的总数和每个子问题需要考察多少种选择这两个因素的乘积来粗略分析动态规划算法的运行时间。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在动态规划方法中，通常自底向上地使用最优子结构。也就是说，首先求得子问题的最优解，然后求原问题的最优解。在求解原问题过程中，我们需要在涉及的子问题中做出选择，选出能得到原问题最优解的子问题。原问题最优解的代价通常就是子问题最优解的代价加上由此次选择直接产生的代价。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>能够使用贪心算法的问题也必须具有最优子结构性质。贪心算法和动态规划最大的不同在于，它并不是首先寻找子问题的最优解，然后在其中进行选择，而是首先做出一次“贪心”选择—​在当时（局部）看来最优的选择—​然后求解选出的子问题，从而不必费心求解所有可能相关的子问题。&lt;/p>
+&lt;/div>
+&lt;div class="admonitionblock note">
+&lt;table>
+&lt;tbody>&lt;tr>
+&lt;td class="icon">
+&lt;i class="fa icon-note" title="Note">&lt;/i>
+&lt;/td>
+&lt;td class="content">
+问题：使用贪心算法和动态规划的界线是什么？什么时候使用贪心？什么时候使用动态规划？
+&lt;/td>
+&lt;/tr>
+&lt;/tbody>&lt;/table>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_重叠子问题">重叠子问题&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>适合用动态规划方法求解的最优化问题应该具备的第二个性质是子问题空间必须足够“小”，即问题的递归算法会反复地求解相同的子问题，而不是一直生成新的子问题。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>如果递归算法反复求解相关的子问题，则就称为最优化问题具有&lt;strong>重叠子问题（overlapping subproblems）&lt;/strong>性质。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>与之相对的，适合用分治算法求解的问题通常在递归的每一步都生成全新的子问题。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>动态规划算法通常这样利用重叠子问题性质：对每个子问题求解一次，将解存入一个表中，当再次需要这个子问题时直接查表，每次查表的代价为常量时间。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>一个问题是否适合用动态规划求解同事依赖于子问题的无关性和重叠性。两个子问题如果不共享资源，它们就是独立的。而重叠是指两个子问题实际上是同一个子问题，只是作为不同问题的子问题出现而已。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>将自顶向下的递归算法（无备忘录）与自底向上的动态规划算法进行比较，后者要高效得多，因为它利用了重叠子问题性质。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_重构最优解">重构最优解&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>从实际考虑，通常将每个子问题所做的选择存在一个表中，这样就不必根据代价来重构这些信息。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_备忘">备忘&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>可以保持自顶向下策略，同时达到与自底向上动态规划方法相似的效率。思路就是对自然但低效的递归算法加入备忘机制。维护一个表记录子问题的解，但仍然保持递归算法的控制流程。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>带备忘的递归算法为每个子问题维护一个表项来保存它的解。每个表项的初值设为一个特殊值，表示尚未填入子问题的解。当递归调用过程中第一次额遇到子问题时，计算其解，并存入对应表项。随后每次遇到同一个问题，只是简单地查表，返回其解。&lt;/p>
+&lt;/div>
+&lt;div class="admonitionblock tip">
+&lt;table>
+&lt;tbody>&lt;tr>
+&lt;td class="icon">
+&lt;i class="fa icon-tip" title="Tip">&lt;/i>
+&lt;/td>
+&lt;td class="content">
+一个更通用的备忘方法是使用散列技术，以子问题参数为关键字。
+&lt;/td>
+&lt;/tr>
+&lt;/tbody>&lt;/table>
+&lt;/div></description></item><item><title>只要一部计算机，就可以创造出无限的世界</title><link>https://www.diguage.com/post/computer-create-world/</link><pubDate>Tue, 21 Apr 2009 00:00:00 +0800</pubDate><guid>https://www.diguage.com/post/computer-create-world/</guid><description>&lt;div class="paragraph">
+&lt;p>曾经写给学弟学妹的一封信。我觉得还行，发出来，希望对刚学计算机专业的朋友有所帮助。当然，如果哪位朋友有更好的想法，也请留言，大家讨论讨论。原文如下：&lt;/p>
+&lt;/div>
+&lt;div class="sidebarblock">
+&lt;div class="content">
+&lt;div class="title">致师弟师妹的一封信&lt;/div>
+&lt;div class="paragraph">
+&lt;p>各位朋友：&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>大家好！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>从本周开始，我必须专心为我的前程奋斗了。很可惜不能和大家一起学习了。这封信就算是我和大家的一个告别吧。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>首先，感谢史老师给我提供这个和大家一起学习和交流的机会，让我和大家一起度过了一段特殊而愉快的时光。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>其次，我应该感谢大家。由于本人水平有限，也许我没能让大家从我这里学到太多知识，但是大家却让我学会了很多东西，锻炼了我很多方面的能力。单凭这一点，我就应该感谢大家。同时，很多人把我当朋友，更使我感激不尽。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>再次，在这短暂而又宝贵的大学时光里，大家走的路应该和我的基本一样。我以一个过来人的身份，和大家分享一下我的学习经验吧，希望可以让大家少走甚至不走弯路。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>先说一点我们所学科目的情况吧。&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>Linux：一定要动手敲指令。在我们一年半的学习时光里，我认为Linux是我们所学的所有实践性学科里面最简单的一科了！只要把指令记好用熟就行了！另外，指令不需要背，用多了自然就记住了。（相信95%的同学都知道cd是什么意思吧！为什么呢？因为用它的次数多！）多提一点，一定要多尝试！&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Java或者C#或者PHP（由于个人比较喜欢Java，所以，一下描述Java的地方，你可以同样换成C#或在PHP等）：这是我们大家必须要下苦功夫学好的课！而且一定一定要学精！它们在我们的课程体系结构中的作用，就像是地基对于这个房子的作用！根基不好，房子很难建高的！即使建好也是豆腐渣工程。毕竟“空中楼阁”只存在于我们的想象中。它们是学习JSP、ASP.NET、J2EE、“游戏开发”、网页开发等等的基础，Java或者C#或者PHP学不会，这些课很难学好！（我这里有Java的教学视频，感兴趣的同学可以来我寝室拷贝。也可以上网下载：http://www.verycd.com/topics/93279/（请下载J2SE的））&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>数据库：重点是关系模型、 SQL语句以及后面的数据库设计。做动态网站的技术、做桌面程序，甚至做手机应用等，都会用到数据库！以后工作中数据模型设计、数据查询等都要求有比较扎实的数据库基础才行。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>数据结构：我个人认为学习数据结构就是学习一种解决问题的思想。其实，类库已经实现了我们所学的所有的数据结构，到时会用就行了！&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>现在NBA正在进行季后赛，就用乔丹的一句话，作为所有学科的一个共同的建议送给大家：&lt;/p>
+&lt;/div>
+&lt;div class="quoteblock">
+&lt;blockquote>
+&lt;div class="paragraph">
+&lt;p>I can accept failure, but I can’t accept not trying.&lt;/p>
+&lt;/div>
+&lt;/blockquote>
+&lt;div class="attribution">
+— Michael Jordan
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>其实学习就是不断尝试，不断总结，不断进取的一个过程。我可以用我的尝试告你一个正确的结果，但是自己尝试出来的结果印象更加深刻！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>再说一点我的个人的学习感触吧。我个人认为，这些比我们大家在学校学到知识更为重要！知识马上就会过时，但是学习的方法却可以带领我们走的更远。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>一、享受学习。&lt;/strong>如果我们把学习当成像玩游戏、听音乐一样的娱乐活动时，我想这会给我们一种全新的感觉。Study hard，have fun，make history！ By Jeff Bezos &amp;amp; Joy Lee （努力学习，乐在其中，并创造历史！—Jeff Bezos（Amazon.com的创办者兼CEO，Joy Lee就是我。(*&lt;sup>__&lt;/sup>*) 嘻嘻…… 这句话是我从他的一句话里改编过来的！））&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>其实，学计算机学科非常有趣！Linux里面，几行指令，我们就可以顺利的让鼠标在两个操作系统自由转换！Java里面几行，几十行代码就有一个漂亮的窗口！C#里面随便一个拖拽，也是一个不错的窗口！“只要一部计算机，就可以创造出无限的世界。”（出自蔡学镛《写程序，好好玩》，《Java夜未眠》里面的一篇，本书是本很搞笑的编程感触散文集，推荐看看。）加油吧！相信你行！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>二、坚持不懈。&lt;/strong>任何事情都不是可以一蹴而就的，都需要我们坚持！再送给大家一句话：失败只有一种，那就是半途而废！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>三、舍我其谁的豪迈和霸气。&lt;/strong>“Horse’s，Gosling能创造出来Java，我就不信我学不会！一个破Java，我还不放到眼里呢！！”，“别人能创造出来，我就不相信我学不会？！”不过，也要给大家提醒一句：“战略上，藐视敌人；战术上，重视敌人”！一定要下功夫学习才行！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>四、信心。&lt;/strong>一定要相信自己的能力！你是独一无二，无可替代的！信心能让你从一个更高的角度看待你的学习！能给你一种驾驭知识的成就感！这种感觉能让你从学习中找到乐趣！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>五、行动！&lt;/strong>上面的大道理，我们大家都懂！但是，谁实际做到呢？伟大与平凡的区别也许就在于这一点吧。我以我自己的高中、大学对比来看，行动与否结果绝对是不一样的！只想不做，最多是个空想家！所以，大家一定要“坚持不懈的行动”！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>最后，送给大家一句话：&lt;strong>你充满了潜能，但你的努力还远远不够！&lt;/strong>再次怀念我们共同的学习时光！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>祝大家学有所成！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div></description></item></channel></rss>

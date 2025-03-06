@@ -1,0 +1,6 @@
+= 图片&图标网站
+
+. https://svgporn.com/
+. https://github.com/gilbarbara/logos
+. https://github.com/tupadr3/plantuml-icon-font-sprites/blob/master/weather/index.md
+. https://github.com/Templarian/MaterialDesign-SVG -- MaterialDesign SVG 图标，预览见 https://pictogrammers.com/library/mdi/
