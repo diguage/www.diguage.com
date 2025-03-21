@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>JVM on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/jvm/</link><description>Recent content in JVM on "地瓜哥"博客网</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Mon, 10 Jun 2024 10:36:01 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/jvm/index.xml" rel="self" type="application/rss+xml"/><item><title>OpenJDK 21 升级指南</title><link>https://www.diguage.com/post/upgrade-to-openjdk21/</link><pubDate>Mon, 06 May 2024 19:50:22 +0800</pubDate><guid>https://www.diguage.com/post/upgrade-to-openjdk21/</guid><description>&lt;div class="paragraph">
+&lt;p>&lt;a href="https://openjdk.org/projects/jdk/21/" target="_blank" rel="noopener">OpenJDK 21&lt;/a> 已经发布半年有余，在这个版本中， &lt;a href="https://openjdk.org/jeps/439" target="_blank" rel="noopener">Generational ZGC&lt;/a> 也一起发布了。在 &lt;a href="https://malloc.se/blog/zgc-jdk16" target="_blank" rel="noopener">ZGC | What’s new in JDK 16&lt;/a> 中， &lt;a href="https://malloc.se/" target="_blank" rel="noopener">Per Lidén&lt;/a> 宣称，将 ZGC 的最大停顿时间从 10ms 降低到了 1ms。再加上 &lt;a href="https://www.diguage.com/post/gc-performance-incremental-qps/" target="_blank" rel="noopener">JVM GC 性能测试（二）：递增流量&lt;/a> 和 &lt;a href="https://www.diguage.com/post/gc-performance-real-qps/" target="_blank" rel="noopener">JVM GC 性能测试（三）：真实流量&lt;/a> 文中，GenZGC 的惊艳表现，这些种种先进技术，着实充满诱惑，忍不住想吃口螃蟹 🦀。这篇文章，D瓜哥就来分享一下，自己在升级 OpenJDK 21 中的一些经验。&lt;/p>
+&lt;/div>
+&lt;div class="admonitionblock tip">
+&lt;table>
+&lt;tbody>&lt;tr>
+&lt;td class="icon">
+&lt;i class="fa icon-tip" title="Tip">&lt;/i>
+&lt;/td>
+&lt;td class="content">
+本文仅介绍升级 OpenJDK 的相关内容，ZGC 原理等会专门撰文介绍。
+&lt;/td>
+&lt;/tr>
+&lt;/tbody>&lt;/table>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_升级依赖">升级依赖&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>依赖升级不是 KPI，也不涉及需求交付。所以，大多数项目的依赖自从项目创建后，就很少升级。如果想比较顺利地将项目升级到 OpenJDK 21，那么，先将项目所用依赖做一个整体升级是一个事半功倍的操作。可以直接使用 Maven 命令来检查依赖可以升级的情况：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">mvn versions:display-dependency-updates&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>执行该命令后，会有如下类似输出：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="c"># 检查依赖升级情况&lt;/span>
+&lt;span class="nv">$ &lt;/span>mvn versions:display-dependency-updates
+
+&lt;span class="c"># 此处省略一万个字&lt;/span>
+&lt;span class="c"># @author: D瓜哥 · &lt;a href="https://www.diguage.com" target="_blank">https://www.diguage.com&lt;/a>&lt;/span>
+
+&lt;span class="o">[&lt;/span>INFO] org.springframework:spring-aop ......... 5.3.33 -&amp;gt; 6.1.6
+&lt;span class="o">[&lt;/span>INFO] org.springframework:spring-aspects ..... 5.3.33 -&amp;gt; 6.1.6
+&lt;span class="o">[&lt;/span>INFO] org.springframework:spring-beans ....... 5.3.33 -&amp;gt; 6.1.6
+&lt;span class="o">[&lt;/span>INFO] org.springframework:spring-context ..... 5.3.33 -&amp;gt; 6.1.6
+&lt;span class="o">[&lt;/span>INFO] org.springframework:spring-core ........ 5.3.33 -&amp;gt; 6.1.6
+&lt;span class="o">[&lt;/span>INFO] org.springframework:spring-jdbc ........ 5.3.33 -&amp;gt; 6.1.6
+&lt;span class="o">[&lt;/span>INFO] org.springframework:spring-web ......... 5.3.33 -&amp;gt; 6.1.6
+
+&lt;span class="o">[&lt;/span>INFO] org.mybatis:mybatis-2-spring ............ 1.1.0 -&amp;gt; 1.2.0
+&lt;span class="o">[&lt;/span>INFO] org.mybatis:mybatis-spring .............. 2.1.1 -&amp;gt; 2.1.2
+
+&lt;span class="o">[&lt;/span>INFO] org.junit.jupiter:junit-jupiter ........ 5.9.3 -&amp;gt; 5.10.2
+&lt;span class="o">[&lt;/span>INFO] org.junit.jupiter:junit-jupiter-api .... 5.9.3 -&amp;gt; 5.10.2&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>深入理解 Java 代码块</title><link>https://www.diguage.com/post/dive-into-java-code-block/</link><pubDate>Sun, 04 Sep 2022 19:17:06 +0800</pubDate><guid>https://www.diguage.com/post/dive-into-java-code-block/</guid><description>&lt;div class="paragraph">
+&lt;p>在 &lt;a href="https://www.diguage.com/post/jvm-bytecode-constant/" target="_blank" rel="noopener">Java 虚拟机操作码探秘：常量指令&lt;/a> 中对 Java 虚拟机操作码中关于常量操作的指令(操作码)做了初步介绍。估计会有人疑问：文中的“栈”、“栈顶”等是什么？接下来就准备解答这些疑问。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在答疑解惑之前，先来了解一下 Java 编译器对 Java 代码中的代码块是如何处理的？常见的代码块有普通代码块和静态代码块，下面对其做分别介绍。由于涉及到构造函数，所以，先对构造函数做一个介绍。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_构造函数">构造函数&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="sect2">
+&lt;h3 id="no-constructor">无构造函数&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>先来看看当没有声明构造函数时，编译结果是什么样的：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="java">&lt;span class="cm">/**
+ * 无构造函数示例
+ *
+ * @author D瓜哥 · &lt;a href="https://www.diguage.com" target="_blank">https://www.diguage.com&lt;/a>
+ */&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">Example&lt;/span> &lt;span class="o">{&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>编译后，使用 &lt;code>javap -c&lt;/code> 查看一下编译结果：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="nv">$ &lt;/span>javap &lt;span class="nt">-c&lt;/span> Example
+Compiled from &lt;span class="s2">&amp;#34;Example.java&amp;#34;&lt;/span>
+public class Example &lt;span class="o">{&lt;/span>
+ public Example&lt;span class="o">()&lt;/span>&lt;span class="p">;&lt;/span>
+ Code:
+ 0: aload_0
+ 1: invokespecial &lt;span class="c">#1 // Method java/lang/Object.&amp;#34;&amp;lt;init&amp;gt;&amp;#34;:()V&lt;/span>
+ 4: &lt;span class="k">return&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>从结果上来看：编译器自动给没有声明构造函数的类，生成了一个无参构造函数，并且在其中调用了父类（这里是 &lt;code>Object&lt;/code>）的无参构造函数。这是大家都熟知的基础知识。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_有参构造函数">有参构造函数&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>再来看看当有声明参数的构造函数时，编译结果是什么样的：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="java">&lt;span class="cm">/**
+ * 有参构造函数示例
+ *
+ * @author D瓜哥 · &lt;a href="https://www.diguage.com" target="_blank">https://www.diguage.com&lt;/a>
+ */&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">Example&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="kd">public&lt;/span> &lt;span class="nf">Example&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="kt">int&lt;/span> &lt;span class="n">i&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="o">}&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>编译后，使用 &lt;code>javap -c&lt;/code> 查看一下编译结果：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="nv">$ &lt;/span>javap &lt;span class="nt">-c&lt;/span> Example
+Compiled from &lt;span class="s2">&amp;#34;Example.java&amp;#34;&lt;/span>
+public class Example &lt;span class="o">{&lt;/span>
+ public Example&lt;span class="o">(&lt;/span>int&lt;span class="o">)&lt;/span>&lt;span class="p">;&lt;/span> &lt;i class="conum" data-value="1">&lt;/i>&lt;b>(1)&lt;/b>
+ Code:
+ 0: aload_0
+ 1: invokespecial &lt;span class="c">#1 // Method java/lang/Object.&amp;#34;&amp;lt;init&amp;gt;&amp;#34;:()V&lt;/span>
+ 4: &lt;span class="k">return&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item></channel></rss>
