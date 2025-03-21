@@ -1,0 +1,199 @@
+---
+title: "算法模式：滑动窗口"
+date: 2025-03-21T11:49:41+08:00
+draft: false
+keywords: ["数组","滑动窗口", "算法", "LeetCode"]
+tags: ["数组"]
+categories: ["算法"]
+thumbnail: "images/data-structure/array.jpg"
+weight: 1
+---
+
+在上一篇文章 https://www.diguage.com/post/algorithm-pattern-two-pointer/[算法模式：双指针^] 介绍了双指针的算法模式。本篇文章，介绍一个类似双指针的算法模式：滑动窗口。
+
+== 滑动窗口
+
+滑动窗口类型的题目经常是用来执行数组或是链表上某个区间（窗口）上的操作。比如找最长的全为1的子数组长度。滑动窗口一般从第一个元素开始，一直往右边一个一个元素挪动。当然了，根据题目要求，我们可能有固定窗口大小的情况，也有窗口的大小变化的情况。
+
+
+
+image::/images/data-structure/sliding-window.png[title="滑动窗口",alt="滑动窗口",{image_attr}]
+
+下面是一些我们用来判断我们可能需要上滑动窗口策略的方法：
+
+* 问题的输入是一些线性结构：比如链表，数组，字符串之类的
+* 让你去求最长/最短子字符串或是某些特定的长度要求
+
+== LeetCode 3. 无重复字符的最长子串
+
+https://leetcode.cn/problems/longest-substring-without-repeating-characters/[LeetCode - 3. 无重复字符的最长子串 ^]
+
+给定一个字符串 `s` ，请你找出其中不含有重复字符的 **最长子串** 的长度。
+
+
+*示例 1:*
+
+....
+输入: s = "abcabcbb"
+输出: 3 
+解释: 因为无重复字符的最长子串是 "abc"，所以其长度为 3。
+....
+
+*示例 2:*
+
+....
+输入: s = "bbbbb"
+输出: 1
+解释: 因为无重复字符的最长子串是 "b"，所以其长度为 1。
+....
+
+*示例 3:*
+
+....
+输入: s = "pwwkew"
+输出: 3
+解释: 因为无重复字符的最长子串是 "wke"，所以其长度为 3。
+     请注意，你的答案必须是 子串 的长度，"pwke" 是一个子序列，不是子串。
+....
+
+*提示：*
+
+* `0 \<= s.length \<= 5 * 10^4^`
+* `+s+` 由英文字母、数字、符号和空格组成
+
+=== 思路分析
+
+这是一个典型的滑动窗口问题。如下图：
+
+image::/images/data-structure/0003-11.png[title="LeetCode 3. 无重复字符的最长子串",alt="LeetCode 3. 无重复字符的最长子串",{image_attr}]
+
+前面一个指针，不断放字符进窗口，同时记录每个字符出现的次数和统计窗口大小；遇到重复字符，则停止进窗口。然后转换成出窗口，因为刚刚的字符正是遇到的第一个重复字符，所以不断循环，字符出窗口，然后减少对应字符出现的次数，直到所有字符全部是 `1`，然后退出出窗口，开始进窗口。
+
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * @author D瓜哥 · https://www.diguage.com
+ * @since 2024-09-21 20:41:51
+ */
+public int lengthOfLongestSubstring(String s) {
+  Map<Character, Integer> map = new HashMap<>();
+  int result = 0, left = 0;
+  for (int right = 0; right < s.length(); right++) {
+    char c = s.charAt(right);
+    int cnt = map.getOrDefault(c, 0);
+    if (cnt == 0) {
+      map.put(c, 1);
+      result = Math.max(result, right - left + 1);
+    } else {
+      map.put(c, cnt + 1);
+    }
+    while (map.get(c) > 1) {
+      char lc = s.charAt(left);
+      left++;
+      map.put(lc, map.get(lc) - 1);
+    }
+  }
+  return result;
+}
+----
+
+== LeetCode 76. 最小覆盖子串
+
+https://leetcode.cn/problems/minimum-window-substring/[LeetCode - 76. 最小覆盖子串 ^]
+
+给你一个字符串 `s` 、一个字符串 `t` 。返回 `s` 中涵盖 `t` 所有字符的最小子串。如果 `s` 中不存在涵盖 `t` 所有字符的子串，则返回空字符串 `""` 。
+
+*注意：*
+
+* 对于 `t` 中重复字符，我们寻找的子字符串中该字符数量必须不少于 `t` 中该字符数量。
+* 如果 `s` 中存在这样的子串，我们保证它是唯一的答案。
+
+*示例 1：*
+
+....
+输入：s = "ADOBECODEBANC", t = "ABC"
+输出："BANC"
+解释：最小覆盖子串 "BANC" 包含来自字符串 t 的 'A'、'B' 和 'C'。
+....
+
+*示例 2：*
+
+....
+输入：s = "a", t = "a"
+输出："a"
+解释：整个字符串 s 是最小覆盖子串。
+....
+
+*示例 3:*
+
+....
+输入: s = "a", t = "aa"
+输出: ""
+解释: t 中两个字符 'a' 均应包含在 s 的子串中，
+因此没有符合条件的子字符串，返回空字符串。
+....
+
+*提示：*
+
+* `m == s.length`
+* `n == t.length`
+* `1 \<= m, n \<= 10^5^`
+* `s` 和 `t` 由英文字母组成
+
+**进阶：**你能设计一个在 `O(m+n)` 时间内解决此问题的算法吗？
+
+=== 思路分析
+
+这道题也是一道非常典型的滑动窗口题。整体思路如下：
+
+首先，统计第二个字符串每个字符的出现次数。
+
+其次，在开一个窗口，遍历第一个字符串，前面的指针把字符串放进窗口，统计每个字符串出现的次数，如果字符串在第二个字符串中，就比较两边的次数，相等则记录一下匹配字符的数目加 `1`。
+
+当匹配字符从数目与第二个字符串出现的字符数量相等时，开始进入收缩窗口。如果当前窗口更小，则记录一下当前窗口的长度和下标。然后，收缩窗口，对于字符次数和匹配次数也做相应的减少。
+
+这里还有一点需要注意：题目要求返回的是“包含目标字符串的最小字符串”，而不是最小长度。这点一定要看清楚。我最开始写的时候以为是最小长度，最后写返回结果的时候，直接报错了。
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * @author D瓜哥 · https://www.diguage.com
+ * @since 2025-03-21 11:08:35
+ */
+public String minWindow(String s, String t) {
+  if (s == null || t == null || s.isEmpty() || t.isEmpty() || s.length() < t.length()) {
+    return "";
+  }
+  Map<Character, Integer> target = new HashMap<>();
+  for (char c : t.toCharArray()) {
+    target.put(c, target.getOrDefault(c, 0) + 1);
+  }
+  int left = 0, right = 0;
+  int valid = 0, startIdx = 0, minLength = Integer.MAX_VALUE;
+  Map<Character, Integer> windows = new HashMap<>();
+  while (right < s.length()) {
+    char rc = s.charAt(right);
+    right++;
+    // 这里可以再优化一下：只存目标字符串中出现的字符，这样可以减少内存消耗
+    windows.put(rc, windows.getOrDefault(rc, 0) + 1);
+    if (target.containsKey(rc)
+      && Objects.equals(target.get(rc), windows.get(rc))) {
+      valid++;
+    }
+    while (valid == target.size()) {
+      if (right - left < minLength) {
+        minLength = right - left;
+        startIdx = left;
+      }
+      char lc = s.charAt(left);
+      windows.put(lc, windows.getOrDefault(lc, 0) - 1);
+      if (target.containsKey(lc) && windows.get(lc) < target.get(lc)) {
+        valid--;
+      }
+      left++;
+    }
+  }
+  return minLength == Integer.MAX_VALUE ? "" : s.substring(startIdx, startIdx + minLength);
+}
+----

@@ -2,7 +2,7 @@
 title: "算法模式：双指针"
 date: 2025-03-06T17:32:45+08:00
 draft: false
-keywords: ["数组","区间合并", "算法", "LeetCode"]
+keywords: ["数组","双指针", "算法", "LeetCode"]
 tags: ["数组"]
 categories: ["算法"]
 thumbnail: "images/data-structure/array.jpg"
@@ -63,7 +63,7 @@ nums[0] + nums[3] + nums[4] = (-1) + 2 + (-1) = 0 。
 *提示：*
 
 * `+3 <= nums.length <= 3000+`
-* `+-10+`^`+5+`^`+<= nums[i] <= 10+`^`+5+`^
+* `-10^5^ \<= nums[i] \<= 10^5^`
 
 == 思路分析
 
