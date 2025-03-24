@@ -1,0 +1,136 @@
+---
+title: "算法模式：单调栈"
+date: 2025-03-24T20:26:12+08:00
+draft: false
+keywords: ["栈","单调栈", "算法", "LeetCode"]
+tags: ["栈","算法模式"]
+categories: ["算法"]
+thumbnail: "images/data-structure/stack.svg"
+weight: 1
+---
+
+在上一篇文章 https://www.diguage.com/post/algorithm-pattern-sliding-window/[算法模式：滑动窗口^] 介绍了滑动窗口的算法模式。本篇文章，介绍一个堆栈相关的算法模式：单调栈。
+
+
+== 单调栈
+
+所谓单调栈，就是在栈的基础上，增加了一个附加条件：栈内元素单调递增或者递减，如果不符合要求，则将元素出栈，直到符合条件为止。当需要给当前的元素，找右边/左边第一个比它大/小的位置时，就特别适合使用单调栈。
+
+image::/images/data-structure/monotonically-increasing-stack.svg[title="单调递增栈",alt="单调递增栈",{image_attr}]
+
+image::/images/data-structure/monotonically-decreasing-stack.svg[title="单调递减栈",alt="单调递减栈",{image_attr}]
+
+一般会用到 `Deque` 的以下四个方法：
+
+* `stack.isEmpty()`：如果 `deque` 不包含任何元素，则返回 `true`，否则返回 `false`。因为要栈顶元素在满足要求的时候要弹出，所以需要进行空栈判断。有些场景，可能栈一定不会空的时候，就不需要该方法进行空栈判断。
+* `stack.push(e)`：将元素 `e` 入栈。
+* `stack.pop()`：将栈顶元素弹出，并返回当前弹出的栈顶元素。
+* `stack.peek()`：获取栈顶元素，不弹出。
+
+[source%nowrap,java,{source_attr}]
+----
+// 定义一个单调栈
+Deque<Integer> stack = new LinkedList<>();
+// 第一个元素，直接添加
+stack.push(0); // 注意：栈内存的是数组下标
+for (int i = 1; i < nums.length; i++) {
+    // 如果是单调递增栈，那么这里就是大于，即 nums[i] > nums[deque.peek()]
+    if (nums[i] < nums[stack.peek()]) {
+        stack.push(i);
+    } else if (nums[i] == nums[stack.peek()]) {
+        stack.push(i);
+        // 此处除了入栈，在有些场景下，还有可能有其他操作
+        // ..............
+    } else {
+        // 循环比较，直到遇到当前元素小于栈顶的元素情况，跳出循环
+        // 单调递增栈，这里是小于，即nums[i] < nums[deque.peek()]
+        while (!stack.isEmpty() && nums[i] > nums[stack.peek()]) {
+            //主要逻辑
+            // ............
+            // ............
+            // 弹出栈顶元素
+            stack.pop();
+        }
+        stack.push(i);
+    }
+}
+----
+
+记住这两句话：
+
+* 单调递增栈，利用波谷剔除栈中的波峰，留下波谷；
+* 单调递减栈，利用波峰剔除栈中的波谷，留下波峰。
+
+== LeetCode 316. 去除重复字母
+
+https://leetcode.cn/problems/remove-duplicate-letters/[LeetCode - 316. 去除重复字母 ^]
+
+给你一个字符串 `s`，请你去除字符串中重复的字母，使得每个字母只出现一次。需保证 *返回结果的字典序最小*（要求不能打乱其他字符的相对位置）。
+
+*示例 1：*
+
+....
+输入：s = "bcabc"
+输出："abc"
+....
+
+*示例 2：*
+
+....
+输入：s = "cbacdcbc"
+输出："acdb"
+....
+
+*提示：*
+
+* `1 \<= s.length \<= 10^4^`
+* `s` 由小写英文字母组成
+
+=== 思路分析
+
+遇到重复字符，一个可选的方案是统计字符出现的次数。
+
+要求“字典序最小”及“不能打乱其他字符的相对位置”，那么可以考虑单调栈：循环遍历字符，如果遇到当前字符比结果集中最后一个字符小，则删除最后一个字符，除非最后一个字符在字符串后面已经不再出现。删除到符合要求的时候，把当前字符添加进结果集。代码如下：
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * @author D瓜哥 · https://www.diguage.com
+ * @since 2025-03-24 20:39:51
+ */
+public String removeDuplicateLetters(String s) {
+  char[] chars = s.toCharArray();
+  int[] count = new int[26];
+  for (char c : chars) {
+    count[c - 'a']++;
+  }
+  boolean[] added = new boolean[26];
+  // result 就是一个“单调栈”
+  StringBuilder result = new StringBuilder();
+  for (char c : chars) {
+    int idx = c - 'a';
+    count[idx]--;
+    if (added[idx]) {
+      continue;
+    }
+    // 类似单调栈的操作：单调递增栈，遇到小的，则大的出栈
+    while (!result.isEmpty() && result.charAt(result.length() - 1) > c) {
+      int lastCharIdx = result.charAt(result.length() - 1) - 'a';
+      // 如果 result 最后一个字符后续不再出现，则必须保留了。
+      if (count[lastCharIdx] == 0) {
+        break;
+      }
+      // 否则，删除。后续再遇到了再添加
+      result.deleteCharAt(result.length() - 1);
+      added[lastCharIdx] = false;
+    }
+    result.append(c);
+    added[idx] = true;
+  }
+  return result.toString();
+}
+----
+
+这道题比较难！如果想看单调栈比较简单的题目，可以看下面的两篇文章。
+
+关于单调栈，以前已经专门写过两篇文章介绍过： https://www.diguage.com/post/monotonic-stack-in-practice-1/[单调栈实践（一）：入门^] 和 https://www.diguage.com/post/monotonic-stack-in-practice-2/[单调栈实践（二）：应用^]。
