@@ -3,7 +3,7 @@ title: "算法模式：双指针"
 date: 2025-03-06T17:32:45+08:00
 draft: false
 keywords: ["数组","双指针", "算法", "LeetCode"]
-tags: ["数组"]
+tags: ["数组","算法模式"]
 categories: ["算法"]
 thumbnail: "images/data-structure/array.jpg"
 weight: 1
