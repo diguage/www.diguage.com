@@ -6,8 +6,6 @@ keywords: [""]
 tags: [""]
 categories: [""]
 thumbnail: "images/full-gcs/eliminate-consecutive-full-gcs.jpeg"
-# aliases: "/old/path/"
-
 weight: 1
 ---
 

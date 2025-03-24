@@ -6,8 +6,6 @@ keywords: ["Java","JVM", "ZGC", "调优"]
 tags: ["Java", "GC", "翻译"]
 categories: ["系统架构","性能优化"]
 thumbnail: "images/java/zgc-banner.png"
-# aliases: "/old/path/"
-
 weight: 1
 ---
 

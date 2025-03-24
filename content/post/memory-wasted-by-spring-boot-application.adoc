@@ -6,8 +6,6 @@ keywords: ["Java","JVM", "Spring", "Spring Boot", "调优"]
 tags: ["Java", "Spring", "翻译"]
 categories: ["性能优化"]
 thumbnail: "images/spring-boot/memory-wasted.png"
-# aliases: "/old/path/"
-
 weight: 1
 ---
 

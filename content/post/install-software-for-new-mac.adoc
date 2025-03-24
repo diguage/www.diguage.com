@@ -6,8 +6,6 @@ keywords: ["Mac"]
 tags: ["Java", "Linux"]
 categories: ["开发工具"]
 thumbnail: "images/logos/macbook.jpg"
-# aliases: "images/logos/macbook.jpg"
-
 weight: 1
 ---
 

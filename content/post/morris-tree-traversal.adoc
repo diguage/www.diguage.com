@@ -6,8 +6,6 @@ keywords: ["Morris","二叉树", "算法"]
 tags: ["树"]
 categories: ["算法"]
 thumbnail: "images/common/tree.jpg"
-# aliases: "/old/path/"
-
 weight: 1
 ---
 

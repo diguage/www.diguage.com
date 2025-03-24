@@ -6,8 +6,6 @@ keywords: ["算法","二叉树","二叉搜索树","Morris", "LeetCode"]
 tags: ["树"]
 categories: ["算法"]
 thumbnail: "images/common/tree.jpg"
-# aliases: "/old/path/"
-
 weight: 1
 ---
 

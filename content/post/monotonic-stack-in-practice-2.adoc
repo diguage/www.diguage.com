@@ -1,13 +1,11 @@
 ---
 title: "单调栈实践（二）：应用"
-date: 2020-08-02T22:57:10+08:00
+date: 2024-08-02T22:57:10+08:00
 draft: false
 keywords: ["算法", "数据结构", "Stack", "Monotonic Stack", "单调栈", "LeetCode"]
 tags: ["栈"]
 categories: ["算法"]
 thumbnail: "images/portraits/donald-knuth.jpg"
-# aliases: "/old/path/"
-
 weight: 1
 ---
 

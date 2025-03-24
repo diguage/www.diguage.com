@@ -6,8 +6,6 @@ keywords: ["Java","Spring","扩展"]
 tags: ["Java","设计","架构","Spring"]
 categories: ["程序设计"]
 thumbnail: "images/logo/spring.svg"
-# aliases: "/old/path/"
-
 weight: 1
 ---
 
