@@ -1,0 +1,110 @@
+---
+title: "算法模式：Top K 问题"
+date: 2025-03-25T21:20:04+08:00
+draft: false
+keywords: ["堆", "算法", "LeetCode"]
+tags: ["堆","算法模式"]
+categories: ["算法"]
+thumbnail: "images/data-structure/heap.png"
+weight: 1
+---
+
+在上一篇文章 https://www.diguage.com/post/algorithm-pattern-monotonic-stack/[算法模式：单调栈^] 介绍了单调栈的算法模式。本篇文章，介绍一个堆相关的算法模式：Top K 问题。（英语原文是 Top K Elements，实在没有找到好的翻译，暂时翻译成 “Top K 问题”，后续有好的翻译再改。）
+
+== Top K 问题
+
+任何让求解最大/最小/最频繁的K个元素的题，都遵循这种模式。
+
+用来记录这种前 K 类型的最佳数据结构就是堆了（在Java中，对应的结构是优先队列 `PriorityQueue` ）。这种模式借助堆来解决很多这种前 K 个数值的问题。
+
+image::/images/data-structure/max-min-heap.svg[title="大堆与小堆",alt="大堆与小堆",{image_attr}]
+
+这个模式是这样的：
+
+. 根据题目要求，将K个元素插入到最小堆或是最大堆。
+. 遍历剩下的还没访问的元素，如果当前出来到的这个元素比堆顶元素大或者小，那咱们把堆顶元素先删除，再加当前元素进去。
+
+如果求最大的前 K 个元素，则适合使用小堆，将待检查元素与堆顶元素相比，堆顶元素小，直接删除堆顶元素，将待检查元素添加到堆即可。反之，则用大堆。
+
+注意这种模式下，咱们不需要去排序数组，因为堆具有这种良好的局部有序性，这对咱们需要解决问题就够了。
+
+识别最大 K 个元素模式：
+
+* 如果你需要求最大/最小/最频繁的前K个元素
+* 如果你需要通过排序去找一个特定的数
+
+== LeetCode 347. 前 K 个高频元素
+
+https://leetcode.cn/problems/top-k-frequent-elements/[LeetCode - 347. 前 K 个高频元素 ^]
+
+给你一个整数数组 `nums` 和一个整数 `k` ，请你返回其中出现频率前 `k` 高的元素。你可以按 *任意顺序* 返回答案。
+
+*示例 1:*
+
+....
+输入: nums = [1,1,1,2,2,3], k = 2
+输出: [1,2]
+....
+
+*示例 2:*
+
+....
+输入: nums = [1], k = 1
+输出: [1]
+....
+
+
+*提示：*
+
+* `1 \<= nums.length \<= 10^5^`
+* `k` 的取值范围是 `[1, 数组中不相同的元素的个数]`
+* 题目数据保证答案唯一，换句话说，数组中前 `k` 个高频元素的集合是唯一的
+
+**进阶：**你所设计算法的时间复杂度 *必须* 优于 stem:[O(nlogn)] ，其中 `n` 是数组大小。
+
+
+=== 思路分析
+
+题目要求是“前 K 个高频元素”，明显的 Top K 问题。
+
+这里要求出现频率，那么就要统计每个元素出现的次数。最大的前 K 个元素，则适合使用小堆，将待检查元素与堆顶元素相比，堆顶元素小，直接删除堆顶元素，将待检查元素添加到堆即可。代码如下：
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * @author D瓜哥 · https://www.diguage.com
+ * @since 2025-03-25 21:20:04
+ */
+public int[] topKFrequent(int[] nums, int k) {
+  Map<Integer, Integer> numToCountMap = new HashMap<>();
+  for (int num : nums) {
+    Integer count = numToCountMap.getOrDefault(num, 0);
+    numToCountMap.put(num, ++count);
+  }
+  // 寻找最频繁的 K 个元素，这里就要用最小堆。
+  // 注意：堆里比较的是元素出现的次数，不是元素本身，所以自定义比较器
+  PriorityQueue<Integer> minHeap = new PriorityQueue<>(Comparator.comparingInt(numToCountMap::get));
+  for (Map.Entry<Integer, Integer> entry : numToCountMap.entrySet()) {
+    Integer num = entry.getKey();
+    Integer count = entry.getValue();
+    if (minHeap.size() < k) {
+      minHeap.offer(num);
+    } else {
+      if (numToCountMap.get(minHeap.peek()) < count) {
+        minHeap.poll();
+        minHeap.offer(num);
+      }
+    }
+  }
+  int[] result = new int[k];
+  for (int num : minHeap) {
+    result[--k] = num;
+  }
+  return result;
+}
+----
+
+
+
+
+
