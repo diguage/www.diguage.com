@@ -5,7 +5,7 @@ draft: false
 keywords: ["数组","区间合并", "算法", "LeetCode"]
 tags: ["数组","算法模式"]
 categories: ["算法"]
-thumbnail: "images/data-structure/array.jpg"
+thumbnail: "images/data-structure/array.png"
 weight: 1
 ---
 
