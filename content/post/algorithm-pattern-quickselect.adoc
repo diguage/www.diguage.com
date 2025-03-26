@@ -1,0 +1,98 @@
+---
+title: "算法模式：快速选择"
+date: 2025-03-06T17:32:45+08:00
+draft: false
+keywords: ["数组","快速选择", "算法", "LeetCode"]
+tags: ["数组","算法模式"]
+categories: ["算法"]
+thumbnail: "images/data-structure/array.jpg"
+weight: 1
+---
+
+在上一篇文章 https://www.diguage.com/post/algorithm-pattern-top-k-elements/[算法模式：Top K 问题^] 介绍了如何利用堆快速选出最 X 的 K 个元素。本篇文章，介绍一个可以快速选择第 K 个 最 X 元素的算法模式：快速选择。
+
+== 快速选择
+
+快速选择起源于快排算法。在快排算法中，把元素根据基准元素分成左右两部分，一边的元素小于基准元素，另外一个的元素大于等于基准元素，再对两边的元素递归处理，最终得到有序结果。受此启发，在将元素根据基准元素分成左右两部分后，这里假设，左边小于基准元素，右边大于等于基准元素，那么会有如下三种情况：
+
+. 当前基准元素所在位置正好是 K，正好是所求结果，直接返回；
+. 当前基准元素所在位置小于 K，那么 K 位置在当前基准元素的右边；
+. 当前基准元素所在位置大于 K，那么 K 位置在当前基准元素的左边；
+
+所以，该模式不仅适用于求第 K 个之最元素，也适用于求“Top K 问题”。
+
+== LeetCode 215. 数组中的第K个最大元素
+
+https://leetcode.cn/problems/kth-largest-element-in-an-array/[LeetCode - 215. 数组中的第K个最大元素 ^]
+
+给定整数数组 `nums` 和整数 `k`，请返回数组中第 *`k`* 个最大的元素。
+
+请注意，你需要找的是数组排序后的第 `k` 个最大的元素，而不是第 `k` 个不同的元素。
+
+你必须设计并实现时间复杂度为 stem:[O(n)] 的算法解决此问题。
+
+*示例 1:*
+
+....
+输入: [3,2,1,5,6,4], k = 2
+输出: 5
+....
+
+*示例 2:*
+
+....
+输入: [3,2,3,1,2,4,5,5,6], k = 4
+输出: 4
+....
+
+*提示：*
+
+* `1 \<= k \<= nums.length \<= 10^5^`
+* `-10^4^ \<= nums[i] \<= 10^4^`
+
+=== 思路分析
+
+一道典型的快速排序题目。可以利用快速选择，高效锁点答案。代码如下：
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * @author D瓜哥 · https://www.diguage.com
+ * @since 2025-03-26 16:24:19
+ */
+public int findKthLargest(int[] nums, int k) {
+  // 第 k 大的元素，正好是升序数组的 nums.length - k 个元素
+  return quickselect(nums, nums.length - k, 0, nums.length - 1);
+}
+
+private int quickselect(int[] nums, int k, int left, int right) {
+  if (left == right) {
+    return nums[k];
+  }
+  int pivot = nums[left];
+  // 由于下面先移动指针，所以左右指针各项左右移一位
+  int l = left - 1, r = right + 1;
+  while (l < r) {
+    // 交换之后，没有移动指针，所以先移动指针再循环
+    do {
+      l++;
+    } while (nums[l] < pivot);
+    do {
+      r--;
+    } while (pivot < nums[r]);
+    if (l < r) {
+      int tmp = nums[l];
+      nums[l] = nums[r];
+      nums[r] = tmp;
+    }
+  }
+  // r 是最后一个小于或等于 pivot 的元素的索引。
+  // [left, r] 是确定小于或等于 pivot 的部分。
+  if (k <= r) {
+    return quickselect(nums, k, left, r);
+  } else {
+    return quickselect(nums, k, r + 1, right);
+  }
+}
+----
+
