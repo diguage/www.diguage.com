@@ -104,6 +104,8 @@ public int[] topKFrequent(int[] nums, int k) {
 }
 ----
 
+TIP: 除了使用优先队列，此题还有一个更高效的解决办法，利用桶排序来解答，刚兴趣可以探索一下。
+
 
 
 
