@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>树 on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/%E6%A0%91/</link><description>Recent content in 树 on "地瓜哥"博客网</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Mon, 24 Mar 2025 19:09:05 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/%E6%A0%91/index.xml" rel="self" type="application/rss+xml"/><item><title>神奇的 Morris 树遍历</title><link>https://www.diguage.com/post/morris-tree-traversal/</link><pubDate>Fri, 14 Aug 2020 18:27:03 +0800</pubDate><guid>https://www.diguage.com/post/morris-tree-traversal/</guid><description>&lt;div class="paragraph">
+&lt;p>无论是在计算机课上，还是在网上，对数据结构有一定了解的童鞋，应该都对树的遍历不陌生。常见的遍历方式有如下两种：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>基于栈的遍历：需要额外的空间复杂度。实现略复杂。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>基于递归的遍历：实现简单。空间复杂度上，与栈类似，只是这里的栈维护是由系统自动完成的。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在看左程云的《程序员代码面试指南》时，里面介绍了一种只需 O(1) 的额外空间复杂度的遍历方法：Morris 树遍历。感觉非常神奇。这里给大家介绍一下。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>Morris 树遍历的神奇之处在于，它充分利用了树里面大量的空闲节点（比如叶子节点的左右子树节点就为空，可以利用起来）来建立起必要的连接，推动遍历的进行。核心思想非常简单：找出当前节点左子树的最右节点，此时最右节点的右子树为空，将最右节点的右子树指向当前节点。然后左移，递归完成所有相关连接。没有左子树时，则向右移动，依次完成上述操作。我们来结合图来说明。如图：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/data-structure/morris-tree-traversal.svg" alt="Morris 树遍历" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. Morris 树遍历&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>如上图所示，当访问根节点 &lt;code>4&lt;/code> 时，它的左子树的最右节点就是 &lt;code>3&lt;/code>，将 &lt;code>3&lt;/code> 的右子树指向当前节点 &lt;code>4&lt;/code>，如线条 &lt;code>⑥&lt;/code> 所示。向左启动，建立起 &lt;code>1&lt;/code> 到 &lt;code>2&lt;/code> 的连接 &lt;code>④&lt;/code>。再向左移动到 &lt;code>1&lt;/code>，&lt;code>1&lt;/code> 没有左子树，则向右移动，此时就利用上了刚刚建立起的连接 &lt;code>④&lt;/code>。依次类推，即可完成遍历。在遍历过程中，也需要把建立的临时连接给取消掉。&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="java">&lt;span class="cm">/**
+ * Morris 树遍历
+ *
+ * @author D瓜哥 · &lt;a href="https://www.diguage.com" target="_blank">https://www.diguage.com&lt;/a>
+ */&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="kt">void&lt;/span> &lt;span class="nf">morris&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">TreeNode&lt;/span> &lt;span class="n">head&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="nc">TreeNode&lt;/span> &lt;span class="n">curr&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">head&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="nc">TreeNode&lt;/span> &lt;span class="n">mostRight&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="kc">null&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="k">while&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">curr&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="kc">null&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="c1">// 当前节点左子树的最右节点，当然是从左子树开始了&lt;/span>
+ &lt;span class="n">mostRight&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">curr&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">left&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">mostRight&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="kc">null&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="c1">// 左子树不为空，则找出左子树的最右节点&lt;/span>
+ &lt;span class="k">while&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">mostRight&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">right&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="kc">null&lt;/span>
+ &lt;span class="c1">// 由于需要建立最右节点到当前节点的连接，所以，需要判断是否已建立连接来打破死循环&lt;/span>
+ &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> &lt;span class="n">mostRight&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">right&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="n">curr&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="n">mostRight&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">mostRight&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">right&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">mostRight&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">right&lt;/span> &lt;span class="o">==&lt;/span> &lt;span class="kc">null&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="c1">// 最右节点的右子树为空，则第一次访问，那么建立起连接&lt;/span>
+ &lt;span class="n">mostRight&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">right&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">curr&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="n">curr&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">curr&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">left&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="k">continue&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span> &lt;span class="k">else&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="c1">// 最右节点的右子树不为空，则第二次访问，打破连接，恢复原貌&lt;/span>
+ &lt;span class="n">mostRight&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">right&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="kc">null&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="c1">// 最子树为空，则向右移动&lt;/span>
+ &lt;span class="n">curr&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">curr&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">right&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>根据代码，结合图示，很容易得到 Morris 遍历的结果： &lt;code>4&lt;/code>、&lt;code>2&lt;/code>、&lt;code>1&lt;/code>、&lt;code>2&lt;/code>&lt;sup>2&lt;/sup>、&lt;code>3&lt;/code>、&lt;code>4&lt;/code>&lt;sup>2&lt;/sup>、&lt;code>6&lt;/code>、&lt;code>5&lt;/code>、&lt;code>6&lt;/code>&lt;sup>2&lt;/sup>、&lt;code>7&lt;/code>。分析这个结果可以发现：&lt;strong>有左子树的节点都会被访问两次。&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_前根遍历">前根遍历&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>那么该树的前根遍历是什么呢？这个也很容易得出：&lt;code>4&lt;/code>、&lt;code>2&lt;/code>、&lt;code>1&lt;/code>、&lt;code>3&lt;/code>、&lt;code>6&lt;/code>、&lt;code>5&lt;/code>、&lt;code>7&lt;/code>。如何从 Morris 遍历中，得到前根遍历的结果呢？对比两边的结果，可以很容易发现：将访问两次的元素，只在第一次访问时输出；只访问一次的原始直接输出即可。代码如下：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="java">&lt;span class="cm">/**
+ * Morris 树前根遍历
+ *
+ * @author D瓜哥 · &lt;a href="https://www.diguage.com" target="_blank">https://www.diguage.com&lt;/a>
+ */&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="kt">void&lt;/span> &lt;span class="nf">morrisPre&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">TreeNode&lt;/span> &lt;span class="n">head&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="nc">TreeNode&lt;/span> &lt;span class="n">curr&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">head&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="nc">TreeNode&lt;/span> &lt;span class="n">mostRight&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="kc">null&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="k">while&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">curr&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="kc">null&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="c1">// 当前节点左子树的最右节点，当然是从左子树开始了&lt;/span>
+ &lt;span class="n">mostRight&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">curr&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">left&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">mostRight&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="kc">null&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="c1">// 左子树不为空，则找出左子树的最右节点&lt;/span>
+ &lt;span class="k">while&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">mostRight&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">right&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="kc">null&lt;/span>
+ &lt;span class="c1">// 由于需要建立最右节点到当前节点的连接，所以，需要判断是否已建立连接来打破死循环&lt;/span>
+ &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> &lt;span class="n">mostRight&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">right&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="n">curr&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="n">mostRight&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">mostRight&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">right&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">mostRight&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">right&lt;/span> &lt;span class="o">==&lt;/span> &lt;span class="kc">null&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="c1">// 最右节点的右子树为空，则第一次访问，那么建立起连接&lt;/span>
+ &lt;span class="n">mostRight&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">right&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">curr&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="c1">// 第一次访问时，即输出&lt;/span>
+ &lt;span class="nc">System&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">out&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">print&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">curr&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">val&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="s">&amp;#34; &amp;#34;&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="n">curr&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">curr&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">left&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="k">continue&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span> &lt;span class="k">else&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="c1">// 最右节点的右子树不为空，则第二次访问，打破连接，恢复原貌&lt;/span>
+ &lt;span class="n">mostRight&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">right&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="kc">null&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="o">}&lt;/span> &lt;span class="k">else&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="c1">// 前面内容已经分析过：有左子树的节点就会被访问两次&lt;/span>
+ &lt;span class="c1">// 那么没有左子树的节点，就自会访问一次，访问到时直接输出即可。&lt;/span>
+ &lt;span class="nc">System&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">out&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">print&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">curr&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">val&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="s">&amp;#34; &amp;#34;&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="c1">// 最子树为空，则向右移动&lt;/span>
+ &lt;span class="n">curr&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">curr&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">right&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>题解：538.把二叉搜索树转换为累加树</title><link>https://www.diguage.com/post/convert-bst-to-greater-tree/</link><pubDate>Fri, 03 Jul 2020 14:56:24 +0800</pubDate><guid>https://www.diguage.com/post/convert-bst-to-greater-tree/</guid><description>&lt;div class="sect1">
+&lt;h2 id="_题目描述">题目描述&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>题目是 LeetCode 的第 538 题： &lt;a href="https://leetcode.com/problems/convert-bst-to-greater-tree/description/" target="_blank" rel="noopener">把二叉搜索树转换为累加树&lt;/a>。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>给出二叉搜索树的根节点，该树的节点值各不相同，请你将其转换为累加树（Greater Sum Tree），使每个节点 &lt;code>node&lt;/code> 的新值等于原树中大于或等于 &lt;code>node.val&lt;/code> 的值之和。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>提醒一下，二叉搜索树满足下列约束条件：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>节点的左子树仅包含键 小于 节点键的节点。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>节点的右子树仅包含键 大于 节点键的节点。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>左右子树也必须是二叉搜索树。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_思路分析">思路分析&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>一棵二叉搜索树，如果是中根遍历，那么，其序列正好是一个升序序列。但，题目要求的是大于等于自身的节点值之和。正常的中根遍历是“左中右”，反过来“右中左”，就是降序序列，累计求和就符合题目要求了。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_解题代码">解题代码&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>中序遍历，可以用栈，也可以使用 Morris 遍历。在 &lt;a href="https://www.diguage.com/post/find-two-error-node-in-binary-search-tree/" target="_blank" rel="noopener">题解：找到二叉搜索树中两个错误的节点&lt;/a> 中就是用了 Morris 遍历。网上也很少有反向的 Morris 中根遍历。正好练习一下。&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="java">&lt;span class="cm">/**
+ * 基于 Morris 的倒序中根遍历
+ *
+ * @author D瓜哥 · &lt;a href="https://www.diguage.com" target="_blank">https://www.diguage.com&lt;/a>
+ */&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="nc">TreeNode&lt;/span> &lt;span class="nf">convertBST&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">TreeNode&lt;/span> &lt;span class="n">root&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="kt">int&lt;/span> &lt;span class="n">sum&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="c1">// 反向 Morris&lt;/span>
+ &lt;span class="nc">TreeNode&lt;/span> &lt;span class="n">cur&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">root&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="nc">TreeNode&lt;/span> &lt;span class="n">mostLeft&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="kc">null&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="k">while&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">cur&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="kc">null&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="c1">// 向右转&lt;/span>
+ &lt;span class="n">mostLeft&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">cur&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">right&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">mostLeft&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="kc">null&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="c1">// 寻找最左边的节点&lt;/span>
+ &lt;span class="k">while&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">mostLeft&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">left&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="kc">null&lt;/span> &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> &lt;span class="n">mostLeft&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">left&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="n">cur&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="n">mostLeft&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">mostLeft&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">left&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">mostLeft&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">left&lt;/span> &lt;span class="o">==&lt;/span> &lt;span class="kc">null&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="c1">// 第一次访问，将最左节点的左子树指向当前节点&lt;/span>
+ &lt;span class="n">mostLeft&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">left&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">cur&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="n">cur&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">cur&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">right&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="k">continue&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span> &lt;span class="k">else&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="c1">// 第二次访问，掐断中间建立的连接&lt;/span>
+ &lt;span class="n">mostLeft&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">left&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="kc">null&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="c1">// 计算累加和&lt;/span>
+ &lt;span class="n">sum&lt;/span> &lt;span class="o">+=&lt;/span> &lt;span class="n">cur&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">val&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="n">cur&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">val&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">sum&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="n">cur&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">cur&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">left&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="k">return&lt;/span> &lt;span class="n">root&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>得益于 Morris 的优秀本质，这个解法的时间复杂度是： O(n)，空间复杂度是： O(1)。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>关于 Morris 树遍历的更多介绍，请看： &lt;a href="https://www.diguage.com/post/morris-tree-traversal/" target="_blank" rel="noopener">神奇的 Morris 树遍历&lt;/a>。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div></description></item><item><title>题解：找到二叉搜索树中两个错误的节点</title><link>https://www.diguage.com/post/find-two-error-node-in-binary-search-tree/</link><pubDate>Sun, 21 Jun 2020 17:57:19 +0800</pubDate><guid>https://www.diguage.com/post/find-two-error-node-in-binary-search-tree/</guid><description>&lt;div class="sect1">
+&lt;h2 id="_题目描述">题目描述&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>一棵二叉树原本是二叉搜索树，但是其中有两个节点调换了位置，使得这棵二叉树不再是二叉搜索树，请按升序输出这两个错误节点的值。(每个节点的值各不相同)&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_思路分析">思路分析&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>一棵二叉搜索树，如果是中序遍历，那么，其序列正好是一个升序序列。如果序列中间出现了降序，那么就是树中错误的节点。这里有两种情况需要考虑：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>如果两个节点正好相邻，那么降序的两个节点就是题目要求的节点。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>如果两个节点不相邻，就会出现两次降序。很容易想到，“大”的元素跑前面，“小”的元素跑后面。在进行比较的时候，第一个降序时，前面大的元素是错误节点；第二次降序时，则是后面小的元素是错误节点。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>有了上面的分析，就可以写代码了。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_解题代码">解题代码&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>中序遍历，可以用栈，也可以使用 Morris 遍历。前面正好学习了一下 Morris（详情请看： &lt;a href="https://www.diguage.com/post/morris-tree-traversal/" target="_blank" rel="noopener">神奇的 Morris 树遍历&lt;/a>），借此机会练练手：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="java">&lt;span class="cm">/**
+ * 基于 Morris 的中根遍历
+ *
+ * @author D瓜哥 · &lt;a href="https://www.diguage.com" target="_blank">https://www.diguage.com&lt;/a>
+ */&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="nc">TreeNode&lt;/span>&lt;span class="o">[]&lt;/span> &lt;span class="nf">getErrs&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">TreeNode&lt;/span> &lt;span class="n">head&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="nc">TreeNode&lt;/span>&lt;span class="o">[]&lt;/span> &lt;span class="n">result&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="k">new&lt;/span> &lt;span class="nc">TreeNode&lt;/span>&lt;span class="o">[&lt;/span>&lt;span class="mi">2&lt;/span>&lt;span class="o">];&lt;/span>
+ &lt;span class="nc">TreeNode&lt;/span> &lt;span class="n">curr&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">head&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="nc">TreeNode&lt;/span> &lt;span class="n">mostRight&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="kc">null&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="nc">TreeNode&lt;/span> &lt;span class="n">prior&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="kc">null&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="k">while&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">curr&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="kc">null&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="n">mostRight&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">curr&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">left&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">mostRight&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="kc">null&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="k">while&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">mostRight&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">right&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="kc">null&lt;/span> &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> &lt;span class="n">mostRight&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">right&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="n">curr&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="n">mostRight&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">mostRight&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">right&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">mostRight&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">right&lt;/span> &lt;span class="o">==&lt;/span> &lt;span class="kc">null&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="n">mostRight&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">right&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">curr&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="n">curr&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">curr&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">left&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="k">continue&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span> &lt;span class="k">else&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="n">mostRight&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">right&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="kc">null&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">prior&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="kc">null&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">prior&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">val&lt;/span> &lt;span class="o">&amp;gt;&lt;/span> &lt;span class="n">curr&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">val&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">result&lt;/span>&lt;span class="o">[&lt;/span>&lt;span class="mi">0&lt;/span>&lt;span class="o">]&lt;/span> &lt;span class="o">==&lt;/span> &lt;span class="kc">null&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="n">result&lt;/span>&lt;span class="o">[&lt;/span>&lt;span class="mi">0&lt;/span>&lt;span class="o">]&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">curr&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="n">result&lt;/span>&lt;span class="o">[&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="o">]&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">prior&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span> &lt;span class="k">else&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="n">result&lt;/span>&lt;span class="o">[&lt;/span>&lt;span class="mi">0&lt;/span>&lt;span class="o">]&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">curr&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="n">prior&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">curr&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="n">curr&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">curr&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">right&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="k">return&lt;/span> &lt;span class="n">result&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>得益于 Morris 的优秀本质，这个解法的时间复杂度是： O(n)，空间复杂度是： O(1)。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div></description></item></channel></rss>

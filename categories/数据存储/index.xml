@@ -1,0 +1,477 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>数据存储 on "地瓜哥"博客网</title><link>https://www.diguage.com/categories/%E6%95%B0%E6%8D%AE%E5%AD%98%E5%82%A8/</link><description>Recent content in 数据存储 on "地瓜哥"博客网</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Sun, 01 Dec 2024 21:39:35 +0800</lastBuildDate><atom:link href="https://www.diguage.com/categories/%E6%95%B0%E6%8D%AE%E5%AD%98%E5%82%A8/index.xml" rel="self" type="application/rss+xml"/><item><title>理解数据库分片</title><link>https://www.diguage.com/post/understanding-database-sharding/</link><pubDate>Sun, 01 Dec 2024 15:42:01 +0800</pubDate><guid>https://www.diguage.com/post/understanding-database-sharding/</guid><description>&lt;div class="sidebarblock">
+&lt;div class="content">
+&lt;div class="paragraph">
+&lt;p>最近在 DigitalOcean 社区看到一篇文章，讲解数据库分片架构的，感觉非常不错，图文并茂，翻译过来，分享给需要的朋友。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_介绍">介绍&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>任何应用程序或网站，如果出现大幅增长，最终都需要进行扩展，以适应流量的增加。对于数据驱动型应用程序和网站来说，在进行扩展时必须确保数据的安全性和完整性。很难预测一个网站或应用程序会变得多受欢迎，或者它的受欢迎程度会维持多久，这就是为什么一些组织会选择一种允许他们动态扩展数据库的数据库架构。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在这篇概念性文章中，我们将讨论这样一种数据库架构：分片数据库。近年来，分片数据库受到了广泛关注，但很多人并不清楚什么是分片数据库，也不知道在哪些情况下分片数据库才有意义。我们将介绍什么是分片、分片的一些主要优点和缺点，以及几种常见的分片方法。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_什么是分片">什么是分片？&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>分片是一种与水平分区相关的数据库架构模式，即把一个表的行分成多个不同的表，称为分区。每个分区都有相同的模式和列，但也有完全不同的行。同样，每个分区中的数据都是唯一的，与其他分区中的数据无关。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>从水平分区与垂直分区的关系角度来思考水平分区可能会有所帮助。在垂直分区表中，整个列都被分离出来并放入新的、不同的表中。一个垂直分区中的数据独立于所有其他分区中的数据，每个分区都有不同的行和列。下图说明了如何对表格进行水平和垂直分区：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/databases/sharding-1.png" alt="水平分区与垂直分区" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. 水平分区与垂直分区&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>分片是指将数据分割成两个或多个较小的块，称为逻辑分片。然后，逻辑分片分布在不同的数据库节点上，称为物理分片，物理分片可容纳多个逻辑分片。尽管如此，所有分片中保存的数据共同代表了一个完整的逻辑数据集。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>数据库分片是无共享架构的典范。这意味着分片是独立的，它们不共享任何相同的数据或计算资源。不过，在某些情况下，将某些表复制到每个分片中作为参考表是有意义的。例如，假设有一个应用程序的数据库依赖于重量测量的固定转换率。通过将包含必要转换率数据的表复制到每个分片中，有助于确保每个分片中都包含查询所需的所有数据。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>通常，分片是在应用程序级实现的，这意味着应用程序包含定义向哪个分片传输读写的代码。不过，有些数据库管理系统内置了分片功能，允许你直接在数据库级实施分片。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>鉴于以上对分片的概述，让我们来看看这种数据库架构的一些优点和缺点。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_分片的优点">分片的优点&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>对数据库进行分片的主要吸引力在于，它有助于促进水平扩展，也称为向外扩展，横向扩展。水平扩展是指在现有堆栈中添加更多机器，以分散负载，允许更多流量和更快处理。这通常与垂直扩展（也称向上扩展）形成对比，后者涉及升级现有服务器的硬件，通常是增加更多内存或 CPU。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在一台机器上运行一个关系数据库，并根据需要通过升级其计算资源来扩大其规模相对简单。但归根结底，任何非分布式数据库在存储和计算能力方面都是有限的，因此可以自由横向扩展，会让你的设置更加灵活。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>一些人选择分片数据库架构的另一个原因是为了加快查询响应速度。在未分片的数据库上提交查询时，数据库可能需要搜索查询表中的每一行，然后才能找到所需的结果集。对于使用大型单体数据库的应用程序来说，查询速度会慢得令人望而却步。不过，通过将一个表分片成多个表后，查询需要处理的行数就会减少，返回结果集的速度也会快得多。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>分片还可以减轻中断造成的影响，从而提高应用程序的可靠性。如果您的应用程序或网站依赖的是未分片的数据库，中断有可能导致整个应用程序不可用。 而使用分片数据库时，故障可能只影响单个分片。尽管这可能会导致部分用户无法使用应用程序或网站的某些部分，但总体影响仍小于整个数据库崩溃的影响。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_分片的缺点">分片的缺点&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>虽然分片可以使数据库的扩展更容易并提高性能，但它也会带来一些限制。在此，我们将讨论其中的一些限制，以及为什么要避免使用分片。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>人们在使用分片时遇到的第一个困难是正确实施分片数据库架构的复杂性。如果操作不当，分片过程很有可能导致数据丢失或表损坏。即使操作正确，分片也可能对团队的工作流程产生重大影响。用户必须跨多个分片位置管理数据，而不是从一个入口点访问和管理数据，这可能会对某些团队造成干扰。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>用户在对数据库进行分片后有时会遇到一个问题，那就是分片最终会变得不平衡。举例来说，假设你的数据库有两个独立的分片，一个用于存储姓氏以字母 A 至 M 开头的客户，另一个用于存储姓氏以字母 N 至 Z 开头的客户。然而，你的应用程序为大量姓氏以字母 G 开头的人提供服务。 A-M 分区已成为所谓的数据库热点。在这种情况下，分片给数据库带来的任何好处都会被速度变慢和崩溃所抵消。数据库很可能需要修复和重新分片，以使数据分布更均匀。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>另一个主要缺点是，一旦数据库被分片，就很难将其恢复到未分片的架构。数据库分片前的任何备份都不包括分片后写入的数据。 因此，要重建未分片的原始架构，就需要将新的分片数据与旧的备份合并，或者将分片后的数据库变回单一数据库，这两种方法都会耗费大量成本和时间。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>最后一个需要考虑的缺点是，并非每个数据库引擎都支持分片。例如，PostgreSQL 不包括自动分片功能，但可以手动分片 PostgreSQL 数据库。 有一些 Postgres 变种确实包含自动分片功能，但它们往往落后于最新的 PostgreSQL 版本，而且缺乏某些其他功能。一些专门的数据库技术（如 MySQL Cluster 或某些数据库即服务产品（如 MongoDB Atlas））确实包含自动分片功能，但这些数据库管理系统的普通版本并不包含。因此，分片通常需要“自己开发”。这意味着通常很难找到分片文档或故障排除技巧。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>当然，这些只是分片前需要考虑的一些一般性问题。根据其用例，对数据库进行分片可能会有更多潜在的缺点。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>现在，我们已经介绍了分片的一些缺点和优点，下面将介绍几种不同的分片数据库架构。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_分片架构">分片架构&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>一旦决定对数据库进行分片，接下来需要考虑的就是如何分片。在运行查询或将输入数据分发到分片表或数据库时，将数据分发到正确的分片至关重要。否则，可能会导致数据丢失或查询缓慢。在本节中，我们将介绍几种常见的分片架构，每种架构都使用略有不同的流程在分片间分发数据。&lt;/p>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_基于键的分片">基于键的分片&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>基于密钥的分片，也称为基于散列的分片，涉及使用从新写入的数据中提取的值，例如客户的 ID 编号、客户端应用程序的 IP 地址、邮政编码等并将其输入散列函数，以确定数据应进入哪个分片。散列函数是一种输入数据（如客户电子邮件）并输出离散值（即散列值）的函数。在分片的情况下，散列值是一个分片 ID，用于确定输入的数据将存储在哪个分片上。整个过程如下：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/databases/sharding-2.png" alt="基于键的分片" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 2. 基于键的分片&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>为确保条目以一致的方式放置于正确的分片，输入散列函数的值都应来自同一列。此列被称为分片键。简单来说，分片键与主键类似，都是用于为单个行建立唯一标识符的列。从广义上讲，分片键应该是静态的，也就是说，它不应该包含可能会随时间变化的值。否则，会增加更新操作的工作量，并可能降低性能。&lt;/p>
+&lt;/div></description></item><item><title>细说编码与字符集</title><link>https://www.diguage.com/post/dive-into-encoding-and-character-set/</link><pubDate>Sat, 29 Oct 2022 09:09:12 +0800</pubDate><guid>https://www.diguage.com/post/dive-into-encoding-and-character-set/</guid><description>&lt;div class="paragraph">
+&lt;p>&lt;strong>文章还没写完，提前放出防止出现 404。稍后慢慢更新，敬请期待： &lt;a href="https://www.diguage.com/post/dive-into-encoding-and-character-set/" target="_blank" rel="noopener">细说编码与字符集 - &amp;#34;地瓜哥&amp;#34;博客网&lt;/a>&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>文章还没写完，提前放出防止出现 404。稍后慢慢更新，敬请期待： &lt;a href="https://www.diguage.com/post/dive-into-encoding-and-character-set/" target="_blank" rel="noopener">细说编码与字符集 - &amp;#34;地瓜哥&amp;#34;博客网&lt;/a>&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>文章还没写完，提前放出防止出现 404。稍后慢慢更新，敬请期待： &lt;a href="https://www.diguage.com/post/dive-into-encoding-and-character-set/" target="_blank" rel="noopener">细说编码与字符集 - &amp;#34;地瓜哥&amp;#34;博客网&lt;/a>&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>前段时间要研究 Hessian 编码格式，为了搞清楚 Hessian 对字符串的编码，就顺路查了好多编码和字符集的工作，理清了很多以前模糊的知识点。下面整理一下笔记，也梳理一下自己的思路和理解。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_ascii_码">ASCII 码&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>计算机起源于美国，他们对英语字符与二进制位之间的对应关系做了统一规定，并制定了一套字符编码规则，这套编码规则被称为 American Standard Code for Information Interchange，简称为 ASCII 编码&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>其实，ASCII 最早起源于电报码。最早的商业应用是贝尔公司的七位电传打字机。后来于 1963 年发布了该标准的第一版。在网络交换中使用的 ASCII 格式是在 1969 年发布的，该格式在 2015 年发展成为互联网标准。点击 &lt;a href="https://www.rfc-editor.org/rfc/rfc20.pdf" target="_blank" rel="noopener">RFC 20: ASCII format for network interchange&lt;/a>，感受一下 1969 年的古香古色。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>ASCII 编码一共定义了128个字符的编码规则，用七位二进制表示（&lt;code>0x00&lt;/code> - &lt;code>0x7F&lt;/code>）, 这些字符组成的集合就叫做 ASCII 字符集。完整列表如下：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/encoding/ascii-table.svg" alt="ASCII Table" width="95%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>ASCII 码可以说是现在所有编码的鼻祖。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_编码乱战及_unicode_应运而生">编码乱战及 Unicode 应运而生&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>ASCII 编码是为专门英语指定的编码标准，但是却不能编码英语外来词。比如 &lt;code>résumé&lt;/code>，其中 &lt;code>é&lt;/code> 就不在 ASCII 编码范围内。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>随着计算机的发展，各个国家或地区，甚至不同公司都推出了不同的编码标准，比如中国推出了 GB2312、GBK 以及 GB18030；微软推出了 Windows character sets 。&lt;/p>
+&lt;/div></description></item><item><title>关于 MySQL 新版连接驱动时区对齐问题的研究</title><link>https://www.diguage.com/post/research-on-timezone-of-mysql-new-connection-driver/</link><pubDate>Wed, 07 Jul 2021 10:23:41 +0800</pubDate><guid>https://www.diguage.com/post/research-on-timezone-of-mysql-new-connection-driver/</guid><description>&lt;div class="paragraph">
+&lt;p>在一个项目开量验证过程中，发现 createDate 字段不正确，比正确时间晚了十四个小时。调研发现，这是一个非常典型的问题。现在把定位问题的思路和解决办法给大家做个分享。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>首先，检查数据库配置，查询线上生产环境配置，结果如下：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/mysql/mysql-variable.png" alt="MySQL 变量" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. MySQL 变量&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>同时，检查线上生产环境 MySQL 版本，为问题复现做准备：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/mysql/mysql-version.png" alt="MySQL 版本" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 2. MySQL 版本&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>从数据库配置上来说，基本正常，没有发现什么问题。（持续运行了这么长时间，有问题应该早就发现了。）&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>其次，检查数据库连接配置，正式环境的链接配置如下：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code>jdbc:mysql://&amp;lt;host&amp;gt;:3306/&amp;lt;schema&amp;gt;?createDatabaseIfNotExist=true
+ &amp;amp;characterEncoding=utf-8&amp;amp;useUnicode=true&amp;amp;connectTimeout=2000
+ &amp;amp;socketTimeout=2000&amp;amp;autoReconnect=true&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>数据库连接也没有问题。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>第三，询问 SA 线上服务器时区配置，回复上是 CST，这个和数据库对应，没有问题。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/mysql/talk-to-sa.png" alt="与 SA 沟通" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 3. 与 SA 沟通&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>配置检查正常，那么只好在本地搭建环境，重现问题，再寻求解决方案。由于项目是基于 Spring Boot 2.3.7.RELEASE 开发的，相关依赖也尽量使用 Spring Boot 指定版本的，所以，很快把开发环境搭好了。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在配置服务器环境时，遇到一点小小的问题：我一直以为有个时区名称叫 CST，就在网上去查怎么设置，结果徒劳半天也没有找到。后来上开发机检查开发机时区配置，发现是 &lt;code>Asia/Shanghai&lt;/code>。将测试服务器设置为该时区，数据库内部查询时区，显示和服务器一直。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>调试代码中，发现 MySQL 连接驱动的代码中，有配置时区的相关代码，如下：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="title">&lt;code>com.mysql.cj.protocol.a.NativeProtocol#configureTimezone&lt;/code>&lt;/div>
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="java">&lt;span class="cm">/**
+ * Configures the client&amp;#39;s timezone if required.
+ *
+ * @throws CJException
+ * if the timezone the server is configured to use can&amp;#39;t be
+ * mapped to a Java timezone.
+ */&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="kt">void&lt;/span> &lt;span class="nf">configureTimezone&lt;/span>&lt;span class="o">()&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="c1">// 获取服务器时区&lt;/span>
+ &lt;span class="nc">String&lt;/span> &lt;span class="n">configuredTimeZoneOnServer&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">serverSession&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getServerVariable&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;time_zone&amp;#34;&lt;/span>&lt;span class="o">);&lt;/span>
+
+ &lt;span class="c1">// 如果服务器时区是 SYSTEM，则使用服务器的 system_time_zone 时区设置&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;SYSTEM&amp;#34;&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">equalsIgnoreCase&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">configuredTimeZoneOnServer&lt;/span>&lt;span class="o">))&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="n">configuredTimeZoneOnServer&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">serverSession&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getServerVariable&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;system_time_zone&amp;#34;&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="o">}&lt;/span>
+
+ &lt;span class="c1">// 获取客户端时区配置&lt;/span>
+ &lt;span class="nc">String&lt;/span> &lt;span class="n">canonicalTimezone&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">getPropertySet&lt;/span>&lt;span class="o">().&lt;/span>&lt;span class="na">getStringProperty&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">PropertyKey&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">serverTimezone&lt;/span>&lt;span class="o">).&lt;/span>&lt;span class="na">getValue&lt;/span>&lt;span class="o">();&lt;/span>
+
+ &lt;span class="c1">// 如果服务器时区不为空，切客户端时区配置不可用，则使用服务器的时区配置&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">configuredTimeZoneOnServer&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="kc">null&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="c1">// user can override this with driver properties, so don&amp;#39;t detect if that&amp;#39;s the case&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">canonicalTimezone&lt;/span> &lt;span class="o">==&lt;/span> &lt;span class="kc">null&lt;/span> &lt;span class="o">||&lt;/span> &lt;span class="nc">StringUtils&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">isEmptyOrWhitespaceOnly&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">canonicalTimezone&lt;/span>&lt;span class="o">))&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="k">try&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="n">canonicalTimezone&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nc">TimeUtil&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getCanonicalTimezone&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">configuredTimeZoneOnServer&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">getExceptionInterceptor&lt;/span>&lt;span class="o">());&lt;/span>
+ &lt;span class="o">}&lt;/span> &lt;span class="k">catch&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="nc">IllegalArgumentException&lt;/span> &lt;span class="n">iae&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="k">throw&lt;/span> &lt;span class="nc">ExceptionFactory&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">createException&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">WrongArgumentException&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">class&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">iae&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getMessage&lt;/span>&lt;span class="o">(),&lt;/span> &lt;span class="n">getExceptionInterceptor&lt;/span>&lt;span class="o">());&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="o">}&lt;/span>
+
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">canonicalTimezone&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="kc">null&lt;/span> &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> &lt;span class="n">canonicalTimezone&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">length&lt;/span>&lt;span class="o">()&lt;/span> &lt;span class="o">&amp;gt;&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="c1">// 为该会话设置时区&lt;/span>
+ &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">serverSession&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">setServerTimeZone&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">TimeZone&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getTimeZone&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">canonicalTimezone&lt;/span>&lt;span class="o">));&lt;/span>
+
+ &lt;span class="c1">//&lt;/span>
+ &lt;span class="c1">// The Calendar class has the behavior of mapping unknown timezones to &amp;#39;GMT&amp;#39; instead of throwing an exception, so we must check for this...&lt;/span>
+ &lt;span class="c1">//&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(!&lt;/span>&lt;span class="n">canonicalTimezone&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">equalsIgnoreCase&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;GMT&amp;#34;&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">serverSession&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getServerTimeZone&lt;/span>&lt;span class="o">().&lt;/span>&lt;span class="na">getID&lt;/span>&lt;span class="o">().&lt;/span>&lt;span class="na">equals&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;GMT&amp;#34;&lt;/span>&lt;span class="o">))&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="k">throw&lt;/span> &lt;span class="nc">ExceptionFactory&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">createException&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">WrongArgumentException&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">class&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="nc">Messages&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getString&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;Connection.9&amp;#34;&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="k">new&lt;/span> &lt;span class="nc">Object&lt;/span>&lt;span class="o">[]&lt;/span> &lt;span class="o">{&lt;/span> &lt;span class="n">canonicalTimezone&lt;/span> &lt;span class="o">}),&lt;/span>
+ &lt;span class="n">getExceptionInterceptor&lt;/span>&lt;span class="o">());&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="o">}&lt;/span>
+
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>HikariCP 源码分析 -- FastList</title><link>https://www.diguage.com/post/hikari-cp-source-analysis-fast-list/</link><pubDate>Sun, 02 Aug 2020 15:06:02 +0800</pubDate><guid>https://www.diguage.com/post/hikari-cp-source-analysis-fast-list/</guid><description>&lt;div class="paragraph">
+&lt;p>在前面的文章 &lt;a href="https://www.diguage.com/post/hikari-cp-source-analysis-concurrent-bag/">HikariCP 源码分析 — ConcurrentBag&lt;/a> 中，D瓜哥分析了一下 HikariCP 中一个非常重要的数据结构 &lt;code>ConcurrentBag&lt;/code>。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>今天，继续再介绍 HikariCP 中另一个很关键的数据结构： &lt;code>FastList&lt;/code>。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;code>FastList&lt;/code> 本身的实现非常简单，要理解它的奥秘，就需要结合 Java 原生集合类的 &lt;code>ArrayList&lt;/code> 来比较性地看。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_构造函数">构造函数&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>先来对比一下两者的构造函数。先来看看 &lt;code>FastList&lt;/code>：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="title">&lt;code>FastList&lt;/code>&lt;/div>
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="kd">public&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">FastList&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="kd">implements&lt;/span> &lt;span class="nc">List&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">&amp;gt;,&lt;/span> &lt;span class="nc">RandomAccess&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="nc">Serializable&lt;/span>
+&lt;span class="o">{&lt;/span>
+ &lt;span class="kd">private&lt;/span> &lt;span class="kd">static&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="kt">long&lt;/span> &lt;span class="n">serialVersionUID&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="o">-&lt;/span>&lt;span class="mi">4598088075242913858L&lt;/span>&lt;span class="o">;&lt;/span>
+
+ &lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="nc">Class&lt;/span>&lt;span class="o">&amp;lt;?&amp;gt;&lt;/span> &lt;span class="n">clazz&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="kd">private&lt;/span> &lt;span class="no">T&lt;/span>&lt;span class="o">[]&lt;/span> &lt;span class="n">elementData&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="kd">private&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="n">size&lt;/span>&lt;span class="o">;&lt;/span>
+
+ &lt;span class="cm">/**
+ * Construct a FastList with a default size of 32.
+ * @param clazz the Class stored in the collection
+ */&lt;/span>
+ &lt;span class="nd">@SuppressWarnings&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;unchecked&amp;#34;&lt;/span>&lt;span class="o">)&lt;/span>
+ &lt;span class="kd">public&lt;/span> &lt;span class="nf">FastList&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">Class&lt;/span>&lt;span class="o">&amp;lt;?&amp;gt;&lt;/span> &lt;span class="n">clazz&lt;/span>&lt;span class="o">)&lt;/span>
+ &lt;span class="o">{&lt;/span>
+ &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">elementData&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">[])&lt;/span> &lt;span class="nc">Array&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">newInstance&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">clazz&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="mi">32&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">clazz&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">clazz&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>
+
+ &lt;span class="cm">/**
+ * Construct a FastList with a specified size.
+ * @param clazz the Class stored in the collection
+ * @param capacity the initial size of the FastList
+ */&lt;/span>
+ &lt;span class="nd">@SuppressWarnings&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;unchecked&amp;#34;&lt;/span>&lt;span class="o">)&lt;/span>
+ &lt;span class="kd">public&lt;/span> &lt;span class="nf">FastList&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">Class&lt;/span>&lt;span class="o">&amp;lt;?&amp;gt;&lt;/span> &lt;span class="n">clazz&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="n">capacity&lt;/span>&lt;span class="o">)&lt;/span>
+ &lt;span class="o">{&lt;/span>
+ &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">elementData&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">[])&lt;/span> &lt;span class="nc">Array&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">newInstance&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">clazz&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">capacity&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">clazz&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">clazz&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>分布式锁之 Apache Curator InterProcessReadWriteLock</title><link>https://www.diguage.com/post/distributed-lock-apache-curator-interprocessreadwritelock/</link><pubDate>Wed, 22 Jul 2020 10:45:44 +0800</pubDate><guid>https://www.diguage.com/post/distributed-lock-apache-curator-interprocessreadwritelock/</guid><description>&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/distributed-lock-apache-curator-interprocessmutex/">分布式锁之 Apache Curator InterProcessMutex&lt;/a> 中介绍了基于 ZooKeeper 实现的互斥锁。除此之外，还可以实现读写锁。这篇文章就来简要介绍一下 &lt;code>InterProcessReadWriteLock&lt;/code> 的实现原理。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>老规矩，先看看类的注释：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="cm">/**
+ * &amp;lt;p&amp;gt;
+ * A re-entrant read/write mutex that works across JVMs. Uses Zookeeper to hold the lock. All processes
+ * in all JVMs that use the same lock path will achieve an inter-process critical section. Further, this mutex is
+ * &amp;#34;fair&amp;#34; - each user will get the mutex in the order requested (from ZK&amp;#39;s point of view).
+ * &amp;lt;/p&amp;gt;
+ *
+ * &amp;lt;p&amp;gt;
+ * A read write lock maintains a pair of associated locks, one for read-only operations and one
+ * for writing. The read lock may be held simultaneously by multiple reader processes, so long as
+ * there are no writers. The write lock is exclusive.
+ * &amp;lt;/p&amp;gt;
+ *
+ * &amp;lt;p&amp;gt;
+ * &amp;lt;b&amp;gt;Reentrancy&amp;lt;/b&amp;gt;&amp;lt;br&amp;gt;
+ * This lock allows both readers and writers to reacquire read or write locks in the style of a
+ * re-entrant lock. Non-re-entrant readers are not allowed until all write locks held by the
+ * writing thread/process have been released. Additionally, a writer can acquire the read lock, but not
+ * vice-versa. If a reader tries to acquire the write lock it will never succeed.&amp;lt;br&amp;gt;&amp;lt;br&amp;gt;
+ *
+ * &amp;lt;b&amp;gt;Lock downgrading&amp;lt;/b&amp;gt;&amp;lt;br&amp;gt;
+ * Re-entrancy also allows downgrading from the write lock to a read lock, by acquiring the write
+ * lock, then the read lock and then releasing the write lock. However, upgrading from a read
+ * lock to the write lock is not possible.
+ * &amp;lt;/p&amp;gt;
+ */&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">InterProcessReadWriteLock&lt;/span>
+&lt;span class="o">{&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>分布式锁之 Apache Curator InterProcessMutex</title><link>https://www.diguage.com/post/distributed-lock-apache-curator-interprocessmutex/</link><pubDate>Tue, 21 Jul 2020 10:13:21 +0800</pubDate><guid>https://www.diguage.com/post/distributed-lock-apache-curator-interprocessmutex/</guid><description>&lt;div class="paragraph">
+&lt;p>对分布式锁耳熟能详。不过，一直关注的是基于 Redis 实现的分布式锁。知道 ZooKeeper 也可以实现分布式锁。但是，原来的想法是把 Redis 那个思路切换到 ZooKeeper 上来实现就好。今天了解到 Apache Curator 内置了分布式锁的实现： &lt;code>InterProcessMutex&lt;/code>。查看了一下源码实现，发现跟基于 Redis 实现的源码相比，在思路上还是有很大不同的。所以，特别作文记录一下。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>先来看一下，整体流程：&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;span class="image">&lt;img src="https://www.diguage.com/images/distributed-system/InterProcessMutex-process.png" alt="InterProcessMutex process" width="95%"/>&lt;/span>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>结合流程图和源码，加锁的过程是这样的：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>先判断本地是否有锁数据，如果有则对锁定次数自增一下，然后返回 &lt;code>true&lt;/code>；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>如果没有锁数据，则尝试获取锁：&lt;/p>
+&lt;div class="olist loweralpha">
+&lt;ol class="loweralpha" type="a">
+&lt;li>
+&lt;p>在指定路径下创建临时顺序节点&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>获取指定路径下，所有节点，检查自身是否是序号最小的节点：&lt;/p>
+&lt;div class="olist lowerroman">
+&lt;ol class="lowerroman" type="i">
+&lt;li>
+&lt;p>如果自身序号最小，则获得锁；否则&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>如果自身不是序号最小的节点，则通过 &lt;code>while&lt;/code> 自旋 + &lt;code>wait(times)&lt;/code> 不断尝试获取锁，直到成功。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>获得锁后，把锁信息缓存在本地 &lt;code>ConcurrentMap&amp;lt;Thread, LockData&amp;gt; threadData&lt;/code> 变量中，方便计算重入。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在 ZooKeeper 中的结构大致如下：&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;span class="image">&lt;img src="https://www.diguage.com/images/distributed-system/InterProcessMutex-structure.png" alt="InterProcessMutex structure" width="95%"/>&lt;/span>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>下面我们逐个方法进行分析说明。先来看一下 &lt;code>InterProcessMutex&lt;/code> 的注释：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="cm">/**
+ * A re-entrant mutex that works across JVMs. Uses Zookeeper to hold the lock. All processes in all JVMs that
+ * use the same lock path will achieve an inter-process critical section. Further, this mutex is
+ * &amp;#34;fair&amp;#34; - each user will get the mutex in the order requested (from ZK&amp;#39;s point of view)
+ */&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">InterProcessMutex&lt;/span> &lt;span class="kd">implements&lt;/span> &lt;span class="nc">InterProcessLock&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="nc">Revocable&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="nc">InterProcessMutex&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>HikariCP 源码分析 -- ConcurrentBag</title><link>https://www.diguage.com/post/hikari-cp-source-analysis-concurrent-bag/</link><pubDate>Wed, 06 May 2020 17:12:55 +0800</pubDate><guid>https://www.diguage.com/post/hikari-cp-source-analysis-concurrent-bag/</guid><description>&lt;div class="paragraph">
+&lt;p>以前无意间搜资料了解到 HikariCP，一下子就被它的简洁代码和卓越性能吸引住了。以前也有翻过它的代码，但是不是很系统，最近再次翻阅，正好做些笔记，方便以后学习。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥最近在学习 Java 并发知识。那就从 HikariCP 自定义的并发集合 &lt;code>ConcurrentBag&lt;/code> 开始学习。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在 HikariCP 的 Wiki 中，有 &lt;a href="https://github.com/brettwooldridge/HikariCP/wiki/Down-the-Rabbit-Hole#concurrentbag" target="_blank" rel="noopener">Down the Rabbit Hole · ConcurrentBag&lt;/a> 的章节来专门介绍 &lt;code>ConcurrentBag&lt;/code>：&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;code>ConcurrentBag&lt;/code> 的灵感借鉴自 C# .NET 的 &lt;code>ConcurrentBag&lt;/code> 类。但是实现却是完全不同的。这里的 &lt;code>ConcurrentBag&lt;/code> 有如下特性：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>A lock-free design&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>ThreadLocal caching&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Queue-stealing&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Direct hand-off optimizations&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>下面，通过代码来对此做个说明。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在 &lt;code>ConcurrentBag&lt;/code> 类的定义中，声明了集合元素必须是 &lt;code>IConcurrentBagEntry&lt;/code> 的子类。先来看看这个接口的定义：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="kd">public&lt;/span> &lt;span class="kd">interface&lt;/span> &lt;span class="nc">IConcurrentBagEntry&lt;/span>
+&lt;span class="o">{&lt;/span>
+ &lt;span class="kt">int&lt;/span> &lt;span class="no">STATE_NOT_IN_USE&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="kt">int&lt;/span> &lt;span class="no">STATE_IN_USE&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">1&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="kt">int&lt;/span> &lt;span class="no">STATE_REMOVED&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="o">-&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="kt">int&lt;/span> &lt;span class="no">STATE_RESERVED&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="o">-&lt;/span>&lt;span class="mi">2&lt;/span>&lt;span class="o">;&lt;/span>
+
+ &lt;span class="kt">boolean&lt;/span> &lt;span class="nf">compareAndSet&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="kt">int&lt;/span> &lt;span class="n">expectState&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="n">newState&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="kt">void&lt;/span> &lt;span class="nf">setState&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="kt">int&lt;/span> &lt;span class="n">newState&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="kt">int&lt;/span> &lt;span class="nf">getState&lt;/span>&lt;span class="o">();&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>接下来，看一下成员变量：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="c1">// 存放共享元素&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="nc">CopyOnWriteArrayList&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="n">sharedList&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="kt">boolean&lt;/span> &lt;span class="n">weakThreadLocals&lt;/span>&lt;span class="o">;&lt;/span>
+
+&lt;span class="c1">// 在 ThreadLocal 缓存线程本地元素，避免线程争用&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="nc">ThreadLocal&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="nc">List&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="nc">Object&lt;/span>&lt;span class="o">&amp;gt;&amp;gt;&lt;/span> &lt;span class="n">threadList&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="nc">IBagStateListener&lt;/span> &lt;span class="n">listener&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="c1">//&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="nc">AtomicInteger&lt;/span> &lt;span class="n">waiters&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">volatile&lt;/span> &lt;span class="kt">boolean&lt;/span> &lt;span class="n">closed&lt;/span>&lt;span class="o">;&lt;/span>
+
+&lt;span class="c1">// 接力队列&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="nc">SynchronousQueue&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="n">handoffQueue&lt;/span>&lt;span class="o">;&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在 &lt;code>ConcurrentBag&lt;/code> 开头的 JavaDoc 中就做了明确说明：&lt;/p>
+&lt;/div>
+&lt;div class="sidebarblock">
+&lt;div class="content">
+&lt;div class="paragraph">
+&lt;p>Note that items that are &amp;#34;borrowed&amp;#34; from the bag are not actually removed from any collection, so garbage collection will not occur even if the reference is abandoned. Thus care must be taken to &amp;#34;requite&amp;#34; borrowed objects otherwise a memory leak will result. Only the &amp;#34;remove&amp;#34; method can completely remove an object from the bag.&lt;/p>
+&lt;/div></description></item></channel></rss>

@@ -1,0 +1,561 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>源码分析 on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/</link><description>Recent content in 源码分析 on "地瓜哥"博客网</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Fri, 25 Oct 2024 11:01:03 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/index.xml" rel="self" type="application/rss+xml"/><item><title>日志最佳实践探究</title><link>https://www.diguage.com/post/logging-best-practices/</link><pubDate>Wed, 14 Jul 2021 10:52:58 +0800</pubDate><guid>https://www.diguage.com/post/logging-best-practices/</guid><description>&lt;div class="paragraph">
+&lt;p>加入公司以来，参与了很多个项目的开发维护；也排查处理过很多线上问题；为了写 Mock 测试，也专门去日志系统上扒拉过不少日志等等。在整个过程中，对日志的认识有了不少更深刻的认识和体会。也发现不少问题。这里先从存在的问题展开论述。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_日志存在的问题">日志存在的问题&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>从个人的眼光上来看，当前的系统存在如下问题：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>必要日志没有打印出来，导致在追踪问题或测试代码时，带来不必要的麻烦。比如查看一个接口的返回值用于 Mock 测试；再比如 RPC 调用报错，返回值以及错误信息没有打印到日志中，不知道具体错误原因是什么。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>日志抽取中日志路径配置错误，导致日志重复收集，带来不必要的处理和存储成本。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>日志代码不规范，导致不必要的性能消耗；或者大促时，日志降级不生效。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>日志框架繁多，造成造成冲突，遗漏部分日志。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>日志配置不规范，不利于日志的采集和清洗。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>日志和调用链路物理隔离，查看一个请求的整个调用链路上的日志非常不方便，不利于问题的快速排查和定位。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;em>大家的系统中，存在什么样的日志问题？欢迎留言交流讨论。&lt;/em>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>针对这些问题，我觉得有些地方值得发力一下。然后，做了一些探索，总结一下，以备后续使用。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_日志最佳实践探索">日志最佳实践探索&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>对于日志的使用，相信所有的开发人员都比较清楚，网上也有大量资料，相关日志框架的官方文档，也写的非常详尽，这里就不再赘述。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>本文从一个角度对日志规范进行探究：&lt;strong>在排查问题时，能否通过日志来尽快地了解系统运行状态，定位问题原因？&lt;/strong>另外，由于 Java 的日志框架特别多，有一些比较容易迷惑的问题，尝试做出一点总结。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>系统运行后，不严格地说，再去观察系统运行状态，就类似于在黑夜中行走。此时，向你扔过来一块板砖🧱，那么，事后如何追责呢？&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/logging/throw-bug.jpg" alt="throw bug" width="95%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>请问：你能否成功躲开这块叫做 Bug 的板砖🧱？&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>日志用来记录用户操作、系统运行状态等，是一个系统的重要组成部分。然而，由于日志通常不属于系统的核心功能，但是在日志对于排查问题，有无可替代的作用，理应得到所有开发人员的重视（不重视，怎么甩锅？！）！&lt;/p>
+&lt;/div>
+&lt;div class="quoteblock">
+&lt;blockquote>
+&lt;div class="paragraph">
+&lt;p>If dog is a man’s best friend, &lt;br/>
+logs are software engineer’s best friend.&lt;/p>
+&lt;/div>
+&lt;/blockquote>
+&lt;div class="attribution">
+— Geshan Manandhar&lt;br/>
+&lt;cite>Logging best practices&lt;/cite>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>好的日志可以帮助系统的开发和运维人员：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>了解线上系统的运行状态&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>快速准确定位线上问题&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>发现系统瓶颈&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>预警系统潜在风险&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>挖掘产品最大价值&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>可以将一个流程完整串起来（比如orderId）&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>……&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/logging/bug-goto-land.jpg" alt="bug goto land" width="95%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>不好的日志导致：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>对系统的运行状态一知半解，甚至一无所知&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>系统出现问题无法定位，或者需要花费巨大的时间和精力&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>无法发现系统瓶颈，不知优化从何做起&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>无法基于日志对系统运行过程中的错误和潜在风险进行监控和报警&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>对挖掘用户行为和提升产品价值毫无帮助&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>……&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div></description></item><item><title>如何阅读 Spring 源码？</title><link>https://www.diguage.com/post/how-to-read-spring-sources/</link><pubDate>Sat, 08 Aug 2020 07:53:32 +0800</pubDate><guid>https://www.diguage.com/post/how-to-read-spring-sources/</guid><description>&lt;div class="paragraph">
+&lt;p>昨晚原计划给几个朋友简单介绍一下阅读 Spring 源码的方法。结果，大家因为各种原因没能及时参加。后来，就取消分享了。干脆写一篇文章出来，感兴趣欢迎自取。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_代码准备">代码准备&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>Spring Framework 是开源的，代码托管在 GitHub 上： &lt;a href="https://github.com/spring-projects/spring-framework" target="_blank" rel="noopener">Spring Framework&lt;/a>。任何人都可以方便地获得它的源代码。所以，如果想阅读 Spring 的源代码，当然是直接把代码克隆到本地，然后直接在 IDE（推荐 IDEA）中进行调试了。另外，还需要存放自己写一些测试和文档。所以，最好把代码 fork 到自己的账户下，从 &lt;code>master&lt;/code> 上切出一个新分支并 push 到自己的 Repo 中，这样自己就可以随意更新了。具体步骤如下：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>克隆代码&lt;/p>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="c"># 直接克隆原始仓库为 origin&lt;/span>
+git clone git@github.com:spring-projects/spring-framework.git&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>fork 代码，D瓜哥直接 fork 到自己账户下了： &lt;a href="https://github.com/diguage/spring-framework" target="_blank" rel="noopener">diguage/spring-framework&lt;/a>。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>添加原创仓库地址：&lt;/p>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="c"># 添加自己仓库为 diguage&lt;/span>
+&lt;span class="c"># 这样就能在所有项目中保持命名的一致性，方便标识&lt;/span>
+git remote add diguage git@github.com:diguage/spring-framework.git&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>创建新分支&lt;/p>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="c"># 创建新分支&lt;/span>
+git switch &lt;span class="nt">-c&lt;/span> analysis
+
+&lt;span class="c"># 将新分支 push 到自己的 Repo 中&lt;/span>
+git push diguage analysis&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这样，在这个新分支上，就可以随意折腾了。&lt;/p>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>下载依赖&lt;/p>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="c"># Mac or Linux&lt;/span>
+./gradlew clean &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> ./gradlew :spring-oxm:compileTestJava &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> ./gradlew &lt;span class="nb">test&lt;/span>
+
+&lt;span class="c"># Windows&lt;/span>
+gradlew.bat clean &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> gradlew.bat :spring-oxm:compileTestJava &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> gradlew.bat &lt;span class="nb">test&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>HikariCP 源码分析 -- FastList</title><link>https://www.diguage.com/post/hikari-cp-source-analysis-fast-list/</link><pubDate>Sun, 02 Aug 2020 15:06:02 +0800</pubDate><guid>https://www.diguage.com/post/hikari-cp-source-analysis-fast-list/</guid><description>&lt;div class="paragraph">
+&lt;p>在前面的文章 &lt;a href="https://www.diguage.com/post/hikari-cp-source-analysis-concurrent-bag/">HikariCP 源码分析 — ConcurrentBag&lt;/a> 中，D瓜哥分析了一下 HikariCP 中一个非常重要的数据结构 &lt;code>ConcurrentBag&lt;/code>。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>今天，继续再介绍 HikariCP 中另一个很关键的数据结构： &lt;code>FastList&lt;/code>。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;code>FastList&lt;/code> 本身的实现非常简单，要理解它的奥秘，就需要结合 Java 原生集合类的 &lt;code>ArrayList&lt;/code> 来比较性地看。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_构造函数">构造函数&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>先来对比一下两者的构造函数。先来看看 &lt;code>FastList&lt;/code>：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="title">&lt;code>FastList&lt;/code>&lt;/div>
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="kd">public&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">FastList&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="kd">implements&lt;/span> &lt;span class="nc">List&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">&amp;gt;,&lt;/span> &lt;span class="nc">RandomAccess&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="nc">Serializable&lt;/span>
+&lt;span class="o">{&lt;/span>
+ &lt;span class="kd">private&lt;/span> &lt;span class="kd">static&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="kt">long&lt;/span> &lt;span class="n">serialVersionUID&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="o">-&lt;/span>&lt;span class="mi">4598088075242913858L&lt;/span>&lt;span class="o">;&lt;/span>
+
+ &lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="nc">Class&lt;/span>&lt;span class="o">&amp;lt;?&amp;gt;&lt;/span> &lt;span class="n">clazz&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="kd">private&lt;/span> &lt;span class="no">T&lt;/span>&lt;span class="o">[]&lt;/span> &lt;span class="n">elementData&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="kd">private&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="n">size&lt;/span>&lt;span class="o">;&lt;/span>
+
+ &lt;span class="cm">/**
+ * Construct a FastList with a default size of 32.
+ * @param clazz the Class stored in the collection
+ */&lt;/span>
+ &lt;span class="nd">@SuppressWarnings&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;unchecked&amp;#34;&lt;/span>&lt;span class="o">)&lt;/span>
+ &lt;span class="kd">public&lt;/span> &lt;span class="nf">FastList&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">Class&lt;/span>&lt;span class="o">&amp;lt;?&amp;gt;&lt;/span> &lt;span class="n">clazz&lt;/span>&lt;span class="o">)&lt;/span>
+ &lt;span class="o">{&lt;/span>
+ &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">elementData&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">[])&lt;/span> &lt;span class="nc">Array&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">newInstance&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">clazz&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="mi">32&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">clazz&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">clazz&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>
+
+ &lt;span class="cm">/**
+ * Construct a FastList with a specified size.
+ * @param clazz the Class stored in the collection
+ * @param capacity the initial size of the FastList
+ */&lt;/span>
+ &lt;span class="nd">@SuppressWarnings&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;unchecked&amp;#34;&lt;/span>&lt;span class="o">)&lt;/span>
+ &lt;span class="kd">public&lt;/span> &lt;span class="nf">FastList&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">Class&lt;/span>&lt;span class="o">&amp;lt;?&amp;gt;&lt;/span> &lt;span class="n">clazz&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="n">capacity&lt;/span>&lt;span class="o">)&lt;/span>
+ &lt;span class="o">{&lt;/span>
+ &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">elementData&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">[])&lt;/span> &lt;span class="nc">Array&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">newInstance&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">clazz&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">capacity&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">clazz&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">clazz&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>分布式锁之 Apache Curator InterProcessReadWriteLock</title><link>https://www.diguage.com/post/distributed-lock-apache-curator-interprocessreadwritelock/</link><pubDate>Wed, 22 Jul 2020 10:45:44 +0800</pubDate><guid>https://www.diguage.com/post/distributed-lock-apache-curator-interprocessreadwritelock/</guid><description>&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/distributed-lock-apache-curator-interprocessmutex/">分布式锁之 Apache Curator InterProcessMutex&lt;/a> 中介绍了基于 ZooKeeper 实现的互斥锁。除此之外，还可以实现读写锁。这篇文章就来简要介绍一下 &lt;code>InterProcessReadWriteLock&lt;/code> 的实现原理。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>老规矩，先看看类的注释：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="cm">/**
+ * &amp;lt;p&amp;gt;
+ * A re-entrant read/write mutex that works across JVMs. Uses Zookeeper to hold the lock. All processes
+ * in all JVMs that use the same lock path will achieve an inter-process critical section. Further, this mutex is
+ * &amp;#34;fair&amp;#34; - each user will get the mutex in the order requested (from ZK&amp;#39;s point of view).
+ * &amp;lt;/p&amp;gt;
+ *
+ * &amp;lt;p&amp;gt;
+ * A read write lock maintains a pair of associated locks, one for read-only operations and one
+ * for writing. The read lock may be held simultaneously by multiple reader processes, so long as
+ * there are no writers. The write lock is exclusive.
+ * &amp;lt;/p&amp;gt;
+ *
+ * &amp;lt;p&amp;gt;
+ * &amp;lt;b&amp;gt;Reentrancy&amp;lt;/b&amp;gt;&amp;lt;br&amp;gt;
+ * This lock allows both readers and writers to reacquire read or write locks in the style of a
+ * re-entrant lock. Non-re-entrant readers are not allowed until all write locks held by the
+ * writing thread/process have been released. Additionally, a writer can acquire the read lock, but not
+ * vice-versa. If a reader tries to acquire the write lock it will never succeed.&amp;lt;br&amp;gt;&amp;lt;br&amp;gt;
+ *
+ * &amp;lt;b&amp;gt;Lock downgrading&amp;lt;/b&amp;gt;&amp;lt;br&amp;gt;
+ * Re-entrancy also allows downgrading from the write lock to a read lock, by acquiring the write
+ * lock, then the read lock and then releasing the write lock. However, upgrading from a read
+ * lock to the write lock is not possible.
+ * &amp;lt;/p&amp;gt;
+ */&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">InterProcessReadWriteLock&lt;/span>
+&lt;span class="o">{&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>分布式锁之 Apache Curator InterProcessMutex</title><link>https://www.diguage.com/post/distributed-lock-apache-curator-interprocessmutex/</link><pubDate>Tue, 21 Jul 2020 10:13:21 +0800</pubDate><guid>https://www.diguage.com/post/distributed-lock-apache-curator-interprocessmutex/</guid><description>&lt;div class="paragraph">
+&lt;p>对分布式锁耳熟能详。不过，一直关注的是基于 Redis 实现的分布式锁。知道 ZooKeeper 也可以实现分布式锁。但是，原来的想法是把 Redis 那个思路切换到 ZooKeeper 上来实现就好。今天了解到 Apache Curator 内置了分布式锁的实现： &lt;code>InterProcessMutex&lt;/code>。查看了一下源码实现，发现跟基于 Redis 实现的源码相比，在思路上还是有很大不同的。所以，特别作文记录一下。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>先来看一下，整体流程：&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;span class="image">&lt;img src="https://www.diguage.com/images/distributed-system/InterProcessMutex-process.png" alt="InterProcessMutex process" width="95%"/>&lt;/span>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>结合流程图和源码，加锁的过程是这样的：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>先判断本地是否有锁数据，如果有则对锁定次数自增一下，然后返回 &lt;code>true&lt;/code>；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>如果没有锁数据，则尝试获取锁：&lt;/p>
+&lt;div class="olist loweralpha">
+&lt;ol class="loweralpha" type="a">
+&lt;li>
+&lt;p>在指定路径下创建临时顺序节点&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>获取指定路径下，所有节点，检查自身是否是序号最小的节点：&lt;/p>
+&lt;div class="olist lowerroman">
+&lt;ol class="lowerroman" type="i">
+&lt;li>
+&lt;p>如果自身序号最小，则获得锁；否则&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>如果自身不是序号最小的节点，则通过 &lt;code>while&lt;/code> 自旋 + &lt;code>wait(times)&lt;/code> 不断尝试获取锁，直到成功。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>获得锁后，把锁信息缓存在本地 &lt;code>ConcurrentMap&amp;lt;Thread, LockData&amp;gt; threadData&lt;/code> 变量中，方便计算重入。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在 ZooKeeper 中的结构大致如下：&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;span class="image">&lt;img src="https://www.diguage.com/images/distributed-system/InterProcessMutex-structure.png" alt="InterProcessMutex structure" width="95%"/>&lt;/span>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>下面我们逐个方法进行分析说明。先来看一下 &lt;code>InterProcessMutex&lt;/code> 的注释：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="cm">/**
+ * A re-entrant mutex that works across JVMs. Uses Zookeeper to hold the lock. All processes in all JVMs that
+ * use the same lock path will achieve an inter-process critical section. Further, this mutex is
+ * &amp;#34;fair&amp;#34; - each user will get the mutex in the order requested (from ZK&amp;#39;s point of view)
+ */&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">InterProcessMutex&lt;/span> &lt;span class="kd">implements&lt;/span> &lt;span class="nc">InterProcessLock&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="nc">Revocable&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="nc">InterProcessMutex&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>深入剖析 Spring 核心数据结构：BeanFactory</title><link>https://www.diguage.com/post/dive-into-spring-core-data-structure-bean-factory/</link><pubDate>Fri, 26 Jun 2020 15:30:08 +0800</pubDate><guid>https://www.diguage.com/post/dive-into-spring-core-data-structure-bean-factory/</guid><description>&lt;div class="paragraph">
+&lt;p>在 &lt;a href="https://www.diguage.com/post/dive-into-spring-core-data-structure-bean-definition/" target="_blank" rel="noopener">深入剖析 Spring 核心数据结构：BeanDefinition&lt;/a> 中，介绍了 &lt;code>BeanDefinition&lt;/code>。网上很多文章介绍 &lt;code>BeanDefinition&lt;/code> 的 API，D瓜哥却要反其道而行之，从内部属性来分析一下。下面我们开始。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_继承体系">继承体系&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>Spring 非常好地遵循了面向对象的设计原则：面向接口编程。不放过任何可以提取出成接口的机会。虽然感觉似乎增加了类的继承关系，增加了一点的复杂度。但是，却带来了非常好的可扩展性。而 &lt;code>BeanFactory&lt;/code> 的继承体系就是一个非常典型的例子。我们来看一下它的继承体系：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/spring-framework/BeanFactory.svg" alt="BeanFactory 继承体系" width="98%"/>
+&lt;/div>
+&lt;div class="title">图 1. BeanFactory 继承体系&lt;/div>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;code>AliasRegistry&lt;/code>：别名注册器。Spring 中，别名注册相关的功能就是从这里实现的。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>SimpleAliasRegistry&lt;/code>：别名注册器的一个简单实现，从内部属性可以看出，它是把别名映射信息存到一个 &lt;code>Map&lt;/code> 中了。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>DefaultSingletonBeanRegistry&lt;/code>：默认的单例 Bean 注册器，从内部属性来说，也是基于 &lt;code>Map&lt;/code> 实现的。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>FactoryBeanRegistrySupport&lt;/code>： &lt;code>FactoryBean&lt;/code> 注册器。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>SingletonBeanRegistry&lt;/code>：单例 Bean 注册器。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>BeanDefinitionRegistry&lt;/code>： &lt;code>BeanDefinition&lt;/code> 注册器。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>BeanFactory&lt;/code>：容器的基类。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>ListableBeanFactory&lt;/code>：在基本容器基础上，增加了遍历相关功能。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>HierarchicalBeanFactory&lt;/code>：在基本容器基础上，增加了父子上下级容器关联。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>AutowireCapableBeanFactory&lt;/code>：在基本容器基础上，增加了自动注入功能。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>ConfigurableBeanFactory&lt;/code>：对容器增加可配置性，比如父级容器、&lt;code>ClassLoader&lt;/code>、&lt;code>TypeConverter&lt;/code> 等。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>ConfigurableListableBeanFactory&lt;/code>：可配置可遍历容器。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>AbstractBeanFactory&lt;/code>：容器的抽象实现类，实现了容器的基础功能。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>AbstractAutowireCapableBeanFactory&lt;/code>：带自动装配功能的抽象容器类。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>DefaultListableBeanFactory&lt;/code>：这是 Spring 内部使用的默认容器实现。也是 Spring 中最重要的一个类。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_核心属性">核心属性&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="sect2">
+&lt;h3 id="registry">Registry&lt;/h3>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;code>Map&amp;lt;String, String&amp;gt; aliasMap = new ConcurrentHashMap&amp;lt;&amp;gt;(16)&lt;/code>：别名到 Bean 名称的映射。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>&lt;code>Map&amp;lt;String, Object&amp;gt; singletonObjects = new ConcurrentHashMap&amp;lt;&amp;gt;(256)&lt;/code>&lt;/strong>：Bean 名称到单例 Bean 的映射。可以理解成，这就是所谓的容器。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>Map&amp;lt;String, Object&amp;gt; earlySingletonObjects = new HashMap&amp;lt;&amp;gt;(16)&lt;/code>：Bean 到“未成熟”单例 Bean 的映射。该 Bean 对象只是被创建出来，但是还没有注入依赖。在容器解决循环依赖时，用于存储中间状态。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>Map&amp;lt;String, ObjectFactory&amp;lt;?&amp;gt;&amp;gt; singletonFactories = new HashMap&amp;lt;&amp;gt;(16)&lt;/code>：Bean 名称到 Bean 的 &lt;code>ObjectFactory&lt;/code> 对象的映射，在容器解决循环依赖时，用于存储中间状态。&lt;/p>
+&lt;div class="paragraph">
+&lt;p>关于这三个属性的进一步说明，请移步： &lt;a href="https://www.diguage.com//post/spring-circular-dependence/">源码剖析 Spring 循环依赖&lt;/a>。&lt;/p>
+&lt;/div></description></item><item><title>深入剖析 Spring 核心数据结构：BeanDefinition</title><link>https://www.diguage.com/post/dive-into-spring-core-data-structure-bean-definition/</link><pubDate>Sun, 21 Jun 2020 21:18:57 +0800</pubDate><guid>https://www.diguage.com/post/dive-into-spring-core-data-structure-bean-definition/</guid><description>&lt;div class="paragraph">
+&lt;p>林纳斯·托瓦兹（Linus Torvalds）说：“我从心底认为，优秀的程序员与平庸的程序员之间的区别，是在于认为自己的代码重要还是数据结构更加重要。平庸的程序员眼里只有代码，优秀的程序员则关注数据结构及之前的关系。” 也许很多人觉得 Spring 神秘莫测，但是如果了解了它的核心数据结构，很多问题迎刃而解。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>Spring 中两个数据结构最核心：① &lt;code>BeanDefinition&lt;/code>，用于表示 Bean 的定义；② &lt;code>BeanFactory&lt;/code>，用于表示整个 IoC 容器。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在前面文章 &lt;a href="https://www.diguage.com/post/spring-bean-lifecycle-overview/" target="_blank" rel="noopener">Spring Bean 生命周期概述&lt;/a>中，介绍了 Spring Bean 的生命周期。不知道大家有没有思考过 Spring 在内部是如何表示一个 Bean 的？本篇文章，就来聊一聊 &lt;code>BeanDefinition&lt;/code>&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_问题">问题&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>使用 Spring 时，尤其是使用 XML 配置的时候，也许我们会这样的问题：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>Bean 怎么表示？&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Bean 的依赖怎么表示？&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>init-method&lt;/code> 方法怎么存储？&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Bean 的一些属性，比如 &lt;code>lazy-init&lt;/code> 等，怎么表示？&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Bean 构造函数的参数怎么存储？&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>…​&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>Java 也有类似的问题，比如怎么表示一个类？Java 通过反射 API 来解决这个问题：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;code>Class&lt;/code>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>Method&lt;/code>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>Field&lt;/code>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>Constructor&lt;/code>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>Annotation&lt;/code>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>但是，为什么 Spring 还要自己定义一套呢？主要原因是 Java 反射 API 不满足 Spring 的需求，比如，它没办法表示哪些类是 &lt;code>SCOPE_SINGLETON&lt;/code>，哪些类是 &lt;code>SCOPE_PROTOTYPE&lt;/code>。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>另外，Spring 的 Bean 抽象也并不是完全自定义的，它是基于 Java 反射 API 又增加了自定义功能，其核心 API 就是 &lt;code>BeanDefinition&lt;/code>。下面，我们来仔细看一下它的继承体系以及内部核心属性。&lt;/p>
+&lt;/div></description></item><item><title>HikariCP 源码分析 -- ConcurrentBag</title><link>https://www.diguage.com/post/hikari-cp-source-analysis-concurrent-bag/</link><pubDate>Wed, 06 May 2020 17:12:55 +0800</pubDate><guid>https://www.diguage.com/post/hikari-cp-source-analysis-concurrent-bag/</guid><description>&lt;div class="paragraph">
+&lt;p>以前无意间搜资料了解到 HikariCP，一下子就被它的简洁代码和卓越性能吸引住了。以前也有翻过它的代码，但是不是很系统，最近再次翻阅，正好做些笔记，方便以后学习。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥最近在学习 Java 并发知识。那就从 HikariCP 自定义的并发集合 &lt;code>ConcurrentBag&lt;/code> 开始学习。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在 HikariCP 的 Wiki 中，有 &lt;a href="https://github.com/brettwooldridge/HikariCP/wiki/Down-the-Rabbit-Hole#concurrentbag" target="_blank" rel="noopener">Down the Rabbit Hole · ConcurrentBag&lt;/a> 的章节来专门介绍 &lt;code>ConcurrentBag&lt;/code>：&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;code>ConcurrentBag&lt;/code> 的灵感借鉴自 C# .NET 的 &lt;code>ConcurrentBag&lt;/code> 类。但是实现却是完全不同的。这里的 &lt;code>ConcurrentBag&lt;/code> 有如下特性：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>A lock-free design&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>ThreadLocal caching&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Queue-stealing&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Direct hand-off optimizations&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>下面，通过代码来对此做个说明。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在 &lt;code>ConcurrentBag&lt;/code> 类的定义中，声明了集合元素必须是 &lt;code>IConcurrentBagEntry&lt;/code> 的子类。先来看看这个接口的定义：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="kd">public&lt;/span> &lt;span class="kd">interface&lt;/span> &lt;span class="nc">IConcurrentBagEntry&lt;/span>
+&lt;span class="o">{&lt;/span>
+ &lt;span class="kt">int&lt;/span> &lt;span class="no">STATE_NOT_IN_USE&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="kt">int&lt;/span> &lt;span class="no">STATE_IN_USE&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">1&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="kt">int&lt;/span> &lt;span class="no">STATE_REMOVED&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="o">-&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="kt">int&lt;/span> &lt;span class="no">STATE_RESERVED&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="o">-&lt;/span>&lt;span class="mi">2&lt;/span>&lt;span class="o">;&lt;/span>
+
+ &lt;span class="kt">boolean&lt;/span> &lt;span class="nf">compareAndSet&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="kt">int&lt;/span> &lt;span class="n">expectState&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="n">newState&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="kt">void&lt;/span> &lt;span class="nf">setState&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="kt">int&lt;/span> &lt;span class="n">newState&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="kt">int&lt;/span> &lt;span class="nf">getState&lt;/span>&lt;span class="o">();&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>接下来，看一下成员变量：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="c1">// 存放共享元素&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="nc">CopyOnWriteArrayList&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="n">sharedList&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="kt">boolean&lt;/span> &lt;span class="n">weakThreadLocals&lt;/span>&lt;span class="o">;&lt;/span>
+
+&lt;span class="c1">// 在 ThreadLocal 缓存线程本地元素，避免线程争用&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="nc">ThreadLocal&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="nc">List&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="nc">Object&lt;/span>&lt;span class="o">&amp;gt;&amp;gt;&lt;/span> &lt;span class="n">threadList&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="nc">IBagStateListener&lt;/span> &lt;span class="n">listener&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="c1">//&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="nc">AtomicInteger&lt;/span> &lt;span class="n">waiters&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">volatile&lt;/span> &lt;span class="kt">boolean&lt;/span> &lt;span class="n">closed&lt;/span>&lt;span class="o">;&lt;/span>
+
+&lt;span class="c1">// 接力队列&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="nc">SynchronousQueue&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="n">handoffQueue&lt;/span>&lt;span class="o">;&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在 &lt;code>ConcurrentBag&lt;/code> 开头的 JavaDoc 中就做了明确说明：&lt;/p>
+&lt;/div>
+&lt;div class="sidebarblock">
+&lt;div class="content">
+&lt;div class="paragraph">
+&lt;p>Note that items that are &amp;#34;borrowed&amp;#34; from the bag are not actually removed from any collection, so garbage collection will not occur even if the reference is abandoned. Thus care must be taken to &amp;#34;requite&amp;#34; borrowed objects otherwise a memory leak will result. Only the &amp;#34;remove&amp;#34; method can completely remove an object from the bag.&lt;/p>
+&lt;/div></description></item></channel></rss>
