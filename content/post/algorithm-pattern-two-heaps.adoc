@@ -1,0 +1,110 @@
+---
+title: "算法模式：双堆"
+date: 2025-03-28T17:00:16+08:00
+draft: false
+keywords: ["堆","双堆", "算法", "LeetCode"]
+tags: ["堆","算法模式"]
+categories: ["算法"]
+thumbnail: "images/data-structure/heap.png"
+weight: 1
+---
+
+在上一篇文章 https://www.diguage.com/post/algorithm-pattern-cyclic-sort/[算法模式：循环排序^] 介绍了一个只需 stem:[O(1)] 时间就可以完成排序的算法模式。本篇文章，来介绍一个可以快速查出数组中位数的模式：双堆。
+
+== 双堆
+
+很多问题中，我们被告知，我们拿到一大把可以分成两队的数字。为了解决这个问题，我们感兴趣的是，怎么把数字分成两半？使得：小的数字都放在一起，大的放在另外一半。双堆模式就能高效解决此类问题。
+
+正如名字所示，该模式用到了两个堆，是不是很难猜？一个最小堆用来找最小元素；一个最大堆，拿到最大元素。这种模式将一半的元素放在最大堆中，这样你可以从这一堆中秒找到最大元素。同理，把剩下一半丢到最小堆中，stem:[O(1)] 时间找到他们中的最小元素。通过这样的方式，这一大堆元素的中位数就可以从两个堆的堆顶拿到数字，从而计算出来。
+
+判断双堆模式的秘诀：
+
+* 这种模式在优先队列，计划安排问题（Scheduling）中有奇效
+* 如果问题让你找一组数中的最大/最小/中位数
+* 有时候，这种模式在涉及到二叉树数据结构时也特别有用
+
+image::/images/data-structure/max-min-heap.svg[title="大堆与小堆",alt="大堆与小堆",{image_attr}]
+
+== LeetCode 295. 数据流的中位数
+
+https://leetcode.cn/problems/find-median-from-data-stream/[LeetCode - 295. 数据流的中位数 ^]
+
+**中位数**是有序整数列表中的中间值。如果列表的大小是偶数，则没有中间值，中位数是两个中间值的平均值。
+
+* 例如 `arr = [2,3,4]` 的中位数是 `3` 。
+* 例如 `arr = [2,3]` 的中位数是 `(2 + 3) / 2 = 2.5` 。
+
+实现 MedianFinder 类:
+
+* `MedianFinder()` 初始化 `MedianFinder` 对象。
+* `void addNum(int num)` 将数据流中的整数 `num` 添加到数据结构中。
+* `double findMedian()` 返回到目前为止所有元素的中位数。与实际答案相差 `10^-5^` 以内的答案将被接受。
+
+*示例 1：*
+
+....
+输入
+["MedianFinder", "addNum", "addNum", "findMedian", "addNum", "findMedian"]
+[[], [1], [2], [], [3], []]
+输出
+[null, null, null, 1.5, null, 2.0]
+
+解释
+MedianFinder medianFinder = new MedianFinder();
+medianFinder.addNum(1);    // arr = [1]
+medianFinder.addNum(2);    // arr = [1, 2]
+medianFinder.findMedian(); // 返回 1.5 ((1 + 2) / 2)
+medianFinder.addNum(3);    // arr[1, 2, 3]
+medianFinder.findMedian(); // return 2.0
+....
+
+*提示:*
+
+* `-10^5^ \<= num \<= 10^5^`
+* 在调用 `findMedian` 之前，数据结构中至少有一个元素
+* 最多 `5 * 10^4^` 次调用 `addNum` 和 `findMedian`
+
+
+=== 思路分析
+
+这道题就可以利用双堆的思想来解题：使用两个堆来存放数据，小顶堆，顶部是最小的，保存较大的一半；大顶堆，顶部是最大的，保存较小的一半。如果数量是偶数个，则两个堆一样大，否则让小顶堆大一点。代码如下：
+
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * @author D瓜哥 · https://www.diguage.com
+ * @since 2025-03-28 18:53:57
+ */
+class MedianFinder {
+  // 小顶堆，顶部是最小的。保存较大的一半
+  PriorityQueue<Integer> topSmall;
+  // 大顶堆，顶部是最大的。保存较小的一半
+  PriorityQueue<Integer> topLarge;
+
+  public MedianFinder() {
+    topSmall = new PriorityQueue<>();
+    // 注意：这里的 Comparator 是反向，不能直接用 Integer::compare 代替
+    topLarge = new PriorityQueue<>((a, b) -> Integer.compare(b, a));
+  }
+
+  public void addNum(int num) {
+    if (topSmall.size() == topLarge.size()) {
+      topLarge.offer(num);
+      topSmall.offer(topLarge.poll());
+    } else {
+      topSmall.offer(num);
+      topLarge.offer(topSmall.poll());
+    }
+  }
+
+  public double findMedian() {
+    return topSmall.size() == topLarge.size()
+      ? (topSmall.peek() + topLarge.peek()) / 2.0 : topSmall.peek();
+  }
+}
+----
+
+
+
+
