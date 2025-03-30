@@ -5,7 +5,7 @@ draft: false
 keywords: ["栈","单调栈", "算法", "LeetCode"]
 tags: ["栈","算法模式"]
 categories: ["算法"]
-thumbnail: "images/data-structure/stack.svg"
+thumbnail: "images/data-structure/stack.png"
 weight: 1
 ---
 
