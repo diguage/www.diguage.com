@@ -1,0 +1,120 @@
+---
+title: "算法模式：多路归并"
+date: 2025-03-30T23:20:44+08:00
+draft: false
+keywords: ["堆","多路归并", "算法", "LeetCode"]
+tags: ["堆","算法模式"]
+categories: ["算法"]
+thumbnail: "images/data-structure/heap.png"
+weight: 1
+---
+
+在上一篇文章 https://www.diguage.com/post/algorithm-pattern-two-heaps/[算法模式：双堆^] 介绍了一个利用两个堆选择中间数的算法模式。本篇文章，再来介绍一个关于堆的模式：多路归并。
+
+== 多路归并
+
+多路归并能帮咱们解决那些涉及到多组排好序的数组的问题。
+
+每当你的输入是 K 个排好序的数组，你就可以用堆来高效顺序遍历其中所有数组的所有元素。你可以将每个数组中最小的一个元素加入到最小堆中，从而得到全局最小值。当我们拿到这个全局最小值之后，再从该元素所在的数组里取出其后面紧挨着的元素，加入堆。如此往复直到处理完所有的元素。
+
+该模式是这样的运行的：
+
+. 把每个数组中的第一个元素都加入最小堆中
+. 取出堆顶元素（全局最小），将该元素放入排好序的结果集合里面
+. 将刚取出的元素所在的数组里面的下一个元素加入堆
+. 重复步骤 2，3，直到处理完所有数字
+
+识别K路归并：
+
+* 该问题的输入是排好序的数组，链表或是矩阵
+* 如果问题让咱们合并多个排好序的集合，或是需要找这些集合中最小的元素
+
+== LeetCode 23. 合并 K 个升序链表
+
+https://leetcode.cn/problems/merge-k-sorted-lists/[LeetCode - 23. 合并 K 个升序链表 ^]
+
+给你一个链表数组，每个链表都已经按升序排列。
+
+请你将所有链表合并到一个升序链表中，返回合并后的链表。
+
+*示例 1：*
+
+....
+输入：lists = [[1,4,5],[1,3,4],[2,6]]
+输出：[1,1,2,3,4,4,5,6]
+解释：链表数组如下：
+[
+  1->4->5,
+  1->3->4,
+  2->6
+]
+将它们合并到一个有序链表中得到。
+1->1->2->3->4->4->5->6
+....
+
+*示例 2：*
+
+....
+输入：lists = []
+输出：[]
+....
+
+*示例 3：*
+
+....
+输入：lists = [[]]
+输出：[]
+....
+
+*提示：*
+
+* `k == lists.length`
+* `0 \<= k \<= 10^4^`
+* `+0 <= lists[i].length <= 500+`
+* `-10^4^ \<= lists[i][j] \<= 10^4^`
+* `lists[i]` 按 *升序* 排列
+* `lists[i].length` 的总和不超过 `10^4^`
+
+
+=== 思路分析
+
+这道题就是典型的多路归并问题：首先声明一个堆来存放链表，并且该堆是一个小顶堆，用链表头节点的数字来做比较排序；先将数组中的链表都加入到堆中，然后弹出堆顶元素就是当前最小的元素，弹出后，再将该节点的下一个节点加入到堆中，一直循环，直到堆中为空。代码如下：
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * @author D瓜哥 · https://www.diguage.com
+ * @since 2025-03-30 23:20:44
+ */
+public ListNode mergeKLists(ListNode[] lists) {
+  if (Objects.isNull(lists) || lists.length == 0) {
+    return null;
+  }
+  // 注意：这里使用一个虚拟头节点，方便后续的操作
+  ListNode dummy = new ListNode(0);
+  // 自定义 Comparator，对堆内的 ListNode 头节点数字做排序
+  PriorityQueue<ListNode> pq = new PriorityQueue<>(
+      Comparator.comparingInt(a -> a.val));
+  for (ListNode node : lists) {
+    if (Objects.nonNull(node)) {
+      pq.offer(node);
+    }
+  }
+  ListNode current = dummy;
+  while (!pq.isEmpty()) {
+    ListNode node = pq.poll();
+    current.next = node;
+    current = node;
+    ListNode next = node.next;
+    node.next = null;
+    if (Objects.nonNull(next)) {
+      pq.offer(next);
+    }
+  }
+  return dummy.next;
+}
+----
+
+
+
+
