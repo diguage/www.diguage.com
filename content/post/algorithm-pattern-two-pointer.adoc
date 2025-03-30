@@ -9,7 +9,7 @@ thumbnail: "images/data-structure/array.png"
 weight: 1
 ---
 
-在上一篇文章 https://www.diguage.com/post/algorithm-pattern-merge-intervals/[算法模式：区间合并^] 介绍了合并区间所用的算法模式。本篇文章，介绍一个即可以用在数组，又可以用在链表中的算法模式：双指针。
+在上一篇文章 https://www.diguage.com/post/algorithm-pattern-merge-intervals/[算法模式：区间合并^] 介绍了合并区间所用的算法模式。本篇文章，介绍一种即可以用在数组，又可以用在链表中的算法模式：双指针。
 
 == 双指针
 

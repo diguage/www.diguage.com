@@ -9,7 +9,7 @@ thumbnail: "images/data-structure/heap.png"
 weight: 1
 ---
 
-在上一篇文章 https://www.diguage.com/post/algorithm-pattern-monotonic-stack/[算法模式：单调栈^] 介绍了单调栈的算法模式。本篇文章，介绍一个堆相关的算法模式：Top K 问题。（英语原文是 Top K Elements，实在没有找到好的翻译，暂时翻译成 “Top K 问题”，后续有好的翻译再改。）
+在上一篇文章 https://www.diguage.com/post/algorithm-pattern-monotonic-stack/[算法模式：单调栈^] 介绍了单调栈的算法模式。本篇文章，介绍一种堆相关的算法模式：Top K 问题。（英语原文是 Top K Elements，实在没有找到好的翻译，暂时翻译成 “Top K 问题”，后续有好的翻译再改。）
 
 == Top K 问题
 

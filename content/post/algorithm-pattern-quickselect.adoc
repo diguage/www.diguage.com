@@ -9,7 +9,7 @@ thumbnail: "images/data-structure/array.png"
 weight: 1
 ---
 
-在上一篇文章 https://www.diguage.com/post/algorithm-pattern-top-k-elements/[算法模式：Top K 问题^] 介绍了如何利用堆快速选出最 X 的 K 个元素。本篇文章，介绍一个可以快速选择第 K 个 最 X 元素的算法模式：快速选择。
+在上一篇文章 https://www.diguage.com/post/algorithm-pattern-top-k-elements/[算法模式：Top K 问题^] 介绍了如何利用堆快速选出最 X 的 K 个元素。本篇文章，介绍一种可以快速选择第 K 个 最 X 元素的算法模式：快速选择。
 
 == 快速选择
 

@@ -9,7 +9,7 @@ thumbnail: "images/data-structure/array.png"
 weight: 1
 ---
 
-在上一篇文章 https://www.diguage.com/post/algorithm-pattern-quickselect/[算法模式：快速选择^] 介绍了如何利用快排思想快速选出第 K 个 最 X 的元素。本篇文章，介绍一个只需 stem:[O(1)] 时间就可以完成排序的算法模式：循环排序。
+在上一篇文章 https://www.diguage.com/post/algorithm-pattern-quickselect/[算法模式：快速选择^] 介绍了如何利用快排思想快速选出第 K 个 最 X 的元素。本篇文章，介绍一种只需 stem:[O(1)] 时间就可以完成排序的算法模式：循环排序。
 
 == 循环排序
 

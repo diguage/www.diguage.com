@@ -9,7 +9,7 @@ thumbnail: "images/data-structure/stack.png"
 weight: 1
 ---
 
-在上一篇文章 https://www.diguage.com/post/algorithm-pattern-sliding-window/[算法模式：滑动窗口^] 介绍了滑动窗口的算法模式。本篇文章，介绍一个堆栈相关的算法模式：单调栈。
+在上一篇文章 https://www.diguage.com/post/algorithm-pattern-sliding-window/[算法模式：滑动窗口^] 介绍了滑动窗口的算法模式。本篇文章，介绍一种堆栈相关的算法模式：单调栈。
 
 
 == 单调栈

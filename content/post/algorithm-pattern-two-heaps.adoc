@@ -9,7 +9,7 @@ thumbnail: "images/data-structure/heap.png"
 weight: 1
 ---
 
-在上一篇文章 https://www.diguage.com/post/algorithm-pattern-cyclic-sort/[算法模式：循环排序^] 介绍了一个只需 stem:[O(1)] 时间就可以完成排序的算法模式。本篇文章，来介绍一个可以快速查出数组中位数的模式：双堆。
+在上一篇文章 https://www.diguage.com/post/algorithm-pattern-cyclic-sort/[算法模式：循环排序^] 介绍了一种只需 stem:[O(1)] 时间就可以完成排序的算法模式。本篇文章，来介绍一种可以快速查出数组中位数的模式：双堆。
 
 == 双堆
 

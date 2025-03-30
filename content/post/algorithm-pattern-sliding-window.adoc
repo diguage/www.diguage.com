@@ -9,7 +9,7 @@ thumbnail: "images/data-structure/array.png"
 weight: 1
 ---
 
-在上一篇文章 https://www.diguage.com/post/algorithm-pattern-two-pointer/[算法模式：双指针^] 介绍了双指针的算法模式。本篇文章，介绍一个类似双指针的算法模式：滑动窗口。
+在上一篇文章 https://www.diguage.com/post/algorithm-pattern-two-pointer/[算法模式：双指针^] 介绍了双指针的算法模式。本篇文章，介绍一种类似双指针的算法模式：滑动窗口。
 
 == 滑动窗口
 

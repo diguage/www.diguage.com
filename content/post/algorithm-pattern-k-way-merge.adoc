@@ -9,7 +9,7 @@ thumbnail: "images/data-structure/heap.png"
 weight: 1
 ---
 
-在上一篇文章 https://www.diguage.com/post/algorithm-pattern-two-heaps/[算法模式：双堆^] 介绍了一个利用两个堆选择中间数的算法模式。本篇文章，再来介绍一个关于堆的模式：多路归并。
+在上一篇文章 https://www.diguage.com/post/algorithm-pattern-two-heaps/[算法模式：双堆^] 介绍了一种利用两个堆选择中间数的算法模式。本篇文章，再来介绍一种关于堆的模式：多路归并。
 
 == 多路归并
 
