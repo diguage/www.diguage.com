@@ -38,7 +38,8 @@ public void morris(TreeNode head) {
     if (mostRight != null) {
       // 左子树不为空，则找出左子树的最右节点
       while (mostRight.right != null
-          // 由于需要建立最右节点到当前节点的连接，所以，需要判断是否已建立连接来打破死循环
+          // 由于需要建立最右节点到当前节点的连接，
+          // 所以，需要判断是否已建立连接来打破死循环
           && mostRight.right != curr) {
         mostRight = mostRight.right;
       }
@@ -52,13 +53,13 @@ public void morris(TreeNode head) {
         mostRight.right = null;
       }
     }
-    // 最子树为空，则向右移动
+    // 左子树为空，则向右移动
     curr = curr.right;
   }
 }
 ----
 
-根据代码，结合图示，很容易得到 Morris 遍历的结果： `4`、`2`、`1`、`2`^2^、`3`、`4`^2^、`6`、`5`、`6`^2^、`7`。分析这个结果可以发现：**有左子树的节点都会被访问两次。**
+根据代码，结合图示，很容易得到 Morris 遍历的结果： `4`、`2`、`1`、`2~2~`、`3`、`4~2~`、`6`、`5`、`6~2~`、`7`。分析这个结果可以发现：**有左子树的节点都会被访问两次。**
 
 == 前根遍历
 
@@ -80,7 +81,8 @@ public void morrisPre(TreeNode head) {
     if (mostRight != null) {
       // 左子树不为空，则找出左子树的最右节点
       while (mostRight.right != null
-          // 由于需要建立最右节点到当前节点的连接，所以，需要判断是否已建立连接来打破死循环
+          // 由于需要建立最右节点到当前节点的连接，
+          // 所以，需要判断是否已建立连接来打破死循环
           && mostRight.right != curr) {
         mostRight = mostRight.right;
       }
@@ -100,7 +102,7 @@ public void morrisPre(TreeNode head) {
       // 那么没有左子树的节点，就自会访问一次，访问到时直接输出即可。
       System.out.print(curr.val + " ");
     }
-    // 最子树为空，则向右移动
+    // 左子树为空，则向右移动
     curr = curr.right;
   }
 }
@@ -126,7 +128,8 @@ public void morrisIn(TreeNode head) {
     if (mostRight != null) {
       // 左子树不为空，则找出左子树的最右节点
       while (mostRight.right != null
-          // 由于需要建立最右节点到当前节点的连接，所以，需要判断是否已建立连接来打破死循环
+          // 由于需要建立最右节点到当前节点的连接，
+          // 所以，需要判断是否已建立连接来打破死循环
           && mostRight.right != curr) {
         mostRight = mostRight.right;
       }
@@ -143,7 +146,7 @@ public void morrisIn(TreeNode head) {
     // 由于上面的 continue 中断循环，执行到这里的节点只剩下两种情况了：
     // 要么是没有左子树，要么是有左子树的节点被第二次访问
     System.out.print(curr.val + " "); // <2>
-    // 最子树为空，则向右移动
+    // 左子树为空，则向右移动
     curr = curr.right;
   }
 }
@@ -181,7 +184,8 @@ public void morrisPost(TreeNode head) {
     if (mostRight != null) {
       // 左子树不为空，则找出左子树的最右节点
       while (mostRight.right != null
-          // 由于需要建立最右节点到当前节点的连接，所以，需要判断是否已建立连接来打破死循环
+          // 由于需要建立最右节点到当前节点的连接，
+          // 所以，需要判断是否已建立连接来打破死循环
           && mostRight.right != curr) {
         mostRight = mostRight.right;
       }
@@ -197,7 +201,7 @@ public void morrisPost(TreeNode head) {
         printEdge(curr.left);
       }
     }
-    // 最子树为空，则向右移动
+    // 左子树为空，则向右移动
     curr = curr.right;
   }
   // 遍历完成后，逆序输出整棵树的右边界。
@@ -220,6 +224,8 @@ public void printEdge(TreeNode head) {
 
 /**
  * 反转右子树
+ *
+ * 注：这里可以考虑传两个值（head，parent），用递归做反转，写代码更容易
  */
 public TreeNode reverseEdge(TreeNode head) {
   TreeNode pre = null;
