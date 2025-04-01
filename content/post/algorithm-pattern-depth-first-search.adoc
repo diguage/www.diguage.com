@@ -1,0 +1,108 @@
+---
+title: "算法模式：深度优先搜索"
+date: 2025-04-01T10:43:31+08:00
+draft: false
+keywords: ["图","树","深度优先搜索", "算法", "LeetCode"]
+tags: ["图","树","算法模式"]
+categories: ["算法"]
+thumbnail: "images/data-structure/tree.png"
+weight: 1
+---
+
+在上一篇文章 https://www.diguage.com/post/algorithm-pattern-breadth-first-search/[算法模式：广度优先搜索^] 介绍了介绍一种即适用于树，又适用于图的的算法模式。本篇文章，继续介绍一种即适用于树，又适用于图的的算法模式：深度优先搜索。
+
+== 深度优先搜索
+
+深度优先搜索主要思路是从图中一个未访问的顶点 V 开始，沿着一条路一直走到底，然后从这条路尽头的节点回退到上一个节点，再从另一条路开始走到底...，不断递归重复此过程，直到所有的顶点都遍历完成，它的特点是不撞南墙不回头，先走完一条路，再换一条路继续走。
+
+树是图的一种特例(连通无环的图就是树)，所以，深度优先搜索也适用于树。
+
+在对树做深度优先搜索时，可以用递归（或显式栈，如果你想用迭代方式的话）来记录遍历过程中访问过的父节点。运行方式是从根节点开始，如果该节点不是叶子节点，我们需要干三件事：
+
+* 需要区别我们是先处理根节点（pre-order，前序），处理孩子节点之间处理根节点（in-order，中序），还是处理完所有孩子再处理根节点（post-order，后序）。
+* 递归处理当前节点的左右孩子。
+
+== LeetCode 124. 二叉树中的最大路径和
+
+https://leetcode.cn/problems/binary-tree-maximum-path-sum/[LeetCode - 124. 二叉树中的最大路径和 ^]
+
+二叉树中的 *路径* 被定义为一条节点序列，序列中每对相邻节点之间都存在一条边。同一个节点在一条路径序列中 *至多出现一次* 。该路径 *至少包含一个* 节点，且不一定经过根节点。
+
+*路径和* 是路径中各节点值的总和。
+
+给你一个二叉树的根节点 `root` ，返回其 *最大路径和* 。
+
+*示例 1：*
+
+....
+       1
+      / \
+     2   3
+输入：root = [1,2,3]
+输出：6
+解释：最优路径是 2 -> 1 -> 3 ，路径和为 2 + 1 + 3 = 6
+....
+
+*示例 2：*
+
+....
+   -10
+   / \
+  9  20
+    /  \
+   15   7
+
+输入：root = [-10,9,20,null,null,15,7]
+输出：42
+解释：最优路径是 15 -> 20 -> 7 ，路径和为 15 + 20 + 7 = 42
+....
+
+*提示：*
+
+* 树中节点数目范围是 `[1, 3 * 10^4^]`
+* `+-1000 <= Node.val <= 1000+`
+
+=== 思路分析
+
+利用深度优先搜，递归去遍历每个节点，在每个节点获取左右子树的最大值（从子树的根节点到下级节点的直连道路），然后比较当前结果、当前节点加左右子树的值、当前节点分别加左右子树的值，以及只有当前节点的值这四个值，将最大值赋值给结果。 代码如下：
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * @author D瓜哥 · https://www.diguage.com
+ * @since 2025-04-01 10:57:14
+ */
+int result = Integer.MIN_VALUE;
+public int maxPathSum(TreeNode root) {
+  dfs(root);
+  return result;
+}
+
+private int dfs(TreeNode root) {
+  if (root == null) {
+    return 0;
+  }
+  int left = dfs(root.left); // <1>
+  int right = dfs(root.right); // <1>
+  // 对于左右子树，这里有如下几种组合
+  // 1. root.val (left 和 right 都是负数)
+  // 2. root.val + Math.max(left, right) (left 和 right 有一个是正数)
+  // 3. left + root.val + right (left 和 right 都是正数)
+  result = Math.max(result, Math.max(left + root.val + right,
+    Math.max(Math.max(left, right) + root.val, root.val)));
+  // 对于返回给父节点，这里有两种可能
+  // 1. root.val (left 和 right 都是负数)
+  // 2. root.val + Math.max(left, right) (left 和 right 有一个是正数)
+  // 如果 max 方法支持传递多个参数，可以简写为：Math.max(0, left, right) + root.val
+  return Math.max(root.val, Math.max(left, right) + root.val);
+}
+----
+<1> 这里可以用 `Math.max(0, dfs(root.left/right))` 简化一下，下面的判断也会更简单一些。
+
+== 思考题
+
+吴军博士在《数学之美》书中提到，在做搜索时，对一个网站的内容进行爬取，从算法上讲，既可以使用广度优先搜索，又可以使用深度优先搜索；但是，从工程实现上来讲，却只能使用一种。对比这两篇文章，你觉得应该使用广度优先搜索，还是深度优先搜索？为什么？
+
+
+
+
