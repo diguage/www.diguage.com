@@ -2,7 +2,7 @@
 title: "算法模式：前缀树"
 date: 2025-04-02T19:16:24+08:00
 draft: false
-keywords: ["前缀树","字典树","树","深度优先搜索", "算法", "LeetCode"]
+keywords: ["前缀树","字典树","树", "算法", "LeetCode"]
 tags: ["树","算法模式"]
 categories: ["算法"]
 thumbnail: "images/data-structure/trie.png"

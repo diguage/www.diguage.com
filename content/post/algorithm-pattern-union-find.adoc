@@ -1,0 +1,280 @@
+
+---
+title: "算法模式：并查集"
+date: 2025-04-03T15:22:41+08:00
+draft: false
+keywords: ["并查集","树","算法", "LeetCode"]
+tags: ["树","算法模式"]
+categories: ["算法"]
+thumbnail: "images/data-structure/union-find.png"
+weight: 1
+---
+
+在上一篇文章 https://www.diguage.com/post/algorithm-pattern-trie/[算法模式：前缀树^] 介绍一种关于特殊的树的算法模式。本篇文章，再介绍一种关于特殊的树的算法模式：并查集。
+
+== 并查集
+
+并查集算法，英文是 Union-Find，是解决动态连通性（Dynamic Conectivity）问题的一种算法。动态连通性是计算机图论中的一种数据结构，动态维护图结构中相连信息。简单的说就是，图中各个节点之间是否相连、如何将两个节点连接，连接后还剩多少个连通分量。
+
+动态连通性其实可以抽象成给一幅图连线。假设用一个数组表示一堆节点，每个节点都是一个连通分量。初始化视图如下：
+
+image::/images/data-structure/union-find-1.png[title="并查集初始化",alt="并查集初始化",{image_attr}]
+
+并查集的一个重要操作是 `union(a, b)`，就是将节点 `a` 和节点 `b` 建立连接。如图所示：
+
+image::/images/data-structure/union-find-2.png[title="并查集合并",alt="并查集合并",{image_attr}]
+
+`union(a, b)` 还可以将已经建立的两个“子网”进行连接：
+
+image::/images/data-structure/union-find-3.png[title="并查集再合并",alt="并查集再合并",{image_attr}]
+
+并查集除了 `union`，还有一个重要操作是 `connnected(a, b)`。判断方法也很简单，从节点 `a` 和 `b` 开始，向上查找，直到两个节点的根节点，判断两个根节点是否相等即可判断两个节点是否已经连接。为了加快这个判断速度，可以对其进行“路径压缩”，直白点说，就是将所有树的节点，都直接指向根节点，这样只需要一步即可到达根节点。路径压缩如图所示：
+
+image::/images/data-structure/union-find-4.png[title="并查集路径压缩",alt="并查集路径压缩",{image_attr}]
+
+简单代码实现如下：
+
+[source%nowrap,java,{source_attr}]
+----
+package com.diguage.labs;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * 并查集
+ *
+ * PS：没想到代码竟然一次通过。
+ *
+ * @author D瓜哥 · https://www.diguage.com
+ * @since 2025-04-03 15:22:41
+ */
+public class UnionFind {
+  /**
+   * 连通分量
+   */
+  private int size;
+  /**
+   * 每个节点及对应的父节点
+   */
+  private int[] parent;
+
+  public UnionFind(int size) {
+    this.size = size;
+    parent = new int[size];
+    for (int i = 0; i < size; i++) {
+      parent[i] = i;
+    }
+  }
+
+  /**
+   * a 和 b 建立连接
+   */
+  public void union(int a, int b) {
+    int ap = find(a);
+    int bp = find(b);
+    if (ap == bp) {
+      return;
+    }
+    parent[ap] = bp;
+    size--;
+  }
+
+  /**
+   * a 和 b 是否连通
+   */
+  public boolean connected(int a, int b) {
+    int ap = find(a);
+    int bp = find(b);
+    return ap == bp;
+  }
+
+  /**
+   * 连通分量
+   */
+  public int count() {
+    return size;
+  }
+
+  /**
+   * 查找节点 a 的根节点
+   */
+  private int find(int a) {
+    int ap = parent[a];
+    if (a != ap) {
+      List<Integer> path = new ArrayList<>();
+      path.add(a);
+      // 向上查找根节点
+      while (parent[ap] != ap) {
+        path.add(ap);
+        ap = parent[ap];
+      }
+      // 路径压缩
+      // 只有一步，无需缩短路径
+      if (path.size() == 1) {
+        return ap;
+      }
+      for (Integer idx : path) {
+        parent[idx] = ap;
+      }
+    }
+    return ap;
+  }
+
+  public static void main(String[] args) {
+    UnionFind uf = new UnionFind(10);
+    uf.union(0, 1);
+    uf.union(1, 2);
+    uf.union(2, 3);
+    uf.union(3, 4);
+    uf.union(5, 6);
+    uf.union(6, 7);
+    uf.union(7, 8);
+    uf.union(8, 9);
+    uf.union(0, 5);
+    System.out.println(uf.count() + ", " + uf.connected(0, 9));
+    System.out.println(uf.count() + ", " + uf.connected(2, 9));
+    System.out.println(uf.count() + ", " + uf.connected(3, 9));
+    System.out.println(uf.count() + ", " + uf.connected(5, 9));
+  }
+}
+----
+
+
+== LeetCode 547. 省份数量
+
+https://leetcode.cn/problems/number-of-provinces/[LeetCode - 547. 省份数量 ^]
+
+有 `n` 个城市，其中一些彼此相连，另一些没有相连。如果城市 `a` 与城市 `b` 直接相连，且城市 `b` 与城市 `c` 直接相连，那么城市 `a` 与城市 `c` 间接相连。
+
+*省份* 是一组直接或间接相连的城市，组内不含其他没有相连的城市。
+
+给你一个 `n x n` 的矩阵 `isConnected` ，其中 `isConnected[i][j] = 1` 表示第 `i` 个城市和第 `j` 个城市直接相连，而 `isConnected[i][j] = 0` 表示二者不直接相连。
+
+返回矩阵中 *省份* 的数量。
+
+*示例 1：*
+
+image:/images/data-structure/0547-01.jpg[{image_attr}]
+
+....
+输入：isConnected = [[1,1,0],[1,1,0],[0,0,1]]
+输出：2
+....
+
+*示例 2：*
+
+image:/images/data-structure/0547-02.jpg[{image_attr}]
+
+....
+输入：isConnected = [[1,0,0],[0,1,0],[0,0,1]]
+输出：3
+....
+
+*提示：*
+
+* `+1 <= n <= 200+`
+* `n == isConnected.length`
+* `n == isConnected[i].length`
+* `isConnected[i][j]` 为 `1` 或 `0`
+* `isConnected[i][i] == 1`
+* `isConnected[i][j] == isConnected[j][i]`
+
+=== 思路分析
+
+这就是一道典型的并查集题目，所谓的“返回省份数量”就是求解连通分量。这道题的连通性是通过一个矩阵表示的，所以，首先需要将这个矩阵转换成一个上面讲解的数组。由于 `(i, j)` 和 `(j, i)` 表示的含义一样，所以只需要扫描矩阵的右上部分或者左下部分即可。代码如下：
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * @author D瓜哥 · https://www.diguage.com
+ * @since 2025-04-03 22:15:52
+ */
+public int findCircleNum(int[][] isConnected) {
+  int len = isConnected.length;
+  UnionFind un = new UnionFind(len);
+  for (int i = 0; i < len; i++) {
+    // 只处理矩阵右上半部分
+    for (int j = len - 1; j > i; j--) {
+      if (isConnected[i][j] == 1) {
+        un.union(i, j);
+      }
+    }
+  }
+  return un.count();
+}
+
+private static class UnionFind {
+  /**
+   * 连通分量
+   */
+  int size;
+  /**
+   * 每个节点及对应的父节点
+   */
+  int[] parent;
+
+  public UnionFind(int size) {
+    this.size = size;
+    parent = new int[size];
+    for (int i = 0; i < size; i++) {
+      parent[i] = i;
+    }
+  }
+
+  /**
+   * 连通分量
+   */
+  public int count() {
+    return size;
+  }
+
+  /**
+   * a 和 b 建立连接
+   */
+  public void union(int a, int b) {
+    int ap = find(a);
+    int bp = find(b);
+    if (ap == bp) {
+      return;
+    }
+    parent[ap] = bp;
+    size--;
+  }
+
+  /**
+   * 查找节点 a 的根节点
+   */
+  private int find(int a) {
+    int ap = parent[a];
+    if (ap != a) {
+      List<Integer> path = new ArrayList<>();
+      path.add(a);
+      // 向上查找根节点
+      while (ap != parent[ap]) {
+        path.add(ap);
+        ap = parent[ap];
+      }
+      // 路径压缩
+      // 只有一步，无需缩短路径
+      if (path.size() == 1) {
+        return ap;
+      }
+      for (Integer idx : path) {
+        parent[idx] = ap;
+      }
+    }
+    return ap;
+  }
+}
+----
+
+== 参考资料
+
+. https://leetcode.cn/problems/redundant-connection/solutions/372045/yi-wen-zhang-wo-bing-cha-ji-suan-fa-by-a-fei-8/[684. 冗余连接 - 一文掌握并查集算法^]
+. https://blog.csdn.net/qq_57469718/article/details/125416286[并查集(Union-Find) (图文详解)^]
+. https://www.cnblogs.com/gczr/p/12077934.html[Union-Find 并查集算法^]
+
+
+
+
