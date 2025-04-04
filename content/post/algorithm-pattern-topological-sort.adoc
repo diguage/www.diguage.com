@@ -1,0 +1,122 @@
+
+---
+title: "算法模式：拓扑排序"
+date: 2025-04-04T09:09:09+08:00
+draft: false
+keywords: ["拓扑排序","图","算法", "LeetCode"]
+tags: ["图","算法模式"]
+categories: ["算法"]
+thumbnail: "images/data-structure/graph.png"
+weight: 1
+---
+
+在上一篇文章 https://www.diguage.com/post/algorithm-pattern-union-find/[算法模式：并查集^] 介绍一种关于特殊的树的算法模式：并查集。本篇文章，介绍一种可用于处理节点前后顺序的算法模式：拓扑排序。
+
+== 拓扑排序
+
+拓扑排序模式用来寻找一种线性的顺序，这些元素之间具有依懒性。比如，如果事件 B 依赖于事件 A，那 A 在拓扑排序顺序中排在 B 的前面。
+
+这种模式定义了一种简单方式来理解拓扑排序这种技术。
+
+这种模式是这样奏效的：
+
+. 初始化
+.. 借助于 `Map` 将图保存成邻接表形式。
+.. 找到所有的起点，用 `Map` 来帮助记录每个节点的入度
+. 创建图，找到每个节点的入度
+.. 利用输入，把图建好，然后遍历一下图，将入度信息记录在 `Map` 中
+. 找所有的起点
+.. 所有入度为 `0` 的节点，都是有效的起点，而且我们讲他们都加入到一个队列中
+. 排序
+.. 对每个起点，执行以下步骤
+... 把它加到结果的顺序中
+... 将其在图中的孩子节点取到
+... 将其孩子的入度减少1
+... 如果孩子的入度变为0，则改孩子节点成为起点，将其加入队列中
+.. 重复上述过程，直到起点队列为空。
+
+用一句话概括：*将依赖关系转化成一张有向图，如果这张图中的节点没有循环依赖，那么则方案可行，否则方案不可行。*
+
+TIP: 这里解释的是一种广度优先搜索，还存在一种深度优先搜索的处理办法，感兴趣可以尝试一下。
+
+拓扑排序模式识别：
+
+* 待解决的问题需要处理无环图
+* 你需要以一种有序的秩序更新输入元素
+* 需要处理的输入遵循某种特定的顺序
+
+== LeetCode 207. 课程表
+
+https://leetcode.cn/problems/course-schedule/[LeetCode - 207. 课程表 ^]
+
+你这个学期必须选修 `numCourses` 门课程，记为 `0` 到 `numCourses - 1` 。
+
+在选修某些课程之前需要一些先修课程。 先修课程按数组 `prerequisites` 给出，其中 `prerequisites[i] = [a~i~, b~i~]`，表示如果要学习课程 `a~i~` 则 *必须* 先学习课程 `b~i~`。
+
+* 例如，先修课程对 `[0, 1]` 表示：想要学习课程 `0`，你需要先完成课程 `1` 。
+
+请你判断是否可能完成所有课程的学习？如果可以，返回 `true` ；否则，返回 `false` 。
+
+*示例 1：*
+
+....
+输入：numCourses = 2, prerequisites = [[1,0]]
+输出：true
+解释：总共有 2 门课程。学习课程 1 之前，你需要完成课程 0 。这是可能的。
+....
+
+*示例 2：*
+
+....
+输入：numCourses = 2, prerequisites = [[1,0],[0,1]]
+输出：false
+解释：总共有 2 门课程。学习课程 1 之前，你需要先完成课程 0 ；并且学习课程 0 之前，你还应先完成课程 1 。这是不可能的。
+....
+
+*提示：*
+
+* `+1 <= numCourses <= 2000+`
+* `+0 <= prerequisites.length <= 5000+`
+* `prerequisites[i].length == 2`
+* `0 \<= a~i~, b~i~ < numCourses`
+* `prerequisites[i]` 中的所有课程对 *互不相同*
+
+=== 思路分析
+
+从先修课程到后修课程，这就是一个有向边。遍历所有的课程，就可以构建一张图，在构建过程中，记录每个课程的先修课程数量。然后，找出先修课程数量为 `0` 的所有课程作为起点，记录它们的数量；根据前面处理得来的图，将对应的后修课程的先修课程数量减 `1`，如果先修课程数量为 `0`，则将其加入到起点队列中。从先到后，逐个遍历，直到起点队列为空。如果起点课程的数量等于参数课程数量，则该方案可行，否则不可信。代码如下：
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * @author D瓜哥 · https://www.diguage.com
+ * @since 2025-04-04 09:09:52
+ */
+public boolean canFinish(int numCourses, int[][] prerequisites) {
+  Map<Integer, List<Integer>> graph = new HashMap<>();
+  int[] indegree = new int[numCourses];
+  for (int[] p : prerequisites) {
+    List<Integer> children = graph.computeIfAbsent(p[0], k -> new ArrayList<>());
+    children.add(p[1]);
+    indegree[p[1]]++;
+  }
+  Queue<Integer> queue = new LinkedList<>();
+  for (int i = 0; i < indegree.length; i++) {
+    if (indegree[i] == 0) {
+      queue.offer(i);
+    }
+  }
+  int cnt = 0;
+  while (!queue.isEmpty()) {
+    Integer c = queue.poll();
+    cnt++;
+    List<Integer> children = graph.getOrDefault(c, Collections.emptyList());
+    for (Integer child : children) {
+      indegree[child]--;
+      if (indegree[child] == 0) {
+        queue.offer(child);
+      }
+    }
+  }
+  return cnt == numCourses;
+}
+----
