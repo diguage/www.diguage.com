@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>堆 on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/%E5%A0%86/</link><description>Recent content in 堆 on "地瓜哥"博客网</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Mon, 31 Mar 2025 07:22:56 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/%E5%A0%86/index.xml" rel="self" type="application/rss+xml"/><item><title>算法模式：多路归并</title><link>https://www.diguage.com/post/algorithm-pattern-k-way-merge/</link><pubDate>Sun, 30 Mar 2025 23:20:44 +0800</pubDate><guid>https://www.diguage.com/post/algorithm-pattern-k-way-merge/</guid><description>&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/algorithm-pattern-two-heaps/" target="_blank" rel="noopener">算法模式：双堆&lt;/a> 介绍了一种利用两个堆选择中间数的算法模式。本篇文章，再来介绍一种关于堆的模式：多路归并。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_多路归并">多路归并&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>多路归并能帮咱们解决那些涉及到多组排好序的数组的问题。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>每当你的输入是 K 个排好序的数组，你就可以用堆来高效顺序遍历其中所有数组的所有元素。你可以将每个数组中最小的一个元素加入到最小堆中，从而得到全局最小值。当我们拿到这个全局最小值之后，再从该元素所在的数组里取出其后面紧挨着的元素，加入堆。如此往复直到处理完所有的元素。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>该模式是这样的运行的：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>把每个数组中的第一个元素都加入最小堆中&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>取出堆顶元素（全局最小），将该元素放入排好序的结果集合里面&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>将刚取出的元素所在的数组里面的下一个元素加入堆&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>重复步骤 2，3，直到处理完所有数字&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>识别K路归并：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>该问题的输入是排好序的数组，链表或是矩阵&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>如果问题让咱们合并多个排好序的集合，或是需要找这些集合中最小的元素&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_leetcode_23_合并_k_个升序链表">LeetCode 23. 合并 K 个升序链表&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>&lt;a href="https://leetcode.cn/problems/merge-k-sorted-lists/" target="_blank" rel="noopener">LeetCode - 23. 合并 K 个升序链表 &lt;/a>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>给你一个链表数组，每个链表都已经按升序排列。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>请你将所有链表合并到一个升序链表中，返回合并后的链表。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>示例 1：&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="literalblock">
+&lt;div class="content">
+&lt;pre>输入：lists = [[1,4,5],[1,3,4],[2,6]]
+输出：[1,1,2,3,4,4,5,6]
+解释：链表数组如下：
+[
+ 1-&amp;gt;4-&amp;gt;5,
+ 1-&amp;gt;3-&amp;gt;4,
+ 2-&amp;gt;6
+]
+将它们合并到一个有序链表中得到。
+1-&amp;gt;1-&amp;gt;2-&amp;gt;3-&amp;gt;4-&amp;gt;4-&amp;gt;5-&amp;gt;6&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>示例 2：&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="literalblock">
+&lt;div class="content">
+&lt;pre>输入：lists = []
+输出：[]&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>示例 3：&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="literalblock">
+&lt;div class="content">
+&lt;pre>输入：lists = [[]]
+输出：[]&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>提示：&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;code>k == lists.length&lt;/code>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>0 &amp;lt;= k &amp;lt;= 10&lt;sup>4&lt;/sup>&lt;/code>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>0 &amp;lt;= lists[i].length &amp;lt;= 500&lt;/code>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>-10&lt;sup>4&lt;/sup> &amp;lt;= lists[i][j] &amp;lt;= 10&lt;sup>4&lt;/sup>&lt;/code>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>lists[i]&lt;/code> 按 &lt;strong>升序&lt;/strong> 排列&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>lists[i].length&lt;/code> 的总和不超过 &lt;code>10&lt;sup>4&lt;/sup>&lt;/code>&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div></description></item><item><title>算法模式：双堆</title><link>https://www.diguage.com/post/algorithm-pattern-two-heaps/</link><pubDate>Fri, 28 Mar 2025 17:00:16 +0800</pubDate><guid>https://www.diguage.com/post/algorithm-pattern-two-heaps/</guid><description>&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/algorithm-pattern-cyclic-sort/" target="_blank" rel="noopener">算法模式：循环排序&lt;/a> 介绍了一种只需 \$O(1)\$ 时间就可以完成排序的算法模式。本篇文章，来介绍一种可以快速查出数组中位数的模式：双堆。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_双堆">双堆&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>很多问题中，我们被告知，我们拿到一大把可以分成两队的数字。为了解决这个问题，我们感兴趣的是，怎么把数字分成两半？使得：小的数字都放在一起，大的放在另外一半。双堆模式就能高效解决此类问题。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>正如名字所示，该模式用到了两个堆，是不是很难猜？一个最小堆用来找最小元素；一个最大堆，拿到最大元素。这种模式将一半的元素放在最大堆中，这样你可以从这一堆中秒找到最大元素。同理，把剩下一半丢到最小堆中，\$O(1)\$ 时间找到他们中的最小元素。通过这样的方式，这一大堆元素的中位数就可以从两个堆的堆顶拿到数字，从而计算出来。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>判断双堆模式的秘诀：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>这种模式在优先队列，计划安排问题（Scheduling）中有奇效&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>如果问题让你找一组数中的最大/最小/中位数&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>有时候，这种模式在涉及到二叉树数据结构时也特别有用&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/data-structure/max-min-heap.svg" alt="大堆与小堆" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. 大堆与小堆&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_leetcode_295_数据流的中位数">LeetCode 295. 数据流的中位数&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>&lt;a href="https://leetcode.cn/problems/find-median-from-data-stream/" target="_blank" rel="noopener">LeetCode - 295. 数据流的中位数 &lt;/a>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>中位数&lt;/strong>是有序整数列表中的中间值。如果列表的大小是偶数，则没有中间值，中位数是两个中间值的平均值。&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>例如 &lt;code>arr = [2,3,4]&lt;/code> 的中位数是 &lt;code>3&lt;/code> 。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>例如 &lt;code>arr = [2,3]&lt;/code> 的中位数是 &lt;code>(2 + 3) / 2 = 2.5&lt;/code> 。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>实现 MedianFinder 类:&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;code>MedianFinder()&lt;/code> 初始化 &lt;code>MedianFinder&lt;/code> 对象。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>void addNum(int num)&lt;/code> 将数据流中的整数 &lt;code>num&lt;/code> 添加到数据结构中。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>double findMedian()&lt;/code> 返回到目前为止所有元素的中位数。与实际答案相差 &lt;code>10&lt;sup>-5&lt;/sup>&lt;/code> 以内的答案将被接受。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>示例 1：&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="literalblock">
+&lt;div class="content">
+&lt;pre>输入
+[&amp;#34;MedianFinder&amp;#34;, &amp;#34;addNum&amp;#34;, &amp;#34;addNum&amp;#34;, &amp;#34;findMedian&amp;#34;, &amp;#34;addNum&amp;#34;, &amp;#34;findMedian&amp;#34;]
+[[], [1], [2], [], [3], []]
+输出
+[null, null, null, 1.5, null, 2.0]
+
+解释
+MedianFinder medianFinder = new MedianFinder();
+medianFinder.addNum(1); // arr = [1]
+medianFinder.addNum(2); // arr = [1, 2]
+medianFinder.findMedian(); // 返回 1.5 ((1 + 2) / 2)
+medianFinder.addNum(3); // arr[1, 2, 3]
+medianFinder.findMedian(); // return 2.0&lt;/pre>
+&lt;/div></description></item><item><title>算法模式：Top K 问题</title><link>https://www.diguage.com/post/algorithm-pattern-top-k-elements/</link><pubDate>Tue, 25 Mar 2025 21:20:04 +0800</pubDate><guid>https://www.diguage.com/post/algorithm-pattern-top-k-elements/</guid><description>&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/algorithm-pattern-monotonic-stack/" target="_blank" rel="noopener">算法模式：单调栈&lt;/a> 介绍了单调栈的算法模式。本篇文章，介绍一种堆相关的算法模式：Top K 问题。（英语原文是 Top K Elements，实在没有找到好的翻译，暂时翻译成 “Top K 问题”，后续有好的翻译再改。）&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_top_k_问题">Top K 问题&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>任何让求解最大/最小/最频繁的K个元素的题，都遵循这种模式。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>用来记录这种前 K 类型的最佳数据结构就是堆了（在Java中，对应的结构是优先队列 &lt;code>PriorityQueue&lt;/code> ）。这种模式借助堆来解决很多这种前 K 个数值的问题。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/data-structure/max-min-heap.svg" alt="大堆与小堆" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. 大堆与小堆&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这个模式是这样的：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>根据题目要求，将K个元素插入到最小堆或是最大堆。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>遍历剩下的还没访问的元素，如果当前出来到的这个元素比堆顶元素大或者小，那咱们把堆顶元素先删除，再加当前元素进去。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>如果求最大的前 K 个元素，则适合使用小堆，将待检查元素与堆顶元素相比，堆顶元素小，直接删除堆顶元素，将待检查元素添加到堆即可。反之，则用大堆。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>注意这种模式下，咱们不需要去排序数组，因为堆具有这种良好的局部有序性，这对咱们需要解决问题就够了。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>识别最大 K 个元素模式：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>如果你需要求最大/最小/最频繁的前K个元素&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>如果你需要通过排序去找一个特定的数&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_leetcode_347_前_k_个高频元素">LeetCode 347. 前 K 个高频元素&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>&lt;a href="https://leetcode.cn/problems/top-k-frequent-elements/" target="_blank" rel="noopener">LeetCode - 347. 前 K 个高频元素 &lt;/a>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>给你一个整数数组 &lt;code>nums&lt;/code> 和一个整数 &lt;code>k&lt;/code> ，请你返回其中出现频率前 &lt;code>k&lt;/code> 高的元素。你可以按 &lt;strong>任意顺序&lt;/strong> 返回答案。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>示例 1:&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="literalblock">
+&lt;div class="content">
+&lt;pre>输入: nums = [1,1,1,2,2,3], k = 2
+输出: [1,2]&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>示例 2:&lt;/strong>&lt;/p>
+&lt;/div></description></item></channel></rss>
