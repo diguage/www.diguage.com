@@ -1,0 +1,148 @@
+
+---
+title: "算法模式：分治法"
+date: 2025-04-07T15:59:27+08:00
+draft: false
+keywords: ["分治法","算法", "LeetCode"]
+tags: ["图","树","链表","数组","算法模式"]
+categories: ["算法"]
+thumbnail: "images/data-structure/divide-and-conquer.png"
+weight: 1
+---
+
+在上一篇文章 https://www.diguage.com/post/algorithm-pattern-decrease-and-conquer/[算法模式：减治法^] 介绍一种有魔力的，可以将复杂问题化繁为简，化腐朽为神奇的算法模式：减治法。本篇文章，继续介绍一种有魔力的，可以将复杂问题化繁为简，化腐朽为神奇的算法模式：分治法。
+
+== 分治法
+
+关于分治法的内容，这里继续参考 https://book.douban.com/subject/26337727/[《算法设计与分析基础》^] 中的内容。
+
+分治法是按照以下方案工作的。
+
+. 将一个问题划分为同一类型的若干子问题，子问题最好规模相同。
+. 对这些子问题求解（一般使用递归方法，但在问题规模足够小时，有时也会利用另一个算法）。
+. 有必要的话，合并这些子问题的解，以得到原始问题的答案。
+
+image::/images/data-structure/divide-and-conquer-1.png[title="分治法",alt="分治法",{image_attr}]
+
+从字面上分析就可以看到有哪些步骤：
+
+* 分-分解-将问题分解为规模更小的子问题，子问题最好相同或相似；
+* 治-求解-将这些规模更小的子问题逐个击破；
+* 合-合并-将已解决的子问题合并，最终得出原问题的解；
+
+从上述步骤中我们可以看出，分治算法一般适用满足以下条件的场景：
+
+. 问题规模缩小到一定的程度就可以很容易解决；
+. 问题**可以分解**为若干个规模较小的相同问题；
+. 问题分解出的若干子问题的解可以合并为该问题的解；
+. 每个子问题都是**独立**的，相互之间没有交集。（这是区别分治法与减）
+
+在“分”的过程中，我们尽可能让分解出的子问题与原始问题相似，而规模更小。这刚好符合递归的特性。因此，分治法往往与递归联系在一起。
+
+在分治法最典型的运用中，问题规模为 `n` 的实例被划分为两个规模为 `n/2` 的实例。更一般的情况下，一个规模为 `n` 的实例可以划分为 `b` 个规模为 `n/b` 的实例，其中 `a` 个实例需要求解（这里，`a` 和 `b` 是常量，`a≥1`，`b>1`）。
+
+[.text-center]
+[stem]
+++++
+T(n) = aT(n/b) + f(n)
+++++
+
+其中，stem:[f(n)] 是一个函数，表示将问题分解为小问题和将结果合并起来所消耗的时间
+
+分治法对**分治出的部分需要分别处理**，进行分开的单独计算，而减治法则利用了"一个问题给定实例的解和同样问题较小实例的解之间的关系"，只针对部分子问题求解，*减治掉的那部分就不需要了*。
+
+减常因子的减治法也可以看做是分治的变种。
+
+== LeetCode 148. 排序链表
+
+https://leetcode.cn/problems/sort-list/[LeetCode - 148. 排序链表 ^]
+
+给你链表的头结点 `head` ，请将其按 *升序* 排列并返回 *排序后的链表* 。
+
+*示例 1：*
+
+image::/images/data-structure/0148-01.jpg[{image_attr}]
+
+....
+输入：head = [4,2,1,3]
+输出：[1,2,3,4]
+....
+
+*示例 2：*
+
+image::/images/data-structure/0148-02.jpg[{image_attr}]
+
+....
+输入：head = [-1,5,3,4,0]
+输出：[-1,0,3,4,5]
+....
+
+*示例 3：*
+
+....
+输入：head = []
+输出：[]
+....
+
+*提示：*
+
+* 链表中节点的数目在范围 `[0, 5 * 10^4^]` 内
+* `-10^5^ \<= Node.val \<= 10^5^`
+
+**进阶：**你可以在 stem:[O(n*logn)] 时间复杂度和常数级空间复杂度下，对链表进行排序吗？
+
+
+=== 思路分析
+
+对链表做排序，就是一个典型的分支法案例：将链表从中切开，分别排序，然后再合并到一起。
+
+[source%nowrap,java,{source_attr}]
+----
+/**
+ * @author D瓜哥 · https://www.diguage.com
+ * @since 2025-04-08 15:06:31
+ */
+public ListNode sortList(ListNode head) {
+  if (head == null || head.next == null) {
+    return head;
+  }
+  // 分
+  ListNode pre = head, slow = head, fast = head;
+  // 这里还使用了快慢指针的技巧
+  while (fast != null && fast.next != null) {
+    pre = slow;
+    slow = slow.next;
+    fast = fast.next.next;
+  }
+  pre.next = null; // 将链表切成两段
+  // 治
+  ListNode r1 = sortList(head);
+  ListNode r2 = sortList(slow);
+  // 合
+  return merge(r1, r2);
+}
+
+private ListNode merge(ListNode l1, ListNode l2) {
+  ListNode result = new ListNode(0);
+  ListNode cur = result;
+  while (l1 != null && l2 != null) {
+    if (l1.val <= l2.val) {
+      cur.next = l1;
+      l1 = l1.next;
+    } else {
+      cur.next = l2;
+      l2 = l2.next;
+    }
+    cur = cur.next;
+  }
+  if (l1 != null) {
+    cur.next = l1;
+  }
+  if (l2 != null) {
+    cur.next = l2;
+  }
+  return result.next;
+}
+----
+
+这道题还用到了另外一个技巧： https://www.diguage.com/post/algorithm-pattern-fast-slow-pointers/[算法模式：快慢指针^]，由此可见，算法模式并不是一个个独立存在的，相互借鉴，交叉使用的情况比比皆是。
