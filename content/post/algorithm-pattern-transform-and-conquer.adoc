@@ -10,7 +10,7 @@ thumbnail: "images/data-structure/graph.png"
 weight: 1
 ---
 
-在上一篇文章 https://www.diguage.com/post/algorithm-pattern-divide-and-conquer/[算法模式：分治法 - "地瓜哥"博客网^] 介绍一种可用于处理节点前后顺序的算法模式：拓扑排序。本篇文章，介绍一种有魔力的，可以将复杂问题化繁为简，化腐朽为神奇的算法模式：变治法。
+在上一篇文章 https://www.diguage.com/post/algorithm-pattern-divide-and-conquer/[算法模式：分治法^] 介绍一种可用于处理节点前后顺序的算法模式：拓扑排序。本篇文章，介绍一种有魔力的，可以将复杂问题化繁为简，化腐朽为神奇的算法模式：变治法。
 
 == 变治法
 
