@@ -1,0 +1,739 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>GC on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/gc/</link><description>Recent content in GC on "地瓜哥"博客网</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Mon, 24 Mar 2025 19:09:05 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/gc/index.xml" rel="self" type="application/rss+xml"/><item><title>生产环境中 Java 21 启动参数</title><link>https://www.diguage.com/post/java-21-boot-parameters-in-the-production/</link><pubDate>Mon, 13 May 2024 17:04:11 +0800</pubDate><guid>https://www.diguage.com/post/java-21-boot-parameters-in-the-production/</guid><description>&lt;div class="paragraph">
+&lt;p>在 &lt;a href="https://www.diguage.com/post/upgrade-to-openjdk21/" target="_blank" rel="noopener">OpenJDK 21 升级指南&lt;/a> 中，给大家分享了一下升级到 OpenJDK 21 中遇到的一些问题。文末留了一个小问题：生产环境的 Java 21 启动参数怎么配置？这篇文章将给出 D瓜哥的答案。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>先说明一下生产环境的机器配置：4C8G，四个内核，8G 内存。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_启动参数">启动参数&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>鉴于 &lt;a href="https://www.diguage.com/post/gc-performance-incremental-qps/" target="_blank" rel="noopener">JVM GC 性能测试（二）：递增流量&lt;/a> 和 &lt;a href="https://www.diguage.com/post/gc-performance-real-qps/" target="_blank" rel="noopener">JVM GC 性能测试（三）：真实流量&lt;/a> 中，G1 GC 的惊艳表现，这里分别提供 Gen ZGC 和 G1 GC 两个配置。&lt;/p>
+&lt;/div>
+&lt;div class="admonitionblock tip">
+&lt;table>
+&lt;tbody>&lt;tr>
+&lt;td class="icon">
+&lt;i class="fa icon-tip" title="Tip">&lt;/i>
+&lt;/td>
+&lt;td class="content">
+两个配置差距级小，为了方便复制粘贴，还是分两个来展示。
+&lt;/td>
+&lt;/tr>
+&lt;/tbody>&lt;/table>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_gen_zgc_配置">Gen ZGC 配置&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>追求极致低延迟，就上 GenZGC，它通过牺牲大约 10% 的吞吐量，换来无与伦比的低延时。&lt;/p>
+&lt;/div>
+&lt;div class="admonitionblock tip">
+&lt;table>
+&lt;tbody>&lt;tr>
+&lt;td class="icon">
+&lt;i class="fa icon-tip" title="Tip">&lt;/i>
+&lt;/td>
+&lt;td class="content">
+注意：使用时，请修改日志目录！
+&lt;/td>
+&lt;/tr>
+&lt;/tbody>&lt;/table>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="c">## 变量配置 #######################################################################&lt;/span>
+&lt;span class="c"># java -XshowSettings:all --展示所有配置项（测试发现也不全）&lt;/span>
+&lt;span class="nt">-Dfile&lt;/span>.encoding&lt;span class="o">=&lt;/span>UTF-8
+
+&lt;span class="c"># &lt;a href="https://zhuanlan.zhihu.com/p/455313866" target="_blank">https://zhuanlan.zhihu.com/p/455313866&lt;/a>&lt;/span>
+&lt;span class="c"># &lt;a href="https://zhuanlan.zhihu.com/p/455746995" target="_blank">https://zhuanlan.zhihu.com/p/455746995&lt;/a>&lt;/span>
+&lt;span class="c"># &lt;a href="https://blog.csdn.net/u014149685/article/details/83002405" target="_blank">https://blog.csdn.net/u014149685/article/details/83002405&lt;/a>&lt;/span>
+&lt;span class="c"># 随机数来源&lt;/span>
+&lt;span class="nt">-Djava&lt;/span>.security.egd&lt;span class="o">=&lt;/span>file:/dev/./urandom
+&lt;span class="nt">-Djava&lt;/span>.security&lt;span class="o">=&lt;/span>file:/dev/./urandom
+
+&lt;span class="c"># &lt;a href="https://docs.oracle.com/javase/8/docs/api/java/net/doc-files/net-properties.html" target="_blank">https://docs.oracle.com/javase/8/docs/api/java/net/doc-files/net-properties.html&lt;/a>&lt;/span>
+&lt;span class="c"># &lt;a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/net/doc-files/net-properties.html" target="_blank">https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/net/doc-files/net-properties.html&lt;/a>&lt;/span>
+&lt;span class="c"># DNS 过期时间&lt;/span>
+&lt;span class="nt">-Dnetworkaddress&lt;/span>.cache.ttl&lt;span class="o">=&lt;/span>10
+&lt;span class="c">#&lt;/span>
+&lt;span class="nt">-Dsun&lt;/span>.net.client.defaultConnectTimeout&lt;span class="o">=&lt;/span>60000
+&lt;span class="nt">-Dsun&lt;/span>.net.client.defaultReadTimeout&lt;span class="o">=&lt;/span>60000
+&lt;span class="c">#-Dsun.net.inetaddr.ttl=300&lt;/span>
+
+&lt;span class="c"># &lt;a href="https://mdnice.com/writing/47e729bbf8e44431a396a481ed173dae" target="_blank">https://mdnice.com/writing/47e729bbf8e44431a396a481ed173dae&lt;/a>&lt;/span>
+&lt;span class="nt">-Djava&lt;/span>.awt.headless&lt;span class="o">=&lt;/span>&lt;span class="nb">true&lt;/span>
+&lt;span class="c"># &lt;a href="https://blog.csdn.net/maverick0/article/details/8282472" target="_blank">https://blog.csdn.net/maverick0/article/details/8282472&lt;/a>&lt;/span>
+&lt;span class="nt">-Djmagick&lt;/span>.systemclassloader&lt;span class="o">=&lt;/span>no
+
+&lt;span class="c"># From Cassandra&lt;/span>
+&lt;span class="c"># On Java &amp;gt;= 9 Netty requires the io.netty.tryReflectionSetAccessible system property&lt;/span>
+&lt;span class="c"># to be set to true to enable creation of direct buffers using Unsafe. Without it,&lt;/span>
+&lt;span class="c"># this falls back to ByteBuffer.allocateDirect which has inferior performance and&lt;/span>
+&lt;span class="c"># risks exceeding MaxDirectMemory&lt;/span>
+&lt;span class="c"># &lt;a href="https://blog.csdn.net/jdcdev_/article/details/132843927" target="_blank">https://blog.csdn.net/jdcdev_/article/details/132843927&lt;/a>&lt;/span>
+&lt;span class="nt">-Dio&lt;/span>.netty.tryReflectionSetAccessible&lt;span class="o">=&lt;/span>&lt;span class="nb">true&lt;/span>
+&lt;span class="c"># 内部中间件&lt;/span>
+&lt;span class="c"># 注意：一些中间件会内嵌 Netty，这里建议同步修改其相关参数配置。&lt;/span>
+&lt;span class="nt">-Dump&lt;/span>.profiler.shade.io.netty.tryReflectionSetAccessible&lt;span class="o">=&lt;/span>&lt;span class="nb">true&lt;/span>
+&lt;span class="nt">-Dtitan&lt;/span>.profiler.shade.io.netty.tryReflectionSetAccessible&lt;span class="o">=&lt;/span>&lt;span class="nb">true&lt;/span>
+
+&lt;span class="c"># Revert changes in defaults introduced in &lt;a href="https://netty.io/news/2022/03/10/4-1-75-Final.html" target="_blank">https://netty.io/news/2022/03/10/4-1-75-Final.html&lt;/a>&lt;/span>
+&lt;span class="nt">-Dio&lt;/span>.netty.allocator.useCacheForAllThreads&lt;span class="o">=&lt;/span>&lt;span class="nb">true&lt;/span>
+&lt;span class="nt">-Dio&lt;/span>.netty.allocator.maxOrder&lt;span class="o">=&lt;/span>11
+
+&lt;span class="c"># 内部中间件&lt;/span>
+&lt;span class="c"># 理由上面已讲&lt;/span>
+&lt;span class="nt">-Dump&lt;/span>.profiler.shade.io.netty.allocator.useCacheForAllThreads&lt;span class="o">=&lt;/span>&lt;span class="nb">true&lt;/span>
+&lt;span class="nt">-Dump&lt;/span>.profiler.shade.io.netty.allocator.maxOrder&lt;span class="o">=&lt;/span>11
+
+&lt;span class="c"># Byte Buddy 支持21&lt;/span>
+&lt;span class="nt">-Dnet&lt;/span>.bytebuddy.experimental&lt;span class="o">=&lt;/span>&lt;span class="nb">true&lt;/span>
+&lt;span class="nt">-Dpfinder&lt;/span>.shade.net.bytebuddy.experimental&lt;span class="o">=&lt;/span>&lt;span class="nb">true&lt;/span>
+
+
+
+&lt;span class="c">## 参数配置 #####################################################################&lt;/span>
+
+&lt;span class="c"># &lt;a href="https://jacoline.dev/inspect" target="_blank">https://jacoline.dev/inspect&lt;/a> -- JVM 参数诊断&lt;/span>
+&lt;span class="c"># &lt;a href="https://chriswhocodes.com/corretto_jdk21_options.html" target="_blank">https://chriswhocodes.com/corretto_jdk21_options.html&lt;/a>&lt;/span>
+&lt;span class="c"># &lt;a href="https://docs.oracle.com/en/java/javase/21/docs/specs/man/java.html" target="_blank">https://docs.oracle.com/en/java/javase/21/docs/specs/man/java.html&lt;/a>&lt;/span>
+
+&lt;span class="c"># &lt;a href="https://blog.csdn.net/wxb880114/article/details/119888587" target="_blank">https://blog.csdn.net/wxb880114/article/details/119888587&lt;/a>&lt;/span>
+&lt;span class="c"># &lt;a href="https://www.cnblogs.com/three-fighter/p/14644152.html" target="_blank">https://www.cnblogs.com/three-fighter/p/14644152.html&lt;/a>&lt;/span>
+&lt;span class="c">#- &lt;a href="https://www.skjava.com/article/2134434173" target="_blank">https://www.skjava.com/article/2134434173&lt;/a>&lt;/span>
+
+&lt;span class="c"># 解锁诊断参数&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:+UnlockDiagnosticVMOptions
+
+&lt;span class="c"># 解锁试验参数&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:+UnlockExperimentalVMOptions
+
+&lt;span class="c"># 启用 ZGC&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:+UseZGC
+&lt;span class="c"># 启用分代ZGC&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:+ZGenerational
+
+&lt;span class="c"># &lt;a href="https://tech.meituan.com/2020/08/06/new-zgc-practice-in-meituan.html" target="_blank">https://tech.meituan.com/2020/08/06/new-zgc-practice-in-meituan.html&lt;/a>&lt;/span>
+&lt;span class="c"># 加快 GC 的时间和能力&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:ZAllocationSpikeTolerance&lt;span class="o">=&lt;/span>5
+&lt;span class="nt">-XX&lt;/span>:ConcGCThreads&lt;span class="o">=&lt;/span>2
+&lt;span class="nt">-XX&lt;/span>:ParallelGCThreads&lt;span class="o">=&lt;/span>4
+
+&lt;span class="c"># G1 GC&lt;/span>
+&lt;span class="c">#-XX:+UseG1GC&lt;/span>
+&lt;span class="c">#-XX:MaxGCPauseMillis=50&lt;/span>
+
+&lt;span class="c"># 初始堆大小，等价于 -XX:InitialHeapSize&lt;/span>
+&lt;span class="nt">-Xms4608m&lt;/span>
+
+&lt;span class="c"># 弱最大堆，尽量保持，但是可以突破&lt;/span>
+&lt;span class="c">#-XX:SoftMaxHeapSize=3g&lt;/span>
+
+&lt;span class="c"># 最大堆大小，等价于 -XX:MaxHeapSize&lt;/span>
+&lt;span class="nt">-Xmx4608m&lt;/span>
+
+&lt;span class="c"># 归还未使用的内存&lt;/span>
+&lt;span class="c">#-XX:+ZUncommit&lt;/span>
+
+&lt;span class="c"># 设置每个线程的堆栈大小，等价于 -XX:ThreadStackSize=512k&lt;/span>
+&lt;span class="nt">-Xss512k&lt;/span>
+
+&lt;span class="c"># &lt;a href="https://cloud.tencent.com/developer/article/1408384" target="_blank">https://cloud.tencent.com/developer/article/1408384&lt;/a>&lt;/span>
+&lt;span class="c"># 本地内存大小&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:MaxDirectMemorySize&lt;span class="o">=&lt;/span>512m
+
+&lt;span class="c"># &lt;a href="https://cloud.tencent.com/developer/article/2277327" target="_blank">https://cloud.tencent.com/developer/article/2277327&lt;/a>&lt;/span>
+&lt;span class="c"># &lt;a href="https://cloud.tencent.com/developer/article/2277328" target="_blank">https://cloud.tencent.com/developer/article/2277328&lt;/a>&lt;/span>
+&lt;span class="c"># &lt;a href="https://cloud.tencent.com/developer/article/2277329" target="_blank">https://cloud.tencent.com/developer/article/2277329&lt;/a>&lt;/span>
+&lt;span class="c"># 元空间&lt;/span>
+&lt;span class="c"># 设置为 256m 时，发生过一次频繁 GC 导致应用无法相应的问题&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:MetaspaceSize&lt;span class="o">=&lt;/span>512m
+&lt;span class="c"># 最大元空间&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:MaxMetaspaceSize&lt;span class="o">=&lt;/span>512m
+
+&lt;span class="c"># &lt;a href="https://cloud.tencent.com/developer/article/1408773" target="_blank">https://cloud.tencent.com/developer/article/1408773&lt;/a>&lt;/span>
+&lt;span class="c"># &lt;a href="https://blog.csdn.net/lidf1992/article/details/75050219" target="_blank">https://blog.csdn.net/lidf1992/article/details/75050219&lt;/a>&lt;/span>
+&lt;span class="c"># 编译代码缓存空间&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:ReservedCodeCacheSize&lt;span class="o">=&lt;/span>256m
+
+&lt;span class="c"># &lt;a href="https://cloud.tencent.com/developer/article/1408827" target="_blank">https://cloud.tencent.com/developer/article/1408827&lt;/a>&lt;/span>
+&lt;span class="c"># &lt;a href="https://malloc.se/blog/zgc-jdk15" target="_blank">https://malloc.se/blog/zgc-jdk15&lt;/a>&lt;/span>
+&lt;span class="c"># &lt;a href="https://tinyzzh.github.io/java/jvm/2022/04/24/JVM_CompressedOops.html" target="_blank">https://tinyzzh.github.io/java/jvm/2022/04/24/JVM_CompressedOops.html&lt;/a>&lt;/span>
+&lt;span class="c"># &lt;a href="https://www.cnblogs.com/star95/p/17512212.html" target="_blank">https://www.cnblogs.com/star95/p/17512212.html&lt;/a> -- 由于从 JDK15 开始，&lt;/span>
+&lt;span class="c"># -XX:+UseCompressedClassPointers 与 -XX:-UseCompressedOops 之间的强&lt;/span>
+&lt;span class="c"># 关联被打破，文章里关于上述这种搭配是不正确的。 TODO 可以从新测试验证一线。&lt;/span>
+&lt;span class="c"># TODO 如果开启 -XX:+UseCompressedClassPointers，不确定 32M 是否够用？&lt;/span>
+&lt;span class="c"># &lt;a href="https://www.zhihu.com/question/268392125" target="_blank">https://www.zhihu.com/question/268392125&lt;/a>&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:+UseCompressedClassPointers
+&lt;span class="nt">-XX&lt;/span>:CompressedClassSpaceSize&lt;span class="o">=&lt;/span>48M
+
+&lt;span class="c"># 关闭热度衰减&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:-UseCounterDecay
+
+&lt;span class="c"># 内存占座&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:+AlwaysPreTouch
+
+&lt;span class="c"># 禁止代码中显示调用GC&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:+DisableExplicitGC
+
+&lt;span class="c"># 关闭安全点间隔&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:GuaranteedSafepointInterval&lt;span class="o">=&lt;/span>0
+
+&lt;span class="c"># 避免循环无法进入安全点的问题&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:+UseCountedLoopSafepoints
+&lt;span class="c"># &lt;a href="https://blog.csdn.net/m0_46596655/article/details/123606813" target="_blank">https://blog.csdn.net/m0_46596655/article/details/123606813&lt;/a>&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:LoopStripMiningIter&lt;span class="o">=&lt;/span>1000
+
+&lt;span class="c"># 打印命令行参数&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:+PrintCommandLineFlags
+
+&lt;span class="c"># 显式地并发处理 GC 调用&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:+ExplicitGCInvokesConcurrent
+
+&lt;span class="c"># &lt;a href="https://panlw.github.io/15320998566522.html" target="_blank">https://panlw.github.io/15320998566522.html&lt;/a>&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:AutoBoxCacheMax&lt;span class="o">=&lt;/span>20000
+
+&lt;span class="c"># &lt;a href="https://blog.csdn.net/zshake/article/details/88796414" target="_blank">https://blog.csdn.net/zshake/article/details/88796414&lt;/a>&lt;/span>
+&lt;span class="c"># 省略异常栈信息从而快速抛出&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:-OmitStackTraceInFastThrow
+
+&lt;span class="c"># &lt;a href="https://www.jianshu.com/p/c9259953ca38" target="_blank">https://www.jianshu.com/p/c9259953ca38&lt;/a>&lt;/span>
+&lt;span class="c"># 致命错误日志文件&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:ErrorFile&lt;span class="o">=&lt;/span>/path/to/log/jvm/hs_err_%p.log
+
+&lt;span class="c"># &lt;a href="https://blog.csdn.net/lusa1314/article/details/84134458" target="_blank">https://blog.csdn.net/lusa1314/article/details/84134458&lt;/a>&lt;/span>
+&lt;span class="c"># &lt;a href="https://juejin.cn/post/7127557371932442632" target="_blank">https://juejin.cn/post/7127557371932442632&lt;/a>&lt;/span>
+&lt;span class="c"># 当JVM发生OOM时，自动生成DUMP文件。&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:+HeapDumpOnOutOfMemoryError
+&lt;span class="c"># 设置上述DUMP文件路径&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:HeapDumpPath&lt;span class="o">=&lt;/span>/path/to/log/jvm/
+
+&lt;span class="c"># &lt;a href="https://juejin.cn/post/6959405798556434440" target="_blank">https://juejin.cn/post/6959405798556434440&lt;/a>&lt;/span>
+&lt;span class="c"># 设置 JFR 相关参数&lt;/span>
+&lt;span class="c"># TODO 感觉这里不全乎，似乎需要 -XX:+FlightRecorder 来启用&lt;/span>
+&lt;span class="c"># TODO 似乎可以设置文件，例如： -XX:StartFlightRecording=duration=200s,filename=flight.jfr&lt;/span>
+&lt;span class="c"># 不确定文件名是否可以这样配置，测试一下_%p-%t&lt;/span>
+&lt;span class="c"># Amazon Corretto JDK OK；Eclipse Temurin 不识别，并且监控报错&lt;/span>
+&lt;span class="c">#-XX:StartFlightRecording=delay=5s,disk=true,dumponexit=true,duration=24h,maxage=5d,maxsize=2g,filename=/path/to/log/jvm/jfr_%p-%t.jfr.log&lt;/span>
+&lt;span class="c">#-XX:FlightRecorderOptions=maxchunksize=128m&lt;/span>
+
+&lt;span class="c">#-XX:StringDeduplicationAgeThreshold=threshold? TODO 测试之后才可以定&lt;/span>
+
+&lt;span class="c"># &lt;a href="https://zhuanlan.zhihu.com/p/111886882" target="_blank">https://zhuanlan.zhihu.com/p/111886882&lt;/a>&lt;/span>
+&lt;span class="c"># &lt;a href="https://github.com/apache/cassandra/tree/trunk/conf" target="_blank">https://github.com/apache/cassandra/tree/trunk/conf&lt;/a>&lt;/span>
+&lt;span class="c"># &lt;a href="https://github.com/elastic/elasticsearch/blob/main/distribution/src/config/jvm.options" target="_blank">https://github.com/elastic/elasticsearch/blob/main/distribution/src/config/jvm.options&lt;/a>&lt;/span>
+&lt;span class="c"># java -Xlog:help&lt;/span>
+&lt;span class="c"># 日志配置&lt;/span>
+&lt;span class="nt">-Xlog&lt;/span>:gc&lt;span class="k">*&lt;/span>&lt;span class="o">=&lt;/span>debug,stringdedup&lt;span class="k">*&lt;/span>&lt;span class="o">=&lt;/span>debug,heap&lt;span class="k">*&lt;/span>&lt;span class="o">=&lt;/span>trace,age&lt;span class="k">*&lt;/span>&lt;span class="o">=&lt;/span>debug,promotion&lt;span class="k">*&lt;/span>&lt;span class="o">=&lt;/span>trace,jit&lt;span class="k">*&lt;/span>&lt;span class="o">=&lt;/span>info,safepoint&lt;span class="k">*&lt;/span>&lt;span class="o">=&lt;/span>debug:file&lt;span class="o">=&lt;/span>/path/to/log/jvm/gc_%p-%t.log:time,pid,tid,level,tags:filecount&lt;span class="o">=&lt;/span>10,filesize&lt;span class="o">=&lt;/span>500M
+&lt;span class="c"># 分开设置可用，使用分开的配置&lt;/span>
+&lt;span class="c">#-Xlog:gc*=debug,stringdedup*=debug,heap*=trace,age*=debug,promotion*=trace:file=/path/to/log/jvm/gc-%t.log:utctime,level,tags:filecount=10,filesize=200M&lt;/span>
+&lt;span class="c">#-Xlog:jit*=info:file=/path/to/log/jvm/jit_compile-%t.log:utctime,level,tags:filecount=10,filesize=50M&lt;/span>
+&lt;span class="c">#-Xlog:safepoint*=debug:file=/path/to/log/jvm/safepoint-%t.log:utctime,level,tags:filecount=10,filesize=50M&lt;/span>
+
+
+&lt;span class="c"># &lt;a href="https://stackoverflow.com/a/44059335" target="_blank">https://stackoverflow.com/a/44059335&lt;/a>&lt;/span>
+&lt;span class="c"># &lt;a href="https://openjdk.org/jeps/261" target="_blank">https://openjdk.org/jeps/261&lt;/a>&lt;/span>
+&lt;span class="c"># &lt;a href="https://www.diguage.com/post/upgrade-to-openjdk21/" target="_blank">https://www.diguage.com/post/upgrade-to-openjdk21/&lt;/a> -- 内有详细介绍&lt;/span>
+&lt;span class="c"># 开启模块权限：下面是D瓜哥需要的模块，请根据自己实际需求来调整。&lt;/span>
+&lt;span class="nt">--add-exports&lt;/span> java.base/sun.security.action&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="nt">--add-opens&lt;/span> java.base/java.io&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="nt">--add-opens&lt;/span> java.base/java.lang.reflect&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="nt">--add-opens&lt;/span> java.base/java.lang&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="nt">--add-opens&lt;/span> java.base/java.math&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="nt">--add-opens&lt;/span> java.base/java.net&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="nt">--add-opens&lt;/span> java.base/java.security&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="nt">--add-opens&lt;/span> java.base/java.time&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="nt">--add-opens&lt;/span> java.base/java.util.concurrent.locks&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="nt">--add-opens&lt;/span> java.base/java.util.concurrent&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="nt">--add-opens&lt;/span> java.base/java.util&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="nt">--add-opens&lt;/span> java.base/jdk.internal.loader&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="c"># Netty 内部需要 &lt;a href="https://stackoverflow.com/a/57892679" target="_blank">https://stackoverflow.com/a/57892679&lt;/a>&lt;/span>
+&lt;span class="c"># &lt;a href="https://github.com/netty/netty/issues/7769" target="_blank">https://github.com/netty/netty/issues/7769&lt;/a>&lt;/span>
+&lt;span class="c"># &lt;a href="https://blog.csdn.net/thewindkee/article/details/123618476" target="_blank">https://blog.csdn.net/thewindkee/article/details/123618476&lt;/a>&lt;/span>
+&lt;span class="nt">--add-opens&lt;/span> java.base/jdk.internal.misc&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="nt">--add-opens&lt;/span> java.base/sun.net.util&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="c"># 设置 -Dio.netty.tryReflectionSetAccessible=true 后，不设置该值也会报错&lt;/span>
+&lt;span class="nt">--add-opens&lt;/span> java.base/java.nio&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="nt">--add-opens&lt;/span> java.base/sun.nio.ch&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="nt">--add-opens&lt;/span> java.base/sun.reflect.generics.reflectiveObjects&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="nt">--add-opens&lt;/span> java.base/sun.util.calendar&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="nt">--add-opens&lt;/span> java.management/com.sun.jmx.mbeanserver&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="nt">--add-opens&lt;/span> java.management/java.lang.management&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="nt">--add-opens&lt;/span> java.management/sun.management&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="nt">--add-opens&lt;/span> jdk.management/com.sun.management.internal&lt;span class="o">=&lt;/span>ALL-UNNAMED&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>JVM GC 性能测试（三）：真实流量</title><link>https://www.diguage.com/post/gc-performance-real-qps/</link><pubDate>Wed, 01 May 2024 12:12:12 +0800</pubDate><guid>https://www.diguage.com/post/gc-performance-real-qps/</guid><description>&lt;div class="paragraph">
+&lt;p>&lt;strong>JVM GC 性能测试系列&lt;/strong>:&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-comparison-method/" target="_blank" rel="noopener">JVM GC 性能对比方法&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-same-qps/" target="_blank" rel="noopener">JVM GC 性能测试（一）：相同流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-incremental-qps/" target="_blank" rel="noopener">JVM GC 性能测试（二）：递增流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-real-qps/" target="_blank" rel="noopener">JVM GC 性能测试（三）：真实流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;hr/>
+&lt;div class="paragraph">
+&lt;p>书接上文，在 &lt;a href="https://www.diguage.com/post/gc-performance-incremental-qps/" target="_blank" rel="noopener">JVM GC 性能测试（二）：递增流量&lt;/a> 的最后，D瓜哥提到了一个问题，对于在 &lt;a href="https://www.diguage.com/post/gc-performance-same-qps/" target="_blank" rel="noopener">JVM GC 性能测试（一）：相同流量&lt;/a> 和 &lt;a href="https://www.diguage.com/post/gc-performance-incremental-qps/" target="_blank" rel="noopener">JVM GC 性能测试（二）：递增流量&lt;/a> 中存在的巨大 QPS 差异疑惑不解。所以，D瓜哥决定将测试机器接入到线上环境，在真实访问中，观察各个 GC 的表现。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_一言以蔽之">一言以蔽之&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>J21-Gen-ZGC 和 J21-G1 无论在稳定性，吞吐量以及响应时效性上都非常优秀。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>再极端峰值情况，J21-G1 是更好的选择，更加稳定，不容易出凸点。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>日常使用，J21-Gen-ZGC 响应性更好，接口耗时更低。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="sidebarblock">
+&lt;div class="content">
+&lt;div class="paragraph">
+&lt;p>鉴于 OpenJDK 21 G1 GC 一如既往的惊艳表现，D瓜哥准备整理一下 G1 GC 的主要优化，敬请关注： &lt;a href="https://www.diguage.com/post/main-optimization-of-garbage-first-collector/" target="_blank" rel="noopener">Java G1 垃圾收集器主要优化&lt;/a>。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_服务调用监控数据">1. 服务调用监控数据&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>监控服务调用的相关数据，这是对于用户来说，感知最强烈的相关数据，也是直接关系到服务质量的数据。&lt;/p>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_服务调用次数">1.1. 服务调用次数&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>从调用次数上来看，五个分组没有大的变化，可以说根本没有达到系统的极限峰值。当然，这才是正常现象，如果日常运行都爆峰值，那说明系统早该扩容了。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/gc-performance-3/api-qps-second.jpg" alt="服务调用次数（秒级）" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. 服务调用次数（秒级）&lt;/div>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/gc-performance-3/api-qps-minute.jpg" alt="服务调用次数（分钟级）" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 2. 服务调用次数（分钟级）&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="api-qps-time">1.2. 服务调用耗时&lt;/h3>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>整体上讲，J21-Gen-ZGC 的耗时更短，从数据上来看，TP999 能比 J21-G1 的少 10~20ms；TP99 更加夸张，J21-Gen-ZGC 的耗时只有 J21-G1 的一半。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>J21-Gen-ZGC 和 J21-G1 还是一如既往的稳。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>这次测试中，J17-ZGC 也很稳，有些出乎意料。但是，结合下面 &lt;a href="#jvm-cpu">JVM CPU 使用率&lt;/a> 和 &lt;a href="#os-cpu">系统 CPU 使用率&lt;/a> 来看，J17-ZGC 和 J21-ZGC 的 CPU 使用率早早就达到 90%+，再结合上面两个测试，从稳定性来看，J17-ZGC 和 J21-ZGC 只能被排除掉。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div></description></item><item><title>JVM GC 性能测试（二）：递增流量</title><link>https://www.diguage.com/post/gc-performance-incremental-qps/</link><pubDate>Tue, 30 Apr 2024 00:29:00 +0800</pubDate><guid>https://www.diguage.com/post/gc-performance-incremental-qps/</guid><description>&lt;div class="paragraph">
+&lt;p>&lt;strong>JVM GC 性能测试系列&lt;/strong>:&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-comparison-method/" target="_blank" rel="noopener">JVM GC 性能对比方法&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-same-qps/" target="_blank" rel="noopener">JVM GC 性能测试（一）：相同流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-incremental-qps/" target="_blank" rel="noopener">JVM GC 性能测试（二）：递增流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-real-qps/" target="_blank" rel="noopener">JVM GC 性能测试（三）：真实流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;hr/>
+&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/gc-performance-same-qps/" target="_blank" rel="noopener">JVM GC 性能测试（一）：相同流量&lt;/a> 中，D瓜哥使用一个总量请求对所有分组的所有机器进行性能测试。但是，经过测试发现了一个问题，同时产生了另外一个问题，有两个问题没有得到很好的解答：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>由于服务响应时长直接关系到服务调用次数，当某一台机器出现问题时，整体调用次数就会急剧下降，调用次数加不上去。一个机器出问题，所有机器的访问量就上不去了。这是测试中发现的一个问题。当然，这属于测试工具的问题，别不是 GC 的问题。但是，也影响到我们的压测，也需要解决。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>上次测试，这是针对某一个指定服务调用量进行性能测试，那么，无法确定每个 GC 能支撑的极限调用峰值。另外，在极限峰值和超极限峰值的情况下，各个 GC 的表现如何？这个也有待验证。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>针对上述两个问题，设计了本次测试。测试方法如下：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>各个分组使用一套相同的流量策略：&lt;/p>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>各个分组几乎同时开始执行测试任务；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>调用量从低到高，以此同时使用相关的调用量进行测试；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>除最开始预热阶段的调用量外，后续每个调用量都持续进行十分钟的测试。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>针对每个 GC 分组单独设定一套调用发量程序，这个保证各个 GC 分组直接不相互影响。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>最后，再分析调用量相同时段的各个 GC 表现，就可以看到各个 GC 的极限峰值。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="admonitionblock tip">
+&lt;table>
+&lt;tbody>&lt;tr>
+&lt;td class="icon">
+&lt;i class="fa icon-tip" title="Tip">&lt;/i>
+&lt;/td>
+&lt;td class="content">
+为了保留更多细节，本文所有截图都是在 34 吋带鱼屏下，使用全屏模式展示并截图的。如果看不清楚，可以右击在新页面打开图片来查看。
+&lt;/td>
+&lt;/tr>
+&lt;/tbody>&lt;/table>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>具体流量及时间段：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>750， 23:14:30 ~ 23:19:30&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>800， 23:19:30 ~ 23:29:30&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>850， 23:29:30 ~ 23:39:30&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>900， 23:39:30 ~ 23:49:30&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>950， 23:49:30 ~ 23:59:30&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>1000，23:59:30 ~ 00:09:30&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>1050，00:09:30 ~ 00:19:30&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>1100，00:19:30 ~ 00:29:30&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div></description></item><item><title>JVM GC 性能测试（一）：相同流量</title><link>https://www.diguage.com/post/gc-performance-same-qps/</link><pubDate>Thu, 25 Apr 2024 22:02:47 +0800</pubDate><guid>https://www.diguage.com/post/gc-performance-same-qps/</guid><description>&lt;div class="paragraph">
+&lt;p>&lt;strong>JVM GC 性能测试系列&lt;/strong>:&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-comparison-method/" target="_blank" rel="noopener">JVM GC 性能对比方法&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-same-qps/" target="_blank" rel="noopener">JVM GC 性能测试（一）：相同流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-incremental-qps/" target="_blank" rel="noopener">JVM GC 性能测试（二）：递增流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-real-qps/" target="_blank" rel="noopener">JVM GC 性能测试（三）：真实流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;hr/>
+&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/gc-performance-comparison-method/" target="_blank" rel="noopener">JVM GC 性能对比方法&lt;/a> 介绍了性能对比的方法，这篇文章就根据该方法对上述提到的5种 JVM GC 进行性能测试。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在正式测试之前，D瓜哥进行了多次小流量试探性测试，来探索一个合适的量。找到一个比较平稳的量后，乘以机器数量，获得一个每秒总计请求量，最后使用该总量数据去做压测。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>根据多次测试的数据来看，最后选择的是每台每秒 500 QPS，5 个分组，每个分组 5 台机器，所以，每秒的请求总量是： 500 * 5 * 5 = 12500 QPS；每个分组每分钟的总量是：500 * 5 * 60 = 150000 QPS。使用每台机器以此使用 100 QPS，200 QPS，300 QPS，400 QPS 各运行一分钟来对系统进行预热。最后以每台每秒 500 QPS 的访问量来对测试机器进行持续十分钟的性能测试，最后分析这十分钟的相关数据。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_一言以蔽之">一言以蔽之&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>服务稳定性：J21-Gen-ZGC、J21-G1、J8-G1 稳定性最好；J17-ZGC 有轻微波动；J21-ZGC 有剧烈波动；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>服务耗时 TP999：J21-Gen-ZGC &amp;lt; J17-ZGC &amp;lt; J21-G1 &amp;lt; J8-G1 &amp;lt; J21-ZGC；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>CPU 消耗：J21-G1 &amp;lt; J8-G1 &amp;lt; J17-ZGC &amp;lt; J21-Gen-ZGC &amp;lt; J21-ZGC；&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div></description></item><item><title>JVM GC 性能对比方法</title><link>https://www.diguage.com/post/gc-performance-comparison-method/</link><pubDate>Wed, 24 Apr 2024 19:52:47 +0800</pubDate><guid>https://www.diguage.com/post/gc-performance-comparison-method/</guid><description>&lt;div class="paragraph">
+&lt;p>&lt;strong>JVM GC 性能测试系列&lt;/strong>:&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-comparison-method/" target="_blank" rel="noopener">JVM GC 性能对比方法&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-same-qps/" target="_blank" rel="noopener">JVM GC 性能测试（一）：相同流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-incremental-qps/" target="_blank" rel="noopener">JVM GC 性能测试（二）：递增流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-real-qps/" target="_blank" rel="noopener">JVM GC 性能测试（三）：真实流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;hr/>
+&lt;div class="paragraph">
+&lt;p>现在部门内部绝大部分应用都还在使用 OpenJDK 8，计划推进部门升级 JDK 到 OpenJDK21。本着实事求是，用数据说话的原则，准备对如下 GC 做性能测试：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>OpenJDK 8 G1 GC（以下称 J8-G1。具体版本号：1.8.0_321-b07。）&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>OpenJDK 17 ZGC（以下称 J17-ZGC。具体版本号：17.0.9+9。）&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>OpenJDK 21 G1（以下称 J21-G1。具体版本号：21.0.2+13-LTS。）&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>OpenJDK 21 ZGC（以下称 J21-ZGC。具体版本号：21.0.2+13-LTS。）&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>OpenJDK 21 Gen ZGC（以下称 J21-Gen-ZGC。具体版本号：21.0.2+13-LTS。）&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="admonitionblock note">
+&lt;table>
+&lt;tbody>&lt;tr>
+&lt;td class="icon">
+&lt;i class="fa icon-note" title="Note">&lt;/i>
+&lt;/td>
+&lt;td class="content">
+所有 OpenJDK 版本都是选用相同大版本号里的最高的版本。所有的机器都是 4C8G 的配置，JVM 堆栈内存设置为 4608M 。
+&lt;/td>
+&lt;/tr>
+&lt;/tbody>&lt;/table>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>为了减少不必要的干扰，JVM 相关参数也尽可能做到了一致或者接近。（等测试完，D瓜哥会把相关参数也分享出来。）&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_测试对象">测试对象&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>由于D瓜哥所处的部门是一个直接面向用户的线上业务部门，所以，大部分系统是直接面对用户，接受用户访问的在线业务系统。所以，为了服务线上业务系统的需求，测试对象的选择就限定在了类似的场景中。测试对象是线上接受用户访问的一个服务。结构如下：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/gc-performance/api.svg" alt="压测接口依赖关系图" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. 压测接口依赖关系图&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>该接口有外部依赖服务，也有数据库查询，是一个微服务架构下典型的在线服务接口。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_测试方法">测试方法&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>原本计划是想直接通过上线，将线上不同分组的机器使用不同的 GC 来做测试，但是，这样面临好几个问题：&lt;/p>
+&lt;/div></description></item><item><title>GC 调优成功案例：减少新生代的大小</title><link>https://www.diguage.com/post/gc-tuning-success-story-reducing-young-gen-size/</link><pubDate>Sat, 06 Jan 2024 16:51:18 +0800</pubDate><guid>https://www.diguage.com/post/gc-tuning-success-story-reducing-young-gen-size/</guid><description>&lt;div class="paragraph">
+&lt;p>当对垃圾回收性能做调优时，不仅能改善垃圾回收暂停时间，还能改善整个应用程序的响应时间并降低云计算成本。最近，我们帮助调整了一个流行应用程序的垃圾回收行为。仅仅是一个微小的改动，就带来了巨大的改善。让我们在这篇文章中讨论一下这个垃圾回收调整的成功案例。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_垃圾收集关键绩效指标">垃圾收集关键绩效指标&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>有句名言叫“无法衡量的东西就无法优化”。说到垃圾回收的调整，您只需关注 3 个主要关键绩效指标 (KPI)：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>GC 暂停时间&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>GC 吞吐量&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>CPU 消耗量&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>垃圾回收运行时，会暂停应用程序。“GC 停顿时间”表示应用程序在垃圾回收事件中停顿的时间。该指标以秒或毫秒为单位。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>“GC 吞吐量”表示应用程序处理客户事务的总时间与处理垃圾回收活动的总时间之比。该指标以百分比为单位。例如，如果有人说他的应用程序的 GC 吞吐量是 98%，这表明该应用程序有 98% 的时间用于处理客户活动，其余 2% 的时间用于处理垃圾回收活动。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>即使是处理一个简单的请求，现代应用程序也会创建成千上万个对象。因此，垃圾收集器必须在后台不断运行，以释放为每个请求创建的成千上万个对象。因此，垃圾回收往往会消耗大量的 CPU。因此，在调整垃圾回收性能时，还应研究 CPU 消耗。要了解有关这些 KPI 的更多信息，请参阅： 内存调整： &lt;a href="https://www.diguage.com/post/garbage-collection-kpi/" target="_blank" rel="noopener">关键性能指标&lt;/a>。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_如何获取这些_kpi">如何获取这些 KPI？&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>在调优垃圾回收性能时，垃圾回收日志是您最好的朋友。您可以通过 &lt;a href="https://www.diguage.com/post/how-to-do-gc-log-analysis/" target="_blank" rel="noopener">这篇文章&lt;/a> 给出的 JVM 参数在应用程序中启用垃圾回收日志。建议始终开启垃圾回收日志，因为它能提供丰富的信息，有助于预测中断、排除生产问题并帮助进行容量规划。此外，启用垃圾收集不会给应用程序增加任何明显的开销。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>启用垃圾收集日志后，您可以使用免费的垃圾收集日志分析工具，如 &lt;a href="https://gceasy.io/" target="_blank" rel="noopener">GCeasy&lt;/a>、 &lt;a href="https://www.ibm.com/support/pages/java-sdk" target="_blank" rel="noopener">IBM GC &amp;amp; Memory visualizer&lt;/a> 和 &lt;a href="https://github.com/mgm3746/garbagecat" target="_blank" rel="noopener">Google Garbage cat&lt;/a> 等，查看上述关键绩效指标。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在下面这篇文章，教你 &lt;a href="https://www.diguage.com/post/how-to-do-gc-log-analysis/" target="_blank" rel="noopener">如何进行 GC 日志分析&lt;/a>。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_垃圾回收行为基线">垃圾回收行为基线&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>介绍到此为止。让我们回到本文最初的主题。我们在这个流行的应用程序上启用了垃圾回收日志。我们让应用程序运行了 24 小时。然后，我们将生成的 GC 日志文件上传到 GCeasy 工具。该工具提供了具有洞察力的图表和 GC KPI。该应用程序的 GC 吞吐量为 96.176%，平均暂停时间为 12.429 秒。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/gc-tuning/baselin-KPI.png" alt="基线 GC KPI（由 GCeasy 生成）" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. 基线 GC KPI（由 GCeasy 生成）&lt;/div></description></item><item><title>应用程序的内存是大还是小？</title><link>https://www.diguage.com/post/large-or-small-memory-size-for-my-app/</link><pubDate>Sat, 06 Jan 2024 12:17:15 +0800</pubDate><guid>https://www.diguage.com/post/large-or-small-memory-size-for-my-app/</guid><description>&lt;div class="paragraph">
+&lt;p>应该在内存容量大的少量实例（即机器）上运行应用程序，还是在内存容量小的大量实例上运行应用程序？哪种策略是最佳的？这个问题可能会经常遇到。在开发应用程序长达 20 年，且构建了 JVM 性能工程/故障排除工具（ &lt;a href="https://gceasy.io/" target="_blank" rel="noopener">GCeasy&lt;/a>、 &lt;a href="https://fastthread.io/" target="_blank" rel="noopener">FastThread,&lt;/a>、 &lt;a href="https://heaphero.io/" target="_blank" rel="noopener">HeapHero&lt;/a>）之后，我仍然不知道这个问题的正确答案。同时，我相信这个问题也没有非黑即白的答案。在本文中，我想与大家分享一下我对这个问题的看法和经验。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_两个数十亿美元企业的故事">两个数十亿美元企业的故事&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>由于我们的 JVM 性能工程/故障排除工具已广泛应用于各大企业，因此我有机会看到世界级企业应用的实际实施情况。最近，我有机会参观了两家高速成长的科技公司（如果我说出他们的名字，读这篇文章的人都会知道）。这两家公司的总部都在硅谷。它们的业务是技术，因此在工程设计方面很有一套。它们是华尔街的宠儿，享有极高的估值。它们的市值高达数十亿美元。它们是现代企业蓬勃发展的典型代表。在我们的对话中，让我们称这两家企业为公司 A 和公司 B。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在内存大小方面，两家企业都采用了&lt;strong>两个极端&lt;/strong>，这让我感到非常惊讶。公司 A 将堆大小（即 &lt;code>-Xmx&lt;/code>）设置为 250GB，而公司 B 则将堆大小设置为 2GB：公司 A 的堆大小是公司 B 的 125 倍。两家公司都对自己的内存大小设置很自信。俗话说：&amp;#34;事实胜于雄辩&amp;#34;，两家企业都在扩大规模，处理数十亿的关键业务交易。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>两家公司都从事相同的业务，收入/市值大致相同，位于同一地理区域，在同一时间点采用两种极端的内存大小，这真是一次绝佳的体验。鉴于这种现实生活中的真实经验，正确的答案是什么？大内存还是小内存？我的结论是：如果你有一支优秀的团队，采用这两种策略都能取得成功。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_大内存容量可能很昂贵">大内存容量可能很昂贵&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>与内存容量小、实例数量多的情况相比，内存容量大、实例（即机器）数量少的情况往往成本较高。以下是基于美国东部（弗吉尼亚州北部）地区 AWS EC2 实例成本的简单计算：&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>m4.16xlarge - 256GB 内存 - Linux 按实例收费：3.2 美元/小时&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>T3a small - 2GB 内存 - Linux 按实例收费：0.0188 美元/小时&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>因此，要获得 256GB 内存容量，我们必须获得 128 个 “T3a small” 实例（即 128 个实例 x 2GB = 256GB）。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>128 x T3a small - 2GB 内存 - Linux 按实例收费：2.4064 美元/小时（即 128 x 0.0188 美元/小时）&lt;/p>
+&lt;/div></description></item><item><title>如何实现 GC 的高吞吐量？</title><link>https://www.diguage.com/post/how-to-aim-for-high-gc-throughput/</link><pubDate>Fri, 05 Jan 2024 09:24:33 +0800</pubDate><guid>https://www.diguage.com/post/how-to-aim-for-high-gc-throughput/</guid><description>&lt;div class="paragraph">
+&lt;p>三四十年前，开发人员负责释放在应用程序中创建的对象。业务应用程序相当复杂，有不同的工作流、用例和场景。即使开发人员在某个场景中少释放一个对象，对象也会在内存中累积，造成内存泄漏。Java 于 1995 年推出时，承诺自动进行垃圾回收。它将删除对象的责任从开发人员转移到了 Java 虚拟机（JVM），从而彻底改变了内存管理。整个行业都积极拥抱了这一创新理念，因为开发人员不再需要操心手动内存管理。从那时起，自动垃圾回收已成为所有现代编程语言的默认功能。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在本篇文章中，我们将探讨垃圾回收过程中的一个关键性能指标：&amp;#34;GC 吞吐量&amp;#34;。我们将了解它的含义、在 Java 应用程序中的重要性以及它对整体性能的影响。此外，我们还将深入探讨提高 GC 吞吐量的可行策略，为现代软件开发释放其优势。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_什么是垃圾回收吞吐量">什么是垃圾回收吞吐量？&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>每当运行自动垃圾回收事件时，应用程序都会停顿，以识别内存中未引用的对象并将其释放。在停顿期间，不会处理任何客户请求。垃圾回收吞吐量请求应用程序处理客户请求的时间占多大比例，垃圾回收活动的时间占多大比例。例如，如果有人说他的应用程序的 GC 吞吐量是 98%，这意味着他的应用程序有 98% 的时间用于处理客户请求，其余 2% 的时间用于处理垃圾回收活动。 高 GC 吞吐量是可取的，因为它表明应用程序有效地利用了系统资源，从而减少了停顿，提高了整体性能。相反，GC 吞吐量低会导致垃圾回收停顿时间增加，影响应用程序的响应速度，造成性能瓶颈。监控和优化 GC 吞吐量对于确保应用程序的顺利执行和响应速度至关重要。在下一节中，我们将探讨查找应用程序 GC 吞吐量的方法，并了解如何解释结果以优化 Java 应用程序性能。继续…&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_如何找到应用程序的_gc_吞吐量">如何找到应用程序的 GC 吞吐量？&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>垃圾回收日志是研究 GC 性能的最佳来源。如果你的应用程序运行在 JVM 上，你可以通过 &lt;a href="https://www.diguage.com/post/how-to-do-gc-log-analysis/" target="_blank" rel="noopener">如何进行 GC 日志分析&lt;/a> 文章中提到的 JVM 参数启用 GC 日志。启用 GC 日志后，让应用程序处理流量至少一天，以观察高流量和低流量时段各自的运行情况。之后，可以将生成的 GC 日志文件上传到 GC 日志分析工具，以获得有价值的分析结果。一些常用的 GC 日志分析工具包括 &lt;a href="https://gceasy.io/" target="_blank" rel="noopener">GCeasy&lt;/a>、 &lt;a href="https://www.ibm.com/support/pages/java-sdk" target="_blank" rel="noopener">IBM GC &amp;amp; Memory visualizer&lt;/a> 和 &lt;a href="https://github.com/mgm3746/garbagecat" target="_blank" rel="noopener">Google Garbage cat&lt;/a> 等。这些工具将报告 GC 吞吐量以及其他重要的 GC 指标。下面是 GCeasy 工具的摘录，展示了包括 GC 吞吐量在内的各种 GC 关键性能指标 (KPI) 报告。&lt;/p>
+&lt;/div></description></item><item><title>Java ZGC 调优</title><link>https://www.diguage.com/post/java-zgc-algorithm-tuning/</link><pubDate>Wed, 03 Jan 2024 22:19:48 +0800</pubDate><guid>https://www.diguage.com/post/java-zgc-algorithm-tuning/</guid><description>&lt;div class="paragraph">
+&lt;p>ZGC 是一种专门的垃圾回收器，主要用于管理大型堆和尽量减少 Java 应用程序中的停顿。它能应对在内存密集型工作负载和一致的响应时间至关重要的情况下的垃圾回收的挑战。ZGC 利用并发处理能力和先进的算法，为优化现代 Java 应用程序的性能提供了有效的解决方案。在本篇文章中，将专门探讨调整 ZGC 以提高性能的技术。不过，如果想了解更多基础知识，可以观看在 JAX 伦敦会议上发表的 &lt;a href="https://www.youtube.com/watch?v=6G0E4O5yxks" target="_blank" rel="noopener">垃圾回收调优&lt;/a> 讲座。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_如何启用_zgc">如何启用 ZGC？&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>确保使用的 Java 版本支持 ZGC。OpenJDK 从 JDK11 开始支持 ZGC。在启动应用程序时添加以下 JVM 参数，这样就可以在 Java 应用程序中启用 ZGC 垃圾收集器：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="c"># D瓜哥 · &lt;a href="https://www.digauge.com" target="_blank">https://www.digauge.com&lt;/a>&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:+UseZGC &lt;span class="nt">-XX&lt;/span>:+ZGenerational &lt;i class="conum" data-value="1">&lt;/i>&lt;b>(1)&lt;/b>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="colist arabic">
+&lt;table>
+&lt;tbody>&lt;tr>
+&lt;td>&lt;i class="conum" data-value="1">&lt;/i>&lt;b>1&lt;/b>&lt;/td>
+&lt;td>D瓜哥注：分代 ZGC 从 OpenJDK 21+ 开始支持。&lt;/td>
+&lt;/tr>
+&lt;/tbody>&lt;/table>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_何时使用_zgc">何时使用 ZGC？&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>如果应用符合其中任何一项要求，就可以考虑使用 ZGC：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;strong>堆大小较大&lt;/strong>：ZGC 特别适合堆容量较大的应用程序，堆容量通常在数十 GB 或更大。如果应用需要大量内存，ZGC 的低延迟特性将使其成为一个令人信服的选择。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>低延迟要求&lt;/strong>：当应用需要一致的响应时间和低延迟性能时，ZGC 将大显身手。在需要最大限度缩短垃圾回收暂停时间的情况下，ZGC 表现出色，特别适合交互式应用和实时性应用。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>具有不同工作负载的应用&lt;/strong>：ZGC 专为处理不同的工作负载而设计，因此适用于内存使用模式不可预测的应用。无论应用程序经历的是周期性的，突发性的，还是富有变化性的负载，ZGC 都能有效地适应这些调整。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_zgc_调优参数">ZGC 调优参数&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>ZGC 是 Java 中的一种垃圾收集器，它采用了一种不同的调优方法：将暴露的 JVM 参数数量降至最低。与需要细粒度调整的传统垃圾收集器不同，ZGC 专注于优化大型堆的管理，同时以最小的配置开销提供高效的垃圾收集。这种精简的方法允许开发人员主要关注一个关键的 JVM 调整参数：堆大小。&lt;/p>
+&lt;/div></description></item></channel></rss>
