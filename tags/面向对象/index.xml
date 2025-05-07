@@ -1,0 +1,682 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>面向对象 on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1/</link><description>Recent content in 面向对象 on "地瓜哥"博客网</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Wed, 07 May 2025 15:58:45 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1/index.xml" rel="self" type="application/rss+xml"/><item><title>再谈 DDD 是银弹吗？</title><link>https://www.diguage.com/post/is-ddd-a-silver-bullet-2/</link><pubDate>Sat, 07 Sep 2024 22:04:19 +0800</pubDate><guid>https://www.diguage.com/post/is-ddd-a-silver-bullet-2/</guid><description>&lt;div class="paragraph">
+&lt;p>在 &lt;a href="https://www.diguage.com/post/is-ddd-a-silver-bullet/" target="_blank" rel="noopener">DDD 是银弹吗？&lt;/a> 中，D瓜哥分享了关于领域驱动设计的三个问题。最近在读一本书 &lt;a href="https://book.douban.com/subject/35731315/" target="_blank" rel="noopener">《架构设计2.0：大型分布式系统架构方法论与实践》&lt;/a>。（这本书还不错，推荐）这本书中，花了两个章节的篇幅，重点谈论了领域驱动设计。引用书中的观点，结合个人开发经验，再来谈一谈 DDD 是否是银弹？&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_软件建模的困难">软件建模的困难&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>首先，必须面对的一个事实是：软件建模，困难重重；尤其是对于复杂业务的建模，更是难上加难。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>对于复杂业务的软件开发，其生命周期大概分为如下五个阶段：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;strong>确定业务目标和业务价值。&lt;/strong>&lt;/p>
+&lt;div class="paragraph">
+&lt;p>比如某消费信贷业务。&lt;/p>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>目标被拆解成一系列核心功能点。&lt;/strong>&lt;/p>
+&lt;div class="paragraph">
+&lt;p>比如消费信贷下的授信、交易、账务等。&lt;/p>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>围绕这些功能点定义业务流程、业务规则，以及整个过程设计什么样的业务数据或业务对象。&lt;/strong>&lt;/p>
+&lt;div class="paragraph">
+&lt;p>比如账单分期金额必须大于 100 元。&lt;/p>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>领域建模。&lt;/strong>&lt;/p>
+&lt;div class="paragraph">
+&lt;p>比如对账务系统进行建模。&lt;/p>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>基于领域模型做技术架构的设计。&lt;/strong>&lt;/p>
+&lt;div class="paragraph">
+&lt;p>比如是否要做读写分离？是否要做分库分表等？&lt;/p>
+&lt;/div>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>软件建模的本质是找出现实世界中的“不变形”。但是，现实世界中，唯一不变的就是这个世界在不断变化！所以，建模的过程也是一个反复的过程。如下图：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/develop/develop-lifecycle.svg" alt="复杂业务软件开发的生命周期" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. 复杂业务软件开发的生命周期&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_几乎不存在稳定的领域模型">几乎不存在稳定的领域模型&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>我们追求一个稳定的领域模型，但是，现实却给了我们重重一击：稳定的模型几乎不可能做到。原因如下：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;strong>意识问题。&lt;/strong>&lt;/p>
+&lt;div class="paragraph">
+&lt;p>在消费、业务及产品等关注的是业务流程。唯独开发人员要将业务流程转化成业务模型。&lt;/p>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>现实世界的复杂性。&lt;/strong>&lt;/p>
+&lt;div class="paragraph">
+&lt;p>现实业务是复杂的，建模只是抽取了一个现实业务某一时刻的业务形态。但是，业务形态会有变化的，比如取现前期不可分期，后期业务迭代可能就会运行进行分期。&lt;/p>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>迭代速度。&lt;/strong>&lt;/p>
+&lt;div class="paragraph">
+&lt;p>互联网公司要求“小步快跑，快速迭代”。这与模型的稳定其实是矛盾的。为了业务的迭代速度，只能牺牲模型的稳定性，为了赶工期，只能在模型上不断打补丁。&lt;/p>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>火候的掌握。&lt;/strong>&lt;/p>
+&lt;div class="openblock">
+&lt;div class="content">
+&lt;div class="paragraph">
+&lt;p>开发人员的设计能力无法一蹴而就。既需要思考，又需要反复练习。在快速的业务迭代和人员流动下，开发人员根本没有时间锤炼自己的设计能力。那么，对于设计火候的掌握，也就很难达到理想中的水平。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_领域驱动设计的困难">领域驱动设计的困难&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>书中总结了实施领域驱动设计的五个困难，D瓜哥逐一谈谈自己的看法：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;strong>领域驱动设计本身只是一套思维方法，而不是要严格执行的标准，所以其本身弹性很大。&lt;/strong>&lt;/p>
+&lt;div class="paragraph">
+&lt;p>这个问题，D瓜哥在上一篇文章中已经讨论过了。弹性太大，就有太多值得商榷的地方，也许初次开发，还可以按照某个人的想法一以贯之。但是，随着参与维护的人员增多，每个人都会不由自主地会带入个人的一些想法，各种想法的碰撞，必然就会引入代码结构的混乱。&lt;/p>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>思维方式的转换很难。&lt;/strong>&lt;/p>
+&lt;div class="paragraph">
+&lt;p>绝大多数面向业务的开发人员，尤其是 Java 开发人员，对三层架构已经有根深蒂固的认识。思维方式已经被打上深深的烙印，想要改变，坦白讲，极其困难。尤其是，没有一个统一的标准和广泛认可的实现范例，完全靠摸着石头过河，必然会“一千个读者，就有一千个哈姆雷特。”&lt;/p>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>领域驱动设计的实施需要强大的技术基础实施来保证。&lt;/strong>&lt;/p>
+&lt;div class="paragraph">
+&lt;p>D瓜哥私以为这个倒不是什么问题。针对技术问题，尤其是一些共性问题，都有成熟的解决方案。只要能合理搭积木，就可以解决相应的问题。&lt;/p>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>大量存量的老系统，重构成本大于收益，没有重构动力。&lt;/strong>&lt;/p>
+&lt;div class="openblock">
+&lt;div class="content">
+&lt;div class="paragraph">
+&lt;p>编程第一准则：代码能跑就不要动。重构引入的问题谁来解决？重构带来的事故谁来负责？这个时候必须祭出这张图了：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/common/bug-code-run.jpeg" alt="代码能跑就不要动" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 2. 代码能跑就不要动&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>当然，私以为不是程序员反感重构代码，更多是因为下面这个因素。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>在互联网的快速开发迭代面前，很少有人可以静下心来在软件方法论层面去精雕细琢，更多的是快速堆砌功能，完成业务需求开发。&lt;/strong>&lt;/p>
+&lt;div class="openblock">
+&lt;div class="content">
+&lt;div class="paragraph">
+&lt;p>业务的快速迭代，导致根本没有时间让开发人员去优化代码。可口的饭菜需要恰当的火候和足够的时间，优雅的软件建模也需要恰当的火候和足够的时间。精心地软件建模需要三个月，业务让你一个月上线，而且还是加班加点才能干完。结合实际来看，绝大多数情况都会想业务妥协吧？！&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_领域驱动设计的出路">领域驱动设计的出路&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>书中的观点是做个折中：&lt;strong>在宏观层面，遵循领域驱动设计的方法论；在微观层面，不严格遵循领域驱动设计的方法论。&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥是这样理解的：可以利用领域驱动设计里面的限界上下文的思想，把领域做个分割，划分成业务更聚合的子域。在子域内部，提炼出统一语言，来规范业务、产品和开发沟通的业务术语。在子域交互的接口层面，进行精心设计，精雕细琢。至于子域及接口的内部实现，就交给开发团队自己决策，只要满足对应的技术指标（比如每秒要支撑多大的访问量）即可。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在部门内部讨论时，D瓜哥还给出了一个更具操作性和落地性的方案：现实面临的问题是代码冗余，技术欠债，不容易维护。&lt;strong>先放下关于领域驱动设计的无谓讨论，利用每一次开发的机会，把冗余代码删除，把代码重构和优化，一步一步地精炼代码，即使不谈领域驱动设计，相信在逐步重构和优化下，技术欠债会逐渐弥补，可维护性也会逐步提高。&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div></description></item><item><title>DDD 是银弹吗？</title><link>https://www.diguage.com/post/is-ddd-a-silver-bullet/</link><pubDate>Wed, 28 Aug 2024 19:27:44 +0800</pubDate><guid>https://www.diguage.com/post/is-ddd-a-silver-bullet/</guid><description>&lt;div class="quoteblock">
+&lt;blockquote>
+&lt;div class="paragraph">
+&lt;p>史前时期最骇人的景象，莫过于一群巨兽在焦油坑里做垂死前的挣扎。不妨闭上眼睛想像一下，你看到了一群恐龙、长毛象、剑齿虎正在奋力挣脱焦油的束缚，但越挣扎，焦油就缠得越紧，就算他再强壮、再厉害，最后，都难逃灭顶的命运。过去十年间，大型系统的软件开发工作就像是掉进了焦油坑里……&lt;/p>
+&lt;/div>
+&lt;/blockquote>
+&lt;div class="attribution">
+— 佛瑞德·布鲁克斯（Frederick P. Brooks）&lt;br/>
+&lt;cite>《人月神话》&lt;/cite>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>应该早在 2019 年，在 &lt;a href="https://coolshell.cn/" target="_blank" rel="noopener">左耳朵耗子哥&lt;/a> 的推荐下阅读了 &lt;a href="https://book.douban.com/subject/5344973/" target="_blank" rel="noopener">《领域驱动设计》&lt;/a>，并将读书摘要整理成几篇文章：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/domain-driven-design-1/" target="_blank" rel="noopener">《领域驱动设计》读书笔记（一）：运用领域模型&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/domain-driven-design-2/" target="_blank" rel="noopener">《领域驱动设计》读书笔记（二）：模型驱动设计的构造块&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/domain-driven-design-3/" target="_blank" rel="noopener">《领域驱动设计》读书笔记（三）：通过重构来加深理解&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/domain-driven-design-4/" target="_blank" rel="noopener">《领域驱动设计》读书笔记（四）：战略设计&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>部门要搞 DDD 和体系化建设，正好有一个核心项目要做重构，领导让实践一下领域驱动设计，苦于没有范例可以参考，感觉无处下手，所以又读了 &lt;a href="https://book.douban.com/subject/35235992/" target="_blank" rel="noopener">《中台架构与实现·基于DDD和微服务》&lt;/a>（最早读的是极客时间专栏，后专栏编撰成该书）。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>后来，又陆陆续续看了好多领域驱动设计的相关文章。对于领域驱动设计，即了解过，也实践过。所以，结合自身的经历和体会，谈一谈我的感受。不吹不黑，重点谈三个问题。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_如何快速上手">1. 如何快速上手？&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>上面介绍了一下D瓜哥的个人经历，是付出了一点的时间和精力的，由此引出了第一个问题：&lt;strong>如何快速上手？&lt;/strong>对于一个工作多年，经验丰富，也算勤奋好学的高级码农，上手还如此困难重重，那么对于一个刚刚参加工作的职场新人，上手是否会更加困难？又该如何克服这个困难？&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>任何一家公司，尤其是大型技术公司，都是由初中高级工程师组成的，而且成员人数也是由多到少，参与实际开发工作，大概率也会由多到少，初级开发工程师干了大量的实际编码工作。如果无法吸引大多数的初级工程师参与进来，只有个别的高级工程师去落地，那么，所谓的领域驱动设计，只能成为空中楼阁，海市蜃楼。华而不实，无法落地。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>但是，由于经验少，这对于初级工程师来说，也许是一个优势。毕竟，一张白纸，可以画出各种美丽的画卷。中高级工程师已经习惯于传统的开发模式，思维已经定格。但是，初级工程师，反倒是嗷嗷待哺，更容易塑性。可惜的是，现在没有好的示例可以学习。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_哪里有可以参考的示例">2. 哪里有可以参考的示例？&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>快速上手的最好办法，就是给一个完整的示例，拿来直接抄作业。对于入门的程序员，学东西上手最快的办法就是抄代码。把示例代码，拿过来改吧改吧就能跑起来，无形中就学会怎么写代码了。对于传统的三层架构，有太多的示例可以来学习了，比如 &lt;a href="https://github.com/springside/springside4" target="_blank" rel="noopener">SpringSide&lt;/a>。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>从 &lt;a href="https://book.douban.com/subject/1418618/" target="_blank" rel="noopener">《Domain-Driven Design》&lt;/a> 这本书在 2003 年出版到现在，已经有 21 年了。到现在为止，也没有见到一个开源的、能运行起来的基于领域驱动设计的项目。也可能是鄙人孤陋寡闻，坐井观天，没有发现。如果谁发现了，欢迎向我反馈。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>作为对比，我们来看一下 Spring 的发展过程。Spring 的思想最早是在 &lt;a href="https://book.douban.com/subject/1426848/" target="_blank" rel="noopener">《J2EE Development without EJB》&lt;/a> 这本书里出现的，这本书是在 2004 年 6 月出版的。这本书出版后，开源社区根据这本书里面的思想及代码片段，开发出了 Spring 框架。在两年后，Spring 之父 Rod Johnson 接着出版了 &lt;a href="https://book.douban.com/subject/1440851/" target="_blank" rel="noopener">《Professional Java Development with the Spring Framework》&lt;/a>，系统介绍了一下 Spring 框架的各种使用案例。到 2008 年我上大学的时候，在国内的培训行业，已经开始重点讲解 Spring 了。&lt;/p>
+&lt;/div>
+&lt;div class="admonitionblock tip">
+&lt;table>
+&lt;tbody>&lt;tr>
+&lt;td class="icon">
+&lt;i class="fa icon-tip" title="Tip">&lt;/i>
+&lt;/td>
+&lt;td class="content">
+其实，D瓜哥想拿传统的三层架构的发展来做对比，可惜没有找到更确切的时间线。
+&lt;/td>
+&lt;/tr>
+&lt;/tbody>&lt;/table>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>期待一个完整的、基于领域驱动设计的、能正常运行起来的开源项目尽早出现！&lt;/p>
+&lt;/div></description></item><item><title>《领域驱动设计》读书笔记（三）：通过重构来加深理解</title><link>https://www.diguage.com/post/domain-driven-design-3/</link><pubDate>Wed, 18 Aug 2021 14:13:58 +0800</pubDate><guid>https://www.diguage.com/post/domain-driven-design-3/</guid><description>&lt;div class="paragraph">
+&lt;p>我们面临的真正挑战是找到深层次的模型，这个模型不但能够捕捉到领域专家的微妙的关注点，还可驱动切实可行的设计。我们的最终目的是开发出能够捕捉到领域深层含义的模型。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>要想成功地开发出实用的模型，需要注意以下 3 点：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>复杂巧妙的领域模型是可以实现的，也是值得我们去花费力气实现的。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>这样的模型离开不断的重构是很难开发出来的，重构需要领域专家和热爱学习领域知识的开发人员密切参与进来。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>要实现并有效地运用模型，需要精通设计技巧。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>重构就是在不改变软件功能的前提下重新设计它。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>自动化的单元测试套件能够保证对代码进行相对安全的试验。&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>设计模式重构 — 为实现更深层模型而进行的重构。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>代码细节重构&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>简称为“领域模型重构”。 学习以更高维度去看待问题。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>《重构》一书中所列出的重构分类涵盖了大部分常用的代码细节重构。这些重构主要是为了解决一些可以从代码中观察到的问题。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>领域模型会随着新认识的出现而不断变化，由于其变化如此多样，以至于根本无法整理出一个完整的目录。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>建模和设计都需要你发挥创造力。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>对象分析的传统方法是先在需求文档中确定名词和动词，并将其作为系统的初始对象和方法。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>事实上，初始模型通常都是基于对领域的浅显认知而构建的，既不够成熟也不够深入。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>深层模型能够穿过领域表象，清楚地表达出领域专家们的主要关注点以及最相关的知识。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>戴久了的手套在手指关节处会变得柔软；而其他部分则依然硬实，可起到保护的作用。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>柔性设计除了便于修改，还有助于改进模型本身。 Model-Driven Design 需要以下两个方面的支持：深层模型使设计更具表现力；同时，当设计的灵活性可以让开发人员进行试验，而设计又能清晰地表达出领域含义时，那么这个设计实际上就能够将开发人员的深层理解反馈到整个模型发现的过程中。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>由于模型和设计之间具有紧密的关系，因此如果代码难于重构，建模过程也会停滞不前。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>你需要富有创造力，不断地尝试，不断地发现问题才能找到合适的方法为你所发现的领域概念建模，但有时你也可以借用别人已建好的模式。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_第_8_章_突破">第 8 章 突破&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/domain-driver-design/refactor-breakthrough.png" alt="重构/突破" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. 重构/突破&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>小改进可防止系统退化，成为避免模型变得陈腐的第一道防线。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>重构的原则是始终小步前进，始终保持系统正常运转。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>过渡到真正的深层模型需要从根本上调整思路，并且对设计做大幅修改。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>不要试图去制造突破，那只会使项目陷入困境。通常，只有在实现了许多适度的重构后才有可能出现突破。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>要为突破做好准备，应专注于知识消化过程，同时也要逐渐建立健壮的 Ubiquitous Language 。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_第_9_章_将隐式概念转变为显式概念">第 9 章 将隐式概念转变为显式概念&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>深层建模的第一步就是要设法在模型中表达出领域的基本概念。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>若开发人员识别出设计中隐含的某个概念或是在讨论中受到启发而发现一个概念时，就会对领域模型和相应的代码进行许多转换，在模型中加入一个或多个对象或关系，从而将此概念显式地表达出来。&lt;/p>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_概念挖掘">概念挖掘&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>倾听领域专家使用的语言。有没有一些术语能够简洁地表达出复杂的概念？他们有没有纠正过你的用词（也许是很委婉的提醒）？当你使用某个特定词语时，他们脸上是否已经不再流露出迷惑的表情？这些都暗示了某个概念也许可以改进模型。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>有些概念可能需要你自己去挖掘和创造。要挖掘的地方就是设计中最不足的地方，也就是操作复杂且难于解释的地方。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>看书与咨询领域专家并不冲突。即便能够从领域专家那里得到充分的支持，花点时间从文献资料中大致了解领域理论也是值得的。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>开发人员还有另一个选择，就是阅读在此领域中有过开发经验的软件专业人员编写的资料。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>阅读书籍并不能提供现成的解决方案，但可以为她提供一些全新的实验起点，以及在这个领域中探索过的人总结出来的经验。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_如何为那些不太明显的概念建模">如何为那些不太明显的概念建模&lt;/h3>
+&lt;div class="sect3">
+&lt;h4 id="_显式的约束">显式的约束&lt;/h4>
+&lt;div class="paragraph">
+&lt;p>约束是模型概念中非常重要的类别。它们通常是隐含的，将它们显式地表现出来可以极大地提高设计质量。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>将约束条件提取到其自己的方法中，这样就可以通过方法名来表达约束的含义，从而在设计中显式地表现出这条约束。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>下面是一些警告信号，表明约束的存在正在扰乱其“宿主对象”（Host Object）的设计：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>计算约束所需的数据从定义上看并不属于这个对象。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>相关规则在多个对象中出现，造成了代码重复或导致不属于同一族的对象之间产生了继承关系。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>很多设计和需求讨论是围绕这些约束进行的，而在代码实现中，它们却隐藏在过程代码中。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>如果约束的存在掩盖了对象的基本职责，或者如果约束在领域中非常突出但在模型中却不明显，那么就可以将其提取到一个显式的对象中，甚至可以把它建模为一个对象和关系的集合。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect3">
+&lt;h4 id="_将过程建模为领域对象">将过程建模为领域对象&lt;/h4>
+&lt;div class="paragraph">
+&lt;p>对象是用来封装过程的，这样我们只需考虑对象的业务目的或意图就可以了。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>过程是应该被显式表达出来，还是应该被隐藏起来呢？区分的方法很简单：它是经常被领域专家提起呢，还是仅仅被当作计算机程序机制的一部分？&lt;/p>
+&lt;/div></description></item><item><title>《领域驱动设计》读书笔记（二）：模型驱动设计的构造块</title><link>https://www.diguage.com/post/domain-driven-design-2/</link><pubDate>Sun, 11 Jul 2021 23:44:22 +0800</pubDate><guid>https://www.diguage.com/post/domain-driven-design-2/</guid><description>&lt;div class="paragraph">
+&lt;p>遵循“职责驱动设计”的原则，&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>“契约式设计”思想。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>开发一个好的领域模型是一门艺术。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/domain-driver-design/model-driven-design-language.png" alt="模型驱动设计语言" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. 模型驱动设计语言&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_第_4_章_分离领域">第 4 章 分离领域&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="sect2">
+&lt;h3 id="_模式layered_architecture">模式：Layered Architecture&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>在面向对象的程序中，常常会在业务对象中直接写入用户界面、数据库访问等支持代码。而一些业务逻辑则会被嵌入到用户界面组件和数据库脚本中。这么做是为了以最简单的方式在短期内完成开发工作。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>如果与领域有关的代码分散在大量的其他代码之中，那么查看和分析领域代码就会变得异常困难。对用户界面的简单修改实际上很可能会改变业务逻辑，而要想调整业务规则也很可能需要对用户界面代码、数据库操作代码或者其他的程序元素进行仔细的筛查。这样就不太可能实现一致的、模型驱动的对象了，同时也会给自动化测试带来困难。考虑到程序中各个活动所涉及的大量逻辑和技术，程序本身必须简单明了，否则就会让人无法理解。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>要想创建出能够处理复杂任务的程序，需要做到关注点分离——使设计中的每个部分都得到单独的关注。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>Layered Architecture 的基本原则是层中的任何元素都仅依赖于本层的其他元素或其下层的元素。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/domain-driver-design/layer.png" alt="应用分层" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 2. 应用分层&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>给复杂的应用程序划分层次。在每一层内分别进行设计，使其具有内聚性并且只依赖于它的下层。采用标准的架构模式，只与上层进行松散的耦合。将所有与领域模型相关的代码放在一个层中，并把它与用户界面层、应用层以及基础设施层的代码分开。领域对象应该将重点放在如何表达领域模型上，而不需要考虑自己的显示和存储问题，也无需管理应用任务等内容。这使得模型的含义足够丰富，结构足够清晰，可以捕捉到基本的业务知识，并有效地使用这些知识。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>关注点的清晰分离可以使每一层的设计更易理解和维护。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在连接各层的同时不影响分离带来的好处，这是很多模式的目的所在。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>各层之间是松散连接的，层与层的依赖关系只能是单向的。上层可以直接使用或操作下层元素，方法是通过调用下层元素的公共接口，保持对下层元素的引用（至少是暂时的），以及采用常规的交互手段。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>如果下层元素需要与上层元素进行通信（不只是回应直接查询），则需要采用另一种通信机制，使用架构模式来连接上下层，如回调模式或 Observers 模式。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>最早将用户界面层与应用层和领域层相连的模式是 Model-View-Controller（MVC，模型—视图—控制器）框架。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>只要连接方式能够维持领域层的独立性，保证在设计领域对象时不需要同时考虑可能与其交互的用户界面，那么这些连接方式就都是可用的。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>最好的架构框架既能解决复杂技术问题，也能让领域开发人员集中精力去表达模型，而不考虑其他问题。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>不妄求万全之策，只要有选择性地运用框架来解决难点问题，就可以避开框架的很多不足之处。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_领域层是模型的精髓">领域层是模型的精髓&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>“领域层”则是领域模型以及所有与其直接相关的设计元素的表现，它由业务逻辑的设计和实现组成。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>如果领域逻辑与程序中的其他关注点混在一起，就不可能实现这种一致性。将领域实现独立出来是领域驱动设计的前提。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_模式the_smart_ui反模式">模式：The Smart UI“反模式”&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>Smart UI是另一种设计方法，与领域驱动设计方法迥然不同且互不兼容。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>如果一个经验并不丰富的项目团队要完成一个简单的项目，却决定使用 Model-Driven Design 以及 Layered Architecture，那么这个项目组将会经历一个艰难的学习过程。团队成员不得不去掌握复杂的新技术，艰难地学习对象建模。（即使有这本书的帮助，这也依然是一个具有挑战性的任务！）对基础设施和各层的管理工作使得原本简单的任务却要花费很长的时间来完成。简单项目的开发周期较短，期望值也不是很高。所以，早在项目团队完成任务之前，该项目就会被取消，更谈不上去论证有关这种方法的许多种令人激动的可行性了。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>即使项目有更充裕的时间，如果没有专家的帮助，团队成员也不太可能掌握这些技术。最后，假如他们确实能够克服这些困难，恐怕也只会开发出一套简单的系统。因为这个项目本来就不需要丰富的功能。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在用户界面中实现所有的业务逻辑。将应用程序分成小的功能模块，分别将它们实现成用户界面，并在其中嵌入业务规则。用关系数据库作为共享的数据存储库。使用自动化程度最高的用户界面创建工具和可用的可视化编程工具。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>如果一个架构能够把那些与领域相关的代码隔离出来，得到一个内聚的领域设计，同时又使领域与系统其他部分保持松散耦合，那么这种架构也许可以支持领域驱动设计。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>如何让一个有效的领域模型和一个富有表达力的实现同时演进。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_第_5_章_软件中所表示的模型">第 5 章 软件中所表示的模型&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>一个对象是用来表示某种具有连续性和标识的事物的呢（可以跟踪它所经历的不同状态，甚至可以跨不同的实现跟踪它），还是用于描述某种状态的属性呢？这是 Entity 与 Value Object 之间的根本区别。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>领域中还有一些方面适合用动作或操作来表示，这比用对象表示更加清楚。这些方面最好用 Service 来表示，而不应把操作的责任强加到 Entity 或 Value Object 上，尽管这样做稍微违背了面向对象的建模传统。 Service 是应客户端请求来完成某事。&lt;/p>
+&lt;/div></description></item><item><title>《领域驱动设计》读书笔记（一）：运用领域模型</title><link>https://www.diguage.com/post/domain-driven-design-1/</link><pubDate>Thu, 08 Jul 2021 20:40:05 +0800</pubDate><guid>https://www.diguage.com/post/domain-driven-design-1/</guid><description>&lt;div class="sect1">
+&lt;h2 id="_序">序&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>控制复杂性的关键是有一个好的领域模型，这个模型不应该仅仅停留在领域的表面，而是要透过表象抓住领域的实质结构，从而为软件开发人员提供他们所需的支持。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在领域建模过程中不应将概念与实现割裂开来。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>概念与实现密不可分的最主要原因在于，领域模型的最大价值是它提供了一种通用语言，这种语言是将领域专家和技术人员联系在一起的纽带。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>领域模型并不是按照“先建模，后实现”这个次序来工作的。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>真正强大的领域模型是随着时间演进的，即使是最有经验的建模人员也往往发现他们是在系统的初始版本完成之后才有了最好的想法。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>既品尝过成功的美酒，也体验过失败的沮丧。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_前言">前言&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>真正决定软件复杂性的是设计方法。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>很多应用程序最主要的复杂性并不在技术上，而是来自领域本身、用户的活动或业务。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>领域驱动设计是一种思维方式，也是一组优先任务，它旨在加速那些必须处理复杂领域的软件项目的开发。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>领域驱动设计的实质就是消化吸收大量知识，最后产生一个反映深层次领域知识并聚焦于关键概念的模型。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>极端的简约主义是解救那些过度追求设计的执迷者的良方。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>实际上， XP最适合那些对设计的感觉很敏锐的开发人员。 XP过程假定人们可以通过重构来改进设计，而且可以经常、快速地完成重构。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>首先需要深入研究模型，然后基于最初的（可能是不成熟的）模型实现一个初始设计，再反复改进这个设计。每次团队对领域有了新的理解之后，都需要对模型进行改进，使模型反映出更丰富的知识，而且必须对代码进行重构，以便反映出更深刻的模型，并使应用程序可以充分利用模型的潜力。
+第一部分 运用领域模型&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>模型是一种简化。它是对现实的解释——把与解决问题密切相关的方面抽象出来，而忽略无关的细节。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>模型正是解决此类信息超载问题的工具。模型这种知识形式对知识进行了选择性的简化和有意的结构化。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>领域模型并非某种特殊的图，而是这种图所要传达的思想。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>对这类知识严格的组织且有选择的抽象。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>领域建模并不是要尽可能建立一个符合“现实”的模型。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>建模更像是制作电影——出于某种目的而概括地反映现实。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在领域驱动的设计中，3个基本用途决定了模型的选择。&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>模型和设计的核心互相影响。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>模型是团队所有成员使用的通用语言的中枢。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>模型是浓缩的知识。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>软件的核心是其为用户解决领域相关的问题的能力。所有其他特性，不管有多么重要，都要服务于这个基本目的。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_第_1_章_消化知识">第 1 章 消化知识&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>&lt;strong>有效建模的要素：&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>模型和实现的绑定。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>建立了一种基于模型的语言。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>开发一个蕴含丰富知识的模型。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>提炼模型。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>头脑风暴和实验。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>语言和草图，再加上头脑风暴活动，将我们的讨论变成“模型实验室”，在这些讨论中可以演示、尝试和判断上百种变化。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>高效的领域建模人员是知识的消化者。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>领域模型的不断精化迫使开发人员学习重要的业务原理，而不是机械地进行功能开发。领域专家被迫提炼自己已知道的重要知识的过程往往也是完善其自身理解的过程，而且他们会渐渐理解软件项目所必需的概念严谨性。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>模型永远都不会是完美的，因为它是一个不断演化完善的过程。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>高效率的团队需要有意识地积累知识，并持续学习。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>业务活动和规则如同所涉及的实体一样，都是领域的核心，任何领域都有各种类别的概念。知识消化所产生的模型能够反映出对知识的深层理解。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>当我们的建模不再局限于寻找实体和值对象时，我们才能充分吸取知识，因为业务规则之间可能会存在不一致。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>知识消化是一种探索，它永无止境。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_第_2_章_交流与语言的使用">第 2 章 交流与语言的使用&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>领域模型可成为软件项目通用语言的核心。&lt;/p>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_模式ubiquitous_language">模式：Ubiquitous Language&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>如果语言支离破碎，项目必将遭遇严重问题。领域专家使用他们自己的术语，而技术团队所使用的语言则经过调整，以便从设计角度讨论领域。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>日常讨论所使用的术语与代码（软件项目的最重要产品）中使用的术语不一致。甚至同一个人在讲话和写东西时使用的语言也不一致，这导致的后果是，对领域的深刻表述常常稍纵即逝，根本无法记录到代码或文档中。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>翻译使得沟通不畅，并削弱了知识消化。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>然而任何一方的语言都不能成为公共语言，因为它们无法满足所有的需求。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>Ubiquitous Language（通用语言）的词汇包括类和主要操作的名称。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>将模型作为语言的支柱。确保团队在内部的所有交流中以及代码中坚持使用这种语言。在画图、写东西，特别是讲话时也要使用这种语言。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>通过尝试不同的表示方法（它们反映了备选模型）来消除难点。然后重构代码，重新命名类、方法和模块，以便与新模型保持一致。解决交谈中的术语混淆问题，就像我们对普通词汇形成一致的理解一样。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>要认识到， Ubiquitous Language 的更改就是对模型的更改。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>领域专家应该抵制不合适或无法充分表达领域理解的术语或结构，开发人员应该密切关注那些将会妨碍设计的有歧义和不一致的地方。&lt;/p>
+&lt;/div></description></item></channel></rss>
