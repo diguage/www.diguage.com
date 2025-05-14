@@ -115,20 +115,36 @@ jobs:
           # JPG
           echo "$(date +%T) start to add watermark to JPG"
           find . -type f -name "*.jpg" | grep -v "goodbye-2019-hello-2020\|wx-jikerizhi-qrcode.jpg\|wx-jikerizhi.jpg\|wxpay.jpg\|avatar.jpg" | sed "s/.jpg$//g" | xargs -I {} docker run -v ${BASEDIR}:/imgs dpokidov/imagemagick -compress JPEG2000 -strip -resize "1440x\>" -quality 75 -font /imgs/SourceCodePro-Semibold.otf -pointsize 30 -gravity southeast -fill "#DE282A" -draw 'text 15,18 "https://www.diguage.com"' /imgs/{}.jpg /imgs/{}-mark.jpg 1>/dev/null 2>&1 &
+          
           wait
-          find . -type f -name "*.jpg" | xargs ls -l -h
           echo -e "$(date +%T) finish adding watermark to JPG...\n\n"
-          find . -type f -name "*.jpg" | grep -v "goodbye-2019-hello-2020\|wx-jikerizhi-qrcode.jpg\|wx-jikerizhi.jpg\|wxpay.jpg\|avatar.jpg" | grep -v "\-mark.jpg" | xargs -I {} rm -f {} \;
-          find . -type f -name "*-mark.jpg" | sed "s/-mark.jpg//g" | xargs -I {} mv {}-mark.jpg {}.jpg
+          find . -type f -name "*.jpg" | xargs ls -l -h
+          for f in `find . -type f -name "*-mark.jpg"`;
+          do
+            name=`echo $f | sed "s/-mark.jpg//g"`
+            echo "replace ${f} to ${name}.jpeg"
+            rm -rf "${name}.jpg"
+            mv "${f}" "${name}.jpg"
+          done
+          echo "--finish replacing JPG-------------------------------------------"
+          find . -type f -name "*.jpg" | xargs ls -l -h
           
           # JPEG
           echo "$(date +%T) start to add watermark to JPEG"
           find . -type f -name "*.jpeg" | sed "s/.jpeg$//g" | xargs -I {} docker run -v ${BASEDIR}:/imgs dpokidov/imagemagick -compress JPEG2000 -strip -resize "1440x\>" -quality 75 -font /imgs/SourceCodePro-Semibold.otf -pointsize 30 -gravity southeast -fill "#DE282A" -draw 'text 15,18 "https://www.diguage.com"' /imgs/{}.jpeg /imgs/{}-mark.jpeg 1>/dev/null 2>&1 &
+          
           wait
-          find . -type f -name "*.jpeg" | xargs ls -l -h
           echo -e "$(date +%T) finish adding watermark to JPEG...\n\n"
-          find . -type f -name "*.jpeg" | grep -v "\-mark.jpeg" | xargs -I {} rm -f {} \;
-          find . -type f -name "*-mark.jpeg" | sed "s/-mark.jpeg//g" | xargs -I {} mv {}-mark.jpeg {}.jpeg
+          find . -type f -name "*.jpeg" | xargs ls -l -h
+          for f in `find . -type f -name "*-mark.jpeg"`;
+          do
+            name=`echo $f | sed "s/-mark.jpeg//g"`
+            echo "replace ${f} to ${name}.jpeg"
+            rm -rf "${name}.jpeg"
+            mv "${f}" "${name}.jpeg"
+          done
+          echo "--finish replacing JPEG-------------------------------------------"
+          find . -type f -name "*.jpeg" | xargs ls -l -h
 
 #          # PNG
 #          echo "$(date +%T) start to add watermark to PNG"
