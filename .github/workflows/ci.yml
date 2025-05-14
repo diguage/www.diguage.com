@@ -33,7 +33,7 @@ jobs:
       - name: Setup Ruby 💎
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: 3.3
+          ruby-version: 3.4
 
       - name: Install AsciiDoctor 🐶
         run: |
@@ -63,26 +63,26 @@ jobs:
 #          # 展示不需要 PlantUML，注释掉，加快构建速度
 #          # sudo apt -y install plantuml
 
-      - name: Install font 🎃
-        run: |
-          mkdir $HOME/.fonts
-          cd $HOME/.fonts
-          wget https://github.com/diguage/open-fonts/releases/download/latest/SourceHanSerifSC-Regular.otf 1>/dev/null 2>&1 &
-          wget https://github.com/diguage/open-fonts/releases/download/latest/SourceHanSansSC-Regular.otf 1>/dev/null 2>&1 &
-          wget https://github.com/diguage/open-fonts/releases/download/latest/SourceCodePro-Regular.otf 1>/dev/null 2>&1 &
-          wget https://github.com/diguage/open-fonts/releases/download/latest/SourceCodePro-It.otf 1>/dev/null 2>&1 &
-          wget https://github.com/diguage/open-fonts/releases/download/latest/SourceCodePro-Bold.otf 1>/dev/null 2>&1 &
-          wget https://github.com/diguage/open-fonts/releases/download/latest/SourceCodePro-BoldIt.otf 1>/dev/null 2>&1 &
-          echo -e "[seqdiag]\nfontpath = $HOME/.fonts/SourceHanSerifSC-Regular.otf" > $HOME/.blockdiagrc
-          echo -e "\n[blockdiag]\nfontpath = $HOME/.fonts/SourceHanSerifSC-Regular.otf" >> $HOME/.blockdiagrc
-          echo -e "\n[actdiag]\nfontpath = $HOME/.fonts/SourceHanSerifSC-Regular.otf" >> $HOME/.blockdiagrc
-          echo -e "\n[nwdiag]\nfontpath = $HOME/.fonts/SourceHanSerifSC-Regular.otf" >> $HOME/.blockdiagrc
-          # Check result
-          echo "$(date +%T) wait for downloading fonts"
-          wait
-          echo "$(date +%T) finish downloading fonts"
-          ls -lh $HOME/.fonts 
-          cat $HOME/.blockdiagrc
+#      - name: Install font 🎃
+#        run: |
+#          mkdir $HOME/.fonts
+#          cd $HOME/.fonts
+#          wget https://github.com/diguage/open-fonts/releases/download/latest/SourceHanSerifSC-Regular.otf 1>/dev/null 2>&1 &
+#          wget https://github.com/diguage/open-fonts/releases/download/latest/SourceHanSansSC-Regular.otf 1>/dev/null 2>&1 &
+#          wget https://github.com/diguage/open-fonts/releases/download/latest/SourceCodePro-Regular.otf 1>/dev/null 2>&1 &
+#          wget https://github.com/diguage/open-fonts/releases/download/latest/SourceCodePro-It.otf 1>/dev/null 2>&1 &
+#          wget https://github.com/diguage/open-fonts/releases/download/latest/SourceCodePro-Bold.otf 1>/dev/null 2>&1 &
+#          wget https://github.com/diguage/open-fonts/releases/download/latest/SourceCodePro-BoldIt.otf 1>/dev/null 2>&1 &
+#          echo -e "[seqdiag]\nfontpath = $HOME/.fonts/SourceHanSerifSC-Regular.otf" > $HOME/.blockdiagrc
+#          echo -e "\n[blockdiag]\nfontpath = $HOME/.fonts/SourceHanSerifSC-Regular.otf" >> $HOME/.blockdiagrc
+#          echo -e "\n[actdiag]\nfontpath = $HOME/.fonts/SourceHanSerifSC-Regular.otf" >> $HOME/.blockdiagrc
+#          echo -e "\n[nwdiag]\nfontpath = $HOME/.fonts/SourceHanSerifSC-Regular.otf" >> $HOME/.blockdiagrc
+#          # Check result
+#          echo "$(date +%T) wait for downloading fonts"
+#          wait
+#          echo "$(date +%T) finish downloading fonts"
+#          ls -lh $HOME/.fonts
+#          cat $HOME/.blockdiagrc
 
       - name: Run Hugo 🏗
         run: |
@@ -105,40 +105,40 @@ jobs:
 
       - name: Add Watermark to Images 🎖
         run: |
-          # sudo add-apt-repository -y ppa:strukturag/libheif
-          # sudo add-apt-repository -y ppa:strukturag/libde265
-          # sudo apt update -y
-          # sudo apt install -y libheif-dev
-          # sudo apt install -y libde265-dev
-          
-          # sudo apt update -y # 不再重复执行
-          # sudo apt install imagemagick
-          # t=$(mktemp) && wget 'https://dist.1-2.dev/imei.sh' -qO "$t" && sudo bash "$t" && rm "$t"
           docker pull dpokidov/imagemagick
           
           cd public/images
-          wget https://github.com/diguage/open-fonts/releases/download/latest/SourceCodePro-Semibold.otf 1>/dev/null 2>&1 &
+          wget https://github.com/diguage/open-fonts/releases/download/latest/SourceCodePro-Semibold.otf
           BASEDIR=$( pwd )/
           
           # 异步加水印
           # JPG
-          find . -type f -name "*.jpg" | grep -v "goodbye-2019-hello-2020\|wx-jikerizhi-qrcode.jpg\|wx-jikerizhi.jpg\|wxpay.jpg\|avatar.jpg" | sed "s/.jpg$//g" | xargs -I {} docker run -v ${BASEDIR}:/imgs dpokidov/imagemagick -verbose -compress JPEG2000 -strip -thumbnail 1440 -quality 75 -font /imgs/SourceCodePro-Semibold.otf -pointsize 30 -gravity southeast -fill "#DE282A" -draw 'text 15,18 "https://www.diguage.com"' /imgs/{}.jpg /imgs/{}-mark.jpg 1>/dev/null 2>&1 &
+          echo "$(date +%T) start to add watermark to JPG"
+          find . -type f -name "*.jpg" | grep -v "goodbye-2019-hello-2020\|wx-jikerizhi-qrcode.jpg\|wx-jikerizhi.jpg\|wxpay.jpg\|avatar.jpg" | sed "s/.jpg$//g" | xargs -I {} docker run -v ${BASEDIR}:/imgs dpokidov/imagemagick -compress JPEG2000 -strip -thumbnail 1440 -quality 75 -font /imgs/SourceCodePro-Semibold.otf -pointsize 30 -gravity southeast -fill "#DE282A" -draw 'text 15,18 "https://www.diguage.com"' /imgs/{}.jpg /imgs/{}-mark.jpg 1>/dev/null 2>&1 &
+          wait
+          echo -e "$(date +%T) finish adding watermark to JPG...\n\n"
+          
           # JPEG
-          find . -type f -name "*.jpeg" | sed "s/.jpeg$//g" | xargs -I {} docker run -v ${BASEDIR}:/imgs dpokidov/imagemagick -verbose -compress JPEG2000 -strip -thumbnail 1440 -quality 75 -font /imgs/SourceCodePro-Semibold.otf -pointsize 30 -gravity southeast -fill "#DE282A" -draw 'text 15,18 "https://www.diguage.com"' /imgs/{}.jpeg /imgs/{}-mark.jpeg 1>/dev/null 2>&1 &
-          echo "$(date +%T) wait for adding watermark"
+          echo "$(date +%T) start to add watermark to JPEG"
+          find . -type f -name "*.jpeg" | sed "s/.jpeg$//g" | xargs -I {} docker run -v ${BASEDIR}:/imgs dpokidov/imagemagick -compress JPEG2000 -strip -thumbnail 1440 -quality 75 -font /imgs/SourceCodePro-Semibold.otf -pointsize 30 -gravity southeast -fill "#DE282A" -draw 'text 15,18 "https://www.diguage.com"' /imgs/{}.jpeg /imgs/{}-mark.jpeg 1>/dev/null 2>&1 &
+          wait
+          echo -e "$(date +%T) finish adding watermark to JPEG...\n\n"
+          
+          # PNG
+          echo "$(date +%T) start to add watermark to PNG"
+          find . -type f -name "*.png" | sed "s/.png$//g" | xargs -I {} docker run -v ${BASEDIR}:/imgs dpokidov/imagemagick -strip -resize 1440x -define png:compression-level=6 -define png:exclude-chunk=all -font /imgs/SourceCodePro-Semibold.otf -pointsize 30 -gravity southeast -fill "#DE282A" -draw 'text 15,18 "https://www.diguage.com"' /imgs/{}.png /imgs/{}-mark.png 1>/dev/null 2>&1 &
+          wait
+          echo -e "$(date +%T) finish adding watermark to PNG...\n\n"
           
           # 等待水印加完后再执行后续操作
-          wait
-          echo "$(date +%T) finish adding watermark"
           find . -type f -name "*.jpg" | grep -v "goodbye-2019-hello-2020\|wx-jikerizhi-qrcode.jpg\|wx-jikerizhi.jpg\|wxpay.jpg\|avatar.jpg" | grep -v "\-mark.jpg" | xargs -I {} rm -f {} \;
           find . -type f -name "*-mark.jpg" | sed "s/-mark.jpg//g" | xargs -I {} mv {}-mark.jpg {}.jpg
+          
           find . -type f -name "*.jpeg" | grep -v "\-mark.jpeg" | xargs -I {} rm -f {} \;
           find . -type f -name "*-mark.jpeg" | sed "s/-mark.jpeg//g" | xargs -I {} mv {}-mark.jpeg {}.jpeg
           
-          # TODO PNG 加完水印，文件增大很多
-          # find . -type f -name "*.png" | sed "s/.png$//g" | xargs -I {} convert -depth 24 -define png:compression-filter=1 -define png:compression-level=9 -define png:compression-strategy=2 -font ./SourceCodePro-Semibold.otf -pointsize 30 -gravity southeast -fill "#DE282A" -draw 'text 15,18 "https://www.diguage.com"' {}.png {}-mark.png
-          # find . -type f -name "*.png" | grep -v "\-mark.png" | xargs -I {} rm -f {} \;
-          # find . -type f -name "*-mark.png" | sed "s/-mark.png//g" | xargs -I {} mv {}-mark.png {}.png
+          find . -type f -name "*.png" | grep -v "\-mark.png" | xargs -I {} rm -f {} \;
+          find . -type f -name "*-mark.png" | sed "s/-mark.png//g" | xargs -I {} mv {}-mark.png {}.png
 
       - name: Generate Redirect HTML 🏓
         run: |
