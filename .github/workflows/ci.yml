@@ -116,18 +116,21 @@ jobs:
           echo "$(date +%T) start to add watermark to JPG"
           find . -type f -name "*.jpg" | grep -v "goodbye-2019-hello-2020\|wx-jikerizhi-qrcode.jpg\|wx-jikerizhi.jpg\|wxpay.jpg\|avatar.jpg" | sed "s/.jpg$//g" | xargs -I {} docker run -v ${BASEDIR}:/imgs dpokidov/imagemagick -compress JPEG2000 -strip -thumbnail 1440 -quality 75 -font /imgs/SourceCodePro-Semibold.otf -pointsize 30 -gravity southeast -fill "#DE282A" -draw 'text 15,18 "https://www.diguage.com"' /imgs/{}.jpg /imgs/{}-mark.jpg 1>/dev/null 2>&1 &
           wait
+          find . -type f -name "*.jpg" | xargs ls -l -h
           echo -e "$(date +%T) finish adding watermark to JPG...\n\n"
           
           # JPEG
           echo "$(date +%T) start to add watermark to JPEG"
           find . -type f -name "*.jpeg" | sed "s/.jpeg$//g" | xargs -I {} docker run -v ${BASEDIR}:/imgs dpokidov/imagemagick -compress JPEG2000 -strip -thumbnail 1440 -quality 75 -font /imgs/SourceCodePro-Semibold.otf -pointsize 30 -gravity southeast -fill "#DE282A" -draw 'text 15,18 "https://www.diguage.com"' /imgs/{}.jpeg /imgs/{}-mark.jpeg 1>/dev/null 2>&1 &
           wait
+          find . -type f -name "*.jpeg" | xargs ls -l -h
           echo -e "$(date +%T) finish adding watermark to JPEG...\n\n"
           
           # PNG
           echo "$(date +%T) start to add watermark to PNG"
-          find . -type f -name "*.png" | sed "s/.png$//g" | xargs -I {} docker run -v ${BASEDIR}:/imgs dpokidov/imagemagick -strip -resize 1440x -define png:compression-level=6 -define png:exclude-chunk=all -font /imgs/SourceCodePro-Semibold.otf -pointsize 30 -gravity southeast -fill "#DE282A" -draw 'text 15,18 "https://www.diguage.com"' /imgs/{}.png /imgs/{}-mark.png 1>/dev/null 2>&1 &
+          find . -type f -name "*.png" | sed "s/.png$//g" | xargs -I {} docker run -v ${BASEDIR}:/imgs dpokidov/imagemagick -strip -resize 1440x -define png:compression-level=9 -define png:exclude-chunk=all -define png:filter-type=1 -font /imgs/SourceCodePro-Semibold.otf -pointsize 30 -gravity southeast -fill "#DE282A" -draw 'text 15,18 "https://www.diguage.com"' /imgs/{}.png /imgs/{}-mark.png 1>/dev/null 2>&1 &
           wait
+          find . -type f -name "*.png" | xargs ls -l -h
           echo -e "$(date +%T) finish adding watermark to PNG...\n\n"
           
           # 等待水印加完后再执行后续操作
