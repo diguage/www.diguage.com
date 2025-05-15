@@ -100,6 +100,7 @@ jobs:
             mv $fn $f
           done
 
+      # https://github.com/marketplace/actions/docker-setup-docker
       - name: Setup Docker 🐳
         uses: docker/setup-docker-action@v4
 
@@ -157,13 +158,27 @@ jobs:
           find . -type f -name "*.jpeg" | xargs ls -l -h
 
 #          # PNG
-#          echo "$(date +%T) start to add watermark to PNG"
-#          find . -type f -name "*.png" | sed "s/.png$//g" | xargs -I {} docker run -v ${BASEDIR}:/imgs dpokidov/imagemagick -strip -resize 1200x -define png:compression-level=9 -define png:exclude-chunk=all -define png:filter-type=1 -font /imgs/SourceCodePro-Semibold.otf -pointsize 30 -gravity southeast -fill "#DE282A" -draw 'text 15,18 "https://www.diguage.com"' /imgs/{}.png /imgs/{}-mark.png 1>/dev/null 2>&1 &
+#          echo " "
+#          echo -e "\n\n$(date +%T) start to add watermark to PNG"
+#          find . -type f -name "*.png" | grep -v "alipay.png\|wxpay.png" | sed "s/.png$//g" | xargs -I {} docker run -v ${BASEDIR}:/imgs dpokidov/imagemagick -strip -resize 1200x -define png:compression-level=9 -define png:exclude-chunk=all -define png:filter-type=1 -font /imgs/SourceCodePro-Semibold.otf -pointsize 30 -gravity southeast -fill "#DE282A" -draw 'text 15,18 "https://www.diguage.com"' /imgs/{}.png /imgs/{}-mark.png 1>/dev/null 2>&1 &
+#
 #          wait
-#          find . -type f -name "*.png" | xargs ls -l -h
 #          echo -e "$(date +%T) finish adding watermark to PNG...\n\n"
-#          find . -type f -name "*.png" | grep -v "\-mark.png" | xargs -I {} rm -f {} \;
-#          find . -type f -name "*-mark.png" | sed "s/-mark.png//g" | xargs -I {} mv {}-mark.png {}.png
+#          echo " "
+#          find . -type f -name "*.png" | xargs ls -l -h
+#          echo " "
+#          echo -e "\n\n$(date +%T) --start to replace PNG----------------------"
+#          for f in `find . -type f -name "*-mark.png"`;
+#          do
+#            name=`echo $f | sed "s/-mark.png//g"`
+#            echo "replace ${f} to ${name}.png"
+#            rm -rf "${name}.png"
+#            mv "${f}" "${name}.png"
+#          done
+#          echo -e "$(date +%T) --finish replacing PNG----------------------\n\n"
+#          echo " "
+#          find . -type f -name "*.png" | xargs ls -l -h
+
 
       - name: Generate Redirect HTML 🏓
         run: |
