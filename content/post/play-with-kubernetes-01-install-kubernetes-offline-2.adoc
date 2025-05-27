@@ -135,7 +135,9 @@ docker rmi m.daocloud.io/registry.k8s.io/kube-scheduler:v1.31.4
 # 下载二进制文件
 cd /PATH/TO/kubespray/contrib/offline
 
-wget -c -x -P temp/files -i temp/files.list
+wget -c -x -P temp/files \
+     --tries=0 --retry-connrefused \
+     --waitretry=10 --timeout=30 -i temp/files.list
 ----
 
 TIP: 注意：如果是在 Mac 上生成的相关文件列表，那么部分文件是 Mac 系统上的安装文件。所以，需要调整这些文件的地址。*建议在 Linux 系统中生成相关文件列表。*
