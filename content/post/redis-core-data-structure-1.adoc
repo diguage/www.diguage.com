@@ -15,6 +15,12 @@ weight: 1
 # toc: true
 ---
 
+****
+本文内容对于 Redis 7+ 来说已经过时，最新实现请看下面两篇文章：
+
+* https://www.diguage.com/post/redis-core-data-structure-3/[Redis 核心数据结构（3）]
+* https://www.diguage.com/post/redis-core-data-structure-4/[Redis 核心数据结构（4）]
+****
 
 Redis 目前是使用最广泛的缓存中间件。其突出特点就是支持多种常见的数据结构。对比 JDK 集合类的实现，Redis 的实现表现出很多独到之处，很多地方设计得别具匠心。下面就来简要介绍一下。
 

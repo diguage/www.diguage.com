@@ -15,6 +15,12 @@ weight: 1
 # toc: true
 ---
 
+****
+本文内容对于 Redis 7+ 来说已经过时，最新实现请看下面两篇文章：
+
+* https://www.diguage.com/post/redis-core-data-structure-3/[Redis 核心数据结构（3）]
+* https://www.diguage.com/post/redis-core-data-structure-4/[Redis 核心数据结构（4）]
+****
 
 在上一篇文章： https://www.diguage.com/post/redis-core-data-structure-1/[Redis 核心数据结构（1）] 中，介绍了链表、ziplist、quicklist 数据结构。这篇文章，来介绍一下 skiplist、dict。
 
