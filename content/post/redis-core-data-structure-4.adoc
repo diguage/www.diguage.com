@@ -1,0 +1,175 @@
+---
+title: "Redis 核心数据结构（四）"
+date: 2025-06-17T16:36:56+08:00
+draft: false
+keywords: ["Redis"]
+tags: ["存储","设计","架构"]
+categories: ["程序设计","算法","分布式"]
+thumbnail: "images/redis/redis-logo.png"
+weight: 1
+---
+
+在 https://www.diguage.com/post/redis-core-data-structure-3/[Redis 核心数据结构（三）^] 中，重点介绍了一下 Redis 7+ 使用的底层的数据结构 listpack。本文重点看一下，Redis 是如何基于 listpack 以及其他数据结构类型来构建对外暴露的五个核心数据结构的。
+
+== quicklist
+
+关于 quicklist 更详细的介绍，请看 https://www.diguage.com/post/redis-core-data-structure-1/#quicklist[Redis 核心数据结构（一） - "地瓜哥"博客网：quicklist^]。
+
+与上述内容不一样的地方是，现在的 quicklist 底层是使用 listpack 来构建的，而不是上述内容介绍的 ziplist。
+
+`list-max-listpack-size` 默认 `-2` 8 Kb size，或者 `-1` 4 Kb size
+
+== skiplist
+
+== list
+
+.`redis.conf`
+[source%nowrap,bash,{source_attr}]
+----
+# Lists are also encoded in a special way to save a lot of space.
+# The number of entries allowed per internal list node can be specified
+# as a fixed maximum size or a maximum number of elements.
+# For a fixed maximum size, use -5 through -1, meaning:
+# -5: max size: 64 Kb  <-- not recommended for normal workloads
+# -4: max size: 32 Kb  <-- not recommended
+# -3: max size: 16 Kb  <-- probably not recommended
+# -2: max size: 8 Kb   <-- good
+# -1: max size: 4 Kb   <-- good
+# Positive numbers mean store up to _exactly_ that number of elements
+# per list node.
+# The highest performing option is usually -2 (8 Kb size) or -1 (4 Kb size),
+# but if your use case is unique, adjust the settings as necessary.
+list-max-listpack-size -2
+----
+
+== set
+
+----
+# 元素数量小于 128
+set-max-listpack-entries 128
+# 所有元素长度小于 64
+set-max-listpack-value 64
+----
+
+== hash
+
+----
+# 元素数量小于 512
+hash-max-listpack-entries 512
+# 所有元素长度小于 64
+hash-max-listpack-value 64
+----
+
+[source%nowrap,bash,{source_attr}]
+----
+$ redis-cli --raw
+127.0.0.1:6379> HMSET profile name "D瓜哥" site "https://www.diguage.com" job "Developer"
+OK
+
+127.0.0.1:6379> TYPE profile
+hash
+
+127.0.0.1:6379> OBJECT encoding profile
+listpack
+
+127.0.0.1:6379> HSET profile address "1234567890123456789012345678901234567890123456789012345678901234"
+1
+
+127.0.0.1:6379> HVALS profile
+D瓜哥
+https://www.diguage.com
+Developer
+1234567890123456789012345678901234567890123456789012345678901234
+
+127.0.0.1:6379> OBJECT encoding profile
+listpack
+
+# 📢 注意：下面编码格式开始发生变化了！
+127.0.0.1:6379> HSET profile address2 "12345678901234567890123456789012345678901234567890123456789012345"
+1
+
+127.0.0.1:6379> HVALS profile
+Developer
+D瓜哥
+1234567890123456789012345678901234567890123456789012345678901234
+https://www.diguage.com
+12345678901234567890123456789012345678901234567890123456789012345
+
+127.0.0.1:6379> OBJECT encoding profile
+hashtable
+----
+
+== zset
+
+----
+# 元素数量小于 128
+zset-max-listpack-entries 128
+# 所有元素长度小于 64
+zset-max-listpack-value 64
+----
+
+[source,bash,{source_attr}]
+----
+$ redis-cli --raw
+127.0.0.1:6379> ZADD NameRanking 1 "D瓜哥"
+1
+
+127.0.0.1:6379> ZADD NameRanking 2 "https://www.diguage.com"
+1
+
+127.0.0.1:6379> ZADD NameRanking 3 "https://github.com/diguage"
+1
+
+127.0.0.1:6379> ZRANGE NameRanking 0 -1 WITHSCORES
+D瓜哥
+1
+https://www.diguage.com
+2
+https://github.com/diguage
+3
+
+127.0.0.1:6379> TYPE NameRanking
+zset
+
+127.0.0.1:6379> OBJECT encoding NameRanking
+listpack
+
+127.0.0.1:6379> ZADD NameRanking 4 "1234567890123456789012345678901234567890123456789012345678901234"
+1
+
+127.0.0.1:6379> ZRANGE NameRanking 0 -1 WITHSCORES
+D瓜哥
+1
+https://www.diguage.com
+2
+https://github.com/diguage
+3
+1234567890123456789012345678901234567890123456789012345678901234
+4
+
+127.0.0.1:6379> OBJECT encoding NameRanking
+listpack
+
+# 📢 注意：下面编码格式开始发生变化了！
+127.0.0.1:6379> ZADD NameRanking 5 "12345678901234567890123456789012345678901234567890123456789012345"
+1
+
+127.0.0.1:6379> ZRANGE NameRanking 0 -1 WITHSCORES
+D瓜哥
+1
+https://www.diguage.com
+2
+https://github.com/diguage
+3
+1234567890123456789012345678901234567890123456789012345678901234
+4
+12345678901234567890123456789012345678901234567890123456789012345
+5
+
+127.0.0.1:6379> OBJECT encoding NameRanking
+skiplist
+
+127.0.0.1:6379> TYPE NameRanking
+zset
+----
+
