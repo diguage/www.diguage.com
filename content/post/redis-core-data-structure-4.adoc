@@ -13,15 +13,13 @@ weight: 1
 
 == quicklist
 
-关于 quicklist 更详细的介绍，请看 https://www.diguage.com/post/redis-core-data-structure-1/#quicklist[Redis 核心数据结构（一） - "地瓜哥"博客网：quicklist^]。
+关于 quicklist 更详细的介绍，请看 https://www.diguage.com/post/redis-core-data-structure-1/#quicklist[Redis 核心数据结构（一：quicklist^]。
 
 与上述内容不一样的地方是，现在的 quicklist 底层是使用 listpack 来构建的，而不是上述内容介绍的 ziplist。
 
-`list-max-listpack-size` 默认 `-2` 8 Kb size，或者 `-1` 4 Kb size
-
-== skiplist
-
 == list
+
+关于 `list-max-listpack-size` 的解释，在源码中找到了详细介绍：
 
 .`redis.conf`
 [source%nowrap,bash,{source_attr}]
@@ -42,8 +40,66 @@ weight: 1
 list-max-listpack-size -2
 ----
 
+`list-max-listpack-size` 默认 `-2` 8 Kb；也可以设置成 `-1`， 4 Kb，也是推荐的值。没想到这个值竟然会影响到 list 中 listpack 到 quicklist 的转换条件。
+
+[source%nowrap,bash,{source_attr}]
+----
+$ redis-cli --raw
+
+127.0.0.1:6379> RPUSH names diguage "D瓜哥" "https://www.diguage.com/"
+3
+
+127.0.0.1:6379> LRANGE names 0 -1
+diguage
+D瓜哥
+https://www.diguage.com/
+
+127.0.0.1:6379> TYPE names
+list
+
+127.0.0.1:6379> OBJECT encoding names
+listpack
+
+#...
+
+# 加到 800 多个元素后，list 的编码方式终于变成了 quicklist
+127.0.0.1:6379> RPUSH names 1234567890 ...
+836
+127.0.0.1:6379> OBJECT encoding names
+quicklist
+----
+
+.`t_list.c`
+[source%nowrap,c,{source_attr}]
+----
+// server.list_max_listpack_size 应该就是上面 list-max-listpack-size
+// D瓜哥添加了 800 多个元素才发生了转变，每个元素平均大概是 10 个字符，大小可以对得上。
+if (quicklistNodeExceedsLimit(server.list_max_listpack_size,
+        lpBytes(o->ptr) + add_bytes, lpLength(o->ptr) + add_length))
+{
+    /* Invoke callback before conversion. */
+    if (fn) fn(data);
+
+    quicklist *ql = quicklistNew(server.list_max_listpack_size, server.list_compress_depth);
+
+    /* Append listpack to quicklist if it's not empty, otherwise release it. */
+    if (lpLength(o->ptr))
+        quicklistAppendListpack(ql, o->ptr);
+    else
+        lpFree(o->ptr);
+    o->ptr = ql;
+    o->encoding = OBJ_ENCODING_QUICKLIST;
+}
+----
+
+根据测试和上述代码可以推断：*在 list 中元素大小达到 8 Kb 时，编码就会从 listpack 转变为 quicklist。*
+
 == set
 
+在集合 set 中，存在三种编码方式，转变条件有对应的配置项：
+
+.`redis.conf`
+[source%nowrap,bash,{source_attr}]
 ----
 # 元素数量小于 128
 set-max-listpack-entries 128
@@ -51,14 +107,83 @@ set-max-listpack-entries 128
 set-max-listpack-value 64
 ----
 
+下面我们开始验证：
+
+[source%nowrap,bash,{source_attr}]
+----
+$ redis-cli --raw
+127.0.0.1:6379> SADD numbers 1 2 3
+3
+
+127.0.0.1:6379> SMEMBERS numbers
+1
+2
+3
+
+127.0.0.1:6379> TYPE numbers
+set
+
+127.0.0.1:6379> OBJECT encoding numbers
+intset
+
+127.0.0.1:6379> SADD numbers "https://www.diguage.com"
+1
+
+127.0.0.1:6379> SMEMBERS numbers
+1
+2
+3
+https://www.diguage.com
+
+127.0.0.1:6379> TYPE numbers
+set
+
+127.0.0.1:6379> OBJECT encoding numbers
+listpack
+
+127.0.0.1:6379> SADD numbers "1234567890123456789012345678901234567890123456789012345678901234"
+1
+
+127.0.0.1:6379> OBJECT encoding numbers
+listpack
+
+# 当添加元素长度大于 64，那么编码就从 listpack 转变成 hashtable
+127.0.0.1:6379> SADD numbers "12345678901234567890123456789012345678901234567890123456789012345"
+1
+
+127.0.0.1:6379> OBJECT encoding numbers
+hashtable
+----
+
+Redis 的集合（sets）的底层存储可以使用 intset、 listpack 和 hashtable。
+
+当集合（sets）可以同时满足以下两个条件时，集合（sets）使用 intset 编码。
+
+. 集合（sets）保存的所有值都是整数，而且数字范围在 -2^64^ ~ 2^64^-1 之间。
+. 集合（sets）保存的元素数量小于 128 个，（通过 `set-max-intset-entries` 参数调节，默认是 128）。
+
+当元素有字符串时，就会从 intset 转换成 listpack。使用 listpack 编码必须满足下面两个条件：
+
+. 集合（sets）保存的元素数量小于 128 个，（通过 `set-max-intset-entries` 参数调节，默认是 128）。
+. 集合（sets）保存的所有元素长度小于 64 个字节，（通过 `set-max-listpack-value` 参数条件，默认是 64）。
+
+当不满足要求时，则从 listpack 转变为 hashtable。
+
+
 == hash
 
+hash 的编码也有两种方案，转换条件也有对应的配置项：
+
+.`redis.conf`
+[source%nowrap,bash,{source_attr}]
 ----
 # 元素数量小于 512
 hash-max-listpack-entries 512
 # 所有元素长度小于 64
 hash-max-listpack-value 64
 ----
+
+开始验证：
 
 [source%nowrap,bash,{source_attr}]
 ----
@@ -99,8 +224,18 @@ https://www.diguage.com
 hashtable
 ----
 
+Redis 的散列（hash）的底层存储可以使用 listpack 和 hashtable。当散列（hash）可以同时满足以下两个条件时，散列（hash）使用 listpack 编码。
+
+. 散列（hash）保存的所有键值对的键和值的字符串长度都小于 64 字节。（通过参数 `hash-max-listpack-value` 来调节，默认是 64）
+. 散列（hash）保存的键值对数量小于 512 个。（通过参数 `hash-max-listpack-entries` 来调节，默认是 512）
+
+
 == zset
 
+zset 的编码也有两种方案，转换条件也有对应的配置项：
+
+.`redis.conf`
+[source%nowrap,bash,{source_attr}]
 ----
 # 元素数量小于 128
 zset-max-listpack-entries 128
@@ -173,3 +308,13 @@ skiplist
 zset
 ----
 
+Redis 的 zset 的底层存储可以使用 listpack 和 skiplist。当 zset 可以同时满足以下两个条件时，zset 使用 listpack 编码。
+
+. 有序集合保存的元素数量小于 128 个；（通过参数 `zset-max-listpack-entries` 来调节，默认为 128。）
+. 有序集合保存的所有元素成员的长度都要小于 64 个字节；（通过参数 `zset-max-listpack-value` 来调节，默认为 64。）
+
+关于 skiplist 的详细介绍，请看： https://www.diguage.com/post/redis-core-data-structure-2/#skiplist[Redis 核心数据结构（二）：skiplist^]。
+
+== 总结
+
+Redis 为了节省内存资源，在元素数量较少的情况下，尽量使用比较节约内存的数据结构，大部分的数据结构是从 listpack 开始的（set 在只有数字的情况下，是从 intset 开始）。在元素达到一定条件时，才会转化成比较复杂的数据结构。

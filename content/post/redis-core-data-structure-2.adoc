@@ -24,6 +24,7 @@ weight: 1
 
 在上一篇文章： https://www.diguage.com/post/redis-core-data-structure-1/[Redis 核心数据结构（1）] 中，介绍了链表、ziplist、quicklist 数据结构。这篇文章，来介绍一下 skiplist、dict。
 
+[#skiplist]
 == skiplist
 
 跳跃表是一种有序数据结构，支持平均 O(logN)、最坏 O(N) 复杂度的节点查找；大部分情况效率可以和平衡树相媲美，实现却比平衡树简单。
