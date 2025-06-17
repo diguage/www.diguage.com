@@ -28,63 +28,107 @@ image::/images/redis/listpack.png[title="listpack 编码格式",alt="listpack �
 
 相比 ziplist，listpack 更偏向空间换时间。淡化极致的内存使用率，向更快的方向发力。
 
+[#integer]
 ==== 对整数编码
 
 image::/images/redis/listpack-integer.png[title="listpack 整数编码",alt="listpack 整数编码",{image_attr}]
 
+Redis 对整数以及长整数的编码与 https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/#int[Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数：整数类型数据^] 和 https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-2/#long[Hessian 协议解释与实战（二）：长整型、二进制数据与 Null：长整数类型数据^] 的编码类似：小数尽可能使用短编码；大数才用长编码。由于小数偏多，所以，可以节省相当一部分内存。
+
 .`listpack.c`
 [source%nowrap,c,{source_attr}]
 ----
+#define LP_ENCODING_13BIT_INT 0xC0
+#define LP_ENCODING_13BIT_INT_MASK 0xE0
+#define LP_ENCODING_IS_13BIT_INT(byte) (((byte)&LP_ENCODING_13BIT_INT_MASK)==LP_ENCODING_13BIT_INT)
+#define LP_ENCODING_13BIT_INT_ENTRY_SIZE 3
+
+#define LP_ENCODING_16BIT_INT 0xF1
+#define LP_ENCODING_16BIT_INT_MASK 0xFF
+#define LP_ENCODING_IS_16BIT_INT(byte) (((byte)&LP_ENCODING_16BIT_INT_MASK)==LP_ENCODING_16BIT_INT)
+#define LP_ENCODING_16BIT_INT_ENTRY_SIZE 4
+
+#define LP_ENCODING_24BIT_INT 0xF2
+#define LP_ENCODING_24BIT_INT_MASK 0xFF
+#define LP_ENCODING_IS_24BIT_INT(byte) (((byte)&LP_ENCODING_24BIT_INT_MASK)==LP_ENCODING_24BIT_INT)
+#define LP_ENCODING_24BIT_INT_ENTRY_SIZE 5
+
+#define LP_ENCODING_32BIT_INT 0xF3
+#define LP_ENCODING_32BIT_INT_MASK 0xFF
+#define LP_ENCODING_IS_32BIT_INT(byte) (((byte)&LP_ENCODING_32BIT_INT_MASK)==LP_ENCODING_32BIT_INT)
+#define LP_ENCODING_32BIT_INT_ENTRY_SIZE 6
+
+#define LP_ENCODING_64BIT_INT 0xF4
+#define LP_ENCODING_64BIT_INT_MASK 0xFF
+#define LP_ENCODING_IS_64BIT_INT(byte) (((byte)&LP_ENCODING_64BIT_INT_MASK)==LP_ENCODING_64BIT_INT)
+#define LP_ENCODING_64BIT_INT_ENTRY_SIZE 10
+
 /* Stores the integer encoded representation of 'v' in the 'intenc' buffer. */
 static inline void lpEncodeIntegerGetType(int64_t v,
         unsigned char *intenc, uint64_t *enclen) {
     if (v >= 0 && v <= 127) {
         /* Single byte 0-127 integer. */
         // if (intenc != NULL) intenc[0] = v;
+        // 0 <= num <= 127，则使用一个字节表示
         if (enclen != NULL) *enclen = 1;
     } else if (v >= -4096 && v <= 4095) {
         /* 13 bit integer. */
         if (v < 0) v = ((int64_t)1<<13)+v;
         if (intenc != NULL) {
+            // -4096 <= num <= 4095 使用 13 个比特位表示，
+            // LP_ENCODING_13BIT_INT = 0xC0，前三位是类型标识
+            // 两个字节，剩下 13 个比特位用于存数字（首位表示符号，12位存数字）
             intenc[0] = (v>>8)|LP_ENCODING_13BIT_INT;
             intenc[1] = v&0xff;
         }
+        // 编码长度为 2
         if (enclen != NULL) *enclen = 2;
     } else if (v >= -32768 && v <= 32767) {
         /* 16 bit integer. */
         if (v < 0) v = ((int64_t)1<<16)+v;
         if (intenc != NULL) {
+            // 一个字节是类型标识
             intenc[0] = LP_ENCODING_16BIT_INT;
+            // 剩下两个字节，16 个比特位存数字（首位表示符号，15位存数字）
             intenc[1] = v&0xff;
             intenc[2] = v>>8;
         }
+        // 编码长度为 3
         if (enclen != NULL) *enclen = 3;
     } else if (v >= -8388608 && v <= 8388607) {
         /* 24 bit integer. */
         if (v < 0) v = ((int64_t)1<<24)+v;
         if (intenc != NULL) {
+            // 一个字节是类型标识
             intenc[0] = LP_ENCODING_24BIT_INT;
+            // 剩下 3 个字节，24 个比特位存数字（首位表示符号，15位存数字）
             intenc[1] = v&0xff;
             intenc[2] = (v>>8)&0xff;
             intenc[3] = v>>16;
         }
+        // 编码长度为 4
         if (enclen != NULL) *enclen = 4;
     } else if (v >= -2147483648 && v <= 2147483647) {
         /* 32 bit integer. */
         if (v < 0) v = ((int64_t)1<<32)+v;
         if (intenc != NULL) {
+            // 一个字节是类型标识
             intenc[0] = LP_ENCODING_32BIT_INT;
+            // 剩下 4 个字节，32 个比特位存数字（首位表示符号，15位存数字）
             intenc[1] = v&0xff;
             intenc[2] = (v>>8)&0xff;
             intenc[3] = (v>>16)&0xff;
             intenc[4] = v>>24;
         }
+        // 编码长度为 5
         if (enclen != NULL) *enclen = 5;
     } else {
         /* 64 bit integer. */
         uint64_t uv = v;
         if (intenc != NULL) {
+            // 一个字节是类型标识
             intenc[0] = LP_ENCODING_64BIT_INT;
+            // 剩下 8 个字节，64 个比特位存数字（首位表示符号，15位存数字）
             intenc[1] = uv&0xff;
             intenc[2] = (uv>>8)&0xff;
             intenc[3] = (uv>>16)&0xff;
@@ -94,40 +138,81 @@ static inline void lpEncodeIntegerGetType(int64_t v,
             intenc[7] = (uv>>48)&0xff;
             intenc[8] = uv>>56;
         }
+        // 编码长度为 9
         if (enclen != NULL) *enclen = 9;
     }
 }
 ----
 
+[#string]
 ==== 对字符串编码
 
 image::/images/redis/listpack-string.png[title="listpack 字符串编码",alt="listpack 字符串编码",{image_attr}]
 
+对比 Hessian 对字符串的编码 https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-3/[Hessian 协议解释与实战（三）：字符串^]，两者也有相似之处：
+
+. `类型标识` + `字符串长度` + `实际字符串内容`；
+. 短字符串使用短码编码长度，长字符串使用长码编码长度。由于短字符串更多，也能节省很多内存。
+
+NOTE: Redis 对字符串是如何编码的？
+
 .`listpack.c`
 [source%nowrap,c,{source_attr}]
 ----
+#define LP_ENCODING_6BIT_STR 0x80
+#define LP_ENCODING_6BIT_STR_MASK 0xC0
+#define LP_ENCODING_IS_6BIT_STR(byte) (((byte)&LP_ENCODING_6BIT_STR_MASK)==LP_ENCODING_6BIT_STR)
+
+#define LP_ENCODING_12BIT_STR 0xE0
+#define LP_ENCODING_12BIT_STR_MASK 0xF0
+#define LP_ENCODING_IS_12BIT_STR(byte) (((byte)&LP_ENCODING_12BIT_STR_MASK)==LP_ENCODING_12BIT_STR)
+
+#define LP_ENCODING_32BIT_STR 0xF0
+#define LP_ENCODING_32BIT_STR_MASK 0xFF
+#define LP_ENCODING_IS_32BIT_STR(byte) (((byte)&LP_ENCODING_32BIT_STR_MASK)==LP_ENCODING_32BIT_STR)
+
+
 /* Encode the string element pointed by 's' of size 'len' in the target
  * buffer 's'. The function should be called with 'buf' having always enough
  * space for encoding the string. This is done by calling lpEncodeGetType()
  * before calling this function. */
 static inline void lpEncodeString(unsigned char *buf, unsigned char *s, uint32_t len) {
     if (len < 64) {
+        // LP_ENCODING_6BIT_STR = 0x80 | length，length 最多有 6 个比特位，则最大数字是： 2^6 -1 = 63
         buf[0] = len | LP_ENCODING_6BIT_STR;
+        // 将字符串内容复制到后面的内存中
         memcpy(buf+1,s,len);
     } else if (len < 4096) {
+        // LP_ENCODING_12BIT_STR = 0xE0，前四个比特位存类型标识
+        // 剩余 4 个比特位存长度： (lenght >> 8) | LP_ENCODING_12BIT_STR
+        // 剩余 8 个比特位存第一个字节，length & 0xff，12 个比特位，最大长度是 2^12 -1 = 4095
         buf[0] = (len >> 8) | LP_ENCODING_12BIT_STR;
         buf[1] = len & 0xff;
+        // 将字符串内容复制到后面的内存中
         memcpy(buf+2,s,len);
     } else {
+        // 长度大于等于 4096 时，使用一个类型字节 + 四个标识长度的字节，来标识长度。
+        // 最大长度是 2^32 -1 = 4294967295
         buf[0] = LP_ENCODING_32BIT_STR;
         buf[1] = len & 0xff;
         buf[2] = (len >> 8) & 0xff;
         buf[3] = (len >> 16) & 0xff;
         buf[4] = (len >> 24) & 0xff;
+        // 将字符串内容复制到后面的内存中
         memcpy(buf+5,s,len);
     }
 }
 ----
+
+TIP: 将 <<integer>> 和 <<string>> 放一起对比来看，当字符串长度超过 `4096` 时，直接跳到使用了 4 个字节表示长度。D瓜哥私以为，这个跳跃太大了，而且还有剩余标志位没用上，可以来一个： `<一个标志位字节>+<两个字节长度>`，最大可以表示 `2^16^ - 1 = 65535` 个字符，应该可以应付绝大部分场景了。
+
+==== 元素长度编码
+
+每个 listpack 元素在最后都保存当前元素占用的字节数，*只包含前面的类型字节、长度字节和数据字节，不包含这个元素长度的字节数。*
+
+image::/images/redis/listpackentry-length.png[title="listpack 元素长度编码",alt="listpack 元素长度编码",{image_attr}]
+
+保存这个长度信息，主要是为了方便从右向左搜索：每个字节首位是 `1` 表示前面还有数据，是 `0` 则表示长度编码到此为止。
 
 === 源码分析
 
@@ -144,14 +229,23 @@ static inline void lpEncodeString(unsigned char *buf, unsigned char *s, uint32_t
 unsigned char *lpNew(size_t capacity) {
     unsigned char *lp = lp_malloc(capacity > LP_HDR_SIZE+1 ? capacity : LP_HDR_SIZE+1);
     if (lp == NULL) return NULL;
+    // 设置 listpack 目前字节长度
     lpSetTotalBytes(lp,LP_HDR_SIZE+1);
+    // 元素为 0
     lpSetNumElements(lp,0);
+    // 后面直接接结束标志符
     lp[LP_HDR_SIZE] = LP_EOF;
     return lp;
 }
 ----
 
+通过分析上面的代码可以得知，listpack 的新对象初始化完成后，内容如下：
+
+image::/images/redis/listpack-new.png[title="listpack 新对象",alt="listpack 新对象",{image_attr}]
+
 ==== 增删改
+
+listpack 的增删改所有更新操作，都被一个函数包圆了： `lpInsert`，来看看它是如何实现的。
 
 .`listpack.c`
 [source%nowrap,c,{source_attr}]
@@ -191,6 +285,7 @@ unsigned char *lpInsert(unsigned char *lp, unsigned char *elestr, unsigned char 
     unsigned char backlen[LP_MAX_BACKLEN_SIZE];
 
     uint64_t enclen; /* The length of the encoded element. */
+    // 如果没有传递内容，则就是删除
     int delete = (elestr == NULL && eleint == NULL);
 
     /* when deletion, it is conceptually replacing the element with a
@@ -222,6 +317,7 @@ unsigned char *lpInsert(unsigned char *lp, unsigned char *elestr, unsigned char 
         *
         * Whatever the returned encoding is, 'enclen' is populated with the
         * length of the encoded element. */
+        // 检查字符串是否可以使用整型表示。整型更加节省空间。
         enctype = lpEncodeGetType(elestr,size,intenc,&enclen);
         if (enctype == LP_ENCODING_INT) eleint = intenc;
     } else if (eleint) {
@@ -257,6 +353,7 @@ unsigned char *lpInsert(unsigned char *lp, unsigned char *elestr, unsigned char 
     unsigned char *dst = lp + poff; /* May be updated after reallocation. */
 
     /* Realloc before: we need more room. */
+    // 扩容
     if (new_listpack_bytes > old_listpack_bytes &&
         new_listpack_bytes > lp_malloc_size(lp)) {
         if ((lp = lp_realloc(lp,new_listpack_bytes)) == NULL) return NULL;
@@ -274,18 +371,21 @@ unsigned char *lpInsert(unsigned char *lp, unsigned char *elestr, unsigned char 
     }
 
     /* Realloc after: we need to free space. */
+    // 缩容
     if (new_listpack_bytes < old_listpack_bytes) {
         if ((lp = lp_realloc(lp,new_listpack_bytes)) == NULL) return NULL;
         dst = lp + poff;
     }
 
     /* Store the entry. */
+    // 新增元素
     if (newp) {
         *newp = dst;
         /* In case of deletion, set 'newp' to NULL if the next element is
          * the EOF element. */
         if (delete && dst[0] == LP_EOF) *newp = NULL;
     }
+    // 更新元素
     if (!delete) {
         if (enctype == LP_ENCODING_INT) {
             memcpy(dst,eleint,enclen);
@@ -334,6 +434,12 @@ unsigned char *lpInsert(unsigned char *lp, unsigned char *elestr, unsigned char 
 }
 ----
 
+查看代码简单总结一下：
+
+. 如果可以，会优先使用整型对内容进行编码；
+. 如果没有传递内容，则表示删除。
+. 整体流程是：先操作数据元素，然后更新整体长度和元素个数。
+. 内容使用存放和废除使用内存拷贝 `memcpy` 函数来完成。
 
 ==== 查找
 

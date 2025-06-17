@@ -1236,7 +1236,7 @@ private String getStringByLength(String item, int length) {
 有一点需要强调： `32768` 也不是一成不变的。根据截取字符串的最后一个 `char` 来判断。如果最后一个字符是 high surrogate，
 即  `0xD800 \<= Value \<= 0xDBFF`，则会长度减一，即减少一个 `char`，来保证后面字符的完整性。
 
-NOTE: 关于 “high surrogate” 请问 <<utf-16>>。
+NOTE: 关于 “high surrogate” 请看 <<utf-16>>。
 
 另外，上文提到的“字符串长度”并不表示我们通常意义的“字”的个数；而是，Java 内部表示字符串的 char 数组的长度。
 比如，一个 Emoji 表情就是用两个 char 来表示，则长度为 2。
