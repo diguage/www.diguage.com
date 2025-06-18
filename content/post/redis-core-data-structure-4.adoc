@@ -94,6 +94,8 @@ if (quicklistNodeExceedsLimit(server.list_max_listpack_size,
 
 根据测试和上述代码可以推断：*在 list 中元素大小达到 8 Kb 时，编码就会从 listpack 转变为 quicklist。*
 
+TIP: 📢：这点和旧版的 Redis 不太一样：旧版 Redis 直接使用 quicklist 来存储元素。而 Redis 7+，小批量数据使用 listpack 存，达到一定条件后，才开始使用 quicklist 来存数据。相比而言，Redis 7+ 内存利用率更高，效率也更好！
+
 == set
 
 在集合 set 中，存在三种编码方式，转变条件有对应的配置项：
@@ -147,7 +149,7 @@ listpack
 127.0.0.1:6379> OBJECT encoding numbers
 listpack
 
-# 当添加元素长度大于 64，那么编码就从 listpack 转变成 hashtable
+# 📢 注意：当添加元素长度大于 64，那么编码就从 listpack 转变成 hashtable
 127.0.0.1:6379> SADD numbers "12345678901234567890123456789012345678901234567890123456789012345"
 1
 
@@ -168,6 +170,8 @@ Redis 的集合（sets）的底层存储可以使用 intset、 listpack 和 hash
 . 集合（sets）保存的所有元素长度小于 64 个字节，（通过 `set-max-listpack-value` 参数条件，默认是 64）。
 
 当不满足要求时，则从 listpack 转变为 hashtable。
+
+TIP: 📢注意：set 的存储也和旧版发生了一下变化：旧版的 Redis 使用 intset 存数字，当有字符串时，直接使用 hashtable 来存储；而 Redis 7+ 开始，当存在字符串时，先使用 listpack 来存元素，达到一定条件后，才会切换为 hashtable。相比而言，Redis 7+ 内存利用率更高！查询效率上，可能会略差。
 
 
 == hash
