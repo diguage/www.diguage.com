@@ -1,0 +1,314 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>性能测试 on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95/</link><description>Recent content in 性能测试 on "地瓜哥"博客网</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Sat, 11 May 2024 20:39:38 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95/index.xml" rel="self" type="application/rss+xml"/><item><title>JVM GC 性能测试（三）：真实流量</title><link>https://www.diguage.com/post/gc-performance-real-qps/</link><pubDate>Wed, 01 May 2024 12:12:12 +0800</pubDate><guid>https://www.diguage.com/post/gc-performance-real-qps/</guid><description>&lt;div class="paragraph">
+&lt;p>&lt;strong>JVM GC 性能测试系列&lt;/strong>:&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-comparison-method/" target="_blank" rel="noopener">JVM GC 性能对比方法&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-same-qps/" target="_blank" rel="noopener">JVM GC 性能测试（一）：相同流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-incremental-qps/" target="_blank" rel="noopener">JVM GC 性能测试（二）：递增流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-real-qps/" target="_blank" rel="noopener">JVM GC 性能测试（三）：真实流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;hr/>
+&lt;div class="paragraph">
+&lt;p>书接上文，在 &lt;a href="https://www.diguage.com/post/gc-performance-incremental-qps/" target="_blank" rel="noopener">JVM GC 性能测试（二）：递增流量&lt;/a> 的最后，D瓜哥提到了一个问题，对于在 &lt;a href="https://www.diguage.com/post/gc-performance-same-qps/" target="_blank" rel="noopener">JVM GC 性能测试（一）：相同流量&lt;/a> 和 &lt;a href="https://www.diguage.com/post/gc-performance-incremental-qps/" target="_blank" rel="noopener">JVM GC 性能测试（二）：递增流量&lt;/a> 中存在的巨大 QPS 差异疑惑不解。所以，D瓜哥决定将测试机器接入到线上环境，在真实访问中，观察各个 GC 的表现。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_一言以蔽之">一言以蔽之&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>J21-Gen-ZGC 和 J21-G1 无论在稳定性，吞吐量以及响应时效性上都非常优秀。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>再极端峰值情况，J21-G1 是更好的选择，更加稳定，不容易出凸点。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>日常使用，J21-Gen-ZGC 响应性更好，接口耗时更低。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="sidebarblock">
+&lt;div class="content">
+&lt;div class="paragraph">
+&lt;p>鉴于 OpenJDK 21 G1 GC 一如既往的惊艳表现，D瓜哥准备整理一下 G1 GC 的主要优化，敬请关注： &lt;a href="https://www.diguage.com/post/main-optimization-of-garbage-first-collector/" target="_blank" rel="noopener">Java G1 垃圾收集器主要优化&lt;/a>。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_服务调用监控数据">1. 服务调用监控数据&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>监控服务调用的相关数据，这是对于用户来说，感知最强烈的相关数据，也是直接关系到服务质量的数据。&lt;/p>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_服务调用次数">1.1. 服务调用次数&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>从调用次数上来看，五个分组没有大的变化，可以说根本没有达到系统的极限峰值。当然，这才是正常现象，如果日常运行都爆峰值，那说明系统早该扩容了。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/gc-performance-3/api-qps-second.jpg" alt="服务调用次数（秒级）" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. 服务调用次数（秒级）&lt;/div>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/gc-performance-3/api-qps-minute.jpg" alt="服务调用次数（分钟级）" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 2. 服务调用次数（分钟级）&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="api-qps-time">1.2. 服务调用耗时&lt;/h3>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>整体上讲，J21-Gen-ZGC 的耗时更短，从数据上来看，TP999 能比 J21-G1 的少 10~20ms；TP99 更加夸张，J21-Gen-ZGC 的耗时只有 J21-G1 的一半。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>J21-Gen-ZGC 和 J21-G1 还是一如既往的稳。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>这次测试中，J17-ZGC 也很稳，有些出乎意料。但是，结合下面 &lt;a href="#jvm-cpu">JVM CPU 使用率&lt;/a> 和 &lt;a href="#os-cpu">系统 CPU 使用率&lt;/a> 来看，J17-ZGC 和 J21-ZGC 的 CPU 使用率早早就达到 90%+，再结合上面两个测试，从稳定性来看，J17-ZGC 和 J21-ZGC 只能被排除掉。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div></description></item><item><title>JVM GC 性能测试（二）：递增流量</title><link>https://www.diguage.com/post/gc-performance-incremental-qps/</link><pubDate>Tue, 30 Apr 2024 00:29:00 +0800</pubDate><guid>https://www.diguage.com/post/gc-performance-incremental-qps/</guid><description>&lt;div class="paragraph">
+&lt;p>&lt;strong>JVM GC 性能测试系列&lt;/strong>:&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-comparison-method/" target="_blank" rel="noopener">JVM GC 性能对比方法&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-same-qps/" target="_blank" rel="noopener">JVM GC 性能测试（一）：相同流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-incremental-qps/" target="_blank" rel="noopener">JVM GC 性能测试（二）：递增流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-real-qps/" target="_blank" rel="noopener">JVM GC 性能测试（三）：真实流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;hr/>
+&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/gc-performance-same-qps/" target="_blank" rel="noopener">JVM GC 性能测试（一）：相同流量&lt;/a> 中，D瓜哥使用一个总量请求对所有分组的所有机器进行性能测试。但是，经过测试发现了一个问题，同时产生了另外一个问题，有两个问题没有得到很好的解答：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>由于服务响应时长直接关系到服务调用次数，当某一台机器出现问题时，整体调用次数就会急剧下降，调用次数加不上去。一个机器出问题，所有机器的访问量就上不去了。这是测试中发现的一个问题。当然，这属于测试工具的问题，别不是 GC 的问题。但是，也影响到我们的压测，也需要解决。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>上次测试，这是针对某一个指定服务调用量进行性能测试，那么，无法确定每个 GC 能支撑的极限调用峰值。另外，在极限峰值和超极限峰值的情况下，各个 GC 的表现如何？这个也有待验证。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>针对上述两个问题，设计了本次测试。测试方法如下：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>各个分组使用一套相同的流量策略：&lt;/p>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>各个分组几乎同时开始执行测试任务；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>调用量从低到高，以此同时使用相关的调用量进行测试；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>除最开始预热阶段的调用量外，后续每个调用量都持续进行十分钟的测试。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>针对每个 GC 分组单独设定一套调用发量程序，这个保证各个 GC 分组直接不相互影响。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>最后，再分析调用量相同时段的各个 GC 表现，就可以看到各个 GC 的极限峰值。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="admonitionblock tip">
+&lt;table>
+&lt;tbody>&lt;tr>
+&lt;td class="icon">
+&lt;i class="fa icon-tip" title="Tip">&lt;/i>
+&lt;/td>
+&lt;td class="content">
+为了保留更多细节，本文所有截图都是在 34 吋带鱼屏下，使用全屏模式展示并截图的。如果看不清楚，可以右击在新页面打开图片来查看。
+&lt;/td>
+&lt;/tr>
+&lt;/tbody>&lt;/table>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>具体流量及时间段：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>750， 23:14:30 ~ 23:19:30&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>800， 23:19:30 ~ 23:29:30&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>850， 23:29:30 ~ 23:39:30&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>900， 23:39:30 ~ 23:49:30&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>950， 23:49:30 ~ 23:59:30&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>1000，23:59:30 ~ 00:09:30&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>1050，00:09:30 ~ 00:19:30&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>1100，00:19:30 ~ 00:29:30&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div></description></item><item><title>JVM GC 性能测试（一）：相同流量</title><link>https://www.diguage.com/post/gc-performance-same-qps/</link><pubDate>Thu, 25 Apr 2024 22:02:47 +0800</pubDate><guid>https://www.diguage.com/post/gc-performance-same-qps/</guid><description>&lt;div class="paragraph">
+&lt;p>&lt;strong>JVM GC 性能测试系列&lt;/strong>:&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-comparison-method/" target="_blank" rel="noopener">JVM GC 性能对比方法&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-same-qps/" target="_blank" rel="noopener">JVM GC 性能测试（一）：相同流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-incremental-qps/" target="_blank" rel="noopener">JVM GC 性能测试（二）：递增流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-real-qps/" target="_blank" rel="noopener">JVM GC 性能测试（三）：真实流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;hr/>
+&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/gc-performance-comparison-method/" target="_blank" rel="noopener">JVM GC 性能对比方法&lt;/a> 介绍了性能对比的方法，这篇文章就根据该方法对上述提到的5种 JVM GC 进行性能测试。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在正式测试之前，D瓜哥进行了多次小流量试探性测试，来探索一个合适的量。找到一个比较平稳的量后，乘以机器数量，获得一个每秒总计请求量，最后使用该总量数据去做压测。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>根据多次测试的数据来看，最后选择的是每台每秒 500 QPS，5 个分组，每个分组 5 台机器，所以，每秒的请求总量是： 500 * 5 * 5 = 12500 QPS；每个分组每分钟的总量是：500 * 5 * 60 = 150000 QPS。使用每台机器以此使用 100 QPS，200 QPS，300 QPS，400 QPS 各运行一分钟来对系统进行预热。最后以每台每秒 500 QPS 的访问量来对测试机器进行持续十分钟的性能测试，最后分析这十分钟的相关数据。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_一言以蔽之">一言以蔽之&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>服务稳定性：J21-Gen-ZGC、J21-G1、J8-G1 稳定性最好；J17-ZGC 有轻微波动；J21-ZGC 有剧烈波动；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>服务耗时 TP999：J21-Gen-ZGC &amp;lt; J17-ZGC &amp;lt; J21-G1 &amp;lt; J8-G1 &amp;lt; J21-ZGC；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>CPU 消耗：J21-G1 &amp;lt; J8-G1 &amp;lt; J17-ZGC &amp;lt; J21-Gen-ZGC &amp;lt; J21-ZGC；&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div></description></item><item><title>JVM GC 性能对比方法</title><link>https://www.diguage.com/post/gc-performance-comparison-method/</link><pubDate>Wed, 24 Apr 2024 19:52:47 +0800</pubDate><guid>https://www.diguage.com/post/gc-performance-comparison-method/</guid><description>&lt;div class="paragraph">
+&lt;p>&lt;strong>JVM GC 性能测试系列&lt;/strong>:&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-comparison-method/" target="_blank" rel="noopener">JVM GC 性能对比方法&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-same-qps/" target="_blank" rel="noopener">JVM GC 性能测试（一）：相同流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-incremental-qps/" target="_blank" rel="noopener">JVM GC 性能测试（二）：递增流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-real-qps/" target="_blank" rel="noopener">JVM GC 性能测试（三）：真实流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;hr/>
+&lt;div class="paragraph">
+&lt;p>现在部门内部绝大部分应用都还在使用 OpenJDK 8，计划推进部门升级 JDK 到 OpenJDK21。本着实事求是，用数据说话的原则，准备对如下 GC 做性能测试：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>OpenJDK 8 G1 GC（以下称 J8-G1。具体版本号：1.8.0_321-b07。）&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>OpenJDK 17 ZGC（以下称 J17-ZGC。具体版本号：17.0.9+9。）&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>OpenJDK 21 G1（以下称 J21-G1。具体版本号：21.0.2+13-LTS。）&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>OpenJDK 21 ZGC（以下称 J21-ZGC。具体版本号：21.0.2+13-LTS。）&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>OpenJDK 21 Gen ZGC（以下称 J21-Gen-ZGC。具体版本号：21.0.2+13-LTS。）&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="admonitionblock note">
+&lt;table>
+&lt;tbody>&lt;tr>
+&lt;td class="icon">
+&lt;i class="fa icon-note" title="Note">&lt;/i>
+&lt;/td>
+&lt;td class="content">
+所有 OpenJDK 版本都是选用相同大版本号里的最高的版本。所有的机器都是 4C8G 的配置，JVM 堆栈内存设置为 4608M 。
+&lt;/td>
+&lt;/tr>
+&lt;/tbody>&lt;/table>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>为了减少不必要的干扰，JVM 相关参数也尽可能做到了一致或者接近。（等测试完，D瓜哥会把相关参数也分享出来。）&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_测试对象">测试对象&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>由于D瓜哥所处的部门是一个直接面向用户的线上业务部门，所以，大部分系统是直接面对用户，接受用户访问的在线业务系统。所以，为了服务线上业务系统的需求，测试对象的选择就限定在了类似的场景中。测试对象是线上接受用户访问的一个服务。结构如下：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/gc-performance/api.svg" alt="压测接口依赖关系图" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. 压测接口依赖关系图&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>该接口有外部依赖服务，也有数据库查询，是一个微服务架构下典型的在线服务接口。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_测试方法">测试方法&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>原本计划是想直接通过上线，将线上不同分组的机器使用不同的 GC 来做测试，但是，这样面临好几个问题：&lt;/p>
+&lt;/div></description></item></channel></rss>
