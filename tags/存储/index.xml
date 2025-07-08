@@ -1,0 +1,440 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>存储 on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/%E5%AD%98%E5%82%A8/</link><description>Recent content in 存储 on "地瓜哥"博客网</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Wed, 18 Jun 2025 11:07:50 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/%E5%AD%98%E5%82%A8/index.xml" rel="self" type="application/rss+xml"/><item><title>Redis 核心数据结构（四）</title><link>https://www.diguage.com/post/redis-core-data-structure-4/</link><pubDate>Tue, 17 Jun 2025 16:36:56 +0800</pubDate><guid>https://www.diguage.com/post/redis-core-data-structure-4/</guid><description>&lt;div class="paragraph">
+&lt;p>在 &lt;a href="https://www.diguage.com/post/redis-core-data-structure-3/" target="_blank" rel="noopener">Redis 核心数据结构（三）&lt;/a> 中，重点介绍了一下 Redis 7+ 使用的底层的数据结构 listpack。本文重点看一下，Redis 是如何基于 listpack 以及其他数据结构类型来构建对外暴露的五个核心数据结构的。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_quicklist">quicklist&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>关于 quicklist 更详细的介绍，请看 &lt;a href="https://www.diguage.com/post/redis-core-data-structure-1/#quicklist" target="_blank" rel="noopener">Redis 核心数据结构（一：quicklist&lt;/a>。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>与上述内容不一样的地方是，现在的 quicklist 底层是使用 listpack 来构建的，而不是上述内容介绍的 ziplist。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_list">list&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>关于 &lt;code>list-max-listpack-size&lt;/code> 的解释，在源码中找到了详细介绍：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="title">&lt;code>redis.conf&lt;/code>&lt;/div>
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="c"># Lists are also encoded in a special way to save a lot of space.&lt;/span>
+&lt;span class="c"># The number of entries allowed per internal list node can be specified&lt;/span>
+&lt;span class="c"># as a fixed maximum size or a maximum number of elements.&lt;/span>
+&lt;span class="c"># For a fixed maximum size, use -5 through -1, meaning:&lt;/span>
+&lt;span class="c"># -5: max size: 64 Kb &amp;lt;-- not recommended for normal workloads&lt;/span>
+&lt;span class="c"># -4: max size: 32 Kb &amp;lt;-- not recommended&lt;/span>
+&lt;span class="c"># -3: max size: 16 Kb &amp;lt;-- probably not recommended&lt;/span>
+&lt;span class="c"># -2: max size: 8 Kb &amp;lt;-- good&lt;/span>
+&lt;span class="c"># -1: max size: 4 Kb &amp;lt;-- good&lt;/span>
+&lt;span class="c"># Positive numbers mean store up to _exactly_ that number of elements&lt;/span>
+&lt;span class="c"># per list node.&lt;/span>
+&lt;span class="c"># The highest performing option is usually -2 (8 Kb size) or -1 (4 Kb size),&lt;/span>
+&lt;span class="c"># but if your use case is unique, adjust the settings as necessary.&lt;/span>
+list-max-listpack-size &lt;span class="nt">-2&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>Redis 核心数据结构（三）</title><link>https://www.diguage.com/post/redis-core-data-structure-3/</link><pubDate>Fri, 13 Jun 2025 17:36:31 +0800</pubDate><guid>https://www.diguage.com/post/redis-core-data-structure-3/</guid><description>&lt;div class="paragraph">
+&lt;p>在五年前，D瓜哥写了 &lt;a href="https://www.diguage.com/post/redis-core-data-structure-1/" target="_blank" rel="noopener">Redis 核心数据结构（一）&lt;/a> 和 &lt;a href="https://www.diguage.com/post/redis-core-data-structure-2/" target="_blank" rel="noopener">Redis 核心数据结构（二）&lt;/a> 两篇文章，来对 Redis 内部的数据结构做了深入分析。随着时间的推移，Redis 的实现也在不断进化，现在这些内容已经跟不上最新发展了，推陈出新，现在重写文章，来介绍 Redis 的最新发展。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_listpack">listpack&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>从 Redis 7.0 开始，使用 listpack 替换原来的 ziplist。至于替换原因，在 &lt;a href="https://github.com/redis/redis/issues/8702" target="_blank" rel="noopener">[NEW] listpack migration - replace all usage of ziplist with listpack&lt;/a> 做了解释说明：&lt;/p>
+&lt;/div>
+&lt;div class="quoteblock">
+&lt;blockquote>
+&lt;div class="paragraph">
+&lt;p>The reason for using listpack instead of ziplist is that ziplist may cause cascading updates when insert and delete in middle, which is the biggest problem.&lt;/p>
+&lt;/div>
+&lt;/blockquote>
+&lt;div class="attribution">
+— sundb
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>翻译过来：当在中间进行插入和删除时，ziplist 也许会产生级联更新，这是一个大问题。&lt;/p>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_编码规范">编码规范&lt;/h3>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/redis/listpack.png" alt="listpack 编码格式" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. listpack 编码格式&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>相比 ziplist，listpack 更偏向空间换时间。淡化极致的内存使用率，向更快的方向发力。&lt;/p>
+&lt;/div>
+&lt;div class="sect3">
+&lt;h4 id="integer">对整数编码&lt;/h4>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/redis/listpack-integer.png" alt="listpack 整数编码" width="95%"/>
+&lt;/div></description></item><item><title>细说编码与字符集</title><link>https://www.diguage.com/post/dive-into-encoding-and-character-set/</link><pubDate>Sat, 29 Oct 2022 09:09:12 +0800</pubDate><guid>https://www.diguage.com/post/dive-into-encoding-and-character-set/</guid><description>&lt;div class="paragraph">
+&lt;p>&lt;strong>文章还没写完，提前放出防止出现 404。稍后慢慢更新，敬请期待： &lt;a href="https://www.diguage.com/post/dive-into-encoding-and-character-set/" target="_blank" rel="noopener">细说编码与字符集 - &amp;#34;地瓜哥&amp;#34;博客网&lt;/a>&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>文章还没写完，提前放出防止出现 404。稍后慢慢更新，敬请期待： &lt;a href="https://www.diguage.com/post/dive-into-encoding-and-character-set/" target="_blank" rel="noopener">细说编码与字符集 - &amp;#34;地瓜哥&amp;#34;博客网&lt;/a>&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>文章还没写完，提前放出防止出现 404。稍后慢慢更新，敬请期待： &lt;a href="https://www.diguage.com/post/dive-into-encoding-and-character-set/" target="_blank" rel="noopener">细说编码与字符集 - &amp;#34;地瓜哥&amp;#34;博客网&lt;/a>&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>前段时间要研究 Hessian 编码格式，为了搞清楚 Hessian 对字符串的编码，就顺路查了好多编码和字符集的工作，理清了很多以前模糊的知识点。下面整理一下笔记，也梳理一下自己的思路和理解。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_ascii_码">ASCII 码&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>计算机起源于美国，他们对英语字符与二进制位之间的对应关系做了统一规定，并制定了一套字符编码规则，这套编码规则被称为 American Standard Code for Information Interchange，简称为 ASCII 编码&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>其实，ASCII 最早起源于电报码。最早的商业应用是贝尔公司的七位电传打字机。后来于 1963 年发布了该标准的第一版。在网络交换中使用的 ASCII 格式是在 1969 年发布的，该格式在 2015 年发展成为互联网标准。点击 &lt;a href="https://www.rfc-editor.org/rfc/rfc20.pdf" target="_blank" rel="noopener">RFC 20: ASCII format for network interchange&lt;/a>，感受一下 1969 年的古香古色。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>ASCII 编码一共定义了128个字符的编码规则，用七位二进制表示（&lt;code>0x00&lt;/code> - &lt;code>0x7F&lt;/code>）, 这些字符组成的集合就叫做 ASCII 字符集。完整列表如下：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/encoding/ascii-table.svg" alt="ASCII Table" width="95%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>ASCII 码可以说是现在所有编码的鼻祖。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_编码乱战及_unicode_应运而生">编码乱战及 Unicode 应运而生&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>ASCII 编码是为专门英语指定的编码标准，但是却不能编码英语外来词。比如 &lt;code>résumé&lt;/code>，其中 &lt;code>é&lt;/code> 就不在 ASCII 编码范围内。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>随着计算机的发展，各个国家或地区，甚至不同公司都推出了不同的编码标准，比如中国推出了 GB2312、GBK 以及 GB18030；微软推出了 Windows character sets 。&lt;/p>
+&lt;/div></description></item><item><title>关于 MySQL 新版连接驱动时区对齐问题的研究</title><link>https://www.diguage.com/post/research-on-timezone-of-mysql-new-connection-driver/</link><pubDate>Wed, 07 Jul 2021 10:23:41 +0800</pubDate><guid>https://www.diguage.com/post/research-on-timezone-of-mysql-new-connection-driver/</guid><description>&lt;div class="paragraph">
+&lt;p>在一个项目开量验证过程中，发现 createDate 字段不正确，比正确时间晚了十四个小时。调研发现，这是一个非常典型的问题。现在把定位问题的思路和解决办法给大家做个分享。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>首先，检查数据库配置，查询线上生产环境配置，结果如下：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/mysql/mysql-variable.png" alt="MySQL 变量" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. MySQL 变量&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>同时，检查线上生产环境 MySQL 版本，为问题复现做准备：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/mysql/mysql-version.png" alt="MySQL 版本" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 2. MySQL 版本&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>从数据库配置上来说，基本正常，没有发现什么问题。（持续运行了这么长时间，有问题应该早就发现了。）&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>其次，检查数据库连接配置，正式环境的链接配置如下：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code>jdbc:mysql://&amp;lt;host&amp;gt;:3306/&amp;lt;schema&amp;gt;?createDatabaseIfNotExist=true
+ &amp;amp;characterEncoding=utf-8&amp;amp;useUnicode=true&amp;amp;connectTimeout=2000
+ &amp;amp;socketTimeout=2000&amp;amp;autoReconnect=true&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>数据库连接也没有问题。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>第三，询问 SA 线上服务器时区配置，回复上是 CST，这个和数据库对应，没有问题。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/mysql/talk-to-sa.png" alt="与 SA 沟通" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 3. 与 SA 沟通&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>配置检查正常，那么只好在本地搭建环境，重现问题，再寻求解决方案。由于项目是基于 Spring Boot 2.3.7.RELEASE 开发的，相关依赖也尽量使用 Spring Boot 指定版本的，所以，很快把开发环境搭好了。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在配置服务器环境时，遇到一点小小的问题：我一直以为有个时区名称叫 CST，就在网上去查怎么设置，结果徒劳半天也没有找到。后来上开发机检查开发机时区配置，发现是 &lt;code>Asia/Shanghai&lt;/code>。将测试服务器设置为该时区，数据库内部查询时区，显示和服务器一直。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>调试代码中，发现 MySQL 连接驱动的代码中，有配置时区的相关代码，如下：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="title">&lt;code>com.mysql.cj.protocol.a.NativeProtocol#configureTimezone&lt;/code>&lt;/div>
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="java">&lt;span class="cm">/**
+ * Configures the client&amp;#39;s timezone if required.
+ *
+ * @throws CJException
+ * if the timezone the server is configured to use can&amp;#39;t be
+ * mapped to a Java timezone.
+ */&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="kt">void&lt;/span> &lt;span class="nf">configureTimezone&lt;/span>&lt;span class="o">()&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="c1">// 获取服务器时区&lt;/span>
+ &lt;span class="nc">String&lt;/span> &lt;span class="n">configuredTimeZoneOnServer&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">serverSession&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getServerVariable&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;time_zone&amp;#34;&lt;/span>&lt;span class="o">);&lt;/span>
+
+ &lt;span class="c1">// 如果服务器时区是 SYSTEM，则使用服务器的 system_time_zone 时区设置&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;SYSTEM&amp;#34;&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">equalsIgnoreCase&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">configuredTimeZoneOnServer&lt;/span>&lt;span class="o">))&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="n">configuredTimeZoneOnServer&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">serverSession&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getServerVariable&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;system_time_zone&amp;#34;&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="o">}&lt;/span>
+
+ &lt;span class="c1">// 获取客户端时区配置&lt;/span>
+ &lt;span class="nc">String&lt;/span> &lt;span class="n">canonicalTimezone&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">getPropertySet&lt;/span>&lt;span class="o">().&lt;/span>&lt;span class="na">getStringProperty&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">PropertyKey&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">serverTimezone&lt;/span>&lt;span class="o">).&lt;/span>&lt;span class="na">getValue&lt;/span>&lt;span class="o">();&lt;/span>
+
+ &lt;span class="c1">// 如果服务器时区不为空，切客户端时区配置不可用，则使用服务器的时区配置&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">configuredTimeZoneOnServer&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="kc">null&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="c1">// user can override this with driver properties, so don&amp;#39;t detect if that&amp;#39;s the case&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">canonicalTimezone&lt;/span> &lt;span class="o">==&lt;/span> &lt;span class="kc">null&lt;/span> &lt;span class="o">||&lt;/span> &lt;span class="nc">StringUtils&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">isEmptyOrWhitespaceOnly&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">canonicalTimezone&lt;/span>&lt;span class="o">))&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="k">try&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="n">canonicalTimezone&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nc">TimeUtil&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getCanonicalTimezone&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">configuredTimeZoneOnServer&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">getExceptionInterceptor&lt;/span>&lt;span class="o">());&lt;/span>
+ &lt;span class="o">}&lt;/span> &lt;span class="k">catch&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="nc">IllegalArgumentException&lt;/span> &lt;span class="n">iae&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="k">throw&lt;/span> &lt;span class="nc">ExceptionFactory&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">createException&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">WrongArgumentException&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">class&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">iae&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getMessage&lt;/span>&lt;span class="o">(),&lt;/span> &lt;span class="n">getExceptionInterceptor&lt;/span>&lt;span class="o">());&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="o">}&lt;/span>
+
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">canonicalTimezone&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="kc">null&lt;/span> &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> &lt;span class="n">canonicalTimezone&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">length&lt;/span>&lt;span class="o">()&lt;/span> &lt;span class="o">&amp;gt;&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="c1">// 为该会话设置时区&lt;/span>
+ &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">serverSession&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">setServerTimeZone&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">TimeZone&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getTimeZone&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">canonicalTimezone&lt;/span>&lt;span class="o">));&lt;/span>
+
+ &lt;span class="c1">//&lt;/span>
+ &lt;span class="c1">// The Calendar class has the behavior of mapping unknown timezones to &amp;#39;GMT&amp;#39; instead of throwing an exception, so we must check for this...&lt;/span>
+ &lt;span class="c1">//&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(!&lt;/span>&lt;span class="n">canonicalTimezone&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">equalsIgnoreCase&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;GMT&amp;#34;&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">serverSession&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getServerTimeZone&lt;/span>&lt;span class="o">().&lt;/span>&lt;span class="na">getID&lt;/span>&lt;span class="o">().&lt;/span>&lt;span class="na">equals&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;GMT&amp;#34;&lt;/span>&lt;span class="o">))&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="k">throw&lt;/span> &lt;span class="nc">ExceptionFactory&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">createException&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">WrongArgumentException&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">class&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="nc">Messages&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getString&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;Connection.9&amp;#34;&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="k">new&lt;/span> &lt;span class="nc">Object&lt;/span>&lt;span class="o">[]&lt;/span> &lt;span class="o">{&lt;/span> &lt;span class="n">canonicalTimezone&lt;/span> &lt;span class="o">}),&lt;/span>
+ &lt;span class="n">getExceptionInterceptor&lt;/span>&lt;span class="o">());&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="o">}&lt;/span>
+
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>Redis 核心数据结构（二）</title><link>https://www.diguage.com/post/redis-core-data-structure-2/</link><pubDate>Fri, 03 Jul 2020 00:39:43 +0800</pubDate><guid>https://www.diguage.com/post/redis-core-data-structure-2/</guid><description>&lt;div class="sidebarblock">
+&lt;div class="content">
+&lt;div class="paragraph">
+&lt;p>本文内容对于 Redis 7+ 来说已经过时，最新实现请看下面两篇文章：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/redis-core-data-structure-3/">Redis 核心数据结构（3）&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/redis-core-data-structure-4/">Redis 核心数据结构（4）&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在上一篇文章： &lt;a href="https://www.diguage.com/post/redis-core-data-structure-1/">Redis 核心数据结构（1）&lt;/a> 中，介绍了链表、ziplist、quicklist 数据结构。这篇文章，来介绍一下 skiplist、dict。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="skiplist">skiplist&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>跳跃表是一种有序数据结构，支持平均 O(logN)、最坏 O(N) 复杂度的节点查找；大部分情况效率可以和平衡树相媲美，实现却比平衡树简单。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>跳跃表就是 Redis 中有序集合键的底层实现之一。&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="title">server.h&lt;/div>
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="c">&lt;span class="k">typedef&lt;/span> &lt;span class="k">struct&lt;/span> &lt;span class="n">zskiplistNode&lt;/span> &lt;span class="p">{&lt;/span>
+ &lt;span class="n">sds&lt;/span> &lt;span class="n">ele&lt;/span>&lt;span class="p">;&lt;/span>
+ &lt;span class="kt">double&lt;/span> &lt;span class="n">score&lt;/span>&lt;span class="p">;&lt;/span>
+ &lt;span class="k">struct&lt;/span> &lt;span class="n">zskiplistNode&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">backward&lt;/span>&lt;span class="p">;&lt;/span>
+ &lt;span class="k">struct&lt;/span> &lt;span class="n">zskiplistLevel&lt;/span> &lt;span class="p">{&lt;/span>
+ &lt;span class="k">struct&lt;/span> &lt;span class="n">zskiplistNode&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">forward&lt;/span>&lt;span class="p">;&lt;/span>
+ &lt;span class="kt">unsigned&lt;/span> &lt;span class="kt">long&lt;/span> &lt;span class="n">span&lt;/span>&lt;span class="p">;&lt;/span>
+ &lt;span class="p">}&lt;/span> &lt;span class="n">level&lt;/span>&lt;span class="p">[];&lt;/span>
+&lt;span class="p">}&lt;/span> &lt;span class="n">zskiplistNode&lt;/span>&lt;span class="p">;&lt;/span>
+
+&lt;span class="k">typedef&lt;/span> &lt;span class="k">struct&lt;/span> &lt;span class="n">zskiplist&lt;/span> &lt;span class="p">{&lt;/span>
+ &lt;span class="k">struct&lt;/span> &lt;span class="n">zskiplistNode&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">header&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">tail&lt;/span>&lt;span class="p">;&lt;/span>
+ &lt;span class="kt">unsigned&lt;/span> &lt;span class="kt">long&lt;/span> &lt;span class="n">length&lt;/span>&lt;span class="p">;&lt;/span>
+ &lt;span class="kt">int&lt;/span> &lt;span class="n">level&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="p">}&lt;/span> &lt;span class="n">zskiplist&lt;/span>&lt;span class="p">;&lt;/span>
+
+&lt;span class="k">typedef&lt;/span> &lt;span class="k">struct&lt;/span> &lt;span class="n">zset&lt;/span> &lt;span class="p">{&lt;/span>
+ &lt;span class="n">dict&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">dict&lt;/span>&lt;span class="p">;&lt;/span>
+ &lt;span class="n">zskiplist&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">zsl&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="p">}&lt;/span> &lt;span class="n">zset&lt;/span>&lt;span class="p">;&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>skiplist，顾名思义，首先它是一个list。实际上，它是在有序链表的基础上发展起来的。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/redis/skiplist.png" alt="skiplist" width="95%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>当我们想查找数据的时候，可以先沿着跨度大的链进行查找。当碰到比待查数据大的节点时，再回到跨度小的链表中进行查找。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>skiplist正是受这种多层链表的想法的启发而设计出来的。按照上面生成链表的方式，上面每一层链表的节点个数，是下面一层的节点个数的一半，这样查找过程就非常类似于一个二分查找，使得查找的时间复杂度可以降低到 O(logN)。但是，存在的一个问题是：如果插入新节点后就会打乱上下相邻两层节点是 2:1 的对应关系。如果要维持，则需要调整后面所有的节点。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>skiplist为了避免这一问题，它不要求上下相邻两层链表之间的节点个数有严格的对应关系，而是为每个节点随机出一个层数(level)。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/redis/redis-skiplist-insertions.png" alt="redis skiplist insertions" width="95%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>插入操作只需要修改插入节点前后的指针，而不需要对很多节点都进行调整。这就降低了插入操作的复杂度。实际上，这是 skiplist 的一个很重要的特性，这让它在插入性能上明显优于平衡树的方案。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>skiplist，翻译成中文，可以翻译成“跳表”或“跳跃表”，指的就是除了最下面第1层链表之外，它会产生若干层稀疏的链表，这些链表里面的指针故意跳过了一些节点（而且越高层的链表跳过的节点越多）。这就使得我们在查找数据的时候能够先在高层的链表中进行查找，然后逐层降低，最终降到第1层链表来精确地确定数据位置。在这个过程中，我们跳过了一些节点，从而也就加快了查找速度。&lt;/p>
+&lt;/div>
+&lt;div class="sidebarblock">
+&lt;div class="content">
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>在中间插入一个有比较高 Level 的节点，如何维护前面节点到这个节点的这些链接？&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>在平衡树种，如何做范围查找？先确定边界，然后其他节点怎么查找？&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/redis/redis_skiplist_example.png" alt="redis skiplist example" width="95%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>skiplist 中 key 允许重复。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>在比较时，不仅比较分数（即key），还要比较数据自身。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>第一层链表是双向链表，并且反向指针只有一个。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>在 skiplist 中可以很方便计算每个元素的排名。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>Redis 中的有序集合（sorted set），是在 skiplist, dict 和 ziplist 基础上构建起来的:&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>当数据较少时，sorted set是由一个 ziplist 来实现的。其中集合元素按照分值从小到大排序。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>当数据多的时候，sorted set 是由一个叫 zset 的数据结构来实现的，这个 zset 包含一个 dict + 一个 skiplist。dict 用来查询数据到分数(score)的对应关系，而 skiplist 用来根据分数查询数据（可能是范围查找）。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div></description></item><item><title>Redis 核心数据结构（一）</title><link>https://www.diguage.com/post/redis-core-data-structure-1/</link><pubDate>Thu, 02 Jul 2020 10:13:16 +0800</pubDate><guid>https://www.diguage.com/post/redis-core-data-structure-1/</guid><description>&lt;div class="sidebarblock">
+&lt;div class="content">
+&lt;div class="paragraph">
+&lt;p>本文内容对于 Redis 7+ 来说已经过时，最新实现请看下面两篇文章：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/redis-core-data-structure-3/">Redis 核心数据结构（3）&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/redis-core-data-structure-4/">Redis 核心数据结构（4）&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>Redis 目前是使用最广泛的缓存中间件。其突出特点就是支持多种常见的数据结构。对比 JDK 集合类的实现，Redis 的实现表现出很多独到之处，很多地方设计得别具匠心。下面就来简要介绍一下。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_linkedlist">linkedlist&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>Redis 底层也有很多地方使用到 linkedlist，并且也是双向链表。&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="title">adlist.h&lt;/div>
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="c">&lt;span class="k">typedef&lt;/span> &lt;span class="k">struct&lt;/span> &lt;span class="n">listNode&lt;/span> &lt;span class="p">{&lt;/span>
+ &lt;span class="k">struct&lt;/span> &lt;span class="n">listNode&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">prev&lt;/span>&lt;span class="p">;&lt;/span>
+ &lt;span class="k">struct&lt;/span> &lt;span class="n">listNode&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">next&lt;/span>&lt;span class="p">;&lt;/span>
+ &lt;span class="kt">void&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">value&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="p">}&lt;/span> &lt;span class="n">listNode&lt;/span>&lt;span class="p">;&lt;/span>
+
+&lt;span class="k">typedef&lt;/span> &lt;span class="k">struct&lt;/span> &lt;span class="n">listIter&lt;/span> &lt;span class="p">{&lt;/span>
+ &lt;span class="n">listNode&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">next&lt;/span>&lt;span class="p">;&lt;/span>
+ &lt;span class="kt">int&lt;/span> &lt;span class="n">direction&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="p">}&lt;/span> &lt;span class="n">listIter&lt;/span>&lt;span class="p">;&lt;/span>
+
+&lt;span class="k">typedef&lt;/span> &lt;span class="k">struct&lt;/span> &lt;span class="n">list&lt;/span> &lt;span class="p">{&lt;/span>
+ &lt;span class="n">listNode&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">head&lt;/span>&lt;span class="p">;&lt;/span>
+ &lt;span class="n">listNode&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">tail&lt;/span>&lt;span class="p">;&lt;/span>
+ &lt;span class="kt">void&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">dup&lt;/span>&lt;span class="p">)(&lt;/span>&lt;span class="kt">void&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">ptr&lt;/span>&lt;span class="p">);&lt;/span>
+ &lt;span class="kt">void&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">free&lt;/span>&lt;span class="p">)(&lt;/span>&lt;span class="kt">void&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">ptr&lt;/span>&lt;span class="p">);&lt;/span>
+ &lt;span class="kt">int&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">match&lt;/span>&lt;span class="p">)(&lt;/span>&lt;span class="kt">void&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">ptr&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">void&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">key&lt;/span>&lt;span class="p">);&lt;/span>
+ &lt;span class="kt">unsigned&lt;/span> &lt;span class="kt">long&lt;/span> &lt;span class="n">len&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="p">}&lt;/span> &lt;span class="n">list&lt;/span>&lt;span class="p">;&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>Redis 的 linkedlist 实现特点是：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>双向：节点带有前后指针；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>无环：首尾没有相连，所以没有构成环状；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>链表保存了首尾指针；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>多态：可以保存不同类型的值，这里成为泛型也许更符合 Java 中的语义。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>Redis 在 2014 年实现了 &lt;a href="#quicklist">quicklist&lt;/a>，并使用 quicklist 代替了 linkedlist。所以，现在 linkedlist 几乎已经是废弃状态。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_ziplist">ziplist&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>Redis 官方在 ziplist.c 文件的注释中对 ziplist 进行了定义：&lt;/p>
+&lt;/div>
+&lt;div class="quoteblock">
+&lt;blockquote>
+&lt;div class="paragraph">
+&lt;p>The ziplist is a specially encoded dually linked list that is designed
+to be very memory efficient. It stores both strings and integer values,
+where integers are encoded as actual integers instead of a series of
+characters. It allows push and pop operations on either side of the list
+in O(1) time. However, because every operation requires a reallocation of
+the memory used by the ziplist, the actual complexity is related to the
+amount of memory used by the ziplist.&lt;/p>
+&lt;/div></description></item></channel></rss>

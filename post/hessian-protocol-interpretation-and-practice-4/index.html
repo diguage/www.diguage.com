@@ -1,0 +1,979 @@
+<!doctype html><html class=no-js lang=zh-cn><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><meta http-equiv=X-UA-Compatible content="IE=edge"><title>Hessian 协议解释与实战（四）：数组与集合 - "地瓜哥"博客网</title>
+<script>(function(e,t){e[t]=e[t].replace("no-js","js")})(document.documentElement,"className")</script><meta name=keywords content="Hessian,序列化,协议,Java,微服务,架构,程序设计,Java,微服务,架构,设计,序列化,系统架构,程序设计"><meta name=description content><meta property="og:url" content="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-4/"><meta property="og:site_name" content='"地瓜哥"博客网'><meta property="og:title" content="Hessian 协议解释与实战（四）：数组与集合"><meta property="og:description" content=" 前段时间，翻译了 Hessian 2.0 的序列化协议，发布在了 Hessian 2.0 序列化协议（中文版）。但是，其中有很多言语不详之处。所以，接下来会用几篇文章来详细解释并实践一下 Hessian 序列化协议，以求做到知其然知其所以然。目录如下：
+Hessian 2.0 序列化协议（中文版） — Hessian 序列化协议的中文翻译版。根据后面的“协议解释与实战”系列文章，增加了协议内容错误提示。
+Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数 — 介绍布尔型数据、日期类型、浮点类型数据和整数类型数据等四种类型的数据的处理。
+Hessian 协议解释与实战（二）：长整型、二进制数据与 Null — 介绍长整数类型数据、二进制数据和 null 等三种类型的数据的处理。
+Hessian 协议解释与实战（三）：字符串 — 专门介绍了关于字符串的处理。由于字符串需要铺垫的基础知识比较多，处理细节也有繁琐，所以单独成篇来介绍。
+Hessian 源码分析（Java） — 开始第四篇分析之前，先来介绍一下 Hessian 的源码实现。方便后续展开说明。
+Hessian 协议解释与实战（四）：数组与集合 — 铺垫了一些关于实例对象的处理，重点介绍关于数组和集合的相关处理。
+Hessian 协议解释与实战（五）：对象与映射 — 重点介绍关于对象与映射的相关处理。
+Hessian、Msgpack 和 JSON 实例对比 — 用实例对比 JSON、Hessian 和 MessagePack 的区别。
+Avro、ProtoBuf、Thrift 的模式演进之路 — 翻译的 Martin Kleppmann 的文章，重点对比了 Avro、ProtoBuf、Thrift 的序列化处理思路。
+在上一篇文章 Hessian 源码分析（Java） 对 Hessian 的 Java 实现做了一个概要的分析，对处理流程以及整体架构做了一个简单的分析。接下来，回到主题，继续来解释 Hessian 序列化协议。这篇文章，我们来重点分析一下数组与集合相关的操作。"><meta property="og:locale" content="zh_cn"><meta property="og:type" content="article"><meta property="article:section" content="post"><meta property="article:published_time" content="2022-05-26T18:01:43+08:00"><meta property="article:modified_time" content="2024-05-05T14:47:12+08:00"><meta property="article:tag" content="Java"><meta property="article:tag" content="微服务"><meta property="article:tag" content="架构"><meta property="article:tag" content="设计"><meta property="article:tag" content="序列化"><meta name=twitter:card content="summary"><meta name=twitter:title content="Hessian 协议解释与实战（四）：数组与集合"><meta name=twitter:description content=" 前段时间，翻译了 Hessian 2.0 的序列化协议，发布在了 Hessian 2.0 序列化协议（中文版）。但是，其中有很多言语不详之处。所以，接下来会用几篇文章来详细解释并实践一下 Hessian 序列化协议，以求做到知其然知其所以然。目录如下：
+Hessian 2.0 序列化协议（中文版） — Hessian 序列化协议的中文翻译版。根据后面的“协议解释与实战”系列文章，增加了协议内容错误提示。
+Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数 — 介绍布尔型数据、日期类型、浮点类型数据和整数类型数据等四种类型的数据的处理。
+Hessian 协议解释与实战（二）：长整型、二进制数据与 Null — 介绍长整数类型数据、二进制数据和 null 等三种类型的数据的处理。
+Hessian 协议解释与实战（三）：字符串 — 专门介绍了关于字符串的处理。由于字符串需要铺垫的基础知识比较多，处理细节也有繁琐，所以单独成篇来介绍。
+Hessian 源码分析（Java） — 开始第四篇分析之前，先来介绍一下 Hessian 的源码实现。方便后续展开说明。
+Hessian 协议解释与实战（四）：数组与集合 — 铺垫了一些关于实例对象的处理，重点介绍关于数组和集合的相关处理。
+Hessian 协议解释与实战（五）：对象与映射 — 重点介绍关于对象与映射的相关处理。
+Hessian、Msgpack 和 JSON 实例对比 — 用实例对比 JSON、Hessian 和 MessagePack 的区别。
+Avro、ProtoBuf、Thrift 的模式演进之路 — 翻译的 Martin Kleppmann 的文章，重点对比了 Avro、ProtoBuf、Thrift 的序列化处理思路。
+在上一篇文章 Hessian 源码分析（Java） 对 Hessian 的 Java 实现做了一个概要的分析，对处理流程以及整体架构做了一个简单的分析。接下来，回到主题，继续来解释 Hessian 序列化协议。这篇文章，我们来重点分析一下数组与集合相关的操作。"><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link rel=dns-prefetch href=//fonts.googleapis.com><link rel=dns-prefetch href=//fonts.gstatic.com><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Open+Sans:400,400i,700"><link rel=stylesheet href=/css/style.min.css><link rel=stylesheet href=/css/asciidoctor.css><link rel=stylesheet href=/css/rouge-monokai.css><link rel="shortcut icon" href=/favicon.ico><script async src="https://www.googletagmanager.com/gtag/js?id=G-1MMT2NLEL4"></script><script>var dnt,doNotTrack=!1;if(!1&&(dnt=navigator.doNotTrack||window.doNotTrack||navigator.msDoNotTrack,doNotTrack=dnt=="1"||dnt=="yes"),!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-1MMT2NLEL4")}</script><script id=baidu_analytics>var _hmt=_hmt||[];(function(){var e,t=document.createElement("script");t.src="https://hm.baidu.com/hm.js?e56e7dd0a120b414f5741f4c5e5218ea",e=document.getElementsByTagName("script")[0],e.parentNode.insertBefore(t,e)})()</script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css></head><body class=body><div class="container container--outer"><header class=header><div class="container header__container"><div class=logo><a class=logo__link href=/ title='"地瓜哥"博客网' rel=home><div class="logo__item logo__text"><div class=logo__title>"地瓜哥"博客网</div><div class=logo__tagline>分享技术带来的喜悦 — https://www.diguage.com/</div></div></a></div><nav class=menu><button class=menu__btn aria-haspopup=true aria-expanded=false tabindex=0>
+<span class=menu__btn-title tabindex=-1>菜单</span></button><ul class=menu__list><li class=menu__item><a class=menu__link href=/><span class=menu__text>首页</span></a></li><li class=menu__item><a class=menu__link href=/categories/><span class=menu__text>分类</span></a></li><li class=menu__item><a class=menu__link href=/about/><span class=menu__text>关于</span></a></li><li class=menu__item><a class=menu__link href=/archives/><span class=menu__text>归档</span></a></li></ul></nav></div></header><div class="wrapper flex"><div class=primary><main class=main role=main><article class=post><header class=post__header><h1 class=post__title>Hessian 协议解释与实战（四）：数组与集合</h1><div class="post__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2022-05-26T18:01:43+08:00>2022-05-26</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/ rel=category>系统架构</a>, <a class=meta__link href=/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/ rel=category>程序设计</a></span></div></div></header><figure class="post__thumbnail thumbnail"><img class=thumbnail__image src=/images/common/confused-target-vector.jpg alt="Hessian 协议解释与实战（四）：数组与集合"></figure><div class="content post__content clearfix"><div class=paragraph><p>前段时间，翻译了 Hessian 2.0 的序列化协议，发布在了 <a href=https://www.diguage.com/post/hessian-serialization-protocol/ target=_blank rel=noopener>Hessian 2.0 序列化协议（中文版）</a>。但是，其中有很多言语不详之处。所以，接下来会用几篇文章来详细解释并实践一下 Hessian 序列化协议，以求做到知其然知其所以然。目录如下：</p></div><div class="olist arabic"><ol class=arabic><li><p><a href=https://www.diguage.com/post/hessian-serialization-protocol/ target=_blank rel=noopener>Hessian 2.0 序列化协议（中文版）</a> — Hessian 序列化协议的中文翻译版。根据后面的“协议解释与实战”系列文章，增加了协议内容错误提示。</p></li><li><p><a href=https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/ target=_blank rel=noopener>Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数</a> — 介绍布尔型数据、日期类型、浮点类型数据和整数类型数据等四种类型的数据的处理。</p></li><li><p><a href=https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-2/ target=_blank rel=noopener>Hessian 协议解释与实战（二）：长整型、二进制数据与 Null</a> — 介绍长整数类型数据、二进制数据和 <code>null</code> 等三种类型的数据的处理。</p></li><li><p><a href=https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-3/ target=_blank rel=noopener>Hessian 协议解释与实战（三）：字符串</a> — 专门介绍了关于字符串的处理。由于字符串需要铺垫的基础知识比较多，处理细节也有繁琐，所以单独成篇来介绍。</p></li><li><p><a href=https://www.diguage.com/post/hessian-source-analysis-for-java/ target=_blank rel=noopener>Hessian 源码分析（Java）</a> — 开始第四篇分析之前，先来介绍一下 Hessian 的源码实现。方便后续展开说明。</p></li><li><p><a href=https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-4/ target=_blank rel=noopener>Hessian 协议解释与实战（四）：数组与集合</a> — 铺垫了一些关于实例对象的处理，重点介绍关于数组和集合的相关处理。</p></li><li><p><a href=https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-5/ target=_blank rel=noopener>Hessian 协议解释与实战（五）：对象与映射</a> — 重点介绍关于对象与映射的相关处理。</p></li><li><p><a href=https://www.diguage.com/post/hessian-vs-msgpack-vs-json/ target=_blank rel=noopener>Hessian、Msgpack 和 JSON 实例对比</a> — 用实例对比 JSON、Hessian 和 MessagePack 的区别。</p></li><li><p><a href=https://www.diguage.com/post/schema-evolution-in-avro-protobuf-thrift target=_blank rel=noopener>Avro、ProtoBuf、Thrift 的模式演进之路</a> — 翻译的 Martin Kleppmann 的文章，重点对比了 Avro、ProtoBuf、Thrift 的序列化处理思路。</p></li></ol></div><hr><div class=paragraph><p>在上一篇文章 <a href=https://www.diguage.com/post/hessian-source-analysis-for-java/ target=_blank rel=noopener>Hessian 源码分析（Java）</a> 对 Hessian 的 Java 实现做了一个概要的分析，对处理流程以及整体架构做了一个简单的分析。接下来，回到主题，继续来解释 Hessian 序列化协议。这篇文章，我们来重点分析一下数组与集合相关的操作。</p></div><div class=sect1><h2 id=_基础工具方法>基础工具方法</h2><div class=sectionbody><div class=paragraph><p>基础工具方法就不再赘述，请直接参考 <a href=https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/#helper-methods target=_blank rel=noopener>Hessian 协议解释与实战（一）：基础工具方法</a> 中提到的几个方法。</p></div><div class=paragraph><p>对打印字符的工具做一下改造：</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code data-lang=java><span class=cm>/**
+ * 打印字节数组
+ *
+ * @author D瓜哥 · <a href=https://www.diguage.com/ target=_blank>https://www.diguage.com/</a>
+ */</span>
+<span class=kd>private</span> <span class=kt>void</span> <span class=nf>printBytes</span><span class=o>(</span><span class=kt>byte</span><span class=o>[]</span> <span class=n>result</span><span class=o>)</span> <span class=o>{</span>
+    <span class=k>if</span> <span class=o>(</span><span class=nc>Objects</span><span class=o>.</span><span class=na>isNull</span><span class=o>(</span><span class=n>result</span><span class=o>))</span> <span class=o>{</span>
+        <span class=nc>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=s>&#34;.... bytes is null ....&#34;</span><span class=o>);</span>
+        <span class=k>return</span><span class=o>;</span>
+    <span class=o>}</span>
+    <span class=kt>int</span> <span class=n>chunk</span> <span class=o>=</span> <span class=mh>0x8000</span><span class=o>;</span>
+    <span class=kt>int</span> <span class=n>byteChunk</span> <span class=o>=</span> <span class=mi>8</span> <span class=o>*</span> <span class=mi>1024</span><span class=o>;</span>
+    <span class=k>if</span> <span class=o>(</span><span class=mi>0</span> <span class=o>&lt;</span> <span class=n>result</span><span class=o>.</span><span class=na>length</span> <span class=o>&amp;&amp;</span> <span class=n>chunk</span> <span class=o>&lt;</span> <span class=n>result</span><span class=o>.</span><span class=na>length</span> <span class=o>&amp;</span> <span class=n>result</span><span class=o>[</span><span class=mi>0</span><span class=o>]</span> <span class=o>==</span> <span class=sc>&#39;R&#39;</span><span class=o>)</span> <span class=o>{</span>
+        <span class=k>for</span> <span class=o>(</span><span class=kt>int</span> <span class=n>i</span> <span class=o>=</span> <span class=mi>0</span><span class=o>;</span> <span class=n>i</span> <span class=o>&lt;</span> <span class=n>result</span><span class=o>.</span><span class=na>length</span><span class=o>;</span> <span class=n>i</span> <span class=o>+=</span> <span class=o>(</span><span class=n>chunk</span> <span class=o>+</span> <span class=mi>3</span><span class=o>))</span> <span class=o>{</span>
+            <span class=kt>int</span> <span class=n>min</span> <span class=o>=</span> <span class=nc>Math</span><span class=o>.</span><span class=na>max</span><span class=o>(</span><span class=n>i</span> <span class=o>-</span> <span class=mi>1</span><span class=o>,</span> <span class=mi>0</span><span class=o>);</span>
+            <span class=kt>int</span> <span class=n>max</span> <span class=o>=</span> <span class=nc>Math</span><span class=o>.</span><span class=na>min</span><span class=o>(</span><span class=n>i</span> <span class=o>+</span> <span class=mi>4</span><span class=o>,</span> <span class=n>result</span><span class=o>.</span><span class=na>length</span><span class=o>);</span>
+            <span class=nc>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=s>&#34;.... &#34;</span> <span class=o>+</span> <span class=n>min</span> <span class=o>+</span> <span class=s>&#34; ~ &#34;</span> <span class=o>+</span> <span class=n>max</span> <span class=o>+</span> <span class=s>&#34; ....&#34;</span><span class=o>);</span>
+            <span class=k>for</span> <span class=o>(;</span> <span class=n>min</span> <span class=o>&lt;</span> <span class=n>max</span><span class=o>;</span> <span class=n>min</span><span class=o>++)</span> <span class=o>{</span>
+                <span class=n>printByte</span><span class=o>(</span><span class=n>result</span><span class=o>[</span><span class=n>min</span><span class=o>]);</span>
+            <span class=o>}</span>
+        <span class=o>}</span>
+        <span class=nc>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=s>&#34;...... &#34;</span> <span class=o>+</span> <span class=n>result</span><span class=o>.</span><span class=na>length</span><span class=o>);</span>
+    <span class=o>}</span> <span class=k>else</span> <span class=k>if</span> <span class=o>(</span><span class=mi>0</span> <span class=o>&lt;</span> <span class=n>result</span><span class=o>.</span><span class=na>length</span> <span class=o>&amp;&amp;</span> <span class=n>byteChunk</span> <span class=o>&lt;</span> <span class=n>result</span><span class=o>.</span><span class=na>length</span>
+               <span class=o>&amp;&amp;</span> <span class=n>result</span><span class=o>[</span><span class=mi>0</span><span class=o>]</span> <span class=o>==</span> <span class=sc>&#39;A&#39;</span><span class=o>)</span> <span class=o>{</span>
+        <span class=k>for</span> <span class=o>(</span><span class=kt>int</span> <span class=n>i</span> <span class=o>=</span> <span class=mi>0</span><span class=o>;</span> <span class=n>i</span> <span class=o>&lt;</span> <span class=n>result</span><span class=o>.</span><span class=na>length</span><span class=o>;</span> <span class=n>i</span> <span class=o>+=</span> <span class=n>byteChunk</span><span class=o>)</span> <span class=o>{</span>
+            <span class=kt>int</span> <span class=n>min</span> <span class=o>=</span> <span class=nc>Math</span><span class=o>.</span><span class=na>max</span><span class=o>(</span><span class=n>i</span> <span class=o>-</span> <span class=mi>1</span><span class=o>,</span> <span class=mi>0</span><span class=o>);</span>
+            <span class=kt>int</span> <span class=n>max</span> <span class=o>=</span> <span class=nc>Math</span><span class=o>.</span><span class=na>min</span><span class=o>(</span><span class=n>i</span> <span class=o>+</span> <span class=mi>4</span><span class=o>,</span> <span class=n>result</span><span class=o>.</span><span class=na>length</span><span class=o>);</span>
+            <span class=nc>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=s>&#34;.... &#34;</span> <span class=o>+</span> <span class=n>min</span> <span class=o>+</span> <span class=s>&#34; ~ &#34;</span> <span class=o>+</span> <span class=n>max</span> <span class=o>+</span> <span class=s>&#34; ....&#34;</span><span class=o>);</span>
+            <span class=k>for</span> <span class=o>(;</span> <span class=n>min</span> <span class=o>&lt;</span> <span class=n>max</span><span class=o>;</span> <span class=n>min</span><span class=o>++)</span> <span class=o>{</span>
+                <span class=n>printByte</span><span class=o>(</span><span class=n>result</span><span class=o>[</span><span class=n>min</span><span class=o>]);</span>
+            <span class=o>}</span>
+        <span class=o>}</span>
+        <span class=nc>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=s>&#34;...... &#34;</span> <span class=o>+</span> <span class=n>result</span><span class=o>.</span><span class=na>length</span><span class=o>);</span>
+    <span class=o>}</span> <span class=k>else</span> <span class=k>if</span> <span class=o>(</span><span class=n>result</span><span class=o>.</span><span class=na>length</span> <span class=o>&gt;</span> <span class=mi>0</span> <span class=o>&amp;&amp;</span> <span class=o>(</span><span class=n>result</span><span class=o>[</span><span class=mi>0</span><span class=o>]</span> <span class=o>==</span> <span class=sc>&#39;C&#39;</span> <span class=c1>// class def</span>
+            <span class=c1>// List</span>
+            <span class=o>||</span> <span class=n>result</span><span class=o>[</span><span class=mi>0</span><span class=o>]</span> <span class=o>==</span> <span class=mh>0x55</span> <span class=o>||</span> <span class=n>result</span><span class=o>[</span><span class=mi>0</span><span class=o>]</span> <span class=o>==</span> <span class=sc>&#39;V&#39;</span>
+            <span class=o>||</span> <span class=n>result</span><span class=o>[</span><span class=mi>0</span><span class=o>]</span> <span class=o>==</span> <span class=mh>0x57</span> <span class=o>||</span> <span class=n>result</span><span class=o>[</span><span class=mi>0</span><span class=o>]</span> <span class=o>==</span> <span class=mh>0x58</span>
+            <span class=o>||</span> <span class=o>(</span><span class=mh>0x70</span> <span class=o>&lt;=</span> <span class=n>result</span><span class=o>[</span><span class=mi>0</span><span class=o>]</span> <span class=o>&amp;&amp;</span> <span class=n>result</span><span class=o>[</span><span class=mi>0</span><span class=o>]</span> <span class=o>&lt;=</span> <span class=o>((</span><span class=kt>byte</span><span class=o>)</span> <span class=mh>0x7F</span><span class=o>))</span>
+            <span class=c1>// Map</span>
+            <span class=o>||</span> <span class=n>result</span><span class=o>[</span><span class=mi>0</span><span class=o>]</span> <span class=o>==</span> <span class=sc>&#39;M&#39;</span> <span class=o>||</span> <span class=n>result</span><span class=o>[</span><span class=mi>0</span><span class=o>]</span> <span class=o>==</span> <span class=sc>&#39;H&#39;</span>
+            <span class=c1>// object</span>
+            <span class=o>||</span> <span class=n>result</span><span class=o>[</span><span class=mi>0</span><span class=o>]</span> <span class=o>==</span> <span class=sc>&#39;O&#39;</span>
+            <span class=o>||</span> <span class=o>(</span><span class=mh>0x60</span> <span class=o>&lt;=</span> <span class=n>result</span><span class=o>[</span><span class=mi>0</span><span class=o>]</span> <span class=o>&amp;&amp;</span> <span class=n>result</span><span class=o>[</span><span class=mi>0</span><span class=o>]</span> <span class=o>&lt;=</span> <span class=o>((</span><span class=kt>byte</span><span class=o>)</span> <span class=mh>0x6F</span><span class=o>))))</span> <span class=o>{</span>
+        <span class=kt>int</span> <span class=n>min</span> <span class=o>=</span> <span class=mi>0</span><span class=o>;</span>
+        <span class=kt>int</span> <span class=n>max</span> <span class=o>=</span> <span class=n>result</span><span class=o>.</span><span class=na>length</span><span class=o>;</span>
+        <span class=nc>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=s>&#34;.... &#34;</span> <span class=o>+</span> <span class=n>min</span> <span class=o>+</span> <span class=s>&#34; ~ &#34;</span> <span class=o>+</span> <span class=n>max</span> <span class=o>+</span> <span class=s>&#34; ....&#34;</span><span class=o>);</span>
+        <span class=k>for</span> <span class=o>(;</span> <span class=n>min</span> <span class=o>&lt;</span> <span class=n>result</span><span class=o>.</span><span class=na>length</span><span class=o>;</span> <span class=n>min</span><span class=o>++)</span> <span class=o>{</span>
+            <span class=n>printByte</span><span class=o>(</span><span class=n>result</span><span class=o>[</span><span class=n>min</span><span class=o>]);</span>
+        <span class=o>}</span>
+    <span class=o>}</span> <span class=k>else</span> <span class=o>{</span>
+        <span class=kt>int</span> <span class=n>min</span> <span class=o>=</span> <span class=mi>0</span><span class=o>;</span>
+        <span class=kt>int</span> <span class=n>max</span> <span class=o>=</span> <span class=mi>10</span><span class=o>;</span>
+        <span class=nc>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=s>&#34;.... &#34;</span> <span class=o>+</span> <span class=n>min</span> <span class=o>+</span> <span class=s>&#34; ~ &#34;</span> <span class=o>+</span> <span class=n>max</span> <span class=o>+</span> <span class=s>&#34; ....&#34;</span><span class=o>);</span>
+        <span class=k>for</span> <span class=o>(;</span> <span class=n>min</span> <span class=o>&lt;</span> <span class=n>result</span><span class=o>.</span><span class=na>length</span> <span class=o>&amp;&amp;</span> <span class=n>min</span> <span class=o>&lt;</span> <span class=n>max</span><span class=o>;</span> <span class=n>min</span><span class=o>++)</span> <span class=o>{</span>
+            <span class=n>printByte</span><span class=o>(</span><span class=n>result</span><span class=o>[</span><span class=n>min</span><span class=o>]);</span>
+        <span class=o>}</span>
+        <span class=k>if</span> <span class=o>(</span><span class=n>result</span><span class=o>.</span><span class=na>length</span> <span class=o>&gt;</span> <span class=n>max</span><span class=o>)</span> <span class=o>{</span>
+            <span class=nc>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=s>&#34;...... &#34;</span> <span class=o>+</span> <span class=n>result</span><span class=o>.</span><span class=na>length</span><span class=o>);</span>
+        <span class=o>}</span>
+    <span class=o>}</span>
+<span class=o>}</span>
+
+<span class=cm>/**
+ * 打印单个字节
+ *
+ * @author D瓜哥 · <a href=https://www.diguage.com/ target=_blank>https://www.diguage.com/</a>
+ */</span>
+<span class=kd>private</span> <span class=kt>void</span> <span class=nf>printByte</span><span class=o>(</span><span class=kt>byte</span> <span class=n>b</span><span class=o>)</span> <span class=o>{</span>
+    <span class=nc>String</span> <span class=n>bitx</span> <span class=o>=</span> <span class=nc>Integer</span><span class=o>.</span><span class=na>toBinaryString</span><span class=o>(</span><span class=nc>Byte</span><span class=o>.</span><span class=na>toUnsignedInt</span><span class=o>(</span><span class=n>b</span><span class=o>));</span>
+    <span class=nc>String</span> <span class=n>zbits</span> <span class=o>=</span> <span class=nc>String</span><span class=o>.</span><span class=na>format</span><span class=o>(</span><span class=s>&#34;%8s&#34;</span><span class=o>,</span> <span class=n>bitx</span><span class=o>).</span><span class=na>replace</span><span class=o>(</span><span class=sc>&#39; &#39;</span><span class=o>,</span> <span class=sc>&#39;0&#39;</span><span class=o>);</span>
+    <span class=k>if</span> <span class=o>(</span><span class=mi>0</span> <span class=o>&lt;=</span> <span class=n>b</span><span class=o>)</span> <span class=o>{</span>
+        <span class=nc>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>printf</span><span class=o>(</span><span class=s>&#34;%4d 0x%02X %8s %c %n&#34;</span><span class=o>,</span> <span class=n>b</span><span class=o>,</span> <span class=n>b</span><span class=o>,</span> <span class=n>zbits</span><span class=o>,</span> <span class=n>b</span><span class=o>);</span>
+    <span class=o>}</span> <span class=k>else</span> <span class=o>{</span>
+        <span class=nc>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>printf</span><span class=o>(</span><span class=s>&#34;%4d 0x%02X %8s %n&#34;</span><span class=o>,</span> <span class=n>b</span><span class=o>,</span> <span class=n>b</span><span class=o>,</span> <span class=n>zbits</span><span class=o>);</span>
+    <span class=o>}</span>
+<span class=o>}</span></code></pre></div></div><div class=paragraph><p>无论是序列化实例对象，还是序列化集合类，其实都是调用 <code>writeObject(Object value)</code> 方法。所以，将其序列化过程提取成方法如下：</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code data-lang=java><span class=cm>/**
+ * 对象序列化
+ *
+ * @author D瓜哥 · <a href=https://www.diguage.com/ target=_blank>https://www.diguage.com/</a>
+ */</span>
+<span class=kd>public</span> <span class=kt>void</span> <span class=nf>objectTo</span><span class=o>(</span><span class=nc>Object</span> <span class=n>value</span><span class=o>)</span> <span class=kd>throws</span> <span class=nc>Throwable</span> <span class=o>{</span>
+    <span class=nc>ByteArrayOutputStream</span> <span class=n>bos</span> <span class=o>=</span> <span class=k>new</span> <span class=nc>ByteArrayOutputStream</span><span class=o>();</span>
+    <span class=nc>Hessian2Output</span> <span class=n>out</span> <span class=o>=</span> <span class=n>getHessian2Output</span><span class=o>(</span><span class=n>bos</span><span class=o>);</span>
+
+    <span class=n>out</span><span class=o>.</span><span class=na>writeObject</span><span class=o>(</span><span class=n>value</span><span class=o>);</span>
+    <span class=n>out</span><span class=o>.</span><span class=na>close</span><span class=o>();</span>
+    <span class=kt>byte</span><span class=o>[]</span> <span class=n>result</span> <span class=o>=</span> <span class=n>bos</span><span class=o>.</span><span class=na>toByteArray</span><span class=o>();</span>
+
+    <span class=nc>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=s>&#34;\n== Object: &#34;</span> <span class=o>+</span> <span class=n>value</span><span class=o>.</span><span class=na>getClass</span><span class=o>().</span><span class=na>getName</span><span class=o>()</span> <span class=o>+</span> <span class=s>&#34;  ==&#34;</span><span class=o>);</span>
+    <span class=k>if</span> <span class=o>(</span><span class=n>value</span> <span class=k>instanceof</span> <span class=nc>Collection</span><span class=o>&lt;?&gt;</span> <span class=o>&amp;&amp;</span> <span class=o>!((</span><span class=nc>Collection</span><span class=o>&lt;?&gt;)</span> <span class=n>value</span><span class=o>).</span><span class=na>isEmpty</span><span class=o>())</span> <span class=o>{</span>
+        <span class=nc>Optional</span><span class=o>&lt;?&gt;</span> <span class=n>ele</span> <span class=o>=</span> <span class=o>((</span><span class=nc>Collection</span><span class=o>&lt;?&gt;)</span> <span class=n>value</span><span class=o>).</span><span class=na>stream</span><span class=o>().</span><span class=na>findFirst</span><span class=o>();</span>
+        <span class=nc>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=s>&#34;== Generic: &#34;</span> <span class=o>+</span> <span class=n>ele</span><span class=o>.</span><span class=na>get</span><span class=o>().</span><span class=na>getClass</span><span class=o>().</span><span class=na>getName</span><span class=o>()</span> <span class=o>+</span> <span class=s>&#34;  ==&#34;</span><span class=o>);</span>
+    <span class=o>}</span>
+    <span class=k>if</span> <span class=o>(</span><span class=n>value</span> <span class=k>instanceof</span> <span class=nc>Map</span> <span class=o>&amp;&amp;</span> <span class=o>!((</span><span class=nc>Map</span><span class=o>)</span> <span class=n>value</span><span class=o>).</span><span class=na>isEmpty</span><span class=o>())</span> <span class=o>{</span>
+        <span class=nc>Optional</span><span class=o>&lt;?</span> <span class=kd>extends</span> <span class=nc>Map</span><span class=o>.</span><span class=na>Entry</span><span class=o>&lt;?,</span> <span class=o>?&gt;&gt;</span> <span class=n>optional</span> <span class=o>=</span>
+                <span class=o>((</span><span class=nc>Map</span><span class=o>&lt;?,</span> <span class=o>?&gt;)</span> <span class=n>value</span><span class=o>).</span><span class=na>entrySet</span><span class=o>().</span><span class=na>stream</span><span class=o>().</span><span class=na>findFirst</span><span class=o>();</span>
+        <span class=nc>Map</span><span class=o>.</span><span class=na>Entry</span><span class=o>&lt;?,</span> <span class=o>?&gt;</span> <span class=n>entry</span> <span class=o>=</span> <span class=n>optional</span><span class=o>.</span><span class=na>get</span><span class=o>();</span>
+        <span class=nc>Object</span> <span class=n>key</span> <span class=o>=</span> <span class=n>entry</span><span class=o>.</span><span class=na>getKey</span><span class=o>();</span>
+        <span class=nc>Object</span> <span class=n>val</span> <span class=o>=</span> <span class=n>entry</span><span class=o>.</span><span class=na>getValue</span><span class=o>();</span>
+        <span class=nc>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=s>&#34;== Key Object: &#34;</span> <span class=o>+</span> <span class=n>key</span><span class=o>.</span><span class=na>getClass</span><span class=o>().</span><span class=na>getName</span><span class=o>()</span> <span class=o>+</span> <span class=s>&#34;  ==&#34;</span><span class=o>);</span>
+        <span class=nc>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=s>&#34;== Val Object: &#34;</span> <span class=o>+</span> <span class=n>val</span><span class=o>.</span><span class=na>getClass</span><span class=o>().</span><span class=na>getName</span><span class=o>()</span> <span class=o>+</span> <span class=s>&#34;  ==&#34;</span><span class=o>);</span>
+    <span class=o>}</span>
+    <span class=nc>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=n>toJson</span><span class=o>(</span><span class=n>value</span><span class=o>));</span>
+    <span class=nc>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=s>&#34;== byte array: hessian result ==&#34;</span><span class=o>);</span>
+    <span class=n>printBytes</span><span class=o>(</span><span class=n>result</span><span class=o>);</span>
+<span class=o>}</span>
+
+<span class=cm>/**
+ * 打印单个字节
+ *
+ * @author D瓜哥 · <a href=https://www.diguage.com/ target=_blank>https://www.diguage.com/</a>
+ */</span>
+<span class=kd>private</span> <span class=nc>String</span> <span class=nf>toJson</span><span class=o>(</span><span class=nc>Object</span> <span class=n>value</span><span class=o>)</span> <span class=o>{</span>
+    <span class=c1>// 需要添加 com.fasterxml.jackson.core:jackson-databind 依赖</span>
+    <span class=nc>ObjectMapper</span> <span class=n>mapper</span> <span class=o>=</span> <span class=k>new</span> <span class=nc>ObjectMapper</span><span class=o>();</span>
+    <span class=c1>// 序列化字段</span>
+    <span class=n>mapper</span><span class=o>.</span><span class=na>setVisibility</span><span class=o>(</span><span class=nc>PropertyAccessor</span><span class=o>.</span><span class=na>FIELD</span><span class=o>,</span> <span class=nc>JsonAutoDetect</span><span class=o>.</span><span class=na>Visibility</span><span class=o>.</span><span class=na>ANY</span><span class=o>);</span>
+    <span class=k>try</span> <span class=o>{</span>
+        <span class=k>return</span> <span class=n>mapper</span><span class=o>.</span><span class=na>writeValueAsString</span><span class=o>(</span><span class=n>value</span><span class=o>);</span>
+    <span class=o>}</span> <span class=k>catch</span> <span class=o>(</span><span class=nc>JsonProcessingException</span> <span class=n>e</span><span class=o>)</span> <span class=o>{</span>
+        <span class=n>e</span><span class=o>.</span><span class=na>printStackTrace</span><span class=o>();</span>
+        <span class=k>return</span> <span class=kc>null</span><span class=o>;</span>
+    <span class=o>}</span>
+<span class=o>}</span></code></pre></div></div></div></div><div class=sect1><h2 id=object>首谈实例对象</h2><div class=sectionbody><div class=paragraph><p>要集合和哈希，就必须先了解一下 Hessian 对实例对象的处理。由于，实例对象和哈希的处理有些相似。所以，想把两个放在一起来说明。这里对实例对象的处理先做个概要介绍。</p></div><div class=paragraph><p>先看一下类定义：</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code data-lang=java><span class=kn>package</span> <span class=nn>com.diguage</span><span class=o>;</span>
+
+<span class=cm>/**
+ * @author D瓜哥 · <a href=https://www.diguage.com/ target=_blank>https://www.diguage.com/</a>
+ */</span>
+<span class=kd>public</span> <span class=kd>class</span> <span class=nc>Car</span> <span class=o>{</span>
+    <span class=kd>private</span> <span class=nc>String</span> <span class=n>name</span><span class=o>;</span>
+    <span class=kd>private</span> <span class=kt>int</span> <span class=n>age</span><span class=o>;</span>
+
+    <span class=kd>public</span> <span class=nf>Car</span><span class=o>()</span> <span class=o>{</span>
+    <span class=o>}</span>
+
+    <span class=kd>public</span> <span class=nf>Car</span><span class=o>(</span><span class=nc>String</span> <span class=n>name</span><span class=o>,</span> <span class=kt>int</span> <span class=n>age</span><span class=o>)</span> <span class=o>{</span>
+        <span class=k>this</span><span class=o>.</span><span class=na>name</span> <span class=o>=</span> <span class=n>name</span><span class=o>;</span>
+        <span class=k>this</span><span class=o>.</span><span class=na>age</span> <span class=o>=</span> <span class=n>age</span><span class=o>;</span>
+    <span class=o>}</span>
+
+    <span class=c1>// 各种 Setter 和 Getter 方法</span>
+<span class=o>}</span></code></pre></div></div><div class=paragraph><p>接下来，我们看一下序列化操作：</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code data-lang=java><span class=cm>/**
+ * 对象序列化
+ *
+ * @author D瓜哥 · <a href=https://www.diguage.com/ target=_blank>https://www.diguage.com/</a>
+ */</span>
+<span class=nd>@Test</span>
+<span class=kd>public</span> <span class=kt>void</span> <span class=nf>testObject1</span><span class=o>()</span> <span class=kd>throws</span> <span class=nc>Throwable</span> <span class=o>{</span>
+    <span class=nc>Car</span> <span class=n>value</span> <span class=o>=</span> <span class=k>new</span> <span class=nc>Car</span><span class=o>(</span><span class=s>&#34;diguage&#34;</span><span class=o>,</span> <span class=mi>47</span><span class=o>);</span>
+
+    <span class=nc>ByteArrayOutputStream</span> <span class=n>bos</span> <span class=o>=</span> <span class=k>new</span> <span class=nc>ByteArrayOutputStream</span><span class=o>();</span>
+    <span class=nc>Hessian2Output</span> <span class=n>out</span> <span class=o>=</span> <span class=n>getHessian2Output</span><span class=o>(</span><span class=n>bos</span><span class=o>);</span>
+
+    <span class=c1>// 在序列化实例对象时，</span>
+    <span class=c1>// 首先，序列化实例对象对应的类定义：</span>
+    <span class=c1>// ①类型（字符串形式）②字段数量③各个属性名称</span>
+    <span class=c1>// 其次，序列化实例对象</span>
+    <span class=c1>// ①根据类型找到对应的类型编号②依次序列化实例属性</span>
+    <span class=c1>// 关于编号编码：</span>
+    <span class=c1>// 1、在 ref ∈ [0, 15] 时，编码为：BC_OBJECT_DIRECT（0x60）+ ref</span>
+    <span class=c1>// 2、在 ref ∈ [16, ] 时，编码为 ①O ②ref（以int编码）</span>
+    <span class=c1>// 类型编号没有前置存储，是根据类型在序列化出现顺序来编号，从 0 开始，依次递增。</span>
+    <span class=n>out</span><span class=o>.</span><span class=na>writeObject</span><span class=o>(</span><span class=n>value</span><span class=o>);</span>
+    <span class=c1>// 序列化两次，查看差异</span>
+    <span class=c1>// 根据实验发现：重复对象会使用前置标志位 0x51（Q）+ 编号来处理，减少数据量。</span>
+    <span class=c1>// 引用编号没有前置存储，是根据实例在序列化出现的顺序来编号，从 0 开始，依次递增。</span>
+    <span class=n>out</span><span class=o>.</span><span class=na>writeObject</span><span class=o>(</span><span class=n>value</span><span class=o>);</span>
+    <span class=n>out</span><span class=o>.</span><span class=na>close</span><span class=o>();</span>
+    <span class=kt>byte</span><span class=o>[]</span> <span class=n>result</span> <span class=o>=</span> <span class=n>bos</span><span class=o>.</span><span class=na>toByteArray</span><span class=o>();</span>
+    <span class=nc>String</span> <span class=n>className</span> <span class=o>=</span> <span class=n>value</span><span class=o>.</span><span class=na>getClass</span><span class=o>().</span><span class=na>getName</span><span class=o>();</span>
+    <span class=nc>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=s>&#34;\n== Object: &#34;</span> <span class=o>+</span> <span class=n>className</span> <span class=o>+</span> <span class=s>&#34;  ==&#34;</span><span class=o>);</span>
+    <span class=nc>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=n>toJson</span><span class=o>(</span><span class=n>value</span><span class=o>));</span>
+    <span class=nc>System</span><span class=o>.</span><span class=na>out</span><span class=o>.</span><span class=na>println</span><span class=o>(</span><span class=s>&#34;== byte array: hessian result ==&#34;</span><span class=o>);</span>
+    <span class=n>printBytes</span><span class=o>(</span><span class=n>result</span><span class=o>);</span>
+<span class=o>}</span>
+
+
+<span class=c1>// -- 输出结果 ------------------------------------------------</span>
+<span class=o>==</span> <span class=nl>Object:</span> <span class=n>com</span><span class=o>.</span><span class=na>diguage</span><span class=o>.</span><span class=na>Car</span>  <span class=o>==</span>
+<span class=o>{</span><span class=s>&#34;name&#34;</span><span class=o>:</span><span class=s>&#34;diguage&#34;</span><span class=o>,</span><span class=s>&#34;age&#34;</span><span class=o>:</span><span class=mi>47</span><span class=o>}</span>
+<span class=o>==</span> <span class=kt>byte</span> <span class=nl>array:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+<span class=o>....</span> <span class=mi>0</span> <span class=o>~</span> <span class=mi>39</span> <span class=o>....</span>
+  <span class=mi>67</span> <span class=mh>0x43</span> <span class=mo>01000011</span> <span class=no>C</span>
+  <span class=mi>15</span> <span class=mh>0x0F</span> <span class=mo>00001111</span> <span class=err></span>
+  <span class=mi>99</span> <span class=mh>0x63</span> <span class=mo>01100011</span> <span class=n>c</span>
+ <span class=mi>111</span> <span class=mh>0x6F</span> <span class=mo>01101111</span> <span class=n>o</span>
+ <span class=mi>109</span> <span class=mh>0x6D</span> <span class=mo>01101101</span> <span class=n>m</span>
+  <span class=mi>46</span> <span class=mh>0x2E</span> <span class=mo>00101110</span> <span class=o>.</span>
+ <span class=mi>100</span> <span class=mh>0x64</span> <span class=mo>01100100</span> <span class=n>d</span>
+ <span class=mi>105</span> <span class=mh>0x69</span> <span class=mo>01101001</span> <span class=n>i</span>
+ <span class=mi>103</span> <span class=mh>0x67</span> <span class=mo>01100111</span> <span class=n>g</span>
+ <span class=mi>117</span> <span class=mh>0x75</span> <span class=mo>01110101</span> <span class=n>u</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+ <span class=mi>103</span> <span class=mh>0x67</span> <span class=mo>01100111</span> <span class=n>g</span>
+ <span class=mi>101</span> <span class=mh>0x65</span> <span class=mo>01100101</span> <span class=n>e</span>
+  <span class=mi>46</span> <span class=mh>0x2E</span> <span class=mo>00101110</span> <span class=o>.</span>
+  <span class=mi>67</span> <span class=mh>0x43</span> <span class=mo>01000011</span> <span class=no>C</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+ <span class=mi>114</span> <span class=mh>0x72</span> <span class=mo>01110010</span> <span class=n>r</span>
+<span class=o>-</span><span class=mi>110</span> <span class=mh>0x92</span> <span class=mi>10010010</span>
+   <span class=mi>4</span> <span class=mh>0x04</span> <span class=mo>00000100</span> <span class=err></span>
+ <span class=mi>110</span> <span class=mh>0x6E</span> <span class=mo>01101110</span> <span class=n>n</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+ <span class=mi>109</span> <span class=mh>0x6D</span> <span class=mo>01101101</span> <span class=n>m</span>
+ <span class=mi>101</span> <span class=mh>0x65</span> <span class=mo>01100101</span> <span class=n>e</span>
+   <span class=mi>3</span> <span class=mh>0x03</span> <span class=mo>00000011</span> <span class=err></span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+ <span class=mi>103</span> <span class=mh>0x67</span> <span class=mo>01100111</span> <span class=n>g</span>
+ <span class=mi>101</span> <span class=mh>0x65</span> <span class=mo>01100101</span> <span class=n>e</span>
+  <span class=mi>96</span> <span class=mh>0x60</span> <span class=mo>01100000</span> <span class=err>`</span>
+   <span class=mi>7</span> <span class=mh>0x07</span> <span class=mo>00000111</span> <span class=err></span>
+ <span class=mi>100</span> <span class=mh>0x64</span> <span class=mo>01100100</span> <span class=n>d</span>
+ <span class=mi>105</span> <span class=mh>0x69</span> <span class=mo>01101001</span> <span class=n>i</span>
+ <span class=mi>103</span> <span class=mh>0x67</span> <span class=mo>01100111</span> <span class=n>g</span>
+ <span class=mi>117</span> <span class=mh>0x75</span> <span class=mo>01110101</span> <span class=n>u</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+ <span class=mi>103</span> <span class=mh>0x67</span> <span class=mo>01100111</span> <span class=n>g</span>
+ <span class=mi>101</span> <span class=mh>0x65</span> <span class=mo>01100101</span> <span class=n>e</span>
+ <span class=o>-</span><span class=mi>65</span> <span class=mh>0xBF</span> <span class=mi>10111111</span>
+  <span class=mi>81</span> <span class=mh>0x51</span> <span class=mo>01010001</span> <span class=no>Q</span>
+<span class=o>-</span><span class=mi>112</span> <span class=mh>0x90</span> <span class=mi>10010000</span></code></pre></div></div><div class=paragraph><p>结合 <a href=https://www.diguage.com/post/hessian-serialization-protocol/#object target=_blank rel=noopener>Hessian 2.0 序列化协议（中文版）：对象</a> 中的规定来看，这个实验验证如下规则：</p></div><div class=paragraph><p>在序列化实例对象时，</p></div><div class="olist arabic"><ol class=arabic><li><p>首先，序列化实例对象对应的类定义。按照如下属性，序列化如下信息：</p><div class="olist loweralpha"><ol class=loweralpha type=a><li><p>类型标志位 <code>0x43</code>（<code>C</code>）</p></li><li><p>类型（字符串形式）</p></li><li><p>字段数量</p></li><li><p>各个属性名称</p></li></ol></div></li><li><p>其次，序列化实例对象</p><div class="olist loweralpha"><ol class=loweralpha type=a><li><p>根据类型出现的顺序，找到对应的类型编号（从 <code>0</code> 开始）</p></li><li><p>依次序列化实例属性</p></li></ol></div></li></ol></div><div class=paragraph><p>关于类型编号编码需要特别说明一下：</p></div><div class="olist arabic"><ol class=arabic><li><p>在 <code>ref ∈ [0, 15]</code> 时，编码为： <code>0x60</code>（<code>`</code>）+ <code>ref</code></p></li><li><p>在 <code>ref ∈ [16, ]</code> 时，编码格式为：</p><div class="olist loweralpha"><ol class=loweralpha type=a><li><p><code>O</code></p></li><li><p><code>ref</code>（以 <code>int</code> 编码）</p></li></ol></div></li></ol></div><div class=paragraph><p>类型编号没有前置存储，是根据类型在序列化时出现的顺序来编号，从 <code>0</code> 开始，依次递增。</p></div><div class=paragraph><p>根据实验发现：重复对象会使用前置标志位 <code>0x51</code>（<code>Q</code>）+ 编号来处理，这样可以减少重复数据的重复编码，减少序列化后的字节长度。另外，引用编号没有前置存储，是根据实例在序列化时出现的顺序来编号，从 <code>0</code> 开始，依次递增。</p></div><div class=sidebarblock><div class=content><div class=title>如何定位对象？</div><div class=paragraph><p>看序列化结果，在标志位 <code>0x51</code>（<code>Q</code>）后面，写入的是一个数字。但是，前面对象进行序列化时，也没有写数字。我猜测是在反序列化时，会根据字节数组重新构建起来对象和数字的对应关系。</p></div></div></div><div class=paragraph><p>关于实例对象的序列化操作，这些信息已经足够我们展开下文。其他信息，后续再展开讨论。</p></div></div></div><div class=sect1><h2 id=list>链表数据</h2><div class=sectionbody><div class=paragraph><p>在 <a href=https://www.diguage.com/post/hessian-source-analysis-for-java/ target=_blank rel=noopener>Hessian 源码分析（Java）</a> 中，介绍了一些 Hessian 的架构以及序列化的流程。再结合代码，我们知道，涉及链表处理的 <code>Serializer</code> 有如下几个：</p></div><div class="olist arabic"><ol class=arabic><li><p><code>ArraySerializer</code></p></li><li><p><code>BasicSerializer</code> —  八种类型数组、 <code>String</code> 数组、 <code>Object</code> 数组都是由它来进行处理。</p></li><li><p><code>CollectionSerializer</code></p></li><li><p><code>EnumerationSerializer</code></p></li><li><p><code>IteratorSerializer</code></p></li></ol></div><div class=paragraph><p>查看相关代码，对于集合的处理，基本上就是三步走：</p></div><div class="olist arabic"><ol class=arabic><li><p><code>AbstractHessianOutput.writeListBegin(int length, String type)</code></p></li><li><p><code>AbstractHessianOutput.writeObject/Int/Double/XXX(Object object)</code></p></li><li><p><code>AbstractHessianOutput.writeListEnd()</code> — 不一定调用。是否调用，视情况而定。</p></li></ol></div><div class=paragraph><p>另外，在 <a href=https://www.diguage.com/post/hessian-source-analysis-for-java/ target=_blank rel=noopener>Hessian 源码分析（Java）</a> 中，也提到在 <code>Hessian2Output</code> 中实现了 <code>AbstractHessianOutput</code> 的接口。所以，只需要关注 <code>Hessian2Output</code> 对上述三个方法的实现即可。</p></div><div class=paragraph><p>根据以上分析，设计如下几种实验：</p></div><div class="olist arabic"><ol class=arabic><li><p>序列化 <code>int[]</code> 以测试 <code>BasicSerializer</code> 的表现；</p></li><li><p>序列化 <code>Car[]</code> 以测试 <code>ArraySerializer</code> 的表现；</p></li><li><p>序列化 <code>ArrayList&lt;Integer></code>、 <code>LinkedList&lt;Integer></code> 和 <code>HashSet&lt;Integer></code> 以测试 <code>CollectionSerializer</code> 的表现；</p></li><li><p>序列化 <code>Collection&lt;Integer>.iterator</code> 以测试 <code>IteratorSerializer</code>。</p></li></ol></div><div class="admonitionblock note"><table><tbody><tr><td class=icon><i class="fa icon-note" title=Note></i></td><td class=content>对比了 <code>IteratorSerializer</code> 和 <code>EnumerationSerializer</code> 的代码，两者几乎一模一样。就不再重复测试了。</td></tr></tbody></table></div><div class=sect2><h3 id=int-array><code>int[]</code> 👉 <code>BasicSerializer</code></h3><div class=paragraph><p>首先，使用 <code>int[]</code> 来测试一下 <code>BasicSerializer</code> 的处理情况。</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code data-lang=java><span class=cm>/**
+ * 数组序列化
+ *
+ * @author D瓜哥 · <a href=https://www.diguage.com/ target=_blank>https://www.diguage.com/</a>
+ */</span>
+<span class=nd>@Test</span>
+<span class=kd>public</span> <span class=kt>void</span> <span class=nf>testIntArray</span><span class=o>()</span> <span class=kd>throws</span> <span class=nc>Throwable</span> <span class=o>{</span>
+    <span class=c1>// 在处理长度为 [0, 7] 的数组时，</span>
+    <span class=c1>// ①前置标志位： BC_LIST_DIRECT（0x70）+ length</span>
+    <span class=c1>//   范围：0x70(p) ~ 0x77(w)</span>
+    <span class=c1>// ②类型（字符串形式）</span>
+    <span class=c1>// ③逐个数组元素</span>
+    <span class=c1>// 注意：如果数组为空，则没有第③项</span>
+    <span class=n>objectTo</span><span class=o>(</span><span class=k>new</span> <span class=kt>int</span><span class=o>[]{});</span>
+    <span class=n>objectTo</span><span class=o>(</span><span class=k>new</span> <span class=kt>int</span><span class=o>[]{</span><span class=mi>0</span><span class=o>});</span>
+    <span class=n>objectTo</span><span class=o>(</span><span class=k>new</span> <span class=kt>int</span><span class=o>[]{</span><span class=mi>0</span><span class=o>,</span> <span class=mi>1</span><span class=o>,</span> <span class=mi>2</span><span class=o>,</span> <span class=mi>3</span><span class=o>,</span> <span class=mi>4</span><span class=o>,</span> <span class=mi>5</span><span class=o>,</span> <span class=mi>6</span><span class=o>});</span>
+    <span class=c1>// 在处理长度为 [8, 0] 的数组时，</span>
+    <span class=c1>// ①使用前置标志位 V 表示</span>
+    <span class=c1>// ②类型（字符串形式）</span>
+    <span class=c1>// ③数组长度length</span>
+    <span class=c1>// ④逐个数组元素</span>
+    <span class=n>objectTo</span><span class=o>(</span><span class=k>new</span> <span class=kt>int</span><span class=o>[]{</span><span class=mi>0</span><span class=o>,</span> <span class=mi>1</span><span class=o>,</span> <span class=mi>2</span><span class=o>,</span> <span class=mi>3</span><span class=o>,</span> <span class=mi>4</span><span class=o>,</span> <span class=mi>5</span><span class=o>,</span> <span class=mi>6</span><span class=o>,</span> <span class=mi>7</span><span class=o>});</span>
+<span class=o>}</span>
+
+
+<span class=c1>// -- 输出结果 ------------------------------------------------</span>
+<span class=o>==</span> <span class=nl>Object:</span> <span class=o>[</span><span class=no>I</span>  <span class=o>==</span>
+<span class=o>[]</span>
+<span class=o>==</span> <span class=kt>byte</span> <span class=nl>array:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+<span class=o>....</span> <span class=mi>0</span> <span class=o>~</span> <span class=mi>6</span> <span class=o>....</span>
+ <span class=mi>112</span> <span class=mh>0x70</span> <span class=mo>01110000</span> <span class=n>p</span>
+   <span class=mi>4</span> <span class=mh>0x04</span> <span class=mo>00000100</span> <span class=err></span>
+  <span class=mi>91</span> <span class=mh>0x5B</span> <span class=mo>01011011</span> <span class=o>[</span>
+ <span class=mi>105</span> <span class=mh>0x69</span> <span class=mo>01101001</span> <span class=n>i</span>
+ <span class=mi>110</span> <span class=mh>0x6E</span> <span class=mo>01101110</span> <span class=n>n</span>
+ <span class=mi>116</span> <span class=mh>0x74</span> <span class=mo>01110100</span> <span class=n>t</span>
+
+<span class=o>==</span> <span class=nl>Object:</span> <span class=o>[</span><span class=no>I</span>  <span class=o>==</span>
+<span class=o>[</span><span class=mi>0</span><span class=o>]</span>
+<span class=o>==</span> <span class=kt>byte</span> <span class=nl>array:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+<span class=o>....</span> <span class=mi>0</span> <span class=o>~</span> <span class=mi>7</span> <span class=o>....</span>
+ <span class=mi>113</span> <span class=mh>0x71</span> <span class=mo>01110001</span> <span class=n>q</span>
+   <span class=mi>4</span> <span class=mh>0x04</span> <span class=mo>00000100</span> <span class=err></span>
+  <span class=mi>91</span> <span class=mh>0x5B</span> <span class=mo>01011011</span> <span class=o>[</span>
+ <span class=mi>105</span> <span class=mh>0x69</span> <span class=mo>01101001</span> <span class=n>i</span>
+ <span class=mi>110</span> <span class=mh>0x6E</span> <span class=mo>01101110</span> <span class=n>n</span>
+ <span class=mi>116</span> <span class=mh>0x74</span> <span class=mo>01110100</span> <span class=n>t</span>
+<span class=o>-</span><span class=mi>112</span> <span class=mh>0x90</span> <span class=mi>10010000</span>
+
+<span class=o>==</span> <span class=nl>Object:</span> <span class=o>[</span><span class=no>I</span>  <span class=o>==</span>
+<span class=o>[</span><span class=mi>0</span><span class=o>,</span><span class=mi>1</span><span class=o>,</span><span class=mi>2</span><span class=o>,</span><span class=mi>3</span><span class=o>,</span><span class=mi>4</span><span class=o>,</span><span class=mi>5</span><span class=o>,</span><span class=mi>6</span><span class=o>]</span>
+<span class=o>==</span> <span class=kt>byte</span> <span class=nl>array:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+<span class=o>....</span> <span class=mi>0</span> <span class=o>~</span> <span class=mi>13</span> <span class=o>....</span>
+ <span class=mi>119</span> <span class=mh>0x77</span> <span class=mo>01110111</span> <span class=n>w</span>
+   <span class=mi>4</span> <span class=mh>0x04</span> <span class=mo>00000100</span> <span class=err></span>
+  <span class=mi>91</span> <span class=mh>0x5B</span> <span class=mo>01011011</span> <span class=o>[</span>
+ <span class=mi>105</span> <span class=mh>0x69</span> <span class=mo>01101001</span> <span class=n>i</span>
+ <span class=mi>110</span> <span class=mh>0x6E</span> <span class=mo>01101110</span> <span class=n>n</span>
+ <span class=mi>116</span> <span class=mh>0x74</span> <span class=mo>01110100</span> <span class=n>t</span>
+<span class=o>-</span><span class=mi>112</span> <span class=mh>0x90</span> <span class=mi>10010000</span>
+<span class=o>-</span><span class=mi>111</span> <span class=mh>0x91</span> <span class=mi>10010001</span>
+<span class=o>-</span><span class=mi>110</span> <span class=mh>0x92</span> <span class=mi>10010010</span>
+<span class=o>-</span><span class=mi>109</span> <span class=mh>0x93</span> <span class=mi>10010011</span>
+<span class=o>-</span><span class=mi>108</span> <span class=mh>0x94</span> <span class=mi>10010100</span>
+<span class=o>-</span><span class=mi>107</span> <span class=mh>0x95</span> <span class=mi>10010101</span>
+<span class=o>-</span><span class=mi>106</span> <span class=mh>0x96</span> <span class=mi>10010110</span>
+
+<span class=o>==</span> <span class=nl>Object:</span> <span class=o>[</span><span class=no>I</span>  <span class=o>==</span>
+<span class=o>[</span><span class=mi>0</span><span class=o>,</span><span class=mi>1</span><span class=o>,</span><span class=mi>2</span><span class=o>,</span><span class=mi>3</span><span class=o>,</span><span class=mi>4</span><span class=o>,</span><span class=mi>5</span><span class=o>,</span><span class=mi>6</span><span class=o>,</span><span class=mi>7</span><span class=o>]</span>
+<span class=o>==</span> <span class=kt>byte</span> <span class=nl>array:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+<span class=o>....</span> <span class=mi>0</span> <span class=o>~</span> <span class=mi>15</span> <span class=o>....</span>
+  <span class=mi>86</span> <span class=mh>0x56</span> <span class=mo>01010110</span> <span class=no>V</span>
+   <span class=mi>4</span> <span class=mh>0x04</span> <span class=mo>00000100</span> <span class=err></span>
+  <span class=mi>91</span> <span class=mh>0x5B</span> <span class=mo>01011011</span> <span class=o>[</span>
+ <span class=mi>105</span> <span class=mh>0x69</span> <span class=mo>01101001</span> <span class=n>i</span>
+ <span class=mi>110</span> <span class=mh>0x6E</span> <span class=mo>01101110</span> <span class=n>n</span>
+ <span class=mi>116</span> <span class=mh>0x74</span> <span class=mo>01110100</span> <span class=n>t</span>
+<span class=o>-</span><span class=mi>104</span> <span class=mh>0x98</span> <span class=mi>10011000</span>
+<span class=o>-</span><span class=mi>112</span> <span class=mh>0x90</span> <span class=mi>10010000</span>
+<span class=o>-</span><span class=mi>111</span> <span class=mh>0x91</span> <span class=mi>10010001</span>
+<span class=o>-</span><span class=mi>110</span> <span class=mh>0x92</span> <span class=mi>10010010</span>
+<span class=o>-</span><span class=mi>109</span> <span class=mh>0x93</span> <span class=mi>10010011</span>
+<span class=o>-</span><span class=mi>108</span> <span class=mh>0x94</span> <span class=mi>10010100</span>
+<span class=o>-</span><span class=mi>107</span> <span class=mh>0x95</span> <span class=mi>10010101</span>
+<span class=o>-</span><span class=mi>106</span> <span class=mh>0x96</span> <span class=mi>10010110</span>
+<span class=o>-</span><span class=mi>105</span> <span class=mh>0x97</span> <span class=mi>10010111</span></code></pre></div></div><div class=paragraph><p>结合 <a href=https://www.diguage.com/post/hessian-serialization-protocol/#list target=_blank rel=noopener>Hessian 2.0 序列化协议（中文版）：链表数据</a> 中的规定来看，这个实验验证了两条规则：</p></div><div class="olist arabic"><ol class=arabic><li><p>在处理长度为 <code>[0, 7]</code> 的数组时，处理流程如下：</p><div class="olist loweralpha"><ol class=loweralpha type=a><li><p>前置标志位： <code>0x70</code>(<code>p</code>)+ length。标志位范围：<code>0x70</code>(<code>p</code>) ~ <code>0x77</code>(<code>w</code>)</p></li><li><p>类型（字符串形式）</p></li><li><p>逐个数组元素</p><div class=openblock><div class=content><div class="admonitionblock note"><table><tbody><tr><td class=icon><i class="fa icon-note" title=Note></i></td><td class=content>如果数组为空，则没有第③项。</td></tr></tbody></table></div></div></div></li></ol></div></li><li><p>在处理长度为 <code>[8, ]</code> 的数组时，</p><div class="olist loweralpha"><ol class=loweralpha type=a><li><p>使用前置标志位 <code>0x56</code>（<code>V</code>) 表示</p></li><li><p>类型（字符串形式）</p></li><li><p>数组长度 length</p></li><li><p>逐个数组元素</p></li></ol></div></li></ol></div></div><div class=sect2><h3 id=_car_arrayserializer><code>Car[]</code> 👉 <code>ArraySerializer</code></h3><div class=paragraph><p>接着，使用 <code>Car[]</code> 来测试一下 <code>ArraySerializer</code> 的处理情况。</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code data-lang=java><span class=cm>/**
+ * 测试对象数组的序列化
+ *
+ * @author D瓜哥 · <a href=https://www.diguage.com/ target=_blank>https://www.diguage.com/</a>
+ */</span>
+<span class=nd>@Test</span>
+<span class=kd>public</span> <span class=kt>void</span> <span class=nf>testObjectArray</span><span class=o>()</span> <span class=kd>throws</span> <span class=nc>Throwable</span> <span class=o>{</span>
+    <span class=c1>// 在处理长度为 [0, 7] 的数组时：</span>
+    <span class=c1>// ①前置标志位： BC_LIST_DIRECT（0x70）+ length</span>
+    <span class=c1>//   范围：0x70(p) ~ 0x77(w)</span>
+    <span class=c1>// ②类型（字符串形式）</span>
+    <span class=c1>// ③逐个数组元素</span>
+    <span class=c1>// 注意：如果数组为空，则没有第③项</span>
+    <span class=nc>Car</span> <span class=n>c</span> <span class=o>=</span> <span class=k>new</span> <span class=nc>Car</span><span class=o>(</span><span class=s>&#34;diguage&#34;</span><span class=o>,</span> <span class=mi>47</span><span class=o>);</span>
+    <span class=n>objectTo</span><span class=o>(</span><span class=k>new</span> <span class=nc>Car</span><span class=o>[]{});</span>
+    <span class=n>objectTo</span><span class=o>(</span><span class=k>new</span> <span class=nc>Car</span><span class=o>[]{</span><span class=n>c</span><span class=o>});</span>
+    <span class=n>objectTo</span><span class=o>(</span><span class=k>new</span> <span class=nc>Car</span><span class=o>[]{</span><span class=n>c</span><span class=o>,</span> <span class=n>c</span><span class=o>,</span> <span class=n>c</span><span class=o>,</span> <span class=n>c</span><span class=o>,</span> <span class=n>c</span><span class=o>,</span> <span class=n>c</span><span class=o>,</span> <span class=n>c</span><span class=o>});</span>
+    <span class=c1>// 在处理长度为 [8, 0] 的数组时：</span>
+    <span class=c1>// ①使用前置标志位 V 表示</span>
+    <span class=c1>// ②类型（字符串形式）</span>
+    <span class=c1>// ③长度length</span>
+    <span class=c1>// ④逐个数组元素</span>
+    <span class=c1>// 由于我这里使用了相同的元素，所以，</span>
+    <span class=c1>// 除第一个元素外，其他元素都试用引用编号来编码。</span>
+    <span class=n>objectTo</span><span class=o>(</span><span class=k>new</span> <span class=nc>Car</span><span class=o>[]{</span><span class=n>c</span><span class=o>,</span> <span class=n>c</span><span class=o>,</span> <span class=n>c</span><span class=o>,</span> <span class=n>c</span><span class=o>,</span> <span class=n>c</span><span class=o>,</span> <span class=n>c</span><span class=o>,</span> <span class=n>c</span><span class=o>,</span> <span class=n>c</span><span class=o>});</span>
+<span class=o>}</span>
+
+
+<span class=c1>// -- 输出结果 ------------------------------------------------</span>
+
+<span class=o>==</span> <span class=nl>Object:</span> <span class=o>[</span><span class=nc>Lcom</span><span class=o>.</span><span class=na>diguage</span><span class=o>.</span><span class=na>Car</span><span class=o>;</span>  <span class=o>==</span>
+<span class=o>[]</span>
+<span class=o>==</span> <span class=kt>byte</span> <span class=nl>array:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+<span class=o>....</span> <span class=mi>0</span> <span class=o>~</span> <span class=mi>18</span> <span class=o>....</span>
+ <span class=mi>112</span> <span class=mh>0x70</span> <span class=mo>01110000</span> <span class=n>p</span>
+  <span class=mi>16</span> <span class=mh>0x10</span> <span class=mo>00010000</span> <span class=err></span>
+  <span class=mi>91</span> <span class=mh>0x5B</span> <span class=mo>01011011</span> <span class=o>[</span>
+  <span class=mi>99</span> <span class=mh>0x63</span> <span class=mo>01100011</span> <span class=n>c</span>
+ <span class=mi>111</span> <span class=mh>0x6F</span> <span class=mo>01101111</span> <span class=n>o</span>
+ <span class=mi>109</span> <span class=mh>0x6D</span> <span class=mo>01101101</span> <span class=n>m</span>
+  <span class=mi>46</span> <span class=mh>0x2E</span> <span class=mo>00101110</span> <span class=o>.</span>
+ <span class=mi>100</span> <span class=mh>0x64</span> <span class=mo>01100100</span> <span class=n>d</span>
+ <span class=mi>105</span> <span class=mh>0x69</span> <span class=mo>01101001</span> <span class=n>i</span>
+ <span class=mi>103</span> <span class=mh>0x67</span> <span class=mo>01100111</span> <span class=n>g</span>
+ <span class=mi>117</span> <span class=mh>0x75</span> <span class=mo>01110101</span> <span class=n>u</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+ <span class=mi>103</span> <span class=mh>0x67</span> <span class=mo>01100111</span> <span class=n>g</span>
+ <span class=mi>101</span> <span class=mh>0x65</span> <span class=mo>01100101</span> <span class=n>e</span>
+  <span class=mi>46</span> <span class=mh>0x2E</span> <span class=mo>00101110</span> <span class=o>.</span>
+  <span class=mi>67</span> <span class=mh>0x43</span> <span class=mo>01000011</span> <span class=no>C</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+ <span class=mi>114</span> <span class=mh>0x72</span> <span class=mo>01110010</span> <span class=n>r</span>
+
+<span class=o>==</span> <span class=nl>Object:</span> <span class=o>[</span><span class=nc>Lcom</span><span class=o>.</span><span class=na>diguage</span><span class=o>.</span><span class=na>Car</span><span class=o>;</span>  <span class=o>==</span>
+<span class=o>[{</span><span class=s>&#34;name&#34;</span><span class=o>:</span><span class=s>&#34;diguage&#34;</span><span class=o>,</span><span class=s>&#34;age&#34;</span><span class=o>:</span><span class=mi>47</span><span class=o>}]</span>
+<span class=o>==</span> <span class=kt>byte</span> <span class=nl>array:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+<span class=o>....</span> <span class=mi>0</span> <span class=o>~</span> <span class=mi>55</span> <span class=o>....</span>
+ <span class=mi>113</span> <span class=mh>0x71</span> <span class=mo>01110001</span> <span class=n>q</span>
+  <span class=mi>16</span> <span class=mh>0x10</span> <span class=mo>00010000</span> <span class=err></span>
+  <span class=mi>91</span> <span class=mh>0x5B</span> <span class=mo>01011011</span> <span class=o>[</span>
+  <span class=mi>99</span> <span class=mh>0x63</span> <span class=mo>01100011</span> <span class=n>c</span>
+ <span class=mi>111</span> <span class=mh>0x6F</span> <span class=mo>01101111</span> <span class=n>o</span>
+ <span class=mi>109</span> <span class=mh>0x6D</span> <span class=mo>01101101</span> <span class=n>m</span>
+  <span class=mi>46</span> <span class=mh>0x2E</span> <span class=mo>00101110</span> <span class=o>.</span>
+ <span class=mi>100</span> <span class=mh>0x64</span> <span class=mo>01100100</span> <span class=n>d</span>
+ <span class=mi>105</span> <span class=mh>0x69</span> <span class=mo>01101001</span> <span class=n>i</span>
+ <span class=mi>103</span> <span class=mh>0x67</span> <span class=mo>01100111</span> <span class=n>g</span>
+ <span class=mi>117</span> <span class=mh>0x75</span> <span class=mo>01110101</span> <span class=n>u</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+ <span class=mi>103</span> <span class=mh>0x67</span> <span class=mo>01100111</span> <span class=n>g</span>
+ <span class=mi>101</span> <span class=mh>0x65</span> <span class=mo>01100101</span> <span class=n>e</span>
+  <span class=mi>46</span> <span class=mh>0x2E</span> <span class=mo>00101110</span> <span class=o>.</span>
+  <span class=mi>67</span> <span class=mh>0x43</span> <span class=mo>01000011</span> <span class=no>C</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+ <span class=mi>114</span> <span class=mh>0x72</span> <span class=mo>01110010</span> <span class=n>r</span>
+  <span class=mi>67</span> <span class=mh>0x43</span> <span class=mo>01000011</span> <span class=no>C</span>
+  <span class=mi>15</span> <span class=mh>0x0F</span> <span class=mo>00001111</span> <span class=err></span>
+  <span class=mi>99</span> <span class=mh>0x63</span> <span class=mo>01100011</span> <span class=n>c</span>
+ <span class=mi>111</span> <span class=mh>0x6F</span> <span class=mo>01101111</span> <span class=n>o</span>
+ <span class=mi>109</span> <span class=mh>0x6D</span> <span class=mo>01101101</span> <span class=n>m</span>
+  <span class=mi>46</span> <span class=mh>0x2E</span> <span class=mo>00101110</span> <span class=o>.</span>
+ <span class=mi>100</span> <span class=mh>0x64</span> <span class=mo>01100100</span> <span class=n>d</span>
+ <span class=mi>105</span> <span class=mh>0x69</span> <span class=mo>01101001</span> <span class=n>i</span>
+ <span class=mi>103</span> <span class=mh>0x67</span> <span class=mo>01100111</span> <span class=n>g</span>
+ <span class=mi>117</span> <span class=mh>0x75</span> <span class=mo>01110101</span> <span class=n>u</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+ <span class=mi>103</span> <span class=mh>0x67</span> <span class=mo>01100111</span> <span class=n>g</span>
+ <span class=mi>101</span> <span class=mh>0x65</span> <span class=mo>01100101</span> <span class=n>e</span>
+  <span class=mi>46</span> <span class=mh>0x2E</span> <span class=mo>00101110</span> <span class=o>.</span>
+  <span class=mi>67</span> <span class=mh>0x43</span> <span class=mo>01000011</span> <span class=no>C</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+ <span class=mi>114</span> <span class=mh>0x72</span> <span class=mo>01110010</span> <span class=n>r</span>
+<span class=o>-</span><span class=mi>110</span> <span class=mh>0x92</span> <span class=mi>10010010</span>
+   <span class=mi>4</span> <span class=mh>0x04</span> <span class=mo>00000100</span> <span class=err></span>
+ <span class=mi>110</span> <span class=mh>0x6E</span> <span class=mo>01101110</span> <span class=n>n</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+ <span class=mi>109</span> <span class=mh>0x6D</span> <span class=mo>01101101</span> <span class=n>m</span>
+ <span class=mi>101</span> <span class=mh>0x65</span> <span class=mo>01100101</span> <span class=n>e</span>
+   <span class=mi>3</span> <span class=mh>0x03</span> <span class=mo>00000011</span> <span class=err></span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+ <span class=mi>103</span> <span class=mh>0x67</span> <span class=mo>01100111</span> <span class=n>g</span>
+ <span class=mi>101</span> <span class=mh>0x65</span> <span class=mo>01100101</span> <span class=n>e</span>
+  <span class=mi>96</span> <span class=mh>0x60</span> <span class=mo>01100000</span> <span class=err>`</span>
+   <span class=mi>7</span> <span class=mh>0x07</span> <span class=mo>00000111</span> <span class=err></span>
+ <span class=mi>100</span> <span class=mh>0x64</span> <span class=mo>01100100</span> <span class=n>d</span>
+ <span class=mi>105</span> <span class=mh>0x69</span> <span class=mo>01101001</span> <span class=n>i</span>
+ <span class=mi>103</span> <span class=mh>0x67</span> <span class=mo>01100111</span> <span class=n>g</span>
+ <span class=mi>117</span> <span class=mh>0x75</span> <span class=mo>01110101</span> <span class=n>u</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+ <span class=mi>103</span> <span class=mh>0x67</span> <span class=mo>01100111</span> <span class=n>g</span>
+ <span class=mi>101</span> <span class=mh>0x65</span> <span class=mo>01100101</span> <span class=n>e</span>
+ <span class=o>-</span><span class=mi>65</span> <span class=mh>0xBF</span> <span class=mi>10111111</span>
+
+<span class=o>==</span> <span class=nl>Object:</span> <span class=o>[</span><span class=nc>Lcom</span><span class=o>.</span><span class=na>diguage</span><span class=o>.</span><span class=na>Car</span><span class=o>;</span>  <span class=o>==</span>
+<span class=o>[{</span><span class=s>&#34;name&#34;</span><span class=o>:</span><span class=s>&#34;diguage&#34;</span><span class=o>,</span><span class=s>&#34;age&#34;</span><span class=o>:</span><span class=mi>47</span><span class=o>},</span>
+ <span class=o>{</span><span class=s>&#34;name&#34;</span><span class=o>:</span><span class=s>&#34;diguage&#34;</span><span class=o>,</span><span class=s>&#34;age&#34;</span><span class=o>:</span><span class=mi>47</span><span class=o>},</span>
+ <span class=o>{</span><span class=s>&#34;name&#34;</span><span class=o>:</span><span class=s>&#34;diguage&#34;</span><span class=o>,</span><span class=s>&#34;age&#34;</span><span class=o>:</span><span class=mi>47</span><span class=o>},</span>
+ <span class=o>{</span><span class=s>&#34;name&#34;</span><span class=o>:</span><span class=s>&#34;diguage&#34;</span><span class=o>,</span><span class=s>&#34;age&#34;</span><span class=o>:</span><span class=mi>47</span><span class=o>},</span>
+ <span class=o>{</span><span class=s>&#34;name&#34;</span><span class=o>:</span><span class=s>&#34;diguage&#34;</span><span class=o>,</span><span class=s>&#34;age&#34;</span><span class=o>:</span><span class=mi>47</span><span class=o>},</span>
+ <span class=o>{</span><span class=s>&#34;name&#34;</span><span class=o>:</span><span class=s>&#34;diguage&#34;</span><span class=o>,</span><span class=s>&#34;age&#34;</span><span class=o>:</span><span class=mi>47</span><span class=o>},</span>
+ <span class=o>{</span><span class=s>&#34;name&#34;</span><span class=o>:</span><span class=s>&#34;diguage&#34;</span><span class=o>,</span><span class=s>&#34;age&#34;</span><span class=o>:</span><span class=mi>47</span><span class=o>}]</span>
+<span class=o>==</span> <span class=kt>byte</span> <span class=nl>array:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+<span class=o>....</span> <span class=mi>0</span> <span class=o>~</span> <span class=mi>67</span> <span class=o>....</span>
+ <span class=mi>119</span> <span class=mh>0x77</span> <span class=mo>01110111</span> <span class=n>w</span>
+  <span class=mi>16</span> <span class=mh>0x10</span> <span class=mo>00010000</span> <span class=err></span>
+  <span class=mi>91</span> <span class=mh>0x5B</span> <span class=mo>01011011</span> <span class=o>[</span>
+  <span class=mi>99</span> <span class=mh>0x63</span> <span class=mo>01100011</span> <span class=n>c</span>
+ <span class=mi>111</span> <span class=mh>0x6F</span> <span class=mo>01101111</span> <span class=n>o</span>
+ <span class=mi>109</span> <span class=mh>0x6D</span> <span class=mo>01101101</span> <span class=n>m</span>
+  <span class=mi>46</span> <span class=mh>0x2E</span> <span class=mo>00101110</span> <span class=o>.</span>
+ <span class=mi>100</span> <span class=mh>0x64</span> <span class=mo>01100100</span> <span class=n>d</span>
+ <span class=mi>105</span> <span class=mh>0x69</span> <span class=mo>01101001</span> <span class=n>i</span>
+ <span class=mi>103</span> <span class=mh>0x67</span> <span class=mo>01100111</span> <span class=n>g</span>
+ <span class=mi>117</span> <span class=mh>0x75</span> <span class=mo>01110101</span> <span class=n>u</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+ <span class=mi>103</span> <span class=mh>0x67</span> <span class=mo>01100111</span> <span class=n>g</span>
+ <span class=mi>101</span> <span class=mh>0x65</span> <span class=mo>01100101</span> <span class=n>e</span>
+  <span class=mi>46</span> <span class=mh>0x2E</span> <span class=mo>00101110</span> <span class=o>.</span>
+  <span class=mi>67</span> <span class=mh>0x43</span> <span class=mo>01000011</span> <span class=no>C</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+ <span class=mi>114</span> <span class=mh>0x72</span> <span class=mo>01110010</span> <span class=n>r</span>
+  <span class=mi>67</span> <span class=mh>0x43</span> <span class=mo>01000011</span> <span class=no>C</span>
+  <span class=mi>15</span> <span class=mh>0x0F</span> <span class=mo>00001111</span> <span class=err></span>
+  <span class=mi>99</span> <span class=mh>0x63</span> <span class=mo>01100011</span> <span class=n>c</span>
+ <span class=mi>111</span> <span class=mh>0x6F</span> <span class=mo>01101111</span> <span class=n>o</span>
+ <span class=mi>109</span> <span class=mh>0x6D</span> <span class=mo>01101101</span> <span class=n>m</span>
+  <span class=mi>46</span> <span class=mh>0x2E</span> <span class=mo>00101110</span> <span class=o>.</span>
+ <span class=mi>100</span> <span class=mh>0x64</span> <span class=mo>01100100</span> <span class=n>d</span>
+ <span class=mi>105</span> <span class=mh>0x69</span> <span class=mo>01101001</span> <span class=n>i</span>
+ <span class=mi>103</span> <span class=mh>0x67</span> <span class=mo>01100111</span> <span class=n>g</span>
+ <span class=mi>117</span> <span class=mh>0x75</span> <span class=mo>01110101</span> <span class=n>u</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+ <span class=mi>103</span> <span class=mh>0x67</span> <span class=mo>01100111</span> <span class=n>g</span>
+ <span class=mi>101</span> <span class=mh>0x65</span> <span class=mo>01100101</span> <span class=n>e</span>
+  <span class=mi>46</span> <span class=mh>0x2E</span> <span class=mo>00101110</span> <span class=o>.</span>
+  <span class=mi>67</span> <span class=mh>0x43</span> <span class=mo>01000011</span> <span class=no>C</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+ <span class=mi>114</span> <span class=mh>0x72</span> <span class=mo>01110010</span> <span class=n>r</span>
+<span class=o>-</span><span class=mi>110</span> <span class=mh>0x92</span> <span class=mi>10010010</span>
+   <span class=mi>4</span> <span class=mh>0x04</span> <span class=mo>00000100</span> <span class=err></span>
+ <span class=mi>110</span> <span class=mh>0x6E</span> <span class=mo>01101110</span> <span class=n>n</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+ <span class=mi>109</span> <span class=mh>0x6D</span> <span class=mo>01101101</span> <span class=n>m</span>
+ <span class=mi>101</span> <span class=mh>0x65</span> <span class=mo>01100101</span> <span class=n>e</span>
+   <span class=mi>3</span> <span class=mh>0x03</span> <span class=mo>00000011</span> <span class=err></span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+ <span class=mi>103</span> <span class=mh>0x67</span> <span class=mo>01100111</span> <span class=n>g</span>
+ <span class=mi>101</span> <span class=mh>0x65</span> <span class=mo>01100101</span> <span class=n>e</span>
+  <span class=mi>96</span> <span class=mh>0x60</span> <span class=mo>01100000</span> <span class=err>`</span>
+   <span class=mi>7</span> <span class=mh>0x07</span> <span class=mo>00000111</span> <span class=err></span>
+ <span class=mi>100</span> <span class=mh>0x64</span> <span class=mo>01100100</span> <span class=n>d</span>
+ <span class=mi>105</span> <span class=mh>0x69</span> <span class=mo>01101001</span> <span class=n>i</span>
+ <span class=mi>103</span> <span class=mh>0x67</span> <span class=mo>01100111</span> <span class=n>g</span>
+ <span class=mi>117</span> <span class=mh>0x75</span> <span class=mo>01110101</span> <span class=n>u</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+ <span class=mi>103</span> <span class=mh>0x67</span> <span class=mo>01100111</span> <span class=n>g</span>
+ <span class=mi>101</span> <span class=mh>0x65</span> <span class=mo>01100101</span> <span class=n>e</span>
+ <span class=o>-</span><span class=mi>65</span> <span class=mh>0xBF</span> <span class=mi>10111111</span>
+  <span class=mi>81</span> <span class=mh>0x51</span> <span class=mo>01010001</span> <span class=no>Q</span>
+<span class=o>-</span><span class=mi>111</span> <span class=mh>0x91</span> <span class=mi>10010001</span>
+  <span class=mi>81</span> <span class=mh>0x51</span> <span class=mo>01010001</span> <span class=no>Q</span>
+<span class=o>-</span><span class=mi>111</span> <span class=mh>0x91</span> <span class=mi>10010001</span>
+  <span class=mi>81</span> <span class=mh>0x51</span> <span class=mo>01010001</span> <span class=no>Q</span>
+<span class=o>-</span><span class=mi>111</span> <span class=mh>0x91</span> <span class=mi>10010001</span>
+  <span class=mi>81</span> <span class=mh>0x51</span> <span class=mo>01010001</span> <span class=no>Q</span>
+<span class=o>-</span><span class=mi>111</span> <span class=mh>0x91</span> <span class=mi>10010001</span>
+  <span class=mi>81</span> <span class=mh>0x51</span> <span class=mo>01010001</span> <span class=no>Q</span>
+<span class=o>-</span><span class=mi>111</span> <span class=mh>0x91</span> <span class=mi>10010001</span>
+  <span class=mi>81</span> <span class=mh>0x51</span> <span class=mo>01010001</span> <span class=no>Q</span>
+<span class=o>-</span><span class=mi>111</span> <span class=mh>0x91</span> <span class=mi>10010001</span>
+
+<span class=o>==</span> <span class=nl>Object:</span> <span class=o>[</span><span class=nc>Lcom</span><span class=o>.</span><span class=na>diguage</span><span class=o>.</span><span class=na>Car</span><span class=o>;</span>  <span class=o>==</span>
+<span class=o>[{</span><span class=s>&#34;name&#34;</span><span class=o>:</span><span class=s>&#34;diguage&#34;</span><span class=o>,</span><span class=s>&#34;age&#34;</span><span class=o>:</span><span class=mi>47</span><span class=o>},</span>
+ <span class=o>{</span><span class=s>&#34;name&#34;</span><span class=o>:</span><span class=s>&#34;diguage&#34;</span><span class=o>,</span><span class=s>&#34;age&#34;</span><span class=o>:</span><span class=mi>47</span><span class=o>},</span>
+ <span class=o>{</span><span class=s>&#34;name&#34;</span><span class=o>:</span><span class=s>&#34;diguage&#34;</span><span class=o>,</span><span class=s>&#34;age&#34;</span><span class=o>:</span><span class=mi>47</span><span class=o>},</span>
+ <span class=o>{</span><span class=s>&#34;name&#34;</span><span class=o>:</span><span class=s>&#34;diguage&#34;</span><span class=o>,</span><span class=s>&#34;age&#34;</span><span class=o>:</span><span class=mi>47</span><span class=o>},</span>
+ <span class=o>{</span><span class=s>&#34;name&#34;</span><span class=o>:</span><span class=s>&#34;diguage&#34;</span><span class=o>,</span><span class=s>&#34;age&#34;</span><span class=o>:</span><span class=mi>47</span><span class=o>},</span>
+ <span class=o>{</span><span class=s>&#34;name&#34;</span><span class=o>:</span><span class=s>&#34;diguage&#34;</span><span class=o>,</span><span class=s>&#34;age&#34;</span><span class=o>:</span><span class=mi>47</span><span class=o>},</span>
+ <span class=o>{</span><span class=s>&#34;name&#34;</span><span class=o>:</span><span class=s>&#34;diguage&#34;</span><span class=o>,</span><span class=s>&#34;age&#34;</span><span class=o>:</span><span class=mi>47</span><span class=o>},</span>
+ <span class=o>{</span><span class=s>&#34;name&#34;</span><span class=o>:</span><span class=s>&#34;diguage&#34;</span><span class=o>,</span><span class=s>&#34;age&#34;</span><span class=o>:</span><span class=mi>47</span><span class=o>}]</span>
+<span class=o>==</span> <span class=kt>byte</span> <span class=nl>array:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+<span class=o>....</span> <span class=mi>0</span> <span class=o>~</span> <span class=mi>70</span> <span class=o>....</span>
+  <span class=mi>86</span> <span class=mh>0x56</span> <span class=mo>01010110</span> <span class=no>V</span>
+  <span class=mi>16</span> <span class=mh>0x10</span> <span class=mo>00010000</span> <span class=err></span>
+  <span class=mi>91</span> <span class=mh>0x5B</span> <span class=mo>01011011</span> <span class=o>[</span>
+  <span class=mi>99</span> <span class=mh>0x63</span> <span class=mo>01100011</span> <span class=n>c</span>
+ <span class=mi>111</span> <span class=mh>0x6F</span> <span class=mo>01101111</span> <span class=n>o</span>
+ <span class=mi>109</span> <span class=mh>0x6D</span> <span class=mo>01101101</span> <span class=n>m</span>
+  <span class=mi>46</span> <span class=mh>0x2E</span> <span class=mo>00101110</span> <span class=o>.</span>
+ <span class=mi>100</span> <span class=mh>0x64</span> <span class=mo>01100100</span> <span class=n>d</span>
+ <span class=mi>105</span> <span class=mh>0x69</span> <span class=mo>01101001</span> <span class=n>i</span>
+ <span class=mi>103</span> <span class=mh>0x67</span> <span class=mo>01100111</span> <span class=n>g</span>
+ <span class=mi>117</span> <span class=mh>0x75</span> <span class=mo>01110101</span> <span class=n>u</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+ <span class=mi>103</span> <span class=mh>0x67</span> <span class=mo>01100111</span> <span class=n>g</span>
+ <span class=mi>101</span> <span class=mh>0x65</span> <span class=mo>01100101</span> <span class=n>e</span>
+  <span class=mi>46</span> <span class=mh>0x2E</span> <span class=mo>00101110</span> <span class=o>.</span>
+  <span class=mi>67</span> <span class=mh>0x43</span> <span class=mo>01000011</span> <span class=no>C</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+ <span class=mi>114</span> <span class=mh>0x72</span> <span class=mo>01110010</span> <span class=n>r</span>
+<span class=o>-</span><span class=mi>104</span> <span class=mh>0x98</span> <span class=mi>10011000</span>
+  <span class=mi>67</span> <span class=mh>0x43</span> <span class=mo>01000011</span> <span class=no>C</span>
+  <span class=mi>15</span> <span class=mh>0x0F</span> <span class=mo>00001111</span> <span class=err></span>
+  <span class=mi>99</span> <span class=mh>0x63</span> <span class=mo>01100011</span> <span class=n>c</span>
+ <span class=mi>111</span> <span class=mh>0x6F</span> <span class=mo>01101111</span> <span class=n>o</span>
+ <span class=mi>109</span> <span class=mh>0x6D</span> <span class=mo>01101101</span> <span class=n>m</span>
+  <span class=mi>46</span> <span class=mh>0x2E</span> <span class=mo>00101110</span> <span class=o>.</span>
+ <span class=mi>100</span> <span class=mh>0x64</span> <span class=mo>01100100</span> <span class=n>d</span>
+ <span class=mi>105</span> <span class=mh>0x69</span> <span class=mo>01101001</span> <span class=n>i</span>
+ <span class=mi>103</span> <span class=mh>0x67</span> <span class=mo>01100111</span> <span class=n>g</span>
+ <span class=mi>117</span> <span class=mh>0x75</span> <span class=mo>01110101</span> <span class=n>u</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+ <span class=mi>103</span> <span class=mh>0x67</span> <span class=mo>01100111</span> <span class=n>g</span>
+ <span class=mi>101</span> <span class=mh>0x65</span> <span class=mo>01100101</span> <span class=n>e</span>
+  <span class=mi>46</span> <span class=mh>0x2E</span> <span class=mo>00101110</span> <span class=o>.</span>
+  <span class=mi>67</span> <span class=mh>0x43</span> <span class=mo>01000011</span> <span class=no>C</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+ <span class=mi>114</span> <span class=mh>0x72</span> <span class=mo>01110010</span> <span class=n>r</span>
+<span class=o>-</span><span class=mi>110</span> <span class=mh>0x92</span> <span class=mi>10010010</span>
+   <span class=mi>4</span> <span class=mh>0x04</span> <span class=mo>00000100</span> <span class=err></span>
+ <span class=mi>110</span> <span class=mh>0x6E</span> <span class=mo>01101110</span> <span class=n>n</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+ <span class=mi>109</span> <span class=mh>0x6D</span> <span class=mo>01101101</span> <span class=n>m</span>
+ <span class=mi>101</span> <span class=mh>0x65</span> <span class=mo>01100101</span> <span class=n>e</span>
+   <span class=mi>3</span> <span class=mh>0x03</span> <span class=mo>00000011</span> <span class=err></span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+ <span class=mi>103</span> <span class=mh>0x67</span> <span class=mo>01100111</span> <span class=n>g</span>
+ <span class=mi>101</span> <span class=mh>0x65</span> <span class=mo>01100101</span> <span class=n>e</span>
+  <span class=mi>96</span> <span class=mh>0x60</span> <span class=mo>01100000</span> <span class=err>`</span>
+   <span class=mi>7</span> <span class=mh>0x07</span> <span class=mo>00000111</span> <span class=err></span>
+ <span class=mi>100</span> <span class=mh>0x64</span> <span class=mo>01100100</span> <span class=n>d</span>
+ <span class=mi>105</span> <span class=mh>0x69</span> <span class=mo>01101001</span> <span class=n>i</span>
+ <span class=mi>103</span> <span class=mh>0x67</span> <span class=mo>01100111</span> <span class=n>g</span>
+ <span class=mi>117</span> <span class=mh>0x75</span> <span class=mo>01110101</span> <span class=n>u</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+ <span class=mi>103</span> <span class=mh>0x67</span> <span class=mo>01100111</span> <span class=n>g</span>
+ <span class=mi>101</span> <span class=mh>0x65</span> <span class=mo>01100101</span> <span class=n>e</span>
+ <span class=o>-</span><span class=mi>65</span> <span class=mh>0xBF</span> <span class=mi>10111111</span>
+  <span class=mi>81</span> <span class=mh>0x51</span> <span class=mo>01010001</span> <span class=no>Q</span>
+<span class=o>-</span><span class=mi>111</span> <span class=mh>0x91</span> <span class=mi>10010001</span>
+  <span class=mi>81</span> <span class=mh>0x51</span> <span class=mo>01010001</span> <span class=no>Q</span>
+<span class=o>-</span><span class=mi>111</span> <span class=mh>0x91</span> <span class=mi>10010001</span>
+  <span class=mi>81</span> <span class=mh>0x51</span> <span class=mo>01010001</span> <span class=no>Q</span>
+<span class=o>-</span><span class=mi>111</span> <span class=mh>0x91</span> <span class=mi>10010001</span>
+  <span class=mi>81</span> <span class=mh>0x51</span> <span class=mo>01010001</span> <span class=no>Q</span>
+<span class=o>-</span><span class=mi>111</span> <span class=mh>0x91</span> <span class=mi>10010001</span>
+  <span class=mi>81</span> <span class=mh>0x51</span> <span class=mo>01010001</span> <span class=no>Q</span>
+<span class=o>-</span><span class=mi>111</span> <span class=mh>0x91</span> <span class=mi>10010001</span>
+  <span class=mi>81</span> <span class=mh>0x51</span> <span class=mo>01010001</span> <span class=no>Q</span>
+<span class=o>-</span><span class=mi>111</span> <span class=mh>0x91</span> <span class=mi>10010001</span>
+  <span class=mi>81</span> <span class=mh>0x51</span> <span class=mo>01010001</span> <span class=no>Q</span>
+<span class=o>-</span><span class=mi>111</span> <span class=mh>0x91</span> <span class=mi>10010001</span></code></pre></div></div><div class=paragraph><p>实验结果与 <a href=#int-array><code>int[]</code> 👉 <code>BasicSerializer</code></a> 中相同，这里就不再赘述。</p></div><div class=paragraph><p>相同实例对象在多次序列化时，只会序列化第一个实例对象。后面的，都是引用标志位 <code>0x51</code>（<code>Q</code>） + “引用编号”，来指向第一个被序列化的实例对象。这一点和 <a href=#object-1>[object-1]</a> 中的描述一致。</p></div></div><div class=sect2><h3 id=_arraylistinteger_collectionserializer><code>ArrayList&lt;Integer></code> 👉 <code>CollectionSerializer</code></h3><div class=paragraph><p>再接着，使用 <code>ArrayList&lt;Integer></code> 来测试一下 <code>CollectionSerializer</code> 的处理情况。</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code data-lang=java><span class=cm>/**
+ * 测试 ArrayList 的序列化
+ *
+ * @author D瓜哥 · <a href=https://www.diguage.com/ target=_blank>https://www.diguage.com/</a>
+ */</span>
+<span class=nd>@Test</span>
+<span class=kd>public</span> <span class=kt>void</span> <span class=nf>testIntArrayList</span><span class=o>()</span> <span class=kd>throws</span> <span class=nc>Throwable</span> <span class=o>{</span>
+    <span class=c1>// 在处理长度为 [0, 7] 的 ArrayList 时：</span>
+    <span class=c1>// ①前置标志位： BC_LIST_DIRECT_UNTYPED（0x78）+ length</span>
+    <span class=c1>//   范围：0x78(x) ~ 0x7F</span>
+    <span class=c1>// ②逐个集合元素</span>
+    <span class=c1>// 注意：如果集合为空，则没有第②项</span>
+    <span class=nc>List</span><span class=o>&lt;</span><span class=nc>Integer</span><span class=o>&gt;</span> <span class=n>al0</span> <span class=o>=</span> <span class=k>new</span> <span class=nc>ArrayList</span><span class=o>&lt;&gt;();</span>
+    <span class=n>objectTo</span><span class=o>(</span><span class=n>al0</span><span class=o>);</span>
+
+    <span class=nc>List</span><span class=o>&lt;</span><span class=nc>Integer</span><span class=o>&gt;</span> <span class=n>ints1</span> <span class=o>=</span> <span class=nc>Arrays</span><span class=o>.</span><span class=na>asList</span><span class=o>(</span><span class=mi>0</span><span class=o>);</span>
+    <span class=nc>List</span><span class=o>&lt;</span><span class=nc>Integer</span><span class=o>&gt;</span> <span class=n>al1</span> <span class=o>=</span> <span class=k>new</span> <span class=nc>ArrayList</span><span class=o>&lt;&gt;(</span><span class=n>ints1</span><span class=o>);</span>
+    <span class=n>objectTo</span><span class=o>(</span><span class=n>al1</span><span class=o>);</span>
+
+    <span class=nc>List</span><span class=o>&lt;</span><span class=nc>Integer</span><span class=o>&gt;</span> <span class=n>ints7</span> <span class=o>=</span> <span class=nc>Arrays</span><span class=o>.</span><span class=na>asList</span><span class=o>(</span><span class=mi>0</span><span class=o>,</span> <span class=mi>1</span><span class=o>,</span> <span class=mi>2</span><span class=o>,</span> <span class=mi>3</span><span class=o>,</span> <span class=mi>4</span><span class=o>,</span> <span class=mi>5</span><span class=o>,</span> <span class=mi>6</span><span class=o>);</span>
+    <span class=nc>List</span><span class=o>&lt;</span><span class=nc>Integer</span><span class=o>&gt;</span> <span class=n>al7</span> <span class=o>=</span> <span class=k>new</span> <span class=nc>ArrayList</span><span class=o>&lt;&gt;(</span><span class=n>ints7</span><span class=o>);</span>
+    <span class=n>objectTo</span><span class=o>(</span><span class=n>al7</span><span class=o>);</span>
+
+    <span class=c1>// 在处理长度为 [8, 0] 的 ArrayList 时：</span>
+    <span class=c1>// ①使用前置标志位 0x58（X） 表示</span>
+    <span class=c1>// ②集合长度 length</span>
+    <span class=c1>// ③逐个集合元素</span>
+    <span class=nc>List</span><span class=o>&lt;</span><span class=nc>Integer</span><span class=o>&gt;</span> <span class=n>ints8</span> <span class=o>=</span> <span class=nc>Arrays</span><span class=o>.</span><span class=na>asList</span><span class=o>(</span><span class=mi>0</span><span class=o>,</span> <span class=mi>1</span><span class=o>,</span> <span class=mi>2</span><span class=o>,</span> <span class=mi>3</span><span class=o>,</span> <span class=mi>4</span><span class=o>,</span> <span class=mi>5</span><span class=o>,</span> <span class=mi>6</span><span class=o>,</span> <span class=mi>7</span><span class=o>);</span>
+    <span class=nc>List</span><span class=o>&lt;</span><span class=nc>Integer</span><span class=o>&gt;</span> <span class=n>al8</span> <span class=o>=</span> <span class=k>new</span> <span class=nc>ArrayList</span><span class=o>&lt;&gt;(</span><span class=n>ints8</span><span class=o>);</span>
+    <span class=n>objectTo</span><span class=o>(</span><span class=n>al8</span><span class=o>);</span>
+<span class=o>}</span>
+
+
+<span class=c1>// -- 输出结果 ------------------------------------------------</span>
+<span class=o>==</span> <span class=nl>Object:</span> <span class=n>java</span><span class=o>.</span><span class=na>util</span><span class=o>.</span><span class=na>ArrayList</span>  <span class=o>==</span>
+<span class=o>[]</span>
+<span class=o>==</span> <span class=kt>byte</span> <span class=nl>array:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+<span class=o>....</span> <span class=mi>0</span> <span class=o>~</span> <span class=mi>1</span> <span class=o>....</span>
+ <span class=mi>120</span> <span class=mh>0x78</span> <span class=mo>01111000</span> <span class=n>x</span>
+
+<span class=o>==</span> <span class=nl>Object:</span> <span class=n>java</span><span class=o>.</span><span class=na>util</span><span class=o>.</span><span class=na>ArrayList</span>  <span class=o>==</span>
+<span class=o>==</span> <span class=nl>Generic:</span> <span class=n>java</span><span class=o>.</span><span class=na>lang</span><span class=o>.</span><span class=na>Integer</span>  <span class=o>==</span>
+<span class=o>[</span><span class=mi>0</span><span class=o>]</span>
+<span class=o>==</span> <span class=kt>byte</span> <span class=nl>array:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+<span class=o>....</span> <span class=mi>0</span> <span class=o>~</span> <span class=mi>2</span> <span class=o>....</span>
+ <span class=mi>121</span> <span class=mh>0x79</span> <span class=mo>01111001</span> <span class=n>y</span>
+<span class=o>-</span><span class=mi>112</span> <span class=mh>0x90</span> <span class=mi>10010000</span>
+
+<span class=o>==</span> <span class=nl>Object:</span> <span class=n>java</span><span class=o>.</span><span class=na>util</span><span class=o>.</span><span class=na>ArrayList</span>  <span class=o>==</span>
+<span class=o>==</span> <span class=nl>Generic:</span> <span class=n>java</span><span class=o>.</span><span class=na>lang</span><span class=o>.</span><span class=na>Integer</span>  <span class=o>==</span>
+<span class=o>[</span><span class=mi>0</span><span class=o>,</span><span class=mi>1</span><span class=o>,</span><span class=mi>2</span><span class=o>,</span><span class=mi>3</span><span class=o>,</span><span class=mi>4</span><span class=o>,</span><span class=mi>5</span><span class=o>,</span><span class=mi>6</span><span class=o>]</span>
+<span class=o>==</span> <span class=kt>byte</span> <span class=nl>array:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+<span class=o>....</span> <span class=mi>0</span> <span class=o>~</span> <span class=mi>8</span> <span class=o>....</span>
+ <span class=mi>127</span> <span class=mh>0x7F</span> <span class=mo>01111111</span> <span class=err></span>
+<span class=o>-</span><span class=mi>112</span> <span class=mh>0x90</span> <span class=mi>10010000</span>
+<span class=o>-</span><span class=mi>111</span> <span class=mh>0x91</span> <span class=mi>10010001</span>
+<span class=o>-</span><span class=mi>110</span> <span class=mh>0x92</span> <span class=mi>10010010</span>
+<span class=o>-</span><span class=mi>109</span> <span class=mh>0x93</span> <span class=mi>10010011</span>
+<span class=o>-</span><span class=mi>108</span> <span class=mh>0x94</span> <span class=mi>10010100</span>
+<span class=o>-</span><span class=mi>107</span> <span class=mh>0x95</span> <span class=mi>10010101</span>
+<span class=o>-</span><span class=mi>106</span> <span class=mh>0x96</span> <span class=mi>10010110</span>
+
+<span class=o>==</span> <span class=nl>Object:</span> <span class=n>java</span><span class=o>.</span><span class=na>util</span><span class=o>.</span><span class=na>ArrayList</span>  <span class=o>==</span>
+<span class=o>==</span> <span class=nl>Generic:</span> <span class=n>java</span><span class=o>.</span><span class=na>lang</span><span class=o>.</span><span class=na>Integer</span>  <span class=o>==</span>
+<span class=o>[</span><span class=mi>0</span><span class=o>,</span><span class=mi>1</span><span class=o>,</span><span class=mi>2</span><span class=o>,</span><span class=mi>3</span><span class=o>,</span><span class=mi>4</span><span class=o>,</span><span class=mi>5</span><span class=o>,</span><span class=mi>6</span><span class=o>,</span><span class=mi>7</span><span class=o>]</span>
+<span class=o>==</span> <span class=kt>byte</span> <span class=nl>array:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+<span class=o>....</span> <span class=mi>0</span> <span class=o>~</span> <span class=mi>10</span> <span class=o>....</span>
+  <span class=mi>88</span> <span class=mh>0x58</span> <span class=mo>01011000</span> <span class=no>X</span>
+<span class=o>-</span><span class=mi>104</span> <span class=mh>0x98</span> <span class=mi>10011000</span>
+<span class=o>-</span><span class=mi>112</span> <span class=mh>0x90</span> <span class=mi>10010000</span>
+<span class=o>-</span><span class=mi>111</span> <span class=mh>0x91</span> <span class=mi>10010001</span>
+<span class=o>-</span><span class=mi>110</span> <span class=mh>0x92</span> <span class=mi>10010010</span>
+<span class=o>-</span><span class=mi>109</span> <span class=mh>0x93</span> <span class=mi>10010011</span>
+<span class=o>-</span><span class=mi>108</span> <span class=mh>0x94</span> <span class=mi>10010100</span>
+<span class=o>-</span><span class=mi>107</span> <span class=mh>0x95</span> <span class=mi>10010101</span>
+<span class=o>-</span><span class=mi>106</span> <span class=mh>0x96</span> <span class=mi>10010110</span>
+<span class=o>-</span><span class=mi>105</span> <span class=mh>0x97</span> <span class=mi>10010111</span></code></pre></div></div><div class=paragraph><p>Hessian 在处理 <code>ArrayList</code> 对象时，与数组处理略有不同：</p></div><div class="olist arabic"><ol class=arabic><li><p>在处理长度为 <code>[0, 7]</code> 的 <code>ArrayList</code> 时：</p><div class="olist loweralpha"><ol class=loweralpha type=a><li><p>前置标志位： <code>0x78</code>(<code>x</code>)+ length。前置标志位的范围：<code>0x78</code>(<code>x</code>) ~ <code>0x7F</code></p></li><li><p>逐个集合元素</p><div class=openblock><div class=content><div class=paragraph><p>注意：如果集合为空，则没有第②项</p></div></div></div></li></ol></div></li><li><p>在处理长度为 <code>[8, 0]</code> 的 <code>ArrayList</code> 时：</p><div class="olist loweralpha"><ol class=loweralpha type=a><li><p>使用前置标志位 <code>0x58</code>（<code>X</code>） 表示</p></li><li><p>集合长度 length</p></li><li><p>逐个集合元素</p></li></ol></div></li></ol></div><div class=paragraph><p>Hessian 对 <code>ArrayList</code> 的处理有一定的照顾成分：它不需要序列化 <code>ArrayList</code> 的类型。我们看一下下面的处理就知道了。</p></div></div><div class=sect2><h3 id=_linkedlistinteger_collectionserializer><code>LinkedList&lt;Integer></code> 👉 <code>CollectionSerializer</code></h3><div class=paragraph><p>又接着，使用 <code>LinkedList&lt;Integer></code> 来测试一下 <code>CollectionSerializer</code> 的处理情况。</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code data-lang=java><span class=cm>/**
+ * 测试 LinkedList 的序列化
+ *
+ * @author D瓜哥 · <a href=https://www.diguage.com/ target=_blank>https://www.diguage.com/</a>
+ */</span>
+<span class=nd>@Test</span>
+<span class=kd>public</span> <span class=kt>void</span> <span class=nf>testIntLinkedList</span><span class=o>()</span> <span class=kd>throws</span> <span class=nc>Throwable</span> <span class=o>{</span>
+    <span class=c1>// 在处理长度为 [0, 7] 的 LinkedList 时，</span>
+    <span class=c1>// ①前置标志位： BC_LIST_DIRECT（0x70）+ length</span>
+    <span class=c1>//   范围：0x70(p) ~ 0x77(w)</span>
+    <span class=c1>// ②类型（字符串形式）</span>
+    <span class=c1>// ③逐个数组元素</span>
+    <span class=c1>// 注意：如果数组为空，则没有第③项</span>
+    <span class=nc>List</span><span class=o>&lt;</span><span class=nc>Integer</span><span class=o>&gt;</span> <span class=n>al0</span> <span class=o>=</span> <span class=k>new</span> <span class=nc>LinkedList</span><span class=o>&lt;&gt;();</span>
+    <span class=n>objectTo</span><span class=o>(</span><span class=n>al0</span><span class=o>);</span>
+
+    <span class=nc>List</span><span class=o>&lt;</span><span class=nc>Integer</span><span class=o>&gt;</span> <span class=n>ints1</span> <span class=o>=</span> <span class=nc>Arrays</span><span class=o>.</span><span class=na>asList</span><span class=o>(</span><span class=mi>0</span><span class=o>);</span>
+    <span class=nc>List</span><span class=o>&lt;</span><span class=nc>Integer</span><span class=o>&gt;</span> <span class=n>al1</span> <span class=o>=</span> <span class=k>new</span> <span class=nc>LinkedList</span><span class=o>&lt;&gt;(</span><span class=n>ints1</span><span class=o>);</span>
+    <span class=n>objectTo</span><span class=o>(</span><span class=n>al1</span><span class=o>);</span>
+
+    <span class=nc>List</span><span class=o>&lt;</span><span class=nc>Integer</span><span class=o>&gt;</span> <span class=n>ints7</span> <span class=o>=</span> <span class=nc>Arrays</span><span class=o>.</span><span class=na>asList</span><span class=o>(</span><span class=mi>0</span><span class=o>,</span> <span class=mi>1</span><span class=o>,</span> <span class=mi>2</span><span class=o>,</span> <span class=mi>3</span><span class=o>,</span> <span class=mi>4</span><span class=o>,</span> <span class=mi>5</span><span class=o>,</span> <span class=mi>6</span><span class=o>);</span>
+    <span class=nc>List</span><span class=o>&lt;</span><span class=nc>Integer</span><span class=o>&gt;</span> <span class=n>al7</span> <span class=o>=</span> <span class=k>new</span> <span class=nc>LinkedList</span><span class=o>&lt;&gt;(</span><span class=n>ints7</span><span class=o>);</span>
+    <span class=n>objectTo</span><span class=o>(</span><span class=n>al7</span><span class=o>);</span>
+
+    <span class=c1>// 在处理长度为 [8, 0] 的 LinkedList 时，</span>
+    <span class=c1>// ①使用前置标志位 V 表示</span>
+    <span class=c1>// ②类型（字符串形式）</span>
+    <span class=c1>// ③数组长度length</span>
+    <span class=c1>// ④逐个数组元素</span>
+    <span class=nc>List</span><span class=o>&lt;</span><span class=nc>Integer</span><span class=o>&gt;</span> <span class=n>ints8</span> <span class=o>=</span> <span class=nc>Arrays</span><span class=o>.</span><span class=na>asList</span><span class=o>(</span><span class=mi>0</span><span class=o>,</span> <span class=mi>1</span><span class=o>,</span> <span class=mi>2</span><span class=o>,</span> <span class=mi>3</span><span class=o>,</span> <span class=mi>4</span><span class=o>,</span> <span class=mi>5</span><span class=o>,</span> <span class=mi>6</span><span class=o>,</span> <span class=mi>7</span><span class=o>);</span>
+    <span class=nc>List</span><span class=o>&lt;</span><span class=nc>Integer</span><span class=o>&gt;</span> <span class=n>al8</span> <span class=o>=</span> <span class=k>new</span> <span class=nc>LinkedList</span><span class=o>&lt;&gt;(</span><span class=n>ints8</span><span class=o>);</span>
+    <span class=n>objectTo</span><span class=o>(</span><span class=n>al8</span><span class=o>);</span>
+<span class=o>}</span>
+
+
+<span class=c1>// -- 输出结果 ------------------------------------------------</span>
+
+<span class=o>==</span> <span class=nl>Object:</span> <span class=n>java</span><span class=o>.</span><span class=na>util</span><span class=o>.</span><span class=na>LinkedList</span>  <span class=o>==</span>
+<span class=o>[]</span>
+<span class=o>==</span> <span class=kt>byte</span> <span class=nl>array:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+<span class=o>....</span> <span class=mi>0</span> <span class=o>~</span> <span class=mi>22</span> <span class=o>....</span>
+ <span class=mi>112</span> <span class=mh>0x70</span> <span class=mo>01110000</span> <span class=n>p</span>
+  <span class=mi>20</span> <span class=mh>0x14</span> <span class=mo>00010100</span> <span class=err></span>
+ <span class=mi>106</span> <span class=mh>0x6A</span> <span class=mo>01101010</span> <span class=n>j</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+ <span class=mi>118</span> <span class=mh>0x76</span> <span class=mo>01110110</span> <span class=n>v</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>46</span> <span class=mh>0x2E</span> <span class=mo>00101110</span> <span class=o>.</span>
+ <span class=mi>117</span> <span class=mh>0x75</span> <span class=mo>01110101</span> <span class=n>u</span>
+ <span class=mi>116</span> <span class=mh>0x74</span> <span class=mo>01110100</span> <span class=n>t</span>
+ <span class=mi>105</span> <span class=mh>0x69</span> <span class=mo>01101001</span> <span class=n>i</span>
+ <span class=mi>108</span> <span class=mh>0x6C</span> <span class=mo>01101100</span> <span class=n>l</span>
+  <span class=mi>46</span> <span class=mh>0x2E</span> <span class=mo>00101110</span> <span class=o>.</span>
+  <span class=mi>76</span> <span class=mh>0x4C</span> <span class=mo>01001100</span> <span class=no>L</span>
+ <span class=mi>105</span> <span class=mh>0x69</span> <span class=mo>01101001</span> <span class=n>i</span>
+ <span class=mi>110</span> <span class=mh>0x6E</span> <span class=mo>01101110</span> <span class=n>n</span>
+ <span class=mi>107</span> <span class=mh>0x6B</span> <span class=mo>01101011</span> <span class=n>k</span>
+ <span class=mi>101</span> <span class=mh>0x65</span> <span class=mo>01100101</span> <span class=n>e</span>
+ <span class=mi>100</span> <span class=mh>0x64</span> <span class=mo>01100100</span> <span class=n>d</span>
+  <span class=mi>76</span> <span class=mh>0x4C</span> <span class=mo>01001100</span> <span class=no>L</span>
+ <span class=mi>105</span> <span class=mh>0x69</span> <span class=mo>01101001</span> <span class=n>i</span>
+ <span class=mi>115</span> <span class=mh>0x73</span> <span class=mo>01110011</span> <span class=n>s</span>
+ <span class=mi>116</span> <span class=mh>0x74</span> <span class=mo>01110100</span> <span class=n>t</span>
+
+<span class=o>==</span> <span class=nl>Object:</span> <span class=n>java</span><span class=o>.</span><span class=na>util</span><span class=o>.</span><span class=na>LinkedList</span>  <span class=o>==</span>
+<span class=o>==</span> <span class=nl>Generic:</span> <span class=n>java</span><span class=o>.</span><span class=na>lang</span><span class=o>.</span><span class=na>Integer</span>  <span class=o>==</span>
+<span class=o>[</span><span class=mi>0</span><span class=o>]</span>
+<span class=o>==</span> <span class=kt>byte</span> <span class=nl>array:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+<span class=o>....</span> <span class=mi>0</span> <span class=o>~</span> <span class=mi>23</span> <span class=o>....</span>
+ <span class=mi>113</span> <span class=mh>0x71</span> <span class=mo>01110001</span> <span class=n>q</span>
+  <span class=mi>20</span> <span class=mh>0x14</span> <span class=mo>00010100</span> <span class=err></span>
+ <span class=mi>106</span> <span class=mh>0x6A</span> <span class=mo>01101010</span> <span class=n>j</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+ <span class=mi>118</span> <span class=mh>0x76</span> <span class=mo>01110110</span> <span class=n>v</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>46</span> <span class=mh>0x2E</span> <span class=mo>00101110</span> <span class=o>.</span>
+ <span class=mi>117</span> <span class=mh>0x75</span> <span class=mo>01110101</span> <span class=n>u</span>
+ <span class=mi>116</span> <span class=mh>0x74</span> <span class=mo>01110100</span> <span class=n>t</span>
+ <span class=mi>105</span> <span class=mh>0x69</span> <span class=mo>01101001</span> <span class=n>i</span>
+ <span class=mi>108</span> <span class=mh>0x6C</span> <span class=mo>01101100</span> <span class=n>l</span>
+  <span class=mi>46</span> <span class=mh>0x2E</span> <span class=mo>00101110</span> <span class=o>.</span>
+  <span class=mi>76</span> <span class=mh>0x4C</span> <span class=mo>01001100</span> <span class=no>L</span>
+ <span class=mi>105</span> <span class=mh>0x69</span> <span class=mo>01101001</span> <span class=n>i</span>
+ <span class=mi>110</span> <span class=mh>0x6E</span> <span class=mo>01101110</span> <span class=n>n</span>
+ <span class=mi>107</span> <span class=mh>0x6B</span> <span class=mo>01101011</span> <span class=n>k</span>
+ <span class=mi>101</span> <span class=mh>0x65</span> <span class=mo>01100101</span> <span class=n>e</span>
+ <span class=mi>100</span> <span class=mh>0x64</span> <span class=mo>01100100</span> <span class=n>d</span>
+  <span class=mi>76</span> <span class=mh>0x4C</span> <span class=mo>01001100</span> <span class=no>L</span>
+ <span class=mi>105</span> <span class=mh>0x69</span> <span class=mo>01101001</span> <span class=n>i</span>
+ <span class=mi>115</span> <span class=mh>0x73</span> <span class=mo>01110011</span> <span class=n>s</span>
+ <span class=mi>116</span> <span class=mh>0x74</span> <span class=mo>01110100</span> <span class=n>t</span>
+<span class=o>-</span><span class=mi>112</span> <span class=mh>0x90</span> <span class=mi>10010000</span>
+
+<span class=o>==</span> <span class=nl>Object:</span> <span class=n>java</span><span class=o>.</span><span class=na>util</span><span class=o>.</span><span class=na>LinkedList</span>  <span class=o>==</span>
+<span class=o>==</span> <span class=nl>Generic:</span> <span class=n>java</span><span class=o>.</span><span class=na>lang</span><span class=o>.</span><span class=na>Integer</span>  <span class=o>==</span>
+<span class=o>[</span><span class=mi>0</span><span class=o>,</span><span class=mi>1</span><span class=o>,</span><span class=mi>2</span><span class=o>,</span><span class=mi>3</span><span class=o>,</span><span class=mi>4</span><span class=o>,</span><span class=mi>5</span><span class=o>,</span><span class=mi>6</span><span class=o>]</span>
+<span class=o>==</span> <span class=kt>byte</span> <span class=nl>array:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+<span class=o>....</span> <span class=mi>0</span> <span class=o>~</span> <span class=mi>29</span> <span class=o>....</span>
+ <span class=mi>119</span> <span class=mh>0x77</span> <span class=mo>01110111</span> <span class=n>w</span>
+  <span class=mi>20</span> <span class=mh>0x14</span> <span class=mo>00010100</span> <span class=err></span>
+ <span class=mi>106</span> <span class=mh>0x6A</span> <span class=mo>01101010</span> <span class=n>j</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+ <span class=mi>118</span> <span class=mh>0x76</span> <span class=mo>01110110</span> <span class=n>v</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>46</span> <span class=mh>0x2E</span> <span class=mo>00101110</span> <span class=o>.</span>
+ <span class=mi>117</span> <span class=mh>0x75</span> <span class=mo>01110101</span> <span class=n>u</span>
+ <span class=mi>116</span> <span class=mh>0x74</span> <span class=mo>01110100</span> <span class=n>t</span>
+ <span class=mi>105</span> <span class=mh>0x69</span> <span class=mo>01101001</span> <span class=n>i</span>
+ <span class=mi>108</span> <span class=mh>0x6C</span> <span class=mo>01101100</span> <span class=n>l</span>
+  <span class=mi>46</span> <span class=mh>0x2E</span> <span class=mo>00101110</span> <span class=o>.</span>
+  <span class=mi>76</span> <span class=mh>0x4C</span> <span class=mo>01001100</span> <span class=no>L</span>
+ <span class=mi>105</span> <span class=mh>0x69</span> <span class=mo>01101001</span> <span class=n>i</span>
+ <span class=mi>110</span> <span class=mh>0x6E</span> <span class=mo>01101110</span> <span class=n>n</span>
+ <span class=mi>107</span> <span class=mh>0x6B</span> <span class=mo>01101011</span> <span class=n>k</span>
+ <span class=mi>101</span> <span class=mh>0x65</span> <span class=mo>01100101</span> <span class=n>e</span>
+ <span class=mi>100</span> <span class=mh>0x64</span> <span class=mo>01100100</span> <span class=n>d</span>
+  <span class=mi>76</span> <span class=mh>0x4C</span> <span class=mo>01001100</span> <span class=no>L</span>
+ <span class=mi>105</span> <span class=mh>0x69</span> <span class=mo>01101001</span> <span class=n>i</span>
+ <span class=mi>115</span> <span class=mh>0x73</span> <span class=mo>01110011</span> <span class=n>s</span>
+ <span class=mi>116</span> <span class=mh>0x74</span> <span class=mo>01110100</span> <span class=n>t</span>
+<span class=o>-</span><span class=mi>112</span> <span class=mh>0x90</span> <span class=mi>10010000</span>
+<span class=o>-</span><span class=mi>111</span> <span class=mh>0x91</span> <span class=mi>10010001</span>
+<span class=o>-</span><span class=mi>110</span> <span class=mh>0x92</span> <span class=mi>10010010</span>
+<span class=o>-</span><span class=mi>109</span> <span class=mh>0x93</span> <span class=mi>10010011</span>
+<span class=o>-</span><span class=mi>108</span> <span class=mh>0x94</span> <span class=mi>10010100</span>
+<span class=o>-</span><span class=mi>107</span> <span class=mh>0x95</span> <span class=mi>10010101</span>
+<span class=o>-</span><span class=mi>106</span> <span class=mh>0x96</span> <span class=mi>10010110</span>
+
+<span class=o>==</span> <span class=nl>Object:</span> <span class=n>java</span><span class=o>.</span><span class=na>util</span><span class=o>.</span><span class=na>LinkedList</span>  <span class=o>==</span>
+<span class=o>==</span> <span class=nl>Generic:</span> <span class=n>java</span><span class=o>.</span><span class=na>lang</span><span class=o>.</span><span class=na>Integer</span>  <span class=o>==</span>
+<span class=o>[</span><span class=mi>0</span><span class=o>,</span><span class=mi>1</span><span class=o>,</span><span class=mi>2</span><span class=o>,</span><span class=mi>3</span><span class=o>,</span><span class=mi>4</span><span class=o>,</span><span class=mi>5</span><span class=o>,</span><span class=mi>6</span><span class=o>,</span><span class=mi>7</span><span class=o>]</span>
+<span class=o>==</span> <span class=kt>byte</span> <span class=nl>array:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+<span class=o>....</span> <span class=mi>0</span> <span class=o>~</span> <span class=mi>31</span> <span class=o>....</span>
+  <span class=mi>86</span> <span class=mh>0x56</span> <span class=mo>01010110</span> <span class=no>V</span>
+  <span class=mi>20</span> <span class=mh>0x14</span> <span class=mo>00010100</span> <span class=err></span>
+ <span class=mi>106</span> <span class=mh>0x6A</span> <span class=mo>01101010</span> <span class=n>j</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+ <span class=mi>118</span> <span class=mh>0x76</span> <span class=mo>01110110</span> <span class=n>v</span>
+  <span class=mi>97</span> <span class=mh>0x61</span> <span class=mo>01100001</span> <span class=n>a</span>
+  <span class=mi>46</span> <span class=mh>0x2E</span> <span class=mo>00101110</span> <span class=o>.</span>
+ <span class=mi>117</span> <span class=mh>0x75</span> <span class=mo>01110101</span> <span class=n>u</span>
+ <span class=mi>116</span> <span class=mh>0x74</span> <span class=mo>01110100</span> <span class=n>t</span>
+ <span class=mi>105</span> <span class=mh>0x69</span> <span class=mo>01101001</span> <span class=n>i</span>
+ <span class=mi>108</span> <span class=mh>0x6C</span> <span class=mo>01101100</span> <span class=n>l</span>
+  <span class=mi>46</span> <span class=mh>0x2E</span> <span class=mo>00101110</span> <span class=o>.</span>
+  <span class=mi>76</span> <span class=mh>0x4C</span> <span class=mo>01001100</span> <span class=no>L</span>
+ <span class=mi>105</span> <span class=mh>0x69</span> <span class=mo>01101001</span> <span class=n>i</span>
+ <span class=mi>110</span> <span class=mh>0x6E</span> <span class=mo>01101110</span> <span class=n>n</span>
+ <span class=mi>107</span> <span class=mh>0x6B</span> <span class=mo>01101011</span> <span class=n>k</span>
+ <span class=mi>101</span> <span class=mh>0x65</span> <span class=mo>01100101</span> <span class=n>e</span>
+ <span class=mi>100</span> <span class=mh>0x64</span> <span class=mo>01100100</span> <span class=n>d</span>
+  <span class=mi>76</span> <span class=mh>0x4C</span> <span class=mo>01001100</span> <span class=no>L</span>
+ <span class=mi>105</span> <span class=mh>0x69</span> <span class=mo>01101001</span> <span class=n>i</span>
+ <span class=mi>115</span> <span class=mh>0x73</span> <span class=mo>01110011</span> <span class=n>s</span>
+ <span class=mi>116</span> <span class=mh>0x74</span> <span class=mo>01110100</span> <span class=n>t</span>
+<span class=o>-</span><span class=mi>104</span> <span class=mh>0x98</span> <span class=mi>10011000</span>
+<span class=o>-</span><span class=mi>112</span> <span class=mh>0x90</span> <span class=mi>10010000</span>
+<span class=o>-</span><span class=mi>111</span> <span class=mh>0x91</span> <span class=mi>10010001</span>
+<span class=o>-</span><span class=mi>110</span> <span class=mh>0x92</span> <span class=mi>10010010</span>
+<span class=o>-</span><span class=mi>109</span> <span class=mh>0x93</span> <span class=mi>10010011</span>
+<span class=o>-</span><span class=mi>108</span> <span class=mh>0x94</span> <span class=mi>10010100</span>
+<span class=o>-</span><span class=mi>107</span> <span class=mh>0x95</span> <span class=mi>10010101</span>
+<span class=o>-</span><span class=mi>106</span> <span class=mh>0x96</span> <span class=mi>10010110</span>
+<span class=o>-</span><span class=mi>105</span> <span class=mh>0x97</span> <span class=mi>10010111</span></code></pre></div></div><div class=paragraph><p>对于 <code>LinkedList</code> 与 <code>ArrayList</code> 差距巨大，反倒是和前面的 <a href=#int-array><code>int[]</code> 👉 <code>BasicSerializer</code></a> 相同。相比 <code>ArrayList</code>，处理 <code>LinkedList</code> 需要增加 <code>LinkedList</code> 的类型。所以，<strong>微服务的参数与返回值，尽量选择 <code>ArrayList</code> 类型。</strong></p></div><div class=paragraph><p>经过测试，其他 <code>Collection</code> 的实现都与此相同，比如 <code>HashSet</code>，再比如 <code>Arrays.asList(T…​ a)</code>，就不再赘述，留给大家自己做测试。</p></div></div><div class=sect2><h3 id=iterator><code>Collection&lt;Integer>.iterator</code> 👉 <code>IteratorSerializer</code></h3><div class=paragraph><p>最后，使用 <code>Collection&lt;Integer>.iterator</code> 来测试一下 <code>IteratorSerializer</code> 的处理情况。</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code data-lang=java><span class=cm>/**
+ * 测试 Iterator 的序列化
+ *
+ * @author D瓜哥 · <a href=https://www.diguage.com/ target=_blank>https://www.diguage.com/</a>
+ */</span>
+<span class=nd>@Test</span>
+<span class=kd>public</span> <span class=kt>void</span> <span class=nf>testIntIterator</span><span class=o>()</span> <span class=kd>throws</span> <span class=nc>Throwable</span> <span class=o>{</span>
+    <span class=c1>// 处理 Iterator 和 Enumeration 时，</span>
+    <span class=c1>// ①前置标志位 BC_LIST_VARIABLE_UNTYPED（0x57）</span>
+    <span class=c1>// ②遍历 Iterator，逐个写入元素。为空则不写入。</span>
+    <span class=c1>// ③写入结束标志位 BC_END（Z）</span>
+    <span class=nc>List</span><span class=o>&lt;</span><span class=nc>Integer</span><span class=o>&gt;</span> <span class=n>al0</span> <span class=o>=</span> <span class=k>new</span> <span class=nc>ArrayList</span><span class=o>&lt;&gt;();</span>
+    <span class=n>objectTo</span><span class=o>(</span><span class=n>al0</span><span class=o>.</span><span class=na>iterator</span><span class=o>());</span>
+
+    <span class=nc>List</span><span class=o>&lt;</span><span class=nc>Integer</span><span class=o>&gt;</span> <span class=n>ints1</span> <span class=o>=</span> <span class=k>new</span> <span class=nc>ArrayList</span><span class=o>&lt;&gt;(</span><span class=nc>Arrays</span><span class=o>.</span><span class=na>asList</span><span class=o>(</span><span class=mi>0</span><span class=o>));</span>
+    <span class=n>objectTo</span><span class=o>(</span><span class=n>ints1</span><span class=o>.</span><span class=na>iterator</span><span class=o>());</span>
+
+    <span class=nc>List</span><span class=o>&lt;</span><span class=nc>Integer</span><span class=o>&gt;</span> <span class=n>ints2</span> <span class=o>=</span> <span class=nc>Arrays</span><span class=o>.</span><span class=na>asList</span><span class=o>(</span><span class=mi>0</span><span class=o>,</span> <span class=mi>1</span><span class=o>);</span>
+    <span class=n>objectTo</span><span class=o>(</span><span class=n>ints2</span><span class=o>.</span><span class=na>iterator</span><span class=o>());</span>
+<span class=o>}</span>
+
+<span class=c1>// -- 输出结果 ------------------------------------------------</span>
+<span class=o>==</span> <span class=nl>Object:</span> <span class=n>java</span><span class=o>.</span><span class=na>util</span><span class=o>.</span><span class=na>ArrayList</span><span class=n>$Itr</span>  <span class=o>==</span>
+<span class=o>[]</span>
+<span class=o>==</span> <span class=kt>byte</span> <span class=nl>array:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+<span class=o>....</span> <span class=mi>0</span> <span class=o>~</span> <span class=mi>2</span> <span class=o>....</span>
+  <span class=mi>87</span> <span class=mh>0x57</span> <span class=mo>01010111</span> <span class=no>W</span>
+  <span class=mi>90</span> <span class=mh>0x5A</span> <span class=mo>01011010</span> <span class=no>Z</span>
+
+<span class=o>==</span> <span class=nl>Object:</span> <span class=n>java</span><span class=o>.</span><span class=na>util</span><span class=o>.</span><span class=na>ArrayList</span><span class=n>$Itr</span>  <span class=o>==</span>
+<span class=o>[</span><span class=mi>0</span><span class=o>]</span>
+<span class=o>==</span> <span class=kt>byte</span> <span class=nl>array:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+<span class=o>....</span> <span class=mi>0</span> <span class=o>~</span> <span class=mi>3</span> <span class=o>....</span>
+  <span class=mi>87</span> <span class=mh>0x57</span> <span class=mo>01010111</span> <span class=no>W</span>
+<span class=o>-</span><span class=mi>112</span> <span class=mh>0x90</span> <span class=mi>10010000</span>
+  <span class=mi>90</span> <span class=mh>0x5A</span> <span class=mo>01011010</span> <span class=no>Z</span>
+
+<span class=o>==</span> <span class=nl>Object:</span> <span class=n>java</span><span class=o>.</span><span class=na>util</span><span class=o>.</span><span class=na>AbstractList</span><span class=n>$Itr</span>  <span class=o>==</span>
+<span class=o>[</span><span class=mi>1</span><span class=o>,</span><span class=mi>2</span><span class=o>]</span>
+<span class=o>==</span> <span class=kt>byte</span> <span class=nl>array:</span> <span class=n>hessian</span> <span class=n>result</span> <span class=o>==</span>
+<span class=o>....</span> <span class=mi>0</span> <span class=o>~</span> <span class=mi>4</span> <span class=o>....</span>
+  <span class=mi>87</span> <span class=mh>0x57</span> <span class=mo>01010111</span> <span class=no>W</span>
+<span class=o>-</span><span class=mi>112</span> <span class=mh>0x90</span> <span class=mi>10010000</span>
+<span class=o>-</span><span class=mi>111</span> <span class=mh>0x91</span> <span class=mi>10010001</span>
+  <span class=mi>90</span> <span class=mh>0x5A</span> <span class=mo>01011010</span> <span class=no>Z</span></code></pre></div></div><div class=paragraph><p>处理 <code>Iterator</code> 和 <code>Enumeration</code> 时：</p></div><div class="olist arabic"><ol class=arabic><li><p>首先，写入前置标志位 <code>0x57</code>（<code>W</code>）</p></li><li><p>其次，遍历 <code>Iterator</code> 或 <code>Enumeration</code>，逐个写入元素。为空则不写入。</p></li><li><p>最后，写入结束标志位 <code>0x5A</code>（<code>Z</code>）</p></li></ol></div><div class=paragraph><p>这里没有写入“长度”，想想这也正常，毕竟在 <code>Iterator</code> 或 <code>Enumeration</code> 实例中，拿不到“长度”属性。</p></div></div><div class=sect2><h3 id=_小结>小结</h3><div class=paragraph><p>结合上面的所有实验和 <a href=https://www.diguage.com/post/hessian-serialization-protocol/#list target=_blank rel=noopener>Hessian 2.0 序列化协议（中文版）：链表数据</a> 来做个总结：</p></div><div class="olist arabic"><ol class=arabic><li><p>在处理数组以及除 <code>ArrayList</code> 以外其他 <code>Collection</code> 实现类时：</p><div class="olist loweralpha"><ol class=loweralpha type=a><li><p>在处理长度为 <code>[0, 7]</code> 的数组时，处理流程如下：</p><div class="olist lowerroman"><ol class=lowerroman type=i><li><p>前置标志位： <code>0x70</code>(<code>p</code>)+ length。标志位范围：<code>0x70</code>(<code>p</code>) ~ <code>0x77</code>(<code>w</code>)</p></li><li><p>类型（字符串形式）</p></li><li><p>逐个数组元素</p></li></ol></div></li><li><p>在处理长度为 <code>[8, ]</code> 的数组时，</p><div class="olist lowerroman"><ol class=lowerroman type=i><li><p>使用前置标志位 <code>0x56</code>（<code>V</code>) 表示</p></li><li><p>类型（字符串形式）</p></li><li><p>数组长度 length</p></li><li><p>逐个数组元素</p></li></ol></div></li></ol></div></li><li><p>在处理 <code>ArrayList</code> 时：</p><div class="olist loweralpha"><ol class=loweralpha type=a><li><p>在处理长度为 <code>[0, 7]</code> 的 <code>ArrayList</code> 时：</p><div class="olist lowerroman"><ol class=lowerroman type=i><li><p>前置标志位： <code>0x78</code>(<code>x</code>) + length。前置标志位的范围：<code>0x78</code>(<code>x</code>) ~ <code>0x7F</code></p></li><li><p>逐个集合元素</p></li></ol></div></li><li><p>在处理长度为 <code>[8, 0]</code> 的 <code>ArrayList</code> 时：</p><div class="olist lowerroman"><ol class=lowerroman type=i><li><p>使用前置标志位 <code>0x58</code>（<code>X</code>） 表示</p></li><li><p>集合长度 length</p></li><li><p>逐个集合元素</p></li></ol></div></li></ol></div></li><li><p>处理 <code>Iterator</code> 和 <code>Enumeration</code> 时：</p><div class="olist loweralpha"><ol class=loweralpha type=a><li><p>首先，写入前置标志位 <code>0x57</code>（<code>W</code>）</p></li><li><p>其次，遍历 <code>Iterator</code> 或 <code>Enumeration</code>，逐个写入元素。为空则不写入。</p></li><li><p>最后，写入结束标志位 <code>0x5A</code>（<code>Z</code>）</p></li></ol></div></li></ol></div><div class=paragraph><p>对照协议定义，你会发现，关于 <code>list ::= x55 type value* 'Z' # variable-length list</code> 的测试没有找到。翻看代码，发现这个分支不可达。有些奇怪，回头再研究研究。</p></div><div class=paragraph><p>本想这一篇文章把 Hessian 序列化协议剩下的内容都解释完，但是随着测试的增加，发现关于“数组和集合”的内容太多了。篇幅已经很长，剩下内容再开其他新篇吧。</p></div></div></div></div></div><footer class=post__footer><div class="post__tags tags clearfix"><svg class="tags__badge icon icon-tag" width="16" height="16" viewBox="0 0 32 32"><path d="M32 19c0 1-1 2-1 2L21 31s-1 1-2 1-2-1-2-1L2 16c-1-1-1.4-2-1.4-2S0 12.5.0 11V3C0 1.5.8.8.8.8S1.5.0 3 0h8c1.5.0 3 .6 3 .6S15 1 16 2l15 15s1 1 1 2zM7 10a3 3 0 100-6 3 3 0 000 6z"/></svg><ul class=tags__list><li class=tags__item><a class="tags__link btn" href=/tags/java/ rel=tag>Java</a></li><li class=tags__item><a class="tags__link btn" href=/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/ rel=tag>微服务</a></li><li class=tags__item><a class="tags__link btn" href=/tags/%E6%9E%B6%E6%9E%84/ rel=tag>架构</a></li><li class=tags__item><a class="tags__link btn" href=/tags/%E8%AE%BE%E8%AE%A1/ rel=tag>设计</a></li><li class=tags__item><a class="tags__link btn" href=/tags/%E5%BA%8F%E5%88%97%E5%8C%96/ rel=tag>序列化</a></li></ul></div></footer></article></main><div class=clearfix><h3>看在D瓜哥码字的辛苦上，请友情支持一下，D瓜哥感激不尽，😜</h3><table><tr><td><img alt=微信打赏码 src=/images/wxpay.jpg></td><td><img alt=支付宝打赏码 src=/images/alipay.png></td></tr></table></div><br><div class=clearfix><h3>欢迎关注D瓜哥的微信公众号，在公众号可以获取我的微信二维码：</h3><img alt=微信公众号 src=/images/wx-jikerizhi.jpg></div><div class="admonitionblock tip"><table><tbody><tr><td class=icon><i class="fa icon-tip" title=Tip></i></td><td class=content><strong>公众号的微信号是: <code>jikerizhi</code></strong>。如果图片加载不出来，可以直接通过搜索公众号的微信号来查找D瓜哥的公众号。</td></tr></tbody></table></div><div class="authorbox clearfix"><figure class=authorbox__avatar><a target=_blank href=/about/><img alt="D瓜哥 avatar" src=/images/avatar.jpg class=avatar height=110 width=110></a></figure><div class=authorbox__header><span class=authorbox__name>关于 D瓜哥</span></div><div class=authorbox__description>厨艺界最好的码农，挨踢界最棒的厨师。<ul><li><a target=_blank href=https://wordpress.diguage.com/>旧版“地瓜哥”博客网</a></li><li><a target=_blank href=https://notes.diguage.com/mysql/>MySQL 学习笔记<sup>Alpha</sup></a></li><li><a target=_blank href=https://diguage.github.io/jdk-source-analysis/>JDK 源码分析<sup>Alpha</sup></a></li></ul></div></div><nav class="pager flex"><div class="pager__item pager__item--prev"><a class=pager__link href=/post/hessian-source-analysis-for-java/ rel=prev><span class=pager__subtitle>«&#8201;上一篇</span><p class=pager__title>Hessian 源码分析（Java）</p></a></div><div class="pager__item pager__item--next"><a class=pager__link href=/post/hessian-protocol-interpretation-and-practice-5/ rel=next><span class=pager__subtitle>下一篇&#8201;»</span><p class=pager__title>Hessian 协议解释与实战（五）：对象与映射</p></a></div></nav><section class=comments><div id=SOHUCS sid=/post/hessian-protocol-interpretation-and-practice-4/></div><script type=text/javascript>(function(){if(window.location.hostname==="localhost")return;var n,e="cyuuTeBp3",t="prod_2906c47c31e735e0ed518282fec489a6",s=window.innerWidth||document.documentElement.clientWidth;s<960?window.document.write('<script id="changyan_mobile_js" charset="utf-8" type="text/javascript" src="https://changyan.sohu.com/upload/mobile/wap-js/changyan_mobile.js?client_id='+e+"&conf="+t+'"><\/script>'):(n=function(e,t){var s=document.getElementsByTagName("head")[0]||document.head||document.documentElement,n=document.createElement("script");n.setAttribute("type","text/javascript"),n.setAttribute("charset","UTF-8"),n.setAttribute("src",e),typeof t=="function"&&(window.attachEvent?n.onreadystatechange=function(){var e=n.readyState;(e==="loaded"||e==="complete")&&(n.onreadystatechange=null,t())}:n.onload=t),s.appendChild(n)},n("https://changyan.sohu.com/upload/changyan.js",function(){window.changyan.api.config({appid:e,conf:t})}))})()</script></section></div><aside class=sidebar><div class="widget-search widget"><form class=widget-search__form role=search method=get action=https://google.com/search><label><input class=widget-search__field type=search placeholder=搜索… name=q aria-label=搜索…>
+</label><input class=widget-search__submit type=submit value=Search>
+<input type=hidden name=sitesearch value=https://www.diguage.com/></form></div><div class="widget-wechat widget"><h4 class=widget__title>微信公众号</h4><img alt=微信公众号 class=center src=/images/wx-jikerizhi-qrcode.jpg></div><div class="widget-wechat widget"><h4 class=widget__title>知识星球</h4><img alt=微信公众号 class=center src=/images/zhishixingqiu.png></div><div class="widget-recent widget"><h4 class=widget__title>近期文章</h4><div class=widget__content><ul class=widget__list><li class=widget__item><a class=widget__link href=/post/spring-boot-startup-process-overview/>Spring Boot 启动流程概述</a></li><li class=widget__item><a class=widget__link href=/post/redis-core-data-structure-4/>Redis 核心数据结构（四）</a></li><li class=widget__item><a class=widget__link href=/post/redis-core-data-structure-3/>Redis 核心数据结构（三）</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-subsets/>算法模式：子集</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-backtracking/>算法模式：回溯</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-transform-and-conquer/>算法模式：变治法</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-divide-and-conquer/>算法模式：分治法</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-decrease-and-conquer/>算法模式：减治法</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-topological-sort/>算法模式：拓扑排序</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-union-find/>算法模式：并查集</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-trie/>算法模式：前缀树</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-depth-first-search/>算法模式：深度优先搜索</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-breadth-first-search/>算法模式：广度优先搜索</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-k-way-merge/>算法模式：多路归并</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-two-heaps/>算法模式：双堆</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-cyclic-sort/>算法模式：循环排序</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-quickselect/>算法模式：快速选择</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-top-k-elements/>算法模式：Top K 问题</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-monotonic-stack/>算法模式：单调栈</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-sliding-window/>算法模式：滑动窗口</a></li></ul></div></div><div class="widget-categories widget"><h4 class=widget__title>分类</h4><div class=widget__content><ul class=widget__list><li class=widget__item><a class=widget__link href=/categories/%E4%B8%AA%E4%BA%BA%E6%88%90%E9%95%BF/>个人成长</a></li><li class=widget__item><a class=widget__link href=/categories/%E5%88%86%E5%B8%83%E5%BC%8F/>分布式</a></li><li class=widget__item><a class=widget__link href=/categories/%E5%BC%80%E5%8F%91%E5%B7%A5%E5%85%B7/>开发工具</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/>性能优化</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/>操作系统</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%95%B0%E6%8D%AE%E5%AD%98%E5%82%A8/>数据存储</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%96%87%E5%AD%A6/>文学</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%96%B9%E6%B3%95%E8%AE%BA/>方法论</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/>程序设计</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%AE%97%E6%B3%95/>算法</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/>系统架构</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%BB%8F%E6%B5%8E%E9%87%91%E8%9E%8D/>经济金融</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/>编程语言</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%BD%91%E7%BB%9C/>网络</a></li><li class=widget__item><a class=widget__link href=/categories/%E8%81%8C%E4%B8%9A%E5%8F%91%E5%B1%95/>职业发展</a></li><li class=widget__item><a class=widget__link href=/categories/%E8%BD%AF%E4%BB%B6%E5%B7%A5%E7%A8%8B/>软件工程</a></li><li class=widget__item><a class=widget__link href=/categories/%E9%80%B8%E9%97%BB%E8%B6%A3%E4%BA%8B/>逸闻趣事</a></li><li class=widget__item><a class=widget__link href=/categories/%E9%98%85%E8%AF%BB%E6%91%98%E8%A6%81/>阅读摘要</a></li></ul></div></div><div class="widget-taglist widget"><h4 class=widget__title>标签</h4><div class=widget__content><a class="widget-taglist__link widget__link btn" href=/tags/gc/ title=GC>GC (9)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/http/ title=HTTP>HTTP (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/java/ title=Java>Java (64)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/jvm/ title=JVM>JVM (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/kpi/ title=KPI>KPI (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/kubernetes/ title=Kubernetes>Kubernetes (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/linux/ title=Linux>Linux (12)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/okr/ title=OKR>OKR (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/redis/ title=Redis>Redis (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/shell/ title=Shell>Shell (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/spring/ title=Spring>Spring (26)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/tcp/ title=TCP>TCP (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/udp/ title=UDP>UDP (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/zookeeper/ title=ZooKeeper>ZooKeeper (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E4%B8%AA%E4%BA%BA%E6%8F%90%E5%8D%87/ title=个人提升>个人提升 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E4%B9%A6%E7%B1%8D/ title=书籍>书籍 (15)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E4%BA%A7%E5%93%81/ title=产品>产品 (7)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%80%BA%E5%88%B8/ title=债券>债券 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%88%86%E5%B8%83%E5%BC%8F/ title=分布式>分布式 (15)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%88%86%E6%B2%BB/ title=分治>分治 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/ title=动态规划>动态规划 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9B%A2%E9%98%9F%E5%BB%BA%E8%AE%BE/ title=团队建设>团队建设 (6)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9B%A2%E9%98%9F%E6%96%87%E5%8C%96/ title=团队文化>团队文化 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9B%BE/ title=图>图 (7)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9F%BA%E9%87%91/ title=基金>基金 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%A0%86/ title=堆>堆 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%AD%98%E5%82%A8/ title=存储>存储 (6)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%B7%A5%E4%BD%9C%E6%96%B9%E6%B3%95/ title=工作方法>工作方法 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%B9%B6%E5%8F%91/ title=并发>并发 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%BA%8F%E5%88%97%E5%8C%96/ title=序列化>序列化 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/ title=微服务>微服务 (17)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%BF%83%E7%90%86%E5%AD%A6/ title=心理学>心理学 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95/ title=性能测试>性能测试 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%8A%95%E8%B5%84%E7%90%86%E8%B4%A2/ title=投资理财>投资理财 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/ title=数据库>数据库 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/ title=数据结构>数据结构 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%95%B0%E7%BB%84/ title=数组>数组 (13)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%96%B9%E6%B3%95%E8%AE%BA/ title=方法论>方法论 (13)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%97%85%E8%A1%8C/ title=旅行>旅行 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5/ title=最佳实践>最佳实践 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%9E%B6%E6%9E%84/ title=架构>架构 (44)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%A0%88/ title=栈>栈 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%A0%91/ title=树>树 (11)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%B2%9F%E9%80%9A%E6%8A%80%E5%B7%A7/ title=沟通技巧>沟通技巧 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/ title=源码分析>源码分析 (8)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%90%86%E8%B4%A2/ title=理财>理财 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%94%9F%E6%B4%BB/ title=生活>生活 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%AC%94%E8%AE%B0/ title=笔记>笔记 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%AE%97%E6%B3%95/ title=算法>算法 (8)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%AE%97%E6%B3%95%E6%A8%A1%E5%BC%8F/ title=算法模式>算法模式 (23)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BB%8F%E6%B5%8E/ title=经济>经济 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BC%96%E7%A0%81/ title=编码>编码 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BD%91%E7%BB%9C/ title=网络>网络 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BF%BB%E8%AF%91/ title=翻译>翻译 (7)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%82%A1%E7%A5%A8/ title=股票>股票 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%84%91%E5%9B%BE/ title=脑图>脑图 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%8A%82%E6%97%A5/ title=节日>节日 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%8B%B1%E8%AF%AD/ title=英语>英语 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%99%9A%E6%8B%9F%E6%9C%BA/ title=虚拟机>虚拟机 (9)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AE%BA%E6%96%87/ title=论文>论文 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AE%BE%E8%AE%A1/ title=设计>设计 (36)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/ title=设计模式>设计模式 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AF%97%E6%AD%8C/ title=诗歌>诗歌 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AF%BB%E4%B9%A6/ title=读书>读书 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%80%92%E5%BD%92/ title=递归>递归 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%87%91%E8%9E%8D/ title=金融>金融 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%93%BE%E8%A1%A8/ title=链表>链表 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1/ title=面向对象>面向对象 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%A2%86%E5%9F%9F%E9%A9%B1%E5%8A%A8%E8%AE%BE%E8%AE%A1/ title=领域驱动设计>领域驱动设计 (5)</a></div></div><div class="widget-social widget"><h4 class="widget-social__title widget__title">社交</h4><div class="widget-social__content widget__content"><div class="widget-social__item widget__item"><a class="widget-social__link widget__link btn" title=Twitter rel="noopener noreferrer" href=https://twitter.com/diguage target=_blank><svg class="widget-social__link-icon icon icon-twitter" width="24" height="24" viewBox="0 0 384 312"><path d="m384 36.9c-14.1 6.3-29.3 10.5-45.2 12.4 16.3-9.7 28.8-25.2 34.6-43.6-15.2 9-32.1 15.6-50 19.1-14.4-15.2-34.9-24.8-57.5-24.8-43.5.0-78.8 35.3-78.8 78.8.0 6.2.7 12.2 2 17.9-65.5-3.3-123.5-34.6-162.4-82.3C20 26 16.1 39.6 16.1 54c0 27.3 13.9 51.4 35 65.6-12.9-.4-25.1-4-35.7-9.9v1c0 38.2 27.2 70 63.2 77.2-6.6 1.8-13.6 2.8-20.8 2.8-5.1.0-10-.5-14.8-1.4 10 31.3 39.1 54.1 73.6 54.7-27 21.1-60.9 33.7-97.8 33.7-6.4.0-12.6-.4-18.8-1.1C34.9 299 76.3 312 120.8 312c144.9.0 224.1-120 224.1-224.1.0-3.4-.1-6.8-.2-10.2 15.4-11.1 28.7-25 39.3-40.8z"/></svg>
+<span>Twitter</span></a></div><div class="widget-social__item widget__item"><a class="widget-social__link widget__link btn" title=GitHub rel="noopener noreferrer" href=https://github.com/diguage target=_blank><svg class="widget-social__link-icon icon icon-github" width="24" height="24" viewBox="0 0 384 374"><path d="m192 0C85.9.0.0 85.8.0 191.7c0 84.7 55 156.6 131.3 181.9 9.6 1.8 13.1-4.2 13.1-9.2.0-4.6-.2-16.6-.3-32.6-53.4 11.6-64.7-25.7-64.7-25.7-8.7-22.1-21.3-28-21.3-28-17.4-11.9 1.3-11.6 1.3-11.6 19.3 1.4 29.4 19.8 29.4 19.8 17.1 29.3 44.9 20.8 55.9 15.9 1.7-12.4 6.7-20.8 12.2-25.6-42.6-4.8-87.5-21.3-87.5-94.8.0-20.9 7.5-38 19.8-51.4-2-4.9-8.6-24.3 1.9-50.7.0.0 16.1-5.2 52.8 19.7 15.3-4.2 31.7-6.4 48.1-6.5 16.3.1 32.7 2.2 48.1 6.5 36.7-24.8 52.8-19.7 52.8-19.7 10.5 26.4 3.9 45.9 1.9 50.7 12.3 13.4 19.7 30.5 19.7 51.4.0 73.7-44.9 89.9-87.7 94.6 6.9 5.9 13 17.6 13 35.5.0 25.6-.2 46.3-.2 52.6.0 5.1 3.5 11.1 13.2 9.2C329 348.2 384 276.4 384 191.7 384 85.8 298 0 192 0z"/></svg>
+<span>GitHub</span></a></div><div class="widget-social__item widget__item"><a class="widget-social__link widget__link btn" title=Email href=mailto:leejun119@gmail.com><svg class="widget-social__link-icon icon icon-mail" width="24" height="24" viewBox="0 0 416 288"><path d="m0 16v256 16h16 384 16v-16V16 0h-16H16 0zm347 16-139 92.5L69 32zM199 157.5l9 5.5 9-5.5L384 46v210H32V46z"/></svg>
+<span>leejun119@gmail.com</span></a></div></div></div></aside></div><footer class=footer><div class="container footer__container flex"><div class=footer__copyright>&copy; 2025 "地瓜哥"博客网.
+<span class=footer__copyright-credits>基于 <a href=https://gohugo.io/ rel="nofollow noopener" target=_blank>Hugo</a> 引擎和 <a href=https://github.com/Vimux/Mainroad/ rel="nofollow noopener" target=_blank>Mainroad</a> 主题</span>
+<span><a href=https://beian.miit.gov.cn/ target=_target>京ICP备14046450号-4</a></span></div></div></footer></div><script async defer src=/js/menu.js></script><script type=text/x-mathjax-config>
+	MathJax.Hub.Config({
+	  messageStyle: "none",
+	  tex2jax: {
+		inlineMath: [["\\(", "\\)"]],
+		displayMath: [["\\[", "\\]"]],
+		ignoreClass: "nostem|nolatexmath"
+	  },
+	  asciimath2jax: {
+		delimiters: [["\\$", "\\$"]],
+		ignoreClass: "nostem|noasciimath"
+	  },
+	  TeX: { equationNumbers: { autoNumber: "none" } }
+	})
+	MathJax.Hub.Register.StartupHook("AsciiMath Jax Ready", function () {
+	  MathJax.InputJax.AsciiMath.postfilterHooks.Add(function (data, node) {
+		if ((node = data.script.parentNode) && (node = node.parentNode) && node.classList.contains("stemblock")) {
+		  data.math.root.display = "block"
+		}
+		return data
+	  })
+	})
+</script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js?config=TeX-MML-AM_HTMLorMML" async></script></body></html>

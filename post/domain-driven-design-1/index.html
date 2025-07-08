@@ -1,0 +1,195 @@
+<!doctype html><html class=no-js lang=zh-cn><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><meta http-equiv=X-UA-Compatible content="IE=edge"><title>《领域驱动设计》读书笔记（一）：运用领域模型 - "地瓜哥"博客网</title>
+<script>(function(e,t){e[t]=e[t].replace("no-js","js")})(document.documentElement,"className")</script><meta name=keywords content="DDD,程序设计,软件工程,阅读摘要,领域驱动设计,书籍,面向对象,领域驱动设计,书籍,面向对象,程序设计,软件工程,阅读摘要"><meta name=description content><meta property="og:url" content="https://www.diguage.com/post/domain-driven-design-1/"><meta property="og:site_name" content='"地瓜哥"博客网'><meta property="og:title" content="《领域驱动设计》读书笔记（一）：运用领域模型"><meta property="og:description" content=" 序 控制复杂性的关键是有一个好的领域模型，这个模型不应该仅仅停留在领域的表面，而是要透过表象抓住领域的实质结构，从而为软件开发人员提供他们所需的支持。
+在领域建模过程中不应将概念与实现割裂开来。
+概念与实现密不可分的最主要原因在于，领域模型的最大价值是它提供了一种通用语言，这种语言是将领域专家和技术人员联系在一起的纽带。
+领域模型并不是按照“先建模，后实现”这个次序来工作的。
+真正强大的领域模型是随着时间演进的，即使是最有经验的建模人员也往往发现他们是在系统的初始版本完成之后才有了最好的想法。
+既品尝过成功的美酒，也体验过失败的沮丧。
+前言 真正决定软件复杂性的是设计方法。
+很多应用程序最主要的复杂性并不在技术上，而是来自领域本身、用户的活动或业务。
+领域驱动设计是一种思维方式，也是一组优先任务，它旨在加速那些必须处理复杂领域的软件项目的开发。
+领域驱动设计的实质就是消化吸收大量知识，最后产生一个反映深层次领域知识并聚焦于关键概念的模型。
+极端的简约主义是解救那些过度追求设计的执迷者的良方。
+实际上， XP最适合那些对设计的感觉很敏锐的开发人员。 XP过程假定人们可以通过重构来改进设计，而且可以经常、快速地完成重构。
+首先需要深入研究模型，然后基于最初的（可能是不成熟的）模型实现一个初始设计，再反复改进这个设计。每次团队对领域有了新的理解之后，都需要对模型进行改进，使模型反映出更丰富的知识，而且必须对代码进行重构，以便反映出更深刻的模型，并使应用程序可以充分利用模型的潜力。 第一部分 运用领域模型
+模型是一种简化。它是对现实的解释——把与解决问题密切相关的方面抽象出来，而忽略无关的细节。
+模型正是解决此类信息超载问题的工具。模型这种知识形式对知识进行了选择性的简化和有意的结构化。
+领域模型并非某种特殊的图，而是这种图所要传达的思想。
+对这类知识严格的组织且有选择的抽象。
+领域建模并不是要尽可能建立一个符合“现实”的模型。
+建模更像是制作电影——出于某种目的而概括地反映现实。
+在领域驱动的设计中，3个基本用途决定了模型的选择。
+模型和设计的核心互相影响。
+模型是团队所有成员使用的通用语言的中枢。
+模型是浓缩的知识。
+软件的核心是其为用户解决领域相关的问题的能力。所有其他特性，不管有多么重要，都要服务于这个基本目的。
+第 1 章 消化知识 有效建模的要素：
+模型和实现的绑定。
+建立了一种基于模型的语言。
+开发一个蕴含丰富知识的模型。
+提炼模型。
+头脑风暴和实验。
+语言和草图，再加上头脑风暴活动，将我们的讨论变成“模型实验室”，在这些讨论中可以演示、尝试和判断上百种变化。
+高效的领域建模人员是知识的消化者。
+领域模型的不断精化迫使开发人员学习重要的业务原理，而不是机械地进行功能开发。领域专家被迫提炼自己已知道的重要知识的过程往往也是完善其自身理解的过程，而且他们会渐渐理解软件项目所必需的概念严谨性。
+模型永远都不会是完美的，因为它是一个不断演化完善的过程。
+高效率的团队需要有意识地积累知识，并持续学习。
+业务活动和规则如同所涉及的实体一样，都是领域的核心，任何领域都有各种类别的概念。知识消化所产生的模型能够反映出对知识的深层理解。
+当我们的建模不再局限于寻找实体和值对象时，我们才能充分吸取知识，因为业务规则之间可能会存在不一致。
+知识消化是一种探索，它永无止境。
+第 2 章 交流与语言的使用 领域模型可成为软件项目通用语言的核心。
+模式：Ubiquitous Language 如果语言支离破碎，项目必将遭遇严重问题。领域专家使用他们自己的术语，而技术团队所使用的语言则经过调整，以便从设计角度讨论领域。
+日常讨论所使用的术语与代码（软件项目的最重要产品）中使用的术语不一致。甚至同一个人在讲话和写东西时使用的语言也不一致，这导致的后果是，对领域的深刻表述常常稍纵即逝，根本无法记录到代码或文档中。
+翻译使得沟通不畅，并削弱了知识消化。
+然而任何一方的语言都不能成为公共语言，因为它们无法满足所有的需求。
+Ubiquitous Language（通用语言）的词汇包括类和主要操作的名称。
+将模型作为语言的支柱。确保团队在内部的所有交流中以及代码中坚持使用这种语言。在画图、写东西，特别是讲话时也要使用这种语言。
+通过尝试不同的表示方法（它们反映了备选模型）来消除难点。然后重构代码，重新命名类、方法和模块，以便与新模型保持一致。解决交谈中的术语混淆问题，就像我们对普通词汇形成一致的理解一样。
+要认识到， Ubiquitous Language 的更改就是对模型的更改。
+领域专家应该抵制不合适或无法充分表达领域理解的术语或结构，开发人员应该密切关注那些将会妨碍设计的有歧义和不一致的地方。"><meta property="og:locale" content="zh_cn"><meta property="og:type" content="article"><meta property="article:section" content="post"><meta property="article:published_time" content="2021-07-08T20:40:05+08:00"><meta property="article:modified_time" content="2022-07-02T20:24:55+08:00"><meta property="article:tag" content="领域驱动设计"><meta property="article:tag" content="书籍"><meta property="article:tag" content="面向对象"><meta name=twitter:card content="summary"><meta name=twitter:title content="《领域驱动设计》读书笔记（一）：运用领域模型"><meta name=twitter:description content=" 序 控制复杂性的关键是有一个好的领域模型，这个模型不应该仅仅停留在领域的表面，而是要透过表象抓住领域的实质结构，从而为软件开发人员提供他们所需的支持。
+在领域建模过程中不应将概念与实现割裂开来。
+概念与实现密不可分的最主要原因在于，领域模型的最大价值是它提供了一种通用语言，这种语言是将领域专家和技术人员联系在一起的纽带。
+领域模型并不是按照“先建模，后实现”这个次序来工作的。
+真正强大的领域模型是随着时间演进的，即使是最有经验的建模人员也往往发现他们是在系统的初始版本完成之后才有了最好的想法。
+既品尝过成功的美酒，也体验过失败的沮丧。
+前言 真正决定软件复杂性的是设计方法。
+很多应用程序最主要的复杂性并不在技术上，而是来自领域本身、用户的活动或业务。
+领域驱动设计是一种思维方式，也是一组优先任务，它旨在加速那些必须处理复杂领域的软件项目的开发。
+领域驱动设计的实质就是消化吸收大量知识，最后产生一个反映深层次领域知识并聚焦于关键概念的模型。
+极端的简约主义是解救那些过度追求设计的执迷者的良方。
+实际上， XP最适合那些对设计的感觉很敏锐的开发人员。 XP过程假定人们可以通过重构来改进设计，而且可以经常、快速地完成重构。
+首先需要深入研究模型，然后基于最初的（可能是不成熟的）模型实现一个初始设计，再反复改进这个设计。每次团队对领域有了新的理解之后，都需要对模型进行改进，使模型反映出更丰富的知识，而且必须对代码进行重构，以便反映出更深刻的模型，并使应用程序可以充分利用模型的潜力。 第一部分 运用领域模型
+模型是一种简化。它是对现实的解释——把与解决问题密切相关的方面抽象出来，而忽略无关的细节。
+模型正是解决此类信息超载问题的工具。模型这种知识形式对知识进行了选择性的简化和有意的结构化。
+领域模型并非某种特殊的图，而是这种图所要传达的思想。
+对这类知识严格的组织且有选择的抽象。
+领域建模并不是要尽可能建立一个符合“现实”的模型。
+建模更像是制作电影——出于某种目的而概括地反映现实。
+在领域驱动的设计中，3个基本用途决定了模型的选择。
+模型和设计的核心互相影响。
+模型是团队所有成员使用的通用语言的中枢。
+模型是浓缩的知识。
+软件的核心是其为用户解决领域相关的问题的能力。所有其他特性，不管有多么重要，都要服务于这个基本目的。
+第 1 章 消化知识 有效建模的要素：
+模型和实现的绑定。
+建立了一种基于模型的语言。
+开发一个蕴含丰富知识的模型。
+提炼模型。
+头脑风暴和实验。
+语言和草图，再加上头脑风暴活动，将我们的讨论变成“模型实验室”，在这些讨论中可以演示、尝试和判断上百种变化。
+高效的领域建模人员是知识的消化者。
+领域模型的不断精化迫使开发人员学习重要的业务原理，而不是机械地进行功能开发。领域专家被迫提炼自己已知道的重要知识的过程往往也是完善其自身理解的过程，而且他们会渐渐理解软件项目所必需的概念严谨性。
+模型永远都不会是完美的，因为它是一个不断演化完善的过程。
+高效率的团队需要有意识地积累知识，并持续学习。
+业务活动和规则如同所涉及的实体一样，都是领域的核心，任何领域都有各种类别的概念。知识消化所产生的模型能够反映出对知识的深层理解。
+当我们的建模不再局限于寻找实体和值对象时，我们才能充分吸取知识，因为业务规则之间可能会存在不一致。
+知识消化是一种探索，它永无止境。
+第 2 章 交流与语言的使用 领域模型可成为软件项目通用语言的核心。
+模式：Ubiquitous Language 如果语言支离破碎，项目必将遭遇严重问题。领域专家使用他们自己的术语，而技术团队所使用的语言则经过调整，以便从设计角度讨论领域。
+日常讨论所使用的术语与代码（软件项目的最重要产品）中使用的术语不一致。甚至同一个人在讲话和写东西时使用的语言也不一致，这导致的后果是，对领域的深刻表述常常稍纵即逝，根本无法记录到代码或文档中。
+翻译使得沟通不畅，并削弱了知识消化。
+然而任何一方的语言都不能成为公共语言，因为它们无法满足所有的需求。
+Ubiquitous Language（通用语言）的词汇包括类和主要操作的名称。
+将模型作为语言的支柱。确保团队在内部的所有交流中以及代码中坚持使用这种语言。在画图、写东西，特别是讲话时也要使用这种语言。
+通过尝试不同的表示方法（它们反映了备选模型）来消除难点。然后重构代码，重新命名类、方法和模块，以便与新模型保持一致。解决交谈中的术语混淆问题，就像我们对普通词汇形成一致的理解一样。
+要认识到， Ubiquitous Language 的更改就是对模型的更改。
+领域专家应该抵制不合适或无法充分表达领域理解的术语或结构，开发人员应该密切关注那些将会妨碍设计的有歧义和不一致的地方。"><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link rel=dns-prefetch href=//fonts.googleapis.com><link rel=dns-prefetch href=//fonts.gstatic.com><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Open+Sans:400,400i,700"><link rel=stylesheet href=/css/style.min.css><link rel=stylesheet href=/css/asciidoctor.css><link rel=stylesheet href=/css/rouge-monokai.css><link rel="shortcut icon" href=/favicon.ico><script async src="https://www.googletagmanager.com/gtag/js?id=G-1MMT2NLEL4"></script><script>var dnt,doNotTrack=!1;if(!1&&(dnt=navigator.doNotTrack||window.doNotTrack||navigator.msDoNotTrack,doNotTrack=dnt=="1"||dnt=="yes"),!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-1MMT2NLEL4")}</script><script id=baidu_analytics>var _hmt=_hmt||[];(function(){var e,t=document.createElement("script");t.src="https://hm.baidu.com/hm.js?e56e7dd0a120b414f5741f4c5e5218ea",e=document.getElementsByTagName("script")[0],e.parentNode.insertBefore(t,e)})()</script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css></head><body class=body><div class="container container--outer"><header class=header><div class="container header__container"><div class=logo><a class=logo__link href=/ title='"地瓜哥"博客网' rel=home><div class="logo__item logo__text"><div class=logo__title>"地瓜哥"博客网</div><div class=logo__tagline>分享技术带来的喜悦 — https://www.diguage.com/</div></div></a></div><nav class=menu><button class=menu__btn aria-haspopup=true aria-expanded=false tabindex=0>
+<span class=menu__btn-title tabindex=-1>菜单</span></button><ul class=menu__list><li class=menu__item><a class=menu__link href=/><span class=menu__text>首页</span></a></li><li class=menu__item><a class=menu__link href=/categories/><span class=menu__text>分类</span></a></li><li class=menu__item><a class=menu__link href=/about/><span class=menu__text>关于</span></a></li><li class=menu__item><a class=menu__link href=/archives/><span class=menu__text>归档</span></a></li></ul></nav></div></header><div class="wrapper flex"><div class=primary><main class=main role=main><article class=post><header class=post__header><h1 class=post__title>《领域驱动设计》读书笔记（一）：运用领域模型</h1><div class="post__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2021-07-08T20:40:05+08:00>2021-07-08</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/ rel=category>程序设计</a>, <a class=meta__link href=/categories/%E8%BD%AF%E4%BB%B6%E5%B7%A5%E7%A8%8B/ rel=category>软件工程</a>, <a class=meta__link href=/categories/%E9%98%85%E8%AF%BB%E6%91%98%E8%A6%81/ rel=category>阅读摘要</a></span></div></div></header><figure class="post__thumbnail thumbnail"><img class=thumbnail__image src=/images/domain-driver-design/domain-driver-design.jpg alt=《领域驱动设计》读书笔记（一）：运用领域模型></figure><div class="content post__content clearfix"><div class=sect1><h2 id=_序>序</h2><div class=sectionbody><div class=paragraph><p>控制复杂性的关键是有一个好的领域模型，这个模型不应该仅仅停留在领域的表面，而是要透过表象抓住领域的实质结构，从而为软件开发人员提供他们所需的支持。</p></div><div class=paragraph><p>在领域建模过程中不应将概念与实现割裂开来。</p></div><div class=paragraph><p>概念与实现密不可分的最主要原因在于，领域模型的最大价值是它提供了一种通用语言，这种语言是将领域专家和技术人员联系在一起的纽带。</p></div><div class=paragraph><p>领域模型并不是按照“先建模，后实现”这个次序来工作的。</p></div><div class=paragraph><p>真正强大的领域模型是随着时间演进的，即使是最有经验的建模人员也往往发现他们是在系统的初始版本完成之后才有了最好的想法。</p></div><div class=paragraph><p>既品尝过成功的美酒，也体验过失败的沮丧。</p></div></div></div><div class=sect1><h2 id=_前言>前言</h2><div class=sectionbody><div class=paragraph><p>真正决定软件复杂性的是设计方法。</p></div><div class=paragraph><p>很多应用程序最主要的复杂性并不在技术上，而是来自领域本身、用户的活动或业务。</p></div><div class=paragraph><p>领域驱动设计是一种思维方式，也是一组优先任务，它旨在加速那些必须处理复杂领域的软件项目的开发。</p></div><div class=paragraph><p>领域驱动设计的实质就是消化吸收大量知识，最后产生一个反映深层次领域知识并聚焦于关键概念的模型。</p></div><div class=paragraph><p>极端的简约主义是解救那些过度追求设计的执迷者的良方。</p></div><div class=paragraph><p>实际上， XP最适合那些对设计的感觉很敏锐的开发人员。 XP过程假定人们可以通过重构来改进设计，而且可以经常、快速地完成重构。</p></div><div class=paragraph><p>首先需要深入研究模型，然后基于最初的（可能是不成熟的）模型实现一个初始设计，再反复改进这个设计。每次团队对领域有了新的理解之后，都需要对模型进行改进，使模型反映出更丰富的知识，而且必须对代码进行重构，以便反映出更深刻的模型，并使应用程序可以充分利用模型的潜力。
+第一部分 运用领域模型</p></div><div class=paragraph><p>模型是一种简化。它是对现实的解释——把与解决问题密切相关的方面抽象出来，而忽略无关的细节。</p></div><div class=paragraph><p>模型正是解决此类信息超载问题的工具。模型这种知识形式对知识进行了选择性的简化和有意的结构化。</p></div><div class=paragraph><p>领域模型并非某种特殊的图，而是这种图所要传达的思想。</p></div><div class=paragraph><p>对这类知识严格的组织且有选择的抽象。</p></div><div class=paragraph><p>领域建模并不是要尽可能建立一个符合“现实”的模型。</p></div><div class=paragraph><p>建模更像是制作电影——出于某种目的而概括地反映现实。</p></div><div class=paragraph><p>在领域驱动的设计中，3个基本用途决定了模型的选择。</p></div><div class="olist arabic"><ol class=arabic><li><p>模型和设计的核心互相影响。</p></li><li><p>模型是团队所有成员使用的通用语言的中枢。</p></li><li><p>模型是浓缩的知识。</p></li></ol></div><div class=paragraph><p>软件的核心是其为用户解决领域相关的问题的能力。所有其他特性，不管有多么重要，都要服务于这个基本目的。</p></div></div></div><div class=sect1><h2 id=_第_1_章_消化知识>第 1 章 消化知识</h2><div class=sectionbody><div class=paragraph><p><strong>有效建模的要素：</strong></p></div><div class="olist arabic"><ol class=arabic><li><p>模型和实现的绑定。</p></li><li><p>建立了一种基于模型的语言。</p></li><li><p>开发一个蕴含丰富知识的模型。</p></li><li><p>提炼模型。</p></li><li><p>头脑风暴和实验。</p></li></ol></div><div class=paragraph><p>语言和草图，再加上头脑风暴活动，将我们的讨论变成“模型实验室”，在这些讨论中可以演示、尝试和判断上百种变化。</p></div><div class=paragraph><p>高效的领域建模人员是知识的消化者。</p></div><div class=paragraph><p>领域模型的不断精化迫使开发人员学习重要的业务原理，而不是机械地进行功能开发。领域专家被迫提炼自己已知道的重要知识的过程往往也是完善其自身理解的过程，而且他们会渐渐理解软件项目所必需的概念严谨性。</p></div><div class=paragraph><p>模型永远都不会是完美的，因为它是一个不断演化完善的过程。</p></div><div class=paragraph><p>高效率的团队需要有意识地积累知识，并持续学习。</p></div><div class=paragraph><p>业务活动和规则如同所涉及的实体一样，都是领域的核心，任何领域都有各种类别的概念。知识消化所产生的模型能够反映出对知识的深层理解。</p></div><div class=paragraph><p>当我们的建模不再局限于寻找实体和值对象时，我们才能充分吸取知识，因为业务规则之间可能会存在不一致。</p></div><div class=paragraph><p>知识消化是一种探索，它永无止境。</p></div></div></div><div class=sect1><h2 id=_第_2_章_交流与语言的使用>第 2 章 交流与语言的使用</h2><div class=sectionbody><div class=paragraph><p>领域模型可成为软件项目通用语言的核心。</p></div><div class=sect2><h3 id=_模式ubiquitous_language>模式：Ubiquitous Language</h3><div class=paragraph><p>如果语言支离破碎，项目必将遭遇严重问题。领域专家使用他们自己的术语，而技术团队所使用的语言则经过调整，以便从设计角度讨论领域。</p></div><div class=paragraph><p>日常讨论所使用的术语与代码（软件项目的最重要产品）中使用的术语不一致。甚至同一个人在讲话和写东西时使用的语言也不一致，这导致的后果是，对领域的深刻表述常常稍纵即逝，根本无法记录到代码或文档中。</p></div><div class=paragraph><p>翻译使得沟通不畅，并削弱了知识消化。</p></div><div class=paragraph><p>然而任何一方的语言都不能成为公共语言，因为它们无法满足所有的需求。</p></div><div class=paragraph><p>Ubiquitous Language（通用语言）的词汇包括类和主要操作的名称。</p></div><div class=paragraph><p>将模型作为语言的支柱。确保团队在内部的所有交流中以及代码中坚持使用这种语言。在画图、写东西，特别是讲话时也要使用这种语言。</p></div><div class=paragraph><p>通过尝试不同的表示方法（它们反映了备选模型）来消除难点。然后重构代码，重新命名类、方法和模块，以便与新模型保持一致。解决交谈中的术语混淆问题，就像我们对普通词汇形成一致的理解一样。</p></div><div class=paragraph><p>要认识到， Ubiquitous Language 的更改就是对模型的更改。</p></div><div class=paragraph><p>领域专家应该抵制不合适或无法充分表达领域理解的术语或结构，开发人员应该密切关注那些将会妨碍设计的有歧义和不一致的地方。</p></div><div class=paragraph><p>改善模型的最佳方式之一就是通过对话来研究，试着大声说出可能的模型变化中的各种结构。</p></div><div class=paragraph><p>讨论系统时要结合模型。使用模型元素及其交互来大声描述场景，并且按照模型允许的方式将各种概念结合到一起。找到更简单的表达方式来讲出你要讲的话，然后将这些新的想法应用到图和代码中。</p></div><div class=paragraph><p>如果连经验丰富的领域专家都不能理解模型，那么模型一定出了什么问题。</p></div><div class=paragraph><p>领域专家可以使用模型语言来编写用例，甚至可以直接利用模型来具体说明验收测试。</p></div><div class=paragraph><p>UML图无法传达模型的两个最重要的方面，一个方面是模型所表示的概念的意义，另一方面是对象应该做哪些事情。</p></div><div class=paragraph><p>简洁的小图能够很好地实现这些目标，而涵盖整个对象模型的综合性大图反而失去了沟通或解释能力，因为它们将读者淹没在大量细节之中，加之这些图也缺乏目的性。</p></div><div class=paragraph><p>应使用简化的图，图中只包含对象模型的重要概念——这些部分对于理解设计至关重要。</p></div><div class=paragraph><p>设计的重要细节应该在代码中体现出来。良好的实现应该是透明的，清楚地展示其背后的模型（</p></div><div class=paragraph><p>务必要记住模型不是图。图的目的是帮助表达和解释模型。</p></div><div class=paragraph><p>将代码作为设计文档也有局限性。它可能会把读代码的人淹没在细节中。</p></div><div class=paragraph><p>文档不应再重复表示代码已经明确表达出的内容。</p></div><div class=paragraph><p>当编程语言无法直接明了地实现概念时，文档可以澄清设计意图。</p></div><div class=paragraph><p>设计文档的最大价值在于解释模型的概念，帮助在代码的细节中指引方向，或许还可以帮助人们深入了解模型预期的使用风格。</p></div><div class=paragraph><p>解释性模型不必是对象模型，而且最好不是。</p></div></div></div></div><div class=sect1><h2 id=_第_3_章_绑定模型和实现>第 3 章 绑定模型和实现</h2><div class=sectionbody><div class=paragraph><p>领域驱动设计要求模型不仅能够指导早期的分析工作，还应该成为设计的基础。</p></div><div class=sect2><h3 id=_模式model_driven_design>模式：Model-Driven Design</h3><div class=paragraph><p>严格按照基础模型来编写代码，能够使代码更好地表达设计含义，并且使模型与实际的系统相契合。</p></div><div class=paragraph><p>在创建分析模型时并没有考虑程序设计的问题，因此分析模型很有可能无法满足程序设计的需求。</p></div><div class=paragraph><p>如果整个程序设计或者其核心部分没有与领域模型相对应，那么这个模型就是没有价值的，软件的正确性也值得怀疑。同时，模型和设计功能之间过于复杂的对应关系也是难于理解的，在实际项目中，当设计改变时也无法维护这种关系。若分析与和设计之间产生严重分歧，那么在分析和设计活动中所获得的知识就无法彼此共享。</p></div><div class=paragraph><p>分析工作一定要抓住领域内的基础概念，并且用易于理解和易于表达的方式描述出来。设计工作则需要指定一套可以由项目中使用的编程工具创建的组件，使项目可以在目标部署环境中高效运行，并且能够正确解决应用程序所遇到的问题。</p></div><div class=paragraph><p>Model-Driven Design（模型驱动设计）不再将分析模型和程序设计分离开，而是寻求一种能够满足这两方面需求的单一模型。</p></div><div class=paragraph><p>软件系统各个部分的设计应该忠实地反映领域模型，以便体现出这二者之间的明确对应关系。我们应该反复检查并修改模型，以便软件可以更加自然地实现模型，即使想让模型反映出更深层次的领域概念时也应如此。我们需要的模型不但应该满足这两种需求，还应该能够支持健壮的 Ubiquitous Language（通用语言）。</p></div><div class=paragraph><p>从模型中获取用于程序设计和基本职责分配的术语。让程序代码成为模型的表达，代码的改变可能会是模型的改变。而其影响势必要波及接下来相应的项目活动。完全依赖模型的实现通常需要支持建模范式的软件开发工具和语言，比如面向对象的编程。</p></div><div class=paragraph><p>面向对象编程之所以功能强大，是因为它基于建模范式，并且为模型构造提供了实现方式。</p></div><div class=paragraph><p>需要反复研究领域知识，不断重构模型，才能将领域中重要的概念提炼成简单而清晰的模型。</p></div><div class=paragraph><p>Model-Driven Design 要求只使用一个模型。</p></div></div><div class=sect2><h3 id=_模式hands_on_modeler>模式：Hands-On Modeler</h3><div class=paragraph><p>其一，模型的一些意图在其传递过程中丢失了。</p></div><div class=paragraph><p>第二个原因是模型与程序实现及技术互相影响，而我无法直接获得这种反馈。</p></div><div class=paragraph><p>如果编写代码的人员认为自己没必要对模型负责，或者不知道如何让模型为应用程序服务，那么这个模型就和程序没有任何关联。如果开发人员没有意识到改变代码就意味着改变模型，那么他们对程序的重构不但不会增强模型的作用，反而还会削弱它的效果。同样，如果建模人员不参与到程序实现的过程中，那么对程序实现的约束就没有切身的感受，即使有，也会很快忘记。 Model-Driven Design 的两个基本要素（即模型要支持有效的实现并抽象出关键的领域知识）已经失去了一个，最终模型将变得不再实用。最后一点，如果分工阻断了设计人员与开发人员之间的协作，使他们无法转达实现 Model-Driven Design 的种种细节，那么经验丰富的设计人员则不能将自己的知识和技术传递给开发人员。</p></div><div class=paragraph><p>整体设计的有效性有几个非常敏感的影响因素——那就是细粒度的设计和实现决策的质量和一致性。</p></div><div class=paragraph><p>任何参与建模的技术人员，不管在项目中的主要职责是什么，都必须花时间了解代码。任何负责修改代码的人员则必须学会用代码来表达模型。每一个开发人员都必须不同程度地参与模型讨论并且与领域专家保持联系。参与不同工作的人都必须有意识地通过 Ubiquitous Language 与接触代码的人及时交换关于模型的想法。</p></div><div class=paragraph><p>Model-Driven Design 将模型和程序实现过程紧密结合。 Ubiquitous Language 则成为开发人员、领域专家和软件产品之间传递信息的渠道。</p></div></div></div></div></div><footer class=post__footer><div class="post__tags tags clearfix"><svg class="tags__badge icon icon-tag" width="16" height="16" viewBox="0 0 32 32"><path d="M32 19c0 1-1 2-1 2L21 31s-1 1-2 1-2-1-2-1L2 16c-1-1-1.4-2-1.4-2S0 12.5.0 11V3C0 1.5.8.8.8.8S1.5.0 3 0h8c1.5.0 3 .6 3 .6S15 1 16 2l15 15s1 1 1 2zM7 10a3 3 0 100-6 3 3 0 000 6z"/></svg><ul class=tags__list><li class=tags__item><a class="tags__link btn" href=/tags/%E9%A2%86%E5%9F%9F%E9%A9%B1%E5%8A%A8%E8%AE%BE%E8%AE%A1/ rel=tag>领域驱动设计</a></li><li class=tags__item><a class="tags__link btn" href=/tags/%E4%B9%A6%E7%B1%8D/ rel=tag>书籍</a></li><li class=tags__item><a class="tags__link btn" href=/tags/%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1/ rel=tag>面向对象</a></li></ul></div></footer></article></main><div class=clearfix><h3>看在D瓜哥码字的辛苦上，请友情支持一下，D瓜哥感激不尽，😜</h3><table><tr><td><img alt=微信打赏码 src=/images/wxpay.jpg></td><td><img alt=支付宝打赏码 src=/images/alipay.png></td></tr></table></div><br><div class=clearfix><h3>欢迎关注D瓜哥的微信公众号，在公众号可以获取我的微信二维码：</h3><img alt=微信公众号 src=/images/wx-jikerizhi.jpg></div><div class="admonitionblock tip"><table><tbody><tr><td class=icon><i class="fa icon-tip" title=Tip></i></td><td class=content><strong>公众号的微信号是: <code>jikerizhi</code></strong>。如果图片加载不出来，可以直接通过搜索公众号的微信号来查找D瓜哥的公众号。</td></tr></tbody></table></div><div class="authorbox clearfix"><figure class=authorbox__avatar><a target=_blank href=/about/><img alt="D瓜哥 avatar" src=/images/avatar.jpg class=avatar height=110 width=110></a></figure><div class=authorbox__header><span class=authorbox__name>关于 D瓜哥</span></div><div class=authorbox__description>厨艺界最好的码农，挨踢界最棒的厨师。<ul><li><a target=_blank href=https://wordpress.diguage.com/>旧版“地瓜哥”博客网</a></li><li><a target=_blank href=https://notes.diguage.com/mysql/>MySQL 学习笔记<sup>Alpha</sup></a></li><li><a target=_blank href=https://diguage.github.io/jdk-source-analysis/>JDK 源码分析<sup>Alpha</sup></a></li></ul></div></div><nav class="pager flex"><div class="pager__item pager__item--prev"><a class=pager__link href=/post/research-on-timezone-of-mysql-new-connection-driver/ rel=prev><span class=pager__subtitle>«&#8201;上一篇</span><p class=pager__title>关于 MySQL 新版连接驱动时区对齐问题的研究</p></a></div><div class="pager__item pager__item--next"><a class=pager__link href=/post/introducing-awk/ rel=next><span class=pager__subtitle>下一篇&#8201;»</span><p class=pager__title>AWK 简介</p></a></div></nav><section class=comments><div id=SOHUCS sid=/post/domain-driven-design-1/></div><script type=text/javascript>(function(){if(window.location.hostname==="localhost")return;var n,e="cyuuTeBp3",t="prod_2906c47c31e735e0ed518282fec489a6",s=window.innerWidth||document.documentElement.clientWidth;s<960?window.document.write('<script id="changyan_mobile_js" charset="utf-8" type="text/javascript" src="https://changyan.sohu.com/upload/mobile/wap-js/changyan_mobile.js?client_id='+e+"&conf="+t+'"><\/script>'):(n=function(e,t){var s=document.getElementsByTagName("head")[0]||document.head||document.documentElement,n=document.createElement("script");n.setAttribute("type","text/javascript"),n.setAttribute("charset","UTF-8"),n.setAttribute("src",e),typeof t=="function"&&(window.attachEvent?n.onreadystatechange=function(){var e=n.readyState;(e==="loaded"||e==="complete")&&(n.onreadystatechange=null,t())}:n.onload=t),s.appendChild(n)},n("https://changyan.sohu.com/upload/changyan.js",function(){window.changyan.api.config({appid:e,conf:t})}))})()</script></section></div><aside class=sidebar><div class="widget-search widget"><form class=widget-search__form role=search method=get action=https://google.com/search><label><input class=widget-search__field type=search placeholder=搜索… name=q aria-label=搜索…>
+</label><input class=widget-search__submit type=submit value=Search>
+<input type=hidden name=sitesearch value=https://www.diguage.com/></form></div><div class="widget-wechat widget"><h4 class=widget__title>微信公众号</h4><img alt=微信公众号 class=center src=/images/wx-jikerizhi-qrcode.jpg></div><div class="widget-wechat widget"><h4 class=widget__title>知识星球</h4><img alt=微信公众号 class=center src=/images/zhishixingqiu.png></div><div class="widget-recent widget"><h4 class=widget__title>近期文章</h4><div class=widget__content><ul class=widget__list><li class=widget__item><a class=widget__link href=/post/spring-boot-startup-process-overview/>Spring Boot 启动流程概述</a></li><li class=widget__item><a class=widget__link href=/post/redis-core-data-structure-4/>Redis 核心数据结构（四）</a></li><li class=widget__item><a class=widget__link href=/post/redis-core-data-structure-3/>Redis 核心数据结构（三）</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-subsets/>算法模式：子集</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-backtracking/>算法模式：回溯</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-transform-and-conquer/>算法模式：变治法</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-divide-and-conquer/>算法模式：分治法</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-decrease-and-conquer/>算法模式：减治法</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-topological-sort/>算法模式：拓扑排序</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-union-find/>算法模式：并查集</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-trie/>算法模式：前缀树</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-depth-first-search/>算法模式：深度优先搜索</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-breadth-first-search/>算法模式：广度优先搜索</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-k-way-merge/>算法模式：多路归并</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-two-heaps/>算法模式：双堆</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-cyclic-sort/>算法模式：循环排序</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-quickselect/>算法模式：快速选择</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-top-k-elements/>算法模式：Top K 问题</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-monotonic-stack/>算法模式：单调栈</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-sliding-window/>算法模式：滑动窗口</a></li></ul></div></div><div class="widget-categories widget"><h4 class=widget__title>分类</h4><div class=widget__content><ul class=widget__list><li class=widget__item><a class=widget__link href=/categories/%E4%B8%AA%E4%BA%BA%E6%88%90%E9%95%BF/>个人成长</a></li><li class=widget__item><a class=widget__link href=/categories/%E5%88%86%E5%B8%83%E5%BC%8F/>分布式</a></li><li class=widget__item><a class=widget__link href=/categories/%E5%BC%80%E5%8F%91%E5%B7%A5%E5%85%B7/>开发工具</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/>性能优化</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/>操作系统</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%95%B0%E6%8D%AE%E5%AD%98%E5%82%A8/>数据存储</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%96%87%E5%AD%A6/>文学</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%96%B9%E6%B3%95%E8%AE%BA/>方法论</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/>程序设计</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%AE%97%E6%B3%95/>算法</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/>系统架构</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%BB%8F%E6%B5%8E%E9%87%91%E8%9E%8D/>经济金融</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/>编程语言</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%BD%91%E7%BB%9C/>网络</a></li><li class=widget__item><a class=widget__link href=/categories/%E8%81%8C%E4%B8%9A%E5%8F%91%E5%B1%95/>职业发展</a></li><li class=widget__item><a class=widget__link href=/categories/%E8%BD%AF%E4%BB%B6%E5%B7%A5%E7%A8%8B/>软件工程</a></li><li class=widget__item><a class=widget__link href=/categories/%E9%80%B8%E9%97%BB%E8%B6%A3%E4%BA%8B/>逸闻趣事</a></li><li class=widget__item><a class=widget__link href=/categories/%E9%98%85%E8%AF%BB%E6%91%98%E8%A6%81/>阅读摘要</a></li></ul></div></div><div class="widget-taglist widget"><h4 class=widget__title>标签</h4><div class=widget__content><a class="widget-taglist__link widget__link btn" href=/tags/gc/ title=GC>GC (9)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/http/ title=HTTP>HTTP (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/java/ title=Java>Java (64)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/jvm/ title=JVM>JVM (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/kpi/ title=KPI>KPI (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/kubernetes/ title=Kubernetes>Kubernetes (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/linux/ title=Linux>Linux (12)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/okr/ title=OKR>OKR (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/redis/ title=Redis>Redis (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/shell/ title=Shell>Shell (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/spring/ title=Spring>Spring (26)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/tcp/ title=TCP>TCP (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/udp/ title=UDP>UDP (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/zookeeper/ title=ZooKeeper>ZooKeeper (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E4%B8%AA%E4%BA%BA%E6%8F%90%E5%8D%87/ title=个人提升>个人提升 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E4%B9%A6%E7%B1%8D/ title=书籍>书籍 (15)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E4%BA%A7%E5%93%81/ title=产品>产品 (7)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%80%BA%E5%88%B8/ title=债券>债券 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%88%86%E5%B8%83%E5%BC%8F/ title=分布式>分布式 (15)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%88%86%E6%B2%BB/ title=分治>分治 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/ title=动态规划>动态规划 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9B%A2%E9%98%9F%E5%BB%BA%E8%AE%BE/ title=团队建设>团队建设 (6)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9B%A2%E9%98%9F%E6%96%87%E5%8C%96/ title=团队文化>团队文化 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9B%BE/ title=图>图 (7)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9F%BA%E9%87%91/ title=基金>基金 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%A0%86/ title=堆>堆 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%AD%98%E5%82%A8/ title=存储>存储 (6)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%B7%A5%E4%BD%9C%E6%96%B9%E6%B3%95/ title=工作方法>工作方法 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%B9%B6%E5%8F%91/ title=并发>并发 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%BA%8F%E5%88%97%E5%8C%96/ title=序列化>序列化 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/ title=微服务>微服务 (17)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%BF%83%E7%90%86%E5%AD%A6/ title=心理学>心理学 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95/ title=性能测试>性能测试 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%8A%95%E8%B5%84%E7%90%86%E8%B4%A2/ title=投资理财>投资理财 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/ title=数据库>数据库 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/ title=数据结构>数据结构 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%95%B0%E7%BB%84/ title=数组>数组 (13)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%96%B9%E6%B3%95%E8%AE%BA/ title=方法论>方法论 (13)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%97%85%E8%A1%8C/ title=旅行>旅行 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5/ title=最佳实践>最佳实践 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%9E%B6%E6%9E%84/ title=架构>架构 (44)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%A0%88/ title=栈>栈 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%A0%91/ title=树>树 (11)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%B2%9F%E9%80%9A%E6%8A%80%E5%B7%A7/ title=沟通技巧>沟通技巧 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/ title=源码分析>源码分析 (8)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%90%86%E8%B4%A2/ title=理财>理财 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%94%9F%E6%B4%BB/ title=生活>生活 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%AC%94%E8%AE%B0/ title=笔记>笔记 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%AE%97%E6%B3%95/ title=算法>算法 (8)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%AE%97%E6%B3%95%E6%A8%A1%E5%BC%8F/ title=算法模式>算法模式 (23)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BB%8F%E6%B5%8E/ title=经济>经济 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BC%96%E7%A0%81/ title=编码>编码 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BD%91%E7%BB%9C/ title=网络>网络 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BF%BB%E8%AF%91/ title=翻译>翻译 (7)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%82%A1%E7%A5%A8/ title=股票>股票 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%84%91%E5%9B%BE/ title=脑图>脑图 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%8A%82%E6%97%A5/ title=节日>节日 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%8B%B1%E8%AF%AD/ title=英语>英语 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%99%9A%E6%8B%9F%E6%9C%BA/ title=虚拟机>虚拟机 (9)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AE%BA%E6%96%87/ title=论文>论文 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AE%BE%E8%AE%A1/ title=设计>设计 (36)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/ title=设计模式>设计模式 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AF%97%E6%AD%8C/ title=诗歌>诗歌 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AF%BB%E4%B9%A6/ title=读书>读书 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%80%92%E5%BD%92/ title=递归>递归 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%87%91%E8%9E%8D/ title=金融>金融 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%93%BE%E8%A1%A8/ title=链表>链表 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1/ title=面向对象>面向对象 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%A2%86%E5%9F%9F%E9%A9%B1%E5%8A%A8%E8%AE%BE%E8%AE%A1/ title=领域驱动设计>领域驱动设计 (5)</a></div></div><div class="widget-social widget"><h4 class="widget-social__title widget__title">社交</h4><div class="widget-social__content widget__content"><div class="widget-social__item widget__item"><a class="widget-social__link widget__link btn" title=Twitter rel="noopener noreferrer" href=https://twitter.com/diguage target=_blank><svg class="widget-social__link-icon icon icon-twitter" width="24" height="24" viewBox="0 0 384 312"><path d="m384 36.9c-14.1 6.3-29.3 10.5-45.2 12.4 16.3-9.7 28.8-25.2 34.6-43.6-15.2 9-32.1 15.6-50 19.1-14.4-15.2-34.9-24.8-57.5-24.8-43.5.0-78.8 35.3-78.8 78.8.0 6.2.7 12.2 2 17.9-65.5-3.3-123.5-34.6-162.4-82.3C20 26 16.1 39.6 16.1 54c0 27.3 13.9 51.4 35 65.6-12.9-.4-25.1-4-35.7-9.9v1c0 38.2 27.2 70 63.2 77.2-6.6 1.8-13.6 2.8-20.8 2.8-5.1.0-10-.5-14.8-1.4 10 31.3 39.1 54.1 73.6 54.7-27 21.1-60.9 33.7-97.8 33.7-6.4.0-12.6-.4-18.8-1.1C34.9 299 76.3 312 120.8 312c144.9.0 224.1-120 224.1-224.1.0-3.4-.1-6.8-.2-10.2 15.4-11.1 28.7-25 39.3-40.8z"/></svg>
+<span>Twitter</span></a></div><div class="widget-social__item widget__item"><a class="widget-social__link widget__link btn" title=GitHub rel="noopener noreferrer" href=https://github.com/diguage target=_blank><svg class="widget-social__link-icon icon icon-github" width="24" height="24" viewBox="0 0 384 374"><path d="m192 0C85.9.0.0 85.8.0 191.7c0 84.7 55 156.6 131.3 181.9 9.6 1.8 13.1-4.2 13.1-9.2.0-4.6-.2-16.6-.3-32.6-53.4 11.6-64.7-25.7-64.7-25.7-8.7-22.1-21.3-28-21.3-28-17.4-11.9 1.3-11.6 1.3-11.6 19.3 1.4 29.4 19.8 29.4 19.8 17.1 29.3 44.9 20.8 55.9 15.9 1.7-12.4 6.7-20.8 12.2-25.6-42.6-4.8-87.5-21.3-87.5-94.8.0-20.9 7.5-38 19.8-51.4-2-4.9-8.6-24.3 1.9-50.7.0.0 16.1-5.2 52.8 19.7 15.3-4.2 31.7-6.4 48.1-6.5 16.3.1 32.7 2.2 48.1 6.5 36.7-24.8 52.8-19.7 52.8-19.7 10.5 26.4 3.9 45.9 1.9 50.7 12.3 13.4 19.7 30.5 19.7 51.4.0 73.7-44.9 89.9-87.7 94.6 6.9 5.9 13 17.6 13 35.5.0 25.6-.2 46.3-.2 52.6.0 5.1 3.5 11.1 13.2 9.2C329 348.2 384 276.4 384 191.7 384 85.8 298 0 192 0z"/></svg>
+<span>GitHub</span></a></div><div class="widget-social__item widget__item"><a class="widget-social__link widget__link btn" title=Email href=mailto:leejun119@gmail.com><svg class="widget-social__link-icon icon icon-mail" width="24" height="24" viewBox="0 0 416 288"><path d="m0 16v256 16h16 384 16v-16V16 0h-16H16 0zm347 16-139 92.5L69 32zM199 157.5l9 5.5 9-5.5L384 46v210H32V46z"/></svg>
+<span>leejun119@gmail.com</span></a></div></div></div></aside></div><footer class=footer><div class="container footer__container flex"><div class=footer__copyright>&copy; 2025 "地瓜哥"博客网.
+<span class=footer__copyright-credits>基于 <a href=https://gohugo.io/ rel="nofollow noopener" target=_blank>Hugo</a> 引擎和 <a href=https://github.com/Vimux/Mainroad/ rel="nofollow noopener" target=_blank>Mainroad</a> 主题</span>
+<span><a href=https://beian.miit.gov.cn/ target=_target>京ICP备14046450号-4</a></span></div></div></footer></div><script async defer src=/js/menu.js></script><script type=text/x-mathjax-config>
+	MathJax.Hub.Config({
+	  messageStyle: "none",
+	  tex2jax: {
+		inlineMath: [["\\(", "\\)"]],
+		displayMath: [["\\[", "\\]"]],
+		ignoreClass: "nostem|nolatexmath"
+	  },
+	  asciimath2jax: {
+		delimiters: [["\\$", "\\$"]],
+		ignoreClass: "nostem|noasciimath"
+	  },
+	  TeX: { equationNumbers: { autoNumber: "none" } }
+	})
+	MathJax.Hub.Register.StartupHook("AsciiMath Jax Ready", function () {
+	  MathJax.InputJax.AsciiMath.postfilterHooks.Add(function (data, node) {
+		if ((node = data.script.parentNode) && (node = node.parentNode) && node.classList.contains("stemblock")) {
+		  data.math.root.display = "block"
+		}
+		return data
+	  })
+	})
+</script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js?config=TeX-MML-AM_HTMLorMML" async></script></body></html>

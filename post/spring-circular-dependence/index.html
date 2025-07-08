@@ -1,0 +1,411 @@
+<!doctype html><html class=no-js lang=zh-cn><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><meta http-equiv=X-UA-Compatible content="IE=edge"><title>源码剖析 Spring 循环依赖 - "地瓜哥"博客网</title>
+<script>(function(e,t){e[t]=e[t].replace("no-js","js")})(document.documentElement,"className")</script><meta name=keywords content="Java,Spring,Java,设计,架构,Spring,程序设计"><meta name=description content><meta property="og:url" content="https://www.diguage.com/post/spring-circular-dependence/"><meta property="og:site_name" content='"地瓜哥"博客网'><meta property="og:title" content="源码剖析 Spring 循环依赖"><meta property="og:description" content=' 循环依赖在编程中是一个常见问题（当然，这并不是最佳实践）。并且，Spring 如何解决循环依赖这个问题在面试中也经常见。下面，D瓜哥就从源码的层面深入剖析一下这个问题。
+示例程序 先展示一下示例程序：
+package com.diguage.truman.context; import org.apache.commons.logging.Log; import org.apache.commons.logging.LogFactory; import org.junit.jupiter.api.Test; import org.springframework.beans.factory.annotation.Autowired; import org.springframework.context.annotation.AnnotationConfigApplicationContext; import org.springframework.context.annotation.Configuration; import org.springframework.context.annotation.Import; import org.springframework.context.annotation.ImportSelector; import org.springframework.core.type.AnnotationMetadata; import org.springframework.stereotype.Component; /** * @author D瓜哥, https://www.diguage.com/ * @since 2020-05-24 13:02 */ public class CircularDependenceSingletonTest { public static final Log log = LogFactory.getLog(CircularDependenceSingletonTest.class); @Test public void test() { AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext(); applicationContext.register(Config.class); applicationContext.refresh(); log.info(applicationContext.getBean(A.class)); log.info(applicationContext.getBean(B.class)); log.info(applicationContext.getBean(C.class)); log.info("-A--------"); A a = applicationContext.getBean(A.class); log.info(a); log.info(a.b); log.info("-B--------"); B b = applicationContext.getBean(B.class); log.info(b); log.info(b.c); log.info("-C--------"); C c = applicationContext.getBean(C.class); log.info(c); log.info(c.a); } @Configuration @Import(AbcImportSelector.class) public static class Config { } public static class AbcImportSelector implements ImportSelector { @Override public String[] selectImports(AnnotationMetadata importingClassMetadata) { return new String[]{ A.class.getName(), B.class.getName(), C.class.getName()}; } } @Component public static class A { @Autowired B b; } @Component public static class B { @Autowired C c; } @Component public static class C { @Autowired A a; } } 上述示例代码中的循环依赖情况如下：
+图 1. 循环依赖 源码剖析 三级缓存 D瓜哥在 深入剖析 Spring 核心数据结构：BeanFactory 中，概要性地对 BeanFactory 的属性做了一一说明。 而其中的“三级缓存”属性，则是解决循环依赖问题的关键所在：
+Map<String, Object> singletonObjects = new ConcurrentHashMap<>(256)：Bean 名称到单例 Bean 的映射，用于存放完全初始化好的 Bean。可以理解成，这就是所谓的容器。这是一级缓存。
+Map<String, Object> earlySingletonObjects = new HashMap<>(16)：Bean 到“未成熟”单例 Bean 的映射。该 Bean 对象只是被创建出来，但是还没有注入依赖。在容器解决循环依赖时，用于存储中间状态。这是二级缓存。
+Map<String, ObjectFactory<?>> singletonFactories = new HashMap<>(16)：Bean 名称到 Bean 的 ObjectFactory 对象的映射，存放 Bean 工厂对象。在容器解决循环依赖时，用于存储中间状态。这是三级缓存。
+Bean 的获取过程就类似计算机缓存的作用过程：先从一级获取，失败再从二级、三级里面获取。在 org.springframework.beans.factory.support.DefaultSingletonBeanRegistry#getSingleton(java.lang.String, boolean) 方法中，可以明确看到整个过程：
+org.springframework.beans.factory.support.DefaultSingletonBeanRegistry#getSingleton(beanName, allowEarlyReference) /** * Return the (raw) singleton object registered under the given name. * <p>Checks already instantiated singletons and also allows for an early * reference to a currently created singleton (resolving a circular reference). * @param beanName the name of the bean to look for * @param allowEarlyReference whether early references should be created or not * @return the registered singleton object, or {@code null} if none found */ @Nullable protected Object getSingleton(String beanName, boolean allowEarlyReference) { Object singletonObject = this.singletonObjects.get(beanName); if (singletonObject == null && isSingletonCurrentlyInCreation(beanName)) { synchronized (this.singletonObjects) { singletonObject = this.earlySingletonObjects.get(beanName); if (singletonObject == null && allowEarlyReference) { ObjectFactory<?> singletonFactory = this.singletonFactories.get(beanName); if (singletonFactory != null) { singletonObject = singletonFactory.getObject(); this.earlySingletonObjects.put(beanName, singletonObject); this.singletonFactories.remove(beanName); } } } } return singletonObject; } '><meta property="og:locale" content="zh_cn"><meta property="og:type" content="article"><meta property="article:section" content="post"><meta property="article:published_time" content="2020-07-31T18:33:30+08:00"><meta property="article:modified_time" content="2023-05-03T21:25:46+08:00"><meta property="article:tag" content="Java"><meta property="article:tag" content="设计"><meta property="article:tag" content="架构"><meta property="article:tag" content="Spring"><meta name=twitter:card content="summary"><meta name=twitter:title content="源码剖析 Spring 循环依赖"><meta name=twitter:description content=' 循环依赖在编程中是一个常见问题（当然，这并不是最佳实践）。并且，Spring 如何解决循环依赖这个问题在面试中也经常见。下面，D瓜哥就从源码的层面深入剖析一下这个问题。
+示例程序 先展示一下示例程序：
+package com.diguage.truman.context; import org.apache.commons.logging.Log; import org.apache.commons.logging.LogFactory; import org.junit.jupiter.api.Test; import org.springframework.beans.factory.annotation.Autowired; import org.springframework.context.annotation.AnnotationConfigApplicationContext; import org.springframework.context.annotation.Configuration; import org.springframework.context.annotation.Import; import org.springframework.context.annotation.ImportSelector; import org.springframework.core.type.AnnotationMetadata; import org.springframework.stereotype.Component; /** * @author D瓜哥, https://www.diguage.com/ * @since 2020-05-24 13:02 */ public class CircularDependenceSingletonTest { public static final Log log = LogFactory.getLog(CircularDependenceSingletonTest.class); @Test public void test() { AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext(); applicationContext.register(Config.class); applicationContext.refresh(); log.info(applicationContext.getBean(A.class)); log.info(applicationContext.getBean(B.class)); log.info(applicationContext.getBean(C.class)); log.info("-A--------"); A a = applicationContext.getBean(A.class); log.info(a); log.info(a.b); log.info("-B--------"); B b = applicationContext.getBean(B.class); log.info(b); log.info(b.c); log.info("-C--------"); C c = applicationContext.getBean(C.class); log.info(c); log.info(c.a); } @Configuration @Import(AbcImportSelector.class) public static class Config { } public static class AbcImportSelector implements ImportSelector { @Override public String[] selectImports(AnnotationMetadata importingClassMetadata) { return new String[]{ A.class.getName(), B.class.getName(), C.class.getName()}; } } @Component public static class A { @Autowired B b; } @Component public static class B { @Autowired C c; } @Component public static class C { @Autowired A a; } } 上述示例代码中的循环依赖情况如下：
+图 1. 循环依赖 源码剖析 三级缓存 D瓜哥在 深入剖析 Spring 核心数据结构：BeanFactory 中，概要性地对 BeanFactory 的属性做了一一说明。 而其中的“三级缓存”属性，则是解决循环依赖问题的关键所在：
+Map<String, Object> singletonObjects = new ConcurrentHashMap<>(256)：Bean 名称到单例 Bean 的映射，用于存放完全初始化好的 Bean。可以理解成，这就是所谓的容器。这是一级缓存。
+Map<String, Object> earlySingletonObjects = new HashMap<>(16)：Bean 到“未成熟”单例 Bean 的映射。该 Bean 对象只是被创建出来，但是还没有注入依赖。在容器解决循环依赖时，用于存储中间状态。这是二级缓存。
+Map<String, ObjectFactory<?>> singletonFactories = new HashMap<>(16)：Bean 名称到 Bean 的 ObjectFactory 对象的映射，存放 Bean 工厂对象。在容器解决循环依赖时，用于存储中间状态。这是三级缓存。
+Bean 的获取过程就类似计算机缓存的作用过程：先从一级获取，失败再从二级、三级里面获取。在 org.springframework.beans.factory.support.DefaultSingletonBeanRegistry#getSingleton(java.lang.String, boolean) 方法中，可以明确看到整个过程：
+org.springframework.beans.factory.support.DefaultSingletonBeanRegistry#getSingleton(beanName, allowEarlyReference) /** * Return the (raw) singleton object registered under the given name. * <p>Checks already instantiated singletons and also allows for an early * reference to a currently created singleton (resolving a circular reference). * @param beanName the name of the bean to look for * @param allowEarlyReference whether early references should be created or not * @return the registered singleton object, or {@code null} if none found */ @Nullable protected Object getSingleton(String beanName, boolean allowEarlyReference) { Object singletonObject = this.singletonObjects.get(beanName); if (singletonObject == null && isSingletonCurrentlyInCreation(beanName)) { synchronized (this.singletonObjects) { singletonObject = this.earlySingletonObjects.get(beanName); if (singletonObject == null && allowEarlyReference) { ObjectFactory<?> singletonFactory = this.singletonFactories.get(beanName); if (singletonFactory != null) { singletonObject = singletonFactory.getObject(); this.earlySingletonObjects.put(beanName, singletonObject); this.singletonFactories.remove(beanName); } } } } return singletonObject; } '><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link rel=dns-prefetch href=//fonts.googleapis.com><link rel=dns-prefetch href=//fonts.gstatic.com><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Open+Sans:400,400i,700"><link rel=stylesheet href=/css/style.min.css><link rel=stylesheet href=/css/asciidoctor.css><link rel=stylesheet href=/css/rouge-monokai.css><link rel="shortcut icon" href=/favicon.ico><script async src="https://www.googletagmanager.com/gtag/js?id=G-1MMT2NLEL4"></script><script>var dnt,doNotTrack=!1;if(!1&&(dnt=navigator.doNotTrack||window.doNotTrack||navigator.msDoNotTrack,doNotTrack=dnt=="1"||dnt=="yes"),!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-1MMT2NLEL4")}</script><script id=baidu_analytics>var _hmt=_hmt||[];(function(){var e,t=document.createElement("script");t.src="https://hm.baidu.com/hm.js?e56e7dd0a120b414f5741f4c5e5218ea",e=document.getElementsByTagName("script")[0],e.parentNode.insertBefore(t,e)})()</script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css></head><body class=body><div class="container container--outer"><header class=header><div class="container header__container"><div class=logo><a class=logo__link href=/ title='"地瓜哥"博客网' rel=home><div class="logo__item logo__text"><div class=logo__title>"地瓜哥"博客网</div><div class=logo__tagline>分享技术带来的喜悦 — https://www.diguage.com/</div></div></a></div><nav class=menu><button class=menu__btn aria-haspopup=true aria-expanded=false tabindex=0>
+<span class=menu__btn-title tabindex=-1>菜单</span></button><ul class=menu__list><li class=menu__item><a class=menu__link href=/><span class=menu__text>首页</span></a></li><li class=menu__item><a class=menu__link href=/categories/><span class=menu__text>分类</span></a></li><li class=menu__item><a class=menu__link href=/about/><span class=menu__text>关于</span></a></li><li class=menu__item><a class=menu__link href=/archives/><span class=menu__text>归档</span></a></li></ul></nav></div></header><div class="wrapper flex"><div class=primary><main class=main role=main><article class=post><header class=post__header><h1 class=post__title>源码剖析 Spring 循环依赖</h1><div class="post__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2020-07-31T18:33:30+08:00>2020-07-31</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/ rel=category>程序设计</a></span></div></div></header><figure class="post__thumbnail thumbnail"><img class=thumbnail__image src=/images/logo/spring.svg alt="源码剖析 Spring 循环依赖"></figure><div class="content post__content clearfix"><div class=paragraph><p>循环依赖在编程中是一个常见问题（当然，这并不是最佳实践）。并且，Spring 如何解决循环依赖这个问题在面试中也经常见。下面，D瓜哥就从源码的层面深入剖析一下这个问题。</p></div><div class=sect1><h2 id=_示例程序>示例程序</h2><div class=sectionbody><div class=paragraph><p>先展示一下示例程序：</p></div><div class=listingblock><div class=content><pre class="rouge highlight"><code data-lang=java><span class=kn>package</span> <span class=nn>com.diguage.truman.context</span><span class=o>;</span>
+
+<span class=kn>import</span> <span class=nn>org.apache.commons.logging.Log</span><span class=o>;</span>
+<span class=kn>import</span> <span class=nn>org.apache.commons.logging.LogFactory</span><span class=o>;</span>
+<span class=kn>import</span> <span class=nn>org.junit.jupiter.api.Test</span><span class=o>;</span>
+<span class=kn>import</span> <span class=nn>org.springframework.beans.factory.annotation.Autowired</span><span class=o>;</span>
+<span class=kn>import</span> <span class=nn>org.springframework.context.annotation.AnnotationConfigApplicationContext</span><span class=o>;</span>
+<span class=kn>import</span> <span class=nn>org.springframework.context.annotation.Configuration</span><span class=o>;</span>
+<span class=kn>import</span> <span class=nn>org.springframework.context.annotation.Import</span><span class=o>;</span>
+<span class=kn>import</span> <span class=nn>org.springframework.context.annotation.ImportSelector</span><span class=o>;</span>
+<span class=kn>import</span> <span class=nn>org.springframework.core.type.AnnotationMetadata</span><span class=o>;</span>
+<span class=kn>import</span> <span class=nn>org.springframework.stereotype.Component</span><span class=o>;</span>
+
+<span class=cm>/**
+ * @author D瓜哥, <a href=https://www.diguage.com/ target=_blank>https://www.diguage.com/</a>
+ * @since 2020-05-24 13:02
+ */</span>
+<span class=kd>public</span> <span class=kd>class</span> <span class=nc>CircularDependenceSingletonTest</span> <span class=o>{</span>
+  <span class=kd>public</span> <span class=kd>static</span> <span class=kd>final</span> <span class=nc>Log</span> <span class=n>log</span> <span class=o>=</span> <span class=nc>LogFactory</span><span class=o>.</span><span class=na>getLog</span><span class=o>(</span><span class=nc>CircularDependenceSingletonTest</span><span class=o>.</span><span class=na>class</span><span class=o>);</span>
+
+  <span class=nd>@Test</span>
+  <span class=kd>public</span> <span class=kt>void</span> <span class=nf>test</span><span class=o>()</span> <span class=o>{</span>
+    <span class=nc>AnnotationConfigApplicationContext</span> <span class=n>applicationContext</span>
+        <span class=o>=</span> <span class=k>new</span> <span class=nc>AnnotationConfigApplicationContext</span><span class=o>();</span>
+    <span class=n>applicationContext</span><span class=o>.</span><span class=na>register</span><span class=o>(</span><span class=nc>Config</span><span class=o>.</span><span class=na>class</span><span class=o>);</span>
+    <span class=n>applicationContext</span><span class=o>.</span><span class=na>refresh</span><span class=o>();</span>
+
+    <span class=n>log</span><span class=o>.</span><span class=na>info</span><span class=o>(</span><span class=n>applicationContext</span><span class=o>.</span><span class=na>getBean</span><span class=o>(</span><span class=no>A</span><span class=o>.</span><span class=na>class</span><span class=o>));</span>
+    <span class=n>log</span><span class=o>.</span><span class=na>info</span><span class=o>(</span><span class=n>applicationContext</span><span class=o>.</span><span class=na>getBean</span><span class=o>(</span><span class=no>B</span><span class=o>.</span><span class=na>class</span><span class=o>));</span>
+    <span class=n>log</span><span class=o>.</span><span class=na>info</span><span class=o>(</span><span class=n>applicationContext</span><span class=o>.</span><span class=na>getBean</span><span class=o>(</span><span class=no>C</span><span class=o>.</span><span class=na>class</span><span class=o>));</span>
+
+    <span class=n>log</span><span class=o>.</span><span class=na>info</span><span class=o>(</span><span class=s>&#34;-A--------&#34;</span><span class=o>);</span>
+    <span class=no>A</span> <span class=n>a</span> <span class=o>=</span> <span class=n>applicationContext</span><span class=o>.</span><span class=na>getBean</span><span class=o>(</span><span class=no>A</span><span class=o>.</span><span class=na>class</span><span class=o>);</span>
+    <span class=n>log</span><span class=o>.</span><span class=na>info</span><span class=o>(</span><span class=n>a</span><span class=o>);</span>
+    <span class=n>log</span><span class=o>.</span><span class=na>info</span><span class=o>(</span><span class=n>a</span><span class=o>.</span><span class=na>b</span><span class=o>);</span>
+    <span class=n>log</span><span class=o>.</span><span class=na>info</span><span class=o>(</span><span class=s>&#34;-B--------&#34;</span><span class=o>);</span>
+    <span class=no>B</span> <span class=n>b</span> <span class=o>=</span> <span class=n>applicationContext</span><span class=o>.</span><span class=na>getBean</span><span class=o>(</span><span class=no>B</span><span class=o>.</span><span class=na>class</span><span class=o>);</span>
+    <span class=n>log</span><span class=o>.</span><span class=na>info</span><span class=o>(</span><span class=n>b</span><span class=o>);</span>
+    <span class=n>log</span><span class=o>.</span><span class=na>info</span><span class=o>(</span><span class=n>b</span><span class=o>.</span><span class=na>c</span><span class=o>);</span>
+    <span class=n>log</span><span class=o>.</span><span class=na>info</span><span class=o>(</span><span class=s>&#34;-C--------&#34;</span><span class=o>);</span>
+    <span class=no>C</span> <span class=n>c</span> <span class=o>=</span> <span class=n>applicationContext</span><span class=o>.</span><span class=na>getBean</span><span class=o>(</span><span class=no>C</span><span class=o>.</span><span class=na>class</span><span class=o>);</span>
+    <span class=n>log</span><span class=o>.</span><span class=na>info</span><span class=o>(</span><span class=n>c</span><span class=o>);</span>
+    <span class=n>log</span><span class=o>.</span><span class=na>info</span><span class=o>(</span><span class=n>c</span><span class=o>.</span><span class=na>a</span><span class=o>);</span>
+  <span class=o>}</span>
+
+  <span class=nd>@Configuration</span>
+  <span class=nd>@Import</span><span class=o>(</span><span class=nc>AbcImportSelector</span><span class=o>.</span><span class=na>class</span><span class=o>)</span>
+  <span class=kd>public</span> <span class=kd>static</span> <span class=kd>class</span> <span class=nc>Config</span> <span class=o>{</span>
+  <span class=o>}</span>
+
+  <span class=kd>public</span> <span class=kd>static</span> <span class=kd>class</span> <span class=nc>AbcImportSelector</span> <span class=kd>implements</span> <span class=nc>ImportSelector</span> <span class=o>{</span>
+    <span class=nd>@Override</span>
+    <span class=kd>public</span> <span class=nc>String</span><span class=o>[]</span> <span class=nf>selectImports</span><span class=o>(</span><span class=nc>AnnotationMetadata</span> <span class=n>importingClassMetadata</span><span class=o>)</span> <span class=o>{</span>
+      <span class=k>return</span> <span class=k>new</span> <span class=nc>String</span><span class=o>[]{</span>
+          <span class=no>A</span><span class=o>.</span><span class=na>class</span><span class=o>.</span><span class=na>getName</span><span class=o>(),</span>
+          <span class=no>B</span><span class=o>.</span><span class=na>class</span><span class=o>.</span><span class=na>getName</span><span class=o>(),</span>
+          <span class=no>C</span><span class=o>.</span><span class=na>class</span><span class=o>.</span><span class=na>getName</span><span class=o>()};</span>
+    <span class=o>}</span>
+  <span class=o>}</span>
+
+
+  <span class=nd>@Component</span>
+  <span class=kd>public</span> <span class=kd>static</span> <span class=kd>class</span> <span class=nc>A</span> <span class=o>{</span>
+    <span class=nd>@Autowired</span>
+    <span class=no>B</span> <span class=n>b</span><span class=o>;</span>
+  <span class=o>}</span>
+
+  <span class=nd>@Component</span>
+  <span class=kd>public</span> <span class=kd>static</span> <span class=kd>class</span> <span class=nc>B</span> <span class=o>{</span>
+    <span class=nd>@Autowired</span>
+    <span class=no>C</span> <span class=n>c</span><span class=o>;</span>
+  <span class=o>}</span>
+
+  <span class=nd>@Component</span>
+  <span class=kd>public</span> <span class=kd>static</span> <span class=kd>class</span> <span class=nc>C</span> <span class=o>{</span>
+    <span class=nd>@Autowired</span>
+    <span class=no>A</span> <span class=n>a</span><span class=o>;</span>
+  <span class=o>}</span>
+<span class=o>}</span></code></pre></div></div><div class=paragraph><p>上述示例代码中的循环依赖情况如下：</p></div><div class="imageblock text-center"><div class=content><img src=/images/spring-framework/circular-dependence.jpg alt=循环依赖 width=98%></div><div class=title>图 1. 循环依赖</div></div></div></div><div class=sect1><h2 id=_源码剖析>源码剖析</h2><div class=sectionbody><div class=sect2><h3 id=_三级缓存>三级缓存</h3><div class=paragraph><p>D瓜哥在 <a href=https://www.diguage.com/post/dive-into-spring-core-data-structure-bean-factory/#registry>深入剖析 Spring 核心数据结构：BeanFactory</a> 中，概要性地对 <code>BeanFactory</code> 的属性做了一一说明。
+而其中的“三级缓存”属性，则是解决循环依赖问题的关键所在：</p></div><div class="olist arabic"><ol class=arabic><li><p><code>Map&lt;String, Object> singletonObjects = new ConcurrentHashMap&lt;>(256)</code>：Bean 名称到单例 Bean 的映射，用于存放完全初始化好的 Bean。可以理解成，这就是所谓的容器。这是一级缓存。</p></li><li><p><code>Map&lt;String, Object> earlySingletonObjects = new HashMap&lt;>(16)</code>：Bean 到“未成熟”单例 Bean 的映射。该 Bean 对象只是被创建出来，但是还没有注入依赖。在容器解决循环依赖时，用于存储中间状态。这是二级缓存。</p></li><li><p><code>Map&lt;String, ObjectFactory&lt;?>> singletonFactories = new HashMap&lt;>(16)</code>：Bean 名称到 Bean 的 ObjectFactory 对象的映射，存放 Bean 工厂对象。在容器解决循环依赖时，用于存储中间状态。这是三级缓存。</p></li></ol></div><div class=paragraph><p>Bean 的获取过程就类似计算机缓存的作用过程：先从一级获取，失败再从二级、三级里面获取。在 <code>org.springframework.beans.factory.support.DefaultSingletonBeanRegistry#getSingleton(java.lang.String, boolean)</code> 方法中，可以明确看到整个过程：</p></div><div class=listingblock><div class=title><code>org.springframework.beans.factory.support.DefaultSingletonBeanRegistry#getSingleton(beanName, allowEarlyReference)</code></div><div class=content><pre class="rouge highlight"><code data-lang=java><span class=cm>/**
+ * Return the (raw) singleton object registered under the given name.
+ * &lt;p&gt;Checks already instantiated singletons and also allows for an early
+ * reference to a currently created singleton (resolving a circular reference).
+ * @param beanName the name of the bean to look for
+ * @param allowEarlyReference whether early references should be created or not
+ * @return the registered singleton object, or {@code null} if none found
+ */</span>
+<span class=nd>@Nullable</span>
+<span class=kd>protected</span> <span class=nc>Object</span> <span class=nf>getSingleton</span><span class=o>(</span><span class=nc>String</span> <span class=n>beanName</span><span class=o>,</span> <span class=kt>boolean</span> <span class=n>allowEarlyReference</span><span class=o>)</span> <span class=o>{</span>
+  <span class=nc>Object</span> <span class=n>singletonObject</span> <span class=o>=</span> <span class=k>this</span><span class=o>.</span><span class=na>singletonObjects</span><span class=o>.</span><span class=na>get</span><span class=o>(</span><span class=n>beanName</span><span class=o>);</span>
+  <span class=k>if</span> <span class=o>(</span><span class=n>singletonObject</span> <span class=o>==</span> <span class=kc>null</span> <span class=o>&amp;&amp;</span> <span class=n>isSingletonCurrentlyInCreation</span><span class=o>(</span><span class=n>beanName</span><span class=o>))</span> <span class=o>{</span>
+    <span class=kd>synchronized</span> <span class=o>(</span><span class=k>this</span><span class=o>.</span><span class=na>singletonObjects</span><span class=o>)</span> <span class=o>{</span>
+      <span class=n>singletonObject</span> <span class=o>=</span> <span class=k>this</span><span class=o>.</span><span class=na>earlySingletonObjects</span><span class=o>.</span><span class=na>get</span><span class=o>(</span><span class=n>beanName</span><span class=o>);</span>
+      <span class=k>if</span> <span class=o>(</span><span class=n>singletonObject</span> <span class=o>==</span> <span class=kc>null</span> <span class=o>&amp;&amp;</span> <span class=n>allowEarlyReference</span><span class=o>)</span> <span class=o>{</span>
+        <span class=nc>ObjectFactory</span><span class=o>&lt;?&gt;</span> <span class=n>singletonFactory</span> <span class=o>=</span> <span class=k>this</span><span class=o>.</span><span class=na>singletonFactories</span><span class=o>.</span><span class=na>get</span><span class=o>(</span><span class=n>beanName</span><span class=o>);</span>
+        <span class=k>if</span> <span class=o>(</span><span class=n>singletonFactory</span> <span class=o>!=</span> <span class=kc>null</span><span class=o>)</span> <span class=o>{</span>
+          <span class=n>singletonObject</span> <span class=o>=</span> <span class=n>singletonFactory</span><span class=o>.</span><span class=na>getObject</span><span class=o>();</span>
+          <span class=k>this</span><span class=o>.</span><span class=na>earlySingletonObjects</span><span class=o>.</span><span class=na>put</span><span class=o>(</span><span class=n>beanName</span><span class=o>,</span> <span class=n>singletonObject</span><span class=o>);</span>
+          <span class=k>this</span><span class=o>.</span><span class=na>singletonFactories</span><span class=o>.</span><span class=na>remove</span><span class=o>(</span><span class=n>beanName</span><span class=o>);</span>
+        <span class=o>}</span>
+      <span class=o>}</span>
+    <span class=o>}</span>
+  <span class=o>}</span>
+  <span class=k>return</span> <span class=n>singletonObject</span><span class=o>;</span>
+<span class=o>}</span></code></pre></div></div></div><div class=sect2><h3 id=_bean_创建过程>Bean 创建过程</h3><div class=paragraph><p>D瓜哥在 <a href=https://www.diguage.com/post/spring-bean-lifecycle-overview/>Spring Bean 生命周期概述</a> 中专门讨论过 Bean 的生命周期函数。Bean 的实例创建和依赖注入是分开来处理的。具体到 Spring 的内部函数调用，有可以描述成如下：</p></div><div class="imageblock text-center"><div class=content><img src=/images/spring-framework/create-instance.jpg alt=Bean创建 width=98%></div><div class=title>图 2. Bean创建</div></div><div class=paragraph><p>在 <code>org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory#doCreateBean</code> 方法中，能明确看到三个方法的调用过程。在这个方法上打上断点，开始调试。</p></div></div><div class=sect2><h3 id=_实例创建>实例创建</h3><div class=listingblock><div class=title><code>org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory#doCreateBean</code></div><div class=content><pre class="rouge highlight"><code data-lang=java><span class=c1>// Instantiate the bean.</span>
+<span class=nc>BeanWrapper</span> <span class=n>instanceWrapper</span> <span class=o>=</span> <span class=kc>null</span><span class=o>;</span>
+<span class=k>if</span> <span class=o>(</span><span class=n>mbd</span><span class=o>.</span><span class=na>isSingleton</span><span class=o>())</span> <span class=o>{</span>
+  <span class=n>instanceWrapper</span> <span class=o>=</span> <span class=k>this</span><span class=o>.</span><span class=na>factoryBeanInstanceCache</span><span class=o>.</span><span class=na>remove</span><span class=o>(</span><span class=n>beanName</span><span class=o>);</span>
+<span class=o>}</span>
+<span class=k>if</span> <span class=o>(</span><span class=n>instanceWrapper</span> <span class=o>==</span> <span class=kc>null</span><span class=o>)</span> <span class=o>{</span>
+  <span class=c1>// 这个方法里面完成了对象创建，仅仅是对象</span>
+  <span class=c1>// 执行完整个方法，可以看看控制台的变化</span>
+  <span class=cm>/**
+   * 创建 bean 实例，并将实例包裹在 BeanWrapper 实现类对象中返回。
+   * createBeanInstance中包含三种创建 bean 实例的方式：
+   *   1. 通过工厂方法创建 bean 实例
+   *   2. 通过构造方法自动注入（autowire by constructor）的方式创建 bean 实例
+   *   3. 通过无参构造方法方法创建 bean 实例
+   *
+   * 若 bean 的配置信息中配置了 lookup-method 和 replace-method，则会使用 CGLIB
+   * 增强 bean 实例。关于lookup-method和replace-method后面再说。
+   */</span>
+  <span class=n>instanceWrapper</span> <span class=o>=</span> <span class=n>createBeanInstance</span><span class=o>(</span><span class=n>beanName</span><span class=o>,</span> <span class=n>mbd</span><span class=o>,</span> <span class=n>args</span><span class=o>);</span>
+<span class=o>}</span>
+<span class=nc>Object</span> <span class=n>bean</span> <span class=o>=</span> <span class=n>instanceWrapper</span><span class=o>.</span><span class=na>getWrappedInstance</span><span class=o>();</span></code></pre></div></div><div class=paragraph><p>关于 <code>createBeanInstance</code> 方法，已经在上面的注释中增加了响应说明，这里就不再贴代码了。</p></div></div><div class=sect2><h3 id=_依赖注入>依赖注入</h3><div class=paragraph><p>接着上面的代码，往下看，看如何完成注入的：</p></div><div class=listingblock><div class=title><code>org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory#doCreateBean</code></div><div class=content><pre class="rouge highlight"><code data-lang=java><span class=nc>Object</span> <span class=n>bean</span> <span class=o>=</span> <span class=n>instanceWrapper</span><span class=o>.</span><span class=na>getWrappedInstance</span><span class=o>();</span>
+<span class=nc>Class</span><span class=o>&lt;?&gt;</span> <span class=n>beanType</span> <span class=o>=</span> <span class=n>instanceWrapper</span><span class=o>.</span><span class=na>getWrappedClass</span><span class=o>();</span>
+<span class=k>if</span> <span class=o>(</span><span class=n>beanType</span> <span class=o>!=</span> <span class=nc>NullBean</span><span class=o>.</span><span class=na>class</span><span class=o>)</span> <span class=o>{</span>
+  <span class=n>mbd</span><span class=o>.</span><span class=na>resolvedTargetType</span> <span class=o>=</span> <span class=n>beanType</span><span class=o>;</span>
+<span class=o>}</span>
+
+<span class=c1>// Allow post-processors to modify the merged bean definition.</span>
+<span class=kd>synchronized</span> <span class=o>(</span><span class=n>mbd</span><span class=o>.</span><span class=na>postProcessingLock</span><span class=o>)</span> <span class=o>{</span>
+  <span class=k>if</span> <span class=o>(!</span><span class=n>mbd</span><span class=o>.</span><span class=na>postProcessed</span><span class=o>)</span> <span class=o>{</span>
+    <span class=k>try</span> <span class=o>{</span>
+      <span class=n>applyMergedBeanDefinitionPostProcessors</span><span class=o>(</span><span class=n>mbd</span><span class=o>,</span> <span class=n>beanType</span><span class=o>,</span> <span class=n>beanName</span><span class=o>);</span>
+    <span class=o>}</span>
+    <span class=k>catch</span> <span class=o>(</span><span class=nc>Throwable</span> <span class=n>ex</span><span class=o>)</span> <span class=o>{</span>
+      <span class=k>throw</span> <span class=k>new</span> <span class=nf>BeanCreationException</span><span class=o>(</span><span class=n>mbd</span><span class=o>.</span><span class=na>getResourceDescription</span><span class=o>(),</span> <span class=n>beanName</span><span class=o>,</span>
+          <span class=s>&#34;Post-processing of merged bean definition failed&#34;</span><span class=o>,</span> <span class=n>ex</span><span class=o>);</span>
+    <span class=o>}</span>
+    <span class=n>mbd</span><span class=o>.</span><span class=na>postProcessed</span> <span class=o>=</span> <span class=kc>true</span><span class=o>;</span>
+  <span class=o>}</span>
+<span class=o>}</span>
+
+<span class=c1>// Eagerly cache singletons to be able to resolve circular references</span>
+<span class=c1>// even when triggered by lifecycle interfaces like BeanFactoryAware.</span>
+<span class=kt>boolean</span> <span class=n>earlySingletonExposure</span> <span class=o>=</span> <span class=o>(</span><span class=n>mbd</span><span class=o>.</span><span class=na>isSingleton</span><span class=o>()</span> <span class=o>&amp;&amp;</span> <span class=k>this</span><span class=o>.</span><span class=na>allowCircularReferences</span> <span class=o>&amp;&amp;</span>
+    <span class=n>isSingletonCurrentlyInCreation</span><span class=o>(</span><span class=n>beanName</span><span class=o>));</span>
+<span class=k>if</span> <span class=o>(</span><span class=n>earlySingletonExposure</span><span class=o>)</span> <span class=o>{</span>
+  <span class=k>if</span> <span class=o>(</span><span class=n>logger</span><span class=o>.</span><span class=na>isTraceEnabled</span><span class=o>())</span> <span class=o>{</span>
+    <span class=n>logger</span><span class=o>.</span><span class=na>trace</span><span class=o>(</span><span class=s>&#34;Eagerly caching bean &#39;&#34;</span> <span class=o>+</span> <span class=n>beanName</span> <span class=o>+</span>
+        <span class=s>&#34;&#39; to allow for resolving potential circular references&#34;</span><span class=o>);</span>
+  <span class=o>}</span>
+  <span class=n>addSingletonFactory</span><span class=o>(</span><span class=n>beanName</span><span class=o>,</span> <span class=o>()</span> <span class=o>-&gt;</span> <span class=n>getEarlyBeanReference</span><span class=o>(</span><span class=n>beanName</span><span class=o>,</span> <span class=n>mbd</span><span class=o>,</span> <span class=n>bean</span><span class=o>));</span>
+<span class=o>}</span>
+
+<span class=c1>// Initialize the bean instance.</span>
+<span class=nc>Object</span> <span class=n>exposedObject</span> <span class=o>=</span> <span class=n>bean</span><span class=o>;</span>
+<span class=k>try</span> <span class=o>{</span>
+  <span class=c1>// 设置属性，非常重要 FIXME</span>
+  <span class=n>populateBean</span><span class=o>(</span><span class=n>beanName</span><span class=o>,</span> <span class=n>mbd</span><span class=o>,</span> <span class=n>instanceWrapper</span><span class=o>);</span></code></pre></div></div><div class=sect3><h4 id=_addsingletonfactory><code>addSingletonFactory</code></h4><div class=paragraph><p>先来看看 <code>addSingletonFactory</code> 方法：</p></div><div class=listingblock><div class=title><code>org.springframework.beans.factory.support.DefaultSingletonBeanRegistry#addSingletonFactory</code></div><div class=content><pre class="rouge highlight"><code data-lang=java><span class=cm>/**
+ * Add the given singleton factory for building the specified singleton
+ * if necessary.
+ * &lt;p&gt;To be called for eager registration of singletons, e.g. to be able to
+ * resolve circular references.
+ * @param beanName the name of the bean
+ * @param singletonFactory the factory for the singleton object
+ */</span>
+<span class=kd>protected</span> <span class=kt>void</span> <span class=nf>addSingletonFactory</span><span class=o>(</span><span class=nc>String</span> <span class=n>beanName</span><span class=o>,</span> <span class=nc>ObjectFactory</span><span class=o>&lt;?&gt;</span> <span class=n>singletonFactory</span><span class=o>)</span> <span class=o>{</span>
+  <span class=nc>Assert</span><span class=o>.</span><span class=na>notNull</span><span class=o>(</span><span class=n>singletonFactory</span><span class=o>,</span> <span class=s>&#34;Singleton factory must not be null&#34;</span><span class=o>);</span>
+  <span class=kd>synchronized</span> <span class=o>(</span><span class=k>this</span><span class=o>.</span><span class=na>singletonObjects</span><span class=o>)</span> <span class=o>{</span>
+    <span class=k>if</span> <span class=o>(!</span><span class=k>this</span><span class=o>.</span><span class=na>singletonObjects</span><span class=o>.</span><span class=na>containsKey</span><span class=o>(</span><span class=n>beanName</span><span class=o>))</span> <span class=o>{</span>
+      <span class=k>this</span><span class=o>.</span><span class=na>singletonFactories</span><span class=o>.</span><span class=na>put</span><span class=o>(</span><span class=n>beanName</span><span class=o>,</span> <span class=n>singletonFactory</span><span class=o>);</span>
+      <span class=k>this</span><span class=o>.</span><span class=na>earlySingletonObjects</span><span class=o>.</span><span class=na>remove</span><span class=o>(</span><span class=n>beanName</span><span class=o>);</span>
+      <span class=k>this</span><span class=o>.</span><span class=na>registeredSingletons</span><span class=o>.</span><span class=na>add</span><span class=o>(</span><span class=n>beanName</span><span class=o>);</span>
+    <span class=o>}</span>
+  <span class=o>}</span>
+<span class=o>}</span></code></pre></div></div><div class=paragraph><p>从这里可以明显看出，代码符合我们上面注释中的描述： <code>singletonFactory</code> 变量被放入到 <code>singletonFactories</code> 变量中了。</p></div></div><div class=sect3><h4 id=_populatebean><code>populateBean</code></h4><div class=paragraph><p>再来看看 <code>populateBean</code></p></div><div class=listingblock><div class=title><code>org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory#populateBean</code></div><div class=content><pre class="rouge highlight"><code data-lang=java><span class=cm>/**
+ * Populate the bean instance in the given BeanWrapper with the property values
+ * from the bean definition.
+ * @param beanName the name of the bean
+ * @param mbd the bean definition for the bean
+ * @param bw the BeanWrapper with bean instance
+ */</span>
+<span class=nd>@SuppressWarnings</span><span class=o>(</span><span class=s>&#34;deprecation&#34;</span><span class=o>)</span>  <span class=c1>// for postProcessPropertyValues</span>
+<span class=kd>protected</span> <span class=kt>void</span> <span class=nf>populateBean</span><span class=o>(</span><span class=nc>String</span> <span class=n>beanName</span><span class=o>,</span> <span class=nc>RootBeanDefinition</span> <span class=n>mbd</span><span class=o>,</span> <span class=nd>@Nullable</span> <span class=nc>BeanWrapper</span> <span class=n>bw</span><span class=o>)</span> <span class=o>{</span>
+  <span class=c1>// 省略 N 行代码……</span>
+
+  <span class=kt>boolean</span> <span class=n>hasInstAwareBpps</span> <span class=o>=</span> <span class=n>hasInstantiationAwareBeanPostProcessors</span><span class=o>();</span>
+  <span class=kt>boolean</span> <span class=n>needsDepCheck</span> <span class=o>=</span> <span class=o>(</span><span class=n>mbd</span><span class=o>.</span><span class=na>getDependencyCheck</span><span class=o>()</span> <span class=o>!=</span> <span class=nc>AbstractBeanDefinition</span><span class=o>.</span><span class=na>DEPENDENCY_CHECK_NONE</span><span class=o>);</span>
+
+  <span class=nc>PropertyDescriptor</span><span class=o>[]</span> <span class=n>filteredPds</span> <span class=o>=</span> <span class=kc>null</span><span class=o>;</span>
+  <span class=k>if</span> <span class=o>(</span><span class=n>hasInstAwareBpps</span><span class=o>)</span> <span class=o>{</span>
+    <span class=k>if</span> <span class=o>(</span><span class=n>pvs</span> <span class=o>==</span> <span class=kc>null</span><span class=o>)</span> <span class=o>{</span>
+      <span class=n>pvs</span> <span class=o>=</span> <span class=n>mbd</span><span class=o>.</span><span class=na>getPropertyValues</span><span class=o>();</span>
+    <span class=o>}</span>
+    <span class=k>for</span> <span class=o>(</span><span class=nc>InstantiationAwareBeanPostProcessor</span> <span class=n>bp</span> <span class=o>:</span> <span class=n>getBeanPostProcessorCache</span><span class=o>().</span><span class=na>instantiationAware</span><span class=o>)</span> <span class=o>{</span>
+      <span class=c1>// 从这里开始注入依赖，</span>
+      <span class=c1>// 如果 bp 是 CommonAnnotationBeanPostProcessor 或 AutowiredAnnotationBeanPostProcessor 就执行注入</span>
+      <span class=nc>PropertyValues</span> <span class=n>pvsToUse</span> <span class=o>=</span> <span class=n>bp</span><span class=o>.</span><span class=na>postProcessProperties</span><span class=o>(</span><span class=n>pvs</span><span class=o>,</span> <span class=n>bw</span><span class=o>.</span><span class=na>getWrappedInstance</span><span class=o>(),</span> <span class=n>beanName</span><span class=o>);</span>
+      <span class=k>if</span> <span class=o>(</span><span class=n>pvsToUse</span> <span class=o>==</span> <span class=kc>null</span><span class=o>)</span> <span class=o>{</span>
+        <span class=k>if</span> <span class=o>(</span><span class=n>filteredPds</span> <span class=o>==</span> <span class=kc>null</span><span class=o>)</span> <span class=o>{</span>
+          <span class=n>filteredPds</span> <span class=o>=</span> <span class=n>filterPropertyDescriptorsForDependencyCheck</span><span class=o>(</span><span class=n>bw</span><span class=o>,</span> <span class=n>mbd</span><span class=o>.</span><span class=na>allowCaching</span><span class=o>);</span>
+        <span class=o>}</span>
+        <span class=n>pvsToUse</span> <span class=o>=</span> <span class=n>bp</span><span class=o>.</span><span class=na>postProcessPropertyValues</span><span class=o>(</span><span class=n>pvs</span><span class=o>,</span> <span class=n>filteredPds</span><span class=o>,</span> <span class=n>bw</span><span class=o>.</span><span class=na>getWrappedInstance</span><span class=o>(),</span> <span class=n>beanName</span><span class=o>);</span>
+        <span class=k>if</span> <span class=o>(</span><span class=n>pvsToUse</span> <span class=o>==</span> <span class=kc>null</span><span class=o>)</span> <span class=o>{</span>
+          <span class=k>return</span><span class=o>;</span>
+        <span class=o>}</span>
+      <span class=o>}</span>
+      <span class=n>pvs</span> <span class=o>=</span> <span class=n>pvsToUse</span><span class=o>;</span>
+    <span class=o>}</span>
+  <span class=o>}</span>
+  <span class=k>if</span> <span class=o>(</span><span class=n>needsDepCheck</span><span class=o>)</span> <span class=o>{</span>
+    <span class=k>if</span> <span class=o>(</span><span class=n>filteredPds</span> <span class=o>==</span> <span class=kc>null</span><span class=o>)</span> <span class=o>{</span>
+      <span class=n>filteredPds</span> <span class=o>=</span> <span class=n>filterPropertyDescriptorsForDependencyCheck</span><span class=o>(</span><span class=n>bw</span><span class=o>,</span> <span class=n>mbd</span><span class=o>.</span><span class=na>allowCaching</span><span class=o>);</span>
+    <span class=o>}</span>
+    <span class=n>checkDependencies</span><span class=o>(</span><span class=n>beanName</span><span class=o>,</span> <span class=n>mbd</span><span class=o>,</span> <span class=n>filteredPds</span><span class=o>,</span> <span class=n>pvs</span><span class=o>);</span>
+  <span class=o>}</span>
+
+  <span class=k>if</span> <span class=o>(</span><span class=n>pvs</span> <span class=o>!=</span> <span class=kc>null</span><span class=o>)</span> <span class=o>{</span>
+    <span class=n>applyPropertyValues</span><span class=o>(</span><span class=n>beanName</span><span class=o>,</span> <span class=n>mbd</span><span class=o>,</span> <span class=n>bw</span><span class=o>,</span> <span class=n>pvs</span><span class=o>);</span>
+  <span class=o>}</span>
+<span class=o>}</span></code></pre></div></div><div class=paragraph><p>在 <a href=https://www.diguage.com/post/spring-bean-lifecycle-overview/>Spring Bean 生命周期概述</a> 中对 Bean 的生命周期做了概要的介绍。这里就体现出来 <code>CommonAnnotationBeanPostProcessor</code> 和 <code>AutowiredAnnotationBeanPostProcessor</code> 的作用。上面我们用的是 <code>@Autowired</code> 注解。所以，这里使用 <code>AutowiredAnnotationBeanPostProcessor</code> 来处理。</p></div></div><div class=sect3><h4 id=inject-call-chain>依赖注入的调用链</h4><div class=paragraph><p>查找依赖的调用链很繁琐，中间有牵涉到 Bean 创建的过程，这里只列出调用过程中的主要方法列表，需要请根据自己需要来单步调试。</p></div><div class=paragraph><p>完成依赖注入的调用链如下：</p></div><div class="olist arabic"><ol class=arabic><li><p><code>org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory#populateBean</code></p></li><li><p><code>org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor#postProcessProperties</code></p></li><li><p><code>org.springframework.beans.factory.annotation.InjectionMetadata#inject</code></p></li><li><p><code>org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor.AutowiredFieldElement#inject</code></p></li><li><p><code>org.springframework.beans.factory.support.DefaultListableBeanFactory#resolveDependency</code></p></li><li><p><code>org.springframework.beans.factory.support.DefaultListableBeanFactory#doResolveDependency</code></p></li><li><p><code>org.springframework.beans.factory.config.DependencyDescriptor#resolveCandidate</code></p></li><li><p><code>org.springframework.beans.factory.support.AbstractBeanFactory#getBean(java.lang.String)</code></p></li><li><p><code>org.springframework.beans.factory.annotation.InjectionMetadata#inject</code> — 最后，还是在这里完成注入。</p></li></ol></div></div></div><div class=sect2><h3 id=_加入容器>加入容器</h3><div class=paragraph><p>在 <code>org.springframework.beans.factory.support.DefaultSingletonBeanRegistry#getSingleton(String, ObjectFactory&lt;?>)</code> 方法中，可以看到 Spring 在获得 Bean 实例后的处理过程：</p></div><div class=listingblock><div class=title><code>org.springframework.beans.factory.support.DefaultSingletonBeanRegistry#getSingleton(String, ObjectFactory&lt;?>)</code></div><div class=content><pre class="rouge highlight"><code data-lang=java><span class=cm>/**
+ * Return the (raw) singleton object registered under the given name,
+ * creating and registering a new one if none registered yet.
+ * @param beanName the name of the bean
+ * @param singletonFactory the ObjectFactory to lazily create the singleton
+ * with, if necessary
+ * @return the registered singleton object
+ */</span>
+<span class=kd>public</span> <span class=nc>Object</span> <span class=nf>getSingleton</span><span class=o>(</span><span class=nc>String</span> <span class=n>beanName</span><span class=o>,</span> <span class=nc>ObjectFactory</span><span class=o>&lt;?&gt;</span> <span class=n>singletonFactory</span><span class=o>)</span> <span class=o>{</span>
+  <span class=nc>Assert</span><span class=o>.</span><span class=na>notNull</span><span class=o>(</span><span class=n>beanName</span><span class=o>,</span> <span class=s>&#34;Bean name must not be null&#34;</span><span class=o>);</span>
+  <span class=kd>synchronized</span> <span class=o>(</span><span class=k>this</span><span class=o>.</span><span class=na>singletonObjects</span><span class=o>)</span> <span class=o>{</span>
+    <span class=nc>Object</span> <span class=n>singletonObject</span> <span class=o>=</span> <span class=k>this</span><span class=o>.</span><span class=na>singletonObjects</span><span class=o>.</span><span class=na>get</span><span class=o>(</span><span class=n>beanName</span><span class=o>);</span>
+    <span class=k>if</span> <span class=o>(</span><span class=n>singletonObject</span> <span class=o>==</span> <span class=kc>null</span><span class=o>)</span> <span class=o>{</span>
+      <span class=k>if</span> <span class=o>(</span><span class=k>this</span><span class=o>.</span><span class=na>singletonsCurrentlyInDestruction</span><span class=o>)</span> <span class=o>{</span>
+        <span class=k>throw</span> <span class=k>new</span> <span class=nf>BeanCreationNotAllowedException</span><span class=o>(</span><span class=n>beanName</span><span class=o>,</span>
+            <span class=s>&#34;Singleton bean creation not allowed while singletons of this factory are in destruction &#34;</span> <span class=o>+</span>
+            <span class=s>&#34;(Do not request a bean from a BeanFactory in a destroy method implementation!)&#34;</span><span class=o>);</span>
+      <span class=o>}</span>
+      <span class=k>if</span> <span class=o>(</span><span class=n>logger</span><span class=o>.</span><span class=na>isDebugEnabled</span><span class=o>())</span> <span class=o>{</span>
+        <span class=n>logger</span><span class=o>.</span><span class=na>debug</span><span class=o>(</span><span class=s>&#34;Creating shared instance of singleton bean &#39;&#34;</span> <span class=o>+</span> <span class=n>beanName</span> <span class=o>+</span> <span class=s>&#34;&#39;&#34;</span><span class=o>);</span>
+      <span class=o>}</span>
+      <span class=n>beforeSingletonCreation</span><span class=o>(</span><span class=n>beanName</span><span class=o>);</span>
+      <span class=kt>boolean</span> <span class=n>newSingleton</span> <span class=o>=</span> <span class=kc>false</span><span class=o>;</span>
+      <span class=kt>boolean</span> <span class=n>recordSuppressedExceptions</span> <span class=o>=</span> <span class=o>(</span><span class=k>this</span><span class=o>.</span><span class=na>suppressedExceptions</span> <span class=o>==</span> <span class=kc>null</span><span class=o>);</span>
+      <span class=k>if</span> <span class=o>(</span><span class=n>recordSuppressedExceptions</span><span class=o>)</span> <span class=o>{</span>
+        <span class=k>this</span><span class=o>.</span><span class=na>suppressedExceptions</span> <span class=o>=</span> <span class=k>new</span> <span class=nc>LinkedHashSet</span><span class=o>&lt;&gt;();</span>
+      <span class=o>}</span>
+      <span class=k>try</span> <span class=o>{</span>
+        <span class=n>singletonObject</span> <span class=o>=</span> <span class=n>singletonFactory</span><span class=o>.</span><span class=na>getObject</span><span class=o>();</span>
+        <span class=n>newSingleton</span> <span class=o>=</span> <span class=kc>true</span><span class=o>;</span>
+      <span class=o>}</span>
+      <span class=k>catch</span> <span class=o>(</span><span class=nc>IllegalStateException</span> <span class=n>ex</span><span class=o>)</span> <span class=o>{</span>
+        <span class=c1>// Has the singleton object implicitly appeared in the meantime -&gt;</span>
+        <span class=c1>// if yes, proceed with it since the exception indicates that state.</span>
+        <span class=n>singletonObject</span> <span class=o>=</span> <span class=k>this</span><span class=o>.</span><span class=na>singletonObjects</span><span class=o>.</span><span class=na>get</span><span class=o>(</span><span class=n>beanName</span><span class=o>);</span>
+        <span class=k>if</span> <span class=o>(</span><span class=n>singletonObject</span> <span class=o>==</span> <span class=kc>null</span><span class=o>)</span> <span class=o>{</span>
+          <span class=k>throw</span> <span class=n>ex</span><span class=o>;</span>
+        <span class=o>}</span>
+      <span class=o>}</span>
+      <span class=k>catch</span> <span class=o>(</span><span class=nc>BeanCreationException</span> <span class=n>ex</span><span class=o>)</span> <span class=o>{</span>
+        <span class=k>if</span> <span class=o>(</span><span class=n>recordSuppressedExceptions</span><span class=o>)</span> <span class=o>{</span>
+          <span class=k>for</span> <span class=o>(</span><span class=nc>Exception</span> <span class=n>suppressedException</span> <span class=o>:</span> <span class=k>this</span><span class=o>.</span><span class=na>suppressedExceptions</span><span class=o>)</span> <span class=o>{</span>
+            <span class=n>ex</span><span class=o>.</span><span class=na>addRelatedCause</span><span class=o>(</span><span class=n>suppressedException</span><span class=o>);</span>
+          <span class=o>}</span>
+        <span class=o>}</span>
+        <span class=k>throw</span> <span class=n>ex</span><span class=o>;</span>
+      <span class=o>}</span>
+      <span class=k>finally</span> <span class=o>{</span>
+        <span class=k>if</span> <span class=o>(</span><span class=n>recordSuppressedExceptions</span><span class=o>)</span> <span class=o>{</span>
+          <span class=k>this</span><span class=o>.</span><span class=na>suppressedExceptions</span> <span class=o>=</span> <span class=kc>null</span><span class=o>;</span>
+        <span class=o>}</span>
+        <span class=n>afterSingletonCreation</span><span class=o>(</span><span class=n>beanName</span><span class=o>);</span>
+      <span class=o>}</span>
+      <span class=k>if</span> <span class=o>(</span><span class=n>newSingleton</span><span class=o>)</span> <span class=o>{</span>
+        <span class=c1>// 创建完 Bean 后，将其加入到容器中</span>
+        <span class=n>addSingleton</span><span class=o>(</span><span class=n>beanName</span><span class=o>,</span> <span class=n>singletonObject</span><span class=o>);</span>
+      <span class=o>}</span>
+    <span class=o>}</span>
+    <span class=k>return</span> <span class=n>singletonObject</span><span class=o>;</span>
+  <span class=o>}</span>
+<span class=o>}</span></code></pre></div></div><div class=paragraph><p>加入容器的操作也很简单：</p></div><div class=listingblock><div class=title><code>org.springframework.beans.factory.support.DefaultSingletonBeanRegistry#addSingleton</code></div><div class=content><pre class="rouge highlight"><code data-lang=java><span class=cm>/**
+ * Add the given singleton object to the singleton cache of this factory.
+ * &lt;p&gt;To be called for eager registration of singletons.
+ * @param beanName the name of the bean
+ * @param singletonObject the singleton object
+ */</span>
+<span class=kd>protected</span> <span class=kt>void</span> <span class=nf>addSingleton</span><span class=o>(</span><span class=nc>String</span> <span class=n>beanName</span><span class=o>,</span> <span class=nc>Object</span> <span class=n>singletonObject</span><span class=o>)</span> <span class=o>{</span>
+  <span class=kd>synchronized</span> <span class=o>(</span><span class=k>this</span><span class=o>.</span><span class=na>singletonObjects</span><span class=o>)</span> <span class=o>{</span>
+    <span class=k>this</span><span class=o>.</span><span class=na>singletonObjects</span><span class=o>.</span><span class=na>put</span><span class=o>(</span><span class=n>beanName</span><span class=o>,</span> <span class=n>singletonObject</span><span class=o>);</span>
+    <span class=k>this</span><span class=o>.</span><span class=na>singletonFactories</span><span class=o>.</span><span class=na>remove</span><span class=o>(</span><span class=n>beanName</span><span class=o>);</span>
+    <span class=k>this</span><span class=o>.</span><span class=na>earlySingletonObjects</span><span class=o>.</span><span class=na>remove</span><span class=o>(</span><span class=n>beanName</span><span class=o>);</span>
+    <span class=k>this</span><span class=o>.</span><span class=na>registeredSingletons</span><span class=o>.</span><span class=na>add</span><span class=o>(</span><span class=n>beanName</span><span class=o>);</span>
+  <span class=o>}</span>
+<span class=o>}</span></code></pre></div></div></div></div></div><div class=sect1><h2 id=_小结>小结</h2><div class=sectionbody><div class=paragraph><p>这里，假设 <code>A → B</code> 和 <code>B → A</code> 两层循环依赖来说明问题</p></div><div class="olist arabic"><ol class=arabic><li><p>通过 <code>applicationContext.getBean(A.class)</code> 方法，委托给 <code>AbstractBeanFactory#doGetBean</code> 方法来尝试获取 Bean；获取不到则开始创建；</p><div class="olist loweralpha"><ol class=loweralpha type=a><li><p>Bean 是调用 <code>instanceWrapper = createBeanInstance(beanName, mbd, args);</code> 方法创建出来了实例，然后又通过 <code>addSingletonFactory(beanName, () → getEarlyBeanReference(beanName, mbd, bean));</code> 将已经创建的实例封装到一个 <code>ObjectFactory&lt;?> singletonFactory</code> 匿名类中，放入到三级缓存中。</p></li><li><p>在 <code>populateBean(beanName, mbd, instanceWrapper);</code> 方法，通过 <code>CommonAnnotationBeanPostProcessor</code> 和 <code>AutowiredAnnotationBeanPostProcessor</code> 的 <code>postProcessProperties</code> 查找依赖，完成注入。</p><div class="olist lowerroman"><ol class=lowerroman type=i><li><p>查找依赖时，就会通过调用 <code>getBean(beanName)</code> 获取 Bean <code>B</code>。此时，还没有 Bean <code>B</code>，则会从这里的第二步开始执行，创建实例，封装后加入到三级缓存 <code>singletonFactories</code> 中，调用 <code>populateBean(beanName, mbd, instanceWrapper);</code> 方法，通过 <code>CommonAnnotationBeanPostProcessor</code> 和 <code>AutowiredAnnotationBeanPostProcessor</code> 的 <code>postProcessProperties</code> 查找依赖，完成注入。依赖注入的过程，请看 <a href=#inject-call-chain>依赖注入的调用链</a> 小节。</p></li><li><p>到这里，就要查找 Bean <code>A</code> 了，一二三级缓存依次来查找(<code>DefaultSingletonBeanRegistry#getSingleton(beanName, allowEarlyReference)</code>)，在三级缓存中，找到了对应的 <code>ObjectFactory&lt;?> singletonFactory</code> 实例，然后调用 <code>getObject()</code> 方法，获得 <code>A</code> 的实例，将其加入到二级缓存中，将三级中的相关内容清理掉。从这里也可以看出，通过 <code>AbstractBeanFactory#doGetBean</code> 方法获得的 Bean 不一定是完全初始化好的 Bean，有可能是一个未完成初始化的实例对象。</p></li><li><p>获得 <code>A</code> 的实例后，就可以完成 Bean <code>B</code> 的初始化，调用 <code>DefaultSingletonBeanRegistry#addSingleton</code> 方法，将其加入一级缓存 <code>singletonObjects</code> 中，也就是容器中。（由于 Bean <code>B</code> 可以直接完成依赖注入，则它不会从三级缓存跳到二级缓存。最后的三级缓存在调用 <code>addSingleton</code> 方法时，直接被清理掉了。）</p></li></ol></div></li><li><p>到这里就可以获取 Bean <code>B</code> 了，然后完成 <code>A</code> 的依赖注入。</p></li></ol></div></li><li><p>最后，通过调用 <code>DefaultSingletonBeanRegistry#addSingleton</code> 方法，将 Bean <code>A</code> 加入到一级缓存 <code>singletonObjects</code> 中，也就是容器中。所有的初始化工作就完成了。</p></li></ol></div><div class=paragraph><p>需要注意的是，有两种情况，Spring 是没办法完成循环注入的：</p></div><div class="olist arabic"><ol class=arabic><li><p>构造函数注入 — 这种要求在实例之前创建好依赖的实例，但是明显无法完成，所以不能解决循环依赖。</p></li><li><p><code>PROTOTYPE</code> 类型的 Bean 相互依赖 — 刚刚看到，上面的三级缓存变量都是为 <code>SINGLETON</code> 类型的 Bean 准备的。<code>PROTOTYPE</code> 类型的 Bean 在检查到循环依赖时，就直接抛异常了。</p></li></ol></div></div></div><div class=sect1><h2 id=_参考资料>参考资料</h2><div class=sectionbody><div class="olist arabic"><ol class=arabic><li><p><a href=https://juejin.im/post/6844903806757502984 target=_blank rel=noopener>spring是如何解决循环依赖的？ - 掘金</a></p></li><li><p><a href=https://developer.51cto.com/art/202005/615924.htm target=_blank rel=noopener>图解Spring循环依赖，写得太好了！ - 51CTO.COM</a></p></li><li><p><a href=https://zhuanlan.zhihu.com/p/62382615 target=_blank rel=noopener>一文说透 Spring 循环依赖问题 - 知乎</a></p></li></ol></div></div></div></div><footer class=post__footer><div class="post__tags tags clearfix"><svg class="tags__badge icon icon-tag" width="16" height="16" viewBox="0 0 32 32"><path d="M32 19c0 1-1 2-1 2L21 31s-1 1-2 1-2-1-2-1L2 16c-1-1-1.4-2-1.4-2S0 12.5.0 11V3C0 1.5.8.8.8.8S1.5.0 3 0h8c1.5.0 3 .6 3 .6S15 1 16 2l15 15s1 1 1 2zM7 10a3 3 0 100-6 3 3 0 000 6z"/></svg><ul class=tags__list><li class=tags__item><a class="tags__link btn" href=/tags/java/ rel=tag>Java</a></li><li class=tags__item><a class="tags__link btn" href=/tags/%E8%AE%BE%E8%AE%A1/ rel=tag>设计</a></li><li class=tags__item><a class="tags__link btn" href=/tags/%E6%9E%B6%E6%9E%84/ rel=tag>架构</a></li><li class=tags__item><a class="tags__link btn" href=/tags/spring/ rel=tag>Spring</a></li></ul></div></footer></article></main><div class=clearfix><h3>看在D瓜哥码字的辛苦上，请友情支持一下，D瓜哥感激不尽，😜</h3><table><tr><td><img alt=微信打赏码 src=/images/wxpay.jpg></td><td><img alt=支付宝打赏码 src=/images/alipay.png></td></tr></table></div><br><div class=clearfix><h3>欢迎关注D瓜哥的微信公众号，在公众号可以获取我的微信二维码：</h3><img alt=微信公众号 src=/images/wx-jikerizhi.jpg></div><div class="admonitionblock tip"><table><tbody><tr><td class=icon><i class="fa icon-tip" title=Tip></i></td><td class=content><strong>公众号的微信号是: <code>jikerizhi</code></strong>。如果图片加载不出来，可以直接通过搜索公众号的微信号来查找D瓜哥的公众号。</td></tr></tbody></table></div><div class="authorbox clearfix"><figure class=authorbox__avatar><a target=_blank href=/about/><img alt="D瓜哥 avatar" src=/images/avatar.jpg class=avatar height=110 width=110></a></figure><div class=authorbox__header><span class=authorbox__name>关于 D瓜哥</span></div><div class=authorbox__description>厨艺界最好的码农，挨踢界最棒的厨师。<ul><li><a target=_blank href=https://wordpress.diguage.com/>旧版“地瓜哥”博客网</a></li><li><a target=_blank href=https://notes.diguage.com/mysql/>MySQL 学习笔记<sup>Alpha</sup></a></li><li><a target=_blank href=https://diguage.github.io/jdk-source-analysis/>JDK 源码分析<sup>Alpha</sup></a></li></ul></div></div><nav class="pager flex"><div class="pager__item pager__item--prev"><a class=pager__link href=/post/distributed-lock-apache-curator-interprocessreadwritelock/ rel=prev><span class=pager__subtitle>«&#8201;上一篇</span><p class=pager__title>分布式锁之 Apache Curator InterProcessReadWriteLock</p></a></div><div class="pager__item pager__item--next"><a class=pager__link href=/post/building-blog-with-hugo/ rel=next><span class=pager__subtitle>下一篇&#8201;»</span><p class=pager__title>使用 Hugo 搭建博客</p></a></div></nav><section class=comments><div id=SOHUCS sid=/post/spring-circular-dependence/></div><script type=text/javascript>(function(){if(window.location.hostname==="localhost")return;var n,e="cyuuTeBp3",t="prod_2906c47c31e735e0ed518282fec489a6",s=window.innerWidth||document.documentElement.clientWidth;s<960?window.document.write('<script id="changyan_mobile_js" charset="utf-8" type="text/javascript" src="https://changyan.sohu.com/upload/mobile/wap-js/changyan_mobile.js?client_id='+e+"&conf="+t+'"><\/script>'):(n=function(e,t){var s=document.getElementsByTagName("head")[0]||document.head||document.documentElement,n=document.createElement("script");n.setAttribute("type","text/javascript"),n.setAttribute("charset","UTF-8"),n.setAttribute("src",e),typeof t=="function"&&(window.attachEvent?n.onreadystatechange=function(){var e=n.readyState;(e==="loaded"||e==="complete")&&(n.onreadystatechange=null,t())}:n.onload=t),s.appendChild(n)},n("https://changyan.sohu.com/upload/changyan.js",function(){window.changyan.api.config({appid:e,conf:t})}))})()</script></section></div><aside class=sidebar><div class="widget-search widget"><form class=widget-search__form role=search method=get action=https://google.com/search><label><input class=widget-search__field type=search placeholder=搜索… name=q aria-label=搜索…>
+</label><input class=widget-search__submit type=submit value=Search>
+<input type=hidden name=sitesearch value=https://www.diguage.com/></form></div><div class="widget-wechat widget"><h4 class=widget__title>微信公众号</h4><img alt=微信公众号 class=center src=/images/wx-jikerizhi-qrcode.jpg></div><div class="widget-wechat widget"><h4 class=widget__title>知识星球</h4><img alt=微信公众号 class=center src=/images/zhishixingqiu.png></div><div class="widget-recent widget"><h4 class=widget__title>近期文章</h4><div class=widget__content><ul class=widget__list><li class=widget__item><a class=widget__link href=/post/spring-boot-startup-process-overview/>Spring Boot 启动流程概述</a></li><li class=widget__item><a class=widget__link href=/post/redis-core-data-structure-4/>Redis 核心数据结构（四）</a></li><li class=widget__item><a class=widget__link href=/post/redis-core-data-structure-3/>Redis 核心数据结构（三）</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-subsets/>算法模式：子集</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-backtracking/>算法模式：回溯</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-transform-and-conquer/>算法模式：变治法</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-divide-and-conquer/>算法模式：分治法</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-decrease-and-conquer/>算法模式：减治法</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-topological-sort/>算法模式：拓扑排序</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-union-find/>算法模式：并查集</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-trie/>算法模式：前缀树</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-depth-first-search/>算法模式：深度优先搜索</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-breadth-first-search/>算法模式：广度优先搜索</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-k-way-merge/>算法模式：多路归并</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-two-heaps/>算法模式：双堆</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-cyclic-sort/>算法模式：循环排序</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-quickselect/>算法模式：快速选择</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-top-k-elements/>算法模式：Top K 问题</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-monotonic-stack/>算法模式：单调栈</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-sliding-window/>算法模式：滑动窗口</a></li></ul></div></div><div class="widget-categories widget"><h4 class=widget__title>分类</h4><div class=widget__content><ul class=widget__list><li class=widget__item><a class=widget__link href=/categories/%E4%B8%AA%E4%BA%BA%E6%88%90%E9%95%BF/>个人成长</a></li><li class=widget__item><a class=widget__link href=/categories/%E5%88%86%E5%B8%83%E5%BC%8F/>分布式</a></li><li class=widget__item><a class=widget__link href=/categories/%E5%BC%80%E5%8F%91%E5%B7%A5%E5%85%B7/>开发工具</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/>性能优化</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/>操作系统</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%95%B0%E6%8D%AE%E5%AD%98%E5%82%A8/>数据存储</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%96%87%E5%AD%A6/>文学</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%96%B9%E6%B3%95%E8%AE%BA/>方法论</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/>程序设计</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%AE%97%E6%B3%95/>算法</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/>系统架构</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%BB%8F%E6%B5%8E%E9%87%91%E8%9E%8D/>经济金融</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/>编程语言</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%BD%91%E7%BB%9C/>网络</a></li><li class=widget__item><a class=widget__link href=/categories/%E8%81%8C%E4%B8%9A%E5%8F%91%E5%B1%95/>职业发展</a></li><li class=widget__item><a class=widget__link href=/categories/%E8%BD%AF%E4%BB%B6%E5%B7%A5%E7%A8%8B/>软件工程</a></li><li class=widget__item><a class=widget__link href=/categories/%E9%80%B8%E9%97%BB%E8%B6%A3%E4%BA%8B/>逸闻趣事</a></li><li class=widget__item><a class=widget__link href=/categories/%E9%98%85%E8%AF%BB%E6%91%98%E8%A6%81/>阅读摘要</a></li></ul></div></div><div class="widget-taglist widget"><h4 class=widget__title>标签</h4><div class=widget__content><a class="widget-taglist__link widget__link btn" href=/tags/gc/ title=GC>GC (9)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/http/ title=HTTP>HTTP (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/java/ title=Java>Java (64)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/jvm/ title=JVM>JVM (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/kpi/ title=KPI>KPI (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/kubernetes/ title=Kubernetes>Kubernetes (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/linux/ title=Linux>Linux (12)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/okr/ title=OKR>OKR (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/redis/ title=Redis>Redis (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/shell/ title=Shell>Shell (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/spring/ title=Spring>Spring (26)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/tcp/ title=TCP>TCP (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/udp/ title=UDP>UDP (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/zookeeper/ title=ZooKeeper>ZooKeeper (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E4%B8%AA%E4%BA%BA%E6%8F%90%E5%8D%87/ title=个人提升>个人提升 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E4%B9%A6%E7%B1%8D/ title=书籍>书籍 (15)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E4%BA%A7%E5%93%81/ title=产品>产品 (7)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%80%BA%E5%88%B8/ title=债券>债券 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%88%86%E5%B8%83%E5%BC%8F/ title=分布式>分布式 (15)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%88%86%E6%B2%BB/ title=分治>分治 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/ title=动态规划>动态规划 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9B%A2%E9%98%9F%E5%BB%BA%E8%AE%BE/ title=团队建设>团队建设 (6)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9B%A2%E9%98%9F%E6%96%87%E5%8C%96/ title=团队文化>团队文化 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9B%BE/ title=图>图 (7)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9F%BA%E9%87%91/ title=基金>基金 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%A0%86/ title=堆>堆 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%AD%98%E5%82%A8/ title=存储>存储 (6)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%B7%A5%E4%BD%9C%E6%96%B9%E6%B3%95/ title=工作方法>工作方法 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%B9%B6%E5%8F%91/ title=并发>并发 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%BA%8F%E5%88%97%E5%8C%96/ title=序列化>序列化 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/ title=微服务>微服务 (17)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%BF%83%E7%90%86%E5%AD%A6/ title=心理学>心理学 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95/ title=性能测试>性能测试 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%8A%95%E8%B5%84%E7%90%86%E8%B4%A2/ title=投资理财>投资理财 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/ title=数据库>数据库 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/ title=数据结构>数据结构 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%95%B0%E7%BB%84/ title=数组>数组 (13)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%96%B9%E6%B3%95%E8%AE%BA/ title=方法论>方法论 (13)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%97%85%E8%A1%8C/ title=旅行>旅行 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5/ title=最佳实践>最佳实践 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%9E%B6%E6%9E%84/ title=架构>架构 (44)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%A0%88/ title=栈>栈 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%A0%91/ title=树>树 (11)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%B2%9F%E9%80%9A%E6%8A%80%E5%B7%A7/ title=沟通技巧>沟通技巧 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/ title=源码分析>源码分析 (8)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%90%86%E8%B4%A2/ title=理财>理财 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%94%9F%E6%B4%BB/ title=生活>生活 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%AC%94%E8%AE%B0/ title=笔记>笔记 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%AE%97%E6%B3%95/ title=算法>算法 (8)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%AE%97%E6%B3%95%E6%A8%A1%E5%BC%8F/ title=算法模式>算法模式 (23)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BB%8F%E6%B5%8E/ title=经济>经济 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BC%96%E7%A0%81/ title=编码>编码 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BD%91%E7%BB%9C/ title=网络>网络 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BF%BB%E8%AF%91/ title=翻译>翻译 (7)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%82%A1%E7%A5%A8/ title=股票>股票 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%84%91%E5%9B%BE/ title=脑图>脑图 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%8A%82%E6%97%A5/ title=节日>节日 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%8B%B1%E8%AF%AD/ title=英语>英语 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%99%9A%E6%8B%9F%E6%9C%BA/ title=虚拟机>虚拟机 (9)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AE%BA%E6%96%87/ title=论文>论文 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AE%BE%E8%AE%A1/ title=设计>设计 (36)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/ title=设计模式>设计模式 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AF%97%E6%AD%8C/ title=诗歌>诗歌 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AF%BB%E4%B9%A6/ title=读书>读书 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%80%92%E5%BD%92/ title=递归>递归 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%87%91%E8%9E%8D/ title=金融>金融 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%93%BE%E8%A1%A8/ title=链表>链表 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1/ title=面向对象>面向对象 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%A2%86%E5%9F%9F%E9%A9%B1%E5%8A%A8%E8%AE%BE%E8%AE%A1/ title=领域驱动设计>领域驱动设计 (5)</a></div></div><div class="widget-social widget"><h4 class="widget-social__title widget__title">社交</h4><div class="widget-social__content widget__content"><div class="widget-social__item widget__item"><a class="widget-social__link widget__link btn" title=Twitter rel="noopener noreferrer" href=https://twitter.com/diguage target=_blank><svg class="widget-social__link-icon icon icon-twitter" width="24" height="24" viewBox="0 0 384 312"><path d="m384 36.9c-14.1 6.3-29.3 10.5-45.2 12.4 16.3-9.7 28.8-25.2 34.6-43.6-15.2 9-32.1 15.6-50 19.1-14.4-15.2-34.9-24.8-57.5-24.8-43.5.0-78.8 35.3-78.8 78.8.0 6.2.7 12.2 2 17.9-65.5-3.3-123.5-34.6-162.4-82.3C20 26 16.1 39.6 16.1 54c0 27.3 13.9 51.4 35 65.6-12.9-.4-25.1-4-35.7-9.9v1c0 38.2 27.2 70 63.2 77.2-6.6 1.8-13.6 2.8-20.8 2.8-5.1.0-10-.5-14.8-1.4 10 31.3 39.1 54.1 73.6 54.7-27 21.1-60.9 33.7-97.8 33.7-6.4.0-12.6-.4-18.8-1.1C34.9 299 76.3 312 120.8 312c144.9.0 224.1-120 224.1-224.1.0-3.4-.1-6.8-.2-10.2 15.4-11.1 28.7-25 39.3-40.8z"/></svg>
+<span>Twitter</span></a></div><div class="widget-social__item widget__item"><a class="widget-social__link widget__link btn" title=GitHub rel="noopener noreferrer" href=https://github.com/diguage target=_blank><svg class="widget-social__link-icon icon icon-github" width="24" height="24" viewBox="0 0 384 374"><path d="m192 0C85.9.0.0 85.8.0 191.7c0 84.7 55 156.6 131.3 181.9 9.6 1.8 13.1-4.2 13.1-9.2.0-4.6-.2-16.6-.3-32.6-53.4 11.6-64.7-25.7-64.7-25.7-8.7-22.1-21.3-28-21.3-28-17.4-11.9 1.3-11.6 1.3-11.6 19.3 1.4 29.4 19.8 29.4 19.8 17.1 29.3 44.9 20.8 55.9 15.9 1.7-12.4 6.7-20.8 12.2-25.6-42.6-4.8-87.5-21.3-87.5-94.8.0-20.9 7.5-38 19.8-51.4-2-4.9-8.6-24.3 1.9-50.7.0.0 16.1-5.2 52.8 19.7 15.3-4.2 31.7-6.4 48.1-6.5 16.3.1 32.7 2.2 48.1 6.5 36.7-24.8 52.8-19.7 52.8-19.7 10.5 26.4 3.9 45.9 1.9 50.7 12.3 13.4 19.7 30.5 19.7 51.4.0 73.7-44.9 89.9-87.7 94.6 6.9 5.9 13 17.6 13 35.5.0 25.6-.2 46.3-.2 52.6.0 5.1 3.5 11.1 13.2 9.2C329 348.2 384 276.4 384 191.7 384 85.8 298 0 192 0z"/></svg>
+<span>GitHub</span></a></div><div class="widget-social__item widget__item"><a class="widget-social__link widget__link btn" title=Email href=mailto:leejun119@gmail.com><svg class="widget-social__link-icon icon icon-mail" width="24" height="24" viewBox="0 0 416 288"><path d="m0 16v256 16h16 384 16v-16V16 0h-16H16 0zm347 16-139 92.5L69 32zM199 157.5l9 5.5 9-5.5L384 46v210H32V46z"/></svg>
+<span>leejun119@gmail.com</span></a></div></div></div></aside></div><footer class=footer><div class="container footer__container flex"><div class=footer__copyright>&copy; 2025 "地瓜哥"博客网.
+<span class=footer__copyright-credits>基于 <a href=https://gohugo.io/ rel="nofollow noopener" target=_blank>Hugo</a> 引擎和 <a href=https://github.com/Vimux/Mainroad/ rel="nofollow noopener" target=_blank>Mainroad</a> 主题</span>
+<span><a href=https://beian.miit.gov.cn/ target=_target>京ICP备14046450号-4</a></span></div></div></footer></div><script async defer src=/js/menu.js></script><script type=text/x-mathjax-config>
+	MathJax.Hub.Config({
+	  messageStyle: "none",
+	  tex2jax: {
+		inlineMath: [["\\(", "\\)"]],
+		displayMath: [["\\[", "\\]"]],
+		ignoreClass: "nostem|nolatexmath"
+	  },
+	  asciimath2jax: {
+		delimiters: [["\\$", "\\$"]],
+		ignoreClass: "nostem|noasciimath"
+	  },
+	  TeX: { equationNumbers: { autoNumber: "none" } }
+	})
+	MathJax.Hub.Register.StartupHook("AsciiMath Jax Ready", function () {
+	  MathJax.InputJax.AsciiMath.postfilterHooks.Add(function (data, node) {
+		if ((node = data.script.parentNode) && (node = node.parentNode) && node.classList.contains("stemblock")) {
+		  data.math.root.display = "block"
+		}
+		return data
+	  })
+	})
+</script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js?config=TeX-MML-AM_HTMLorMML" async></script></body></html>

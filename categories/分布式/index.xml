@@ -1,0 +1,727 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>分布式 on "地瓜哥"博客网</title><link>https://www.diguage.com/categories/%E5%88%86%E5%B8%83%E5%BC%8F/</link><description>Recent content in 分布式 on "地瓜哥"博客网</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Wed, 18 Jun 2025 11:07:50 +0800</lastBuildDate><atom:link href="https://www.diguage.com/categories/%E5%88%86%E5%B8%83%E5%BC%8F/index.xml" rel="self" type="application/rss+xml"/><item><title>Redis 核心数据结构（四）</title><link>https://www.diguage.com/post/redis-core-data-structure-4/</link><pubDate>Tue, 17 Jun 2025 16:36:56 +0800</pubDate><guid>https://www.diguage.com/post/redis-core-data-structure-4/</guid><description>&lt;div class="paragraph">
+&lt;p>在 &lt;a href="https://www.diguage.com/post/redis-core-data-structure-3/" target="_blank" rel="noopener">Redis 核心数据结构（三）&lt;/a> 中，重点介绍了一下 Redis 7+ 使用的底层的数据结构 listpack。本文重点看一下，Redis 是如何基于 listpack 以及其他数据结构类型来构建对外暴露的五个核心数据结构的。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_quicklist">quicklist&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>关于 quicklist 更详细的介绍，请看 &lt;a href="https://www.diguage.com/post/redis-core-data-structure-1/#quicklist" target="_blank" rel="noopener">Redis 核心数据结构（一：quicklist&lt;/a>。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>与上述内容不一样的地方是，现在的 quicklist 底层是使用 listpack 来构建的，而不是上述内容介绍的 ziplist。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_list">list&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>关于 &lt;code>list-max-listpack-size&lt;/code> 的解释，在源码中找到了详细介绍：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="title">&lt;code>redis.conf&lt;/code>&lt;/div>
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="c"># Lists are also encoded in a special way to save a lot of space.&lt;/span>
+&lt;span class="c"># The number of entries allowed per internal list node can be specified&lt;/span>
+&lt;span class="c"># as a fixed maximum size or a maximum number of elements.&lt;/span>
+&lt;span class="c"># For a fixed maximum size, use -5 through -1, meaning:&lt;/span>
+&lt;span class="c"># -5: max size: 64 Kb &amp;lt;-- not recommended for normal workloads&lt;/span>
+&lt;span class="c"># -4: max size: 32 Kb &amp;lt;-- not recommended&lt;/span>
+&lt;span class="c"># -3: max size: 16 Kb &amp;lt;-- probably not recommended&lt;/span>
+&lt;span class="c"># -2: max size: 8 Kb &amp;lt;-- good&lt;/span>
+&lt;span class="c"># -1: max size: 4 Kb &amp;lt;-- good&lt;/span>
+&lt;span class="c"># Positive numbers mean store up to _exactly_ that number of elements&lt;/span>
+&lt;span class="c"># per list node.&lt;/span>
+&lt;span class="c"># The highest performing option is usually -2 (8 Kb size) or -1 (4 Kb size),&lt;/span>
+&lt;span class="c"># but if your use case is unique, adjust the settings as necessary.&lt;/span>
+list-max-listpack-size &lt;span class="nt">-2&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>Redis 核心数据结构（三）</title><link>https://www.diguage.com/post/redis-core-data-structure-3/</link><pubDate>Fri, 13 Jun 2025 17:36:31 +0800</pubDate><guid>https://www.diguage.com/post/redis-core-data-structure-3/</guid><description>&lt;div class="paragraph">
+&lt;p>在五年前，D瓜哥写了 &lt;a href="https://www.diguage.com/post/redis-core-data-structure-1/" target="_blank" rel="noopener">Redis 核心数据结构（一）&lt;/a> 和 &lt;a href="https://www.diguage.com/post/redis-core-data-structure-2/" target="_blank" rel="noopener">Redis 核心数据结构（二）&lt;/a> 两篇文章，来对 Redis 内部的数据结构做了深入分析。随着时间的推移，Redis 的实现也在不断进化，现在这些内容已经跟不上最新发展了，推陈出新，现在重写文章，来介绍 Redis 的最新发展。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_listpack">listpack&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>从 Redis 7.0 开始，使用 listpack 替换原来的 ziplist。至于替换原因，在 &lt;a href="https://github.com/redis/redis/issues/8702" target="_blank" rel="noopener">[NEW] listpack migration - replace all usage of ziplist with listpack&lt;/a> 做了解释说明：&lt;/p>
+&lt;/div>
+&lt;div class="quoteblock">
+&lt;blockquote>
+&lt;div class="paragraph">
+&lt;p>The reason for using listpack instead of ziplist is that ziplist may cause cascading updates when insert and delete in middle, which is the biggest problem.&lt;/p>
+&lt;/div>
+&lt;/blockquote>
+&lt;div class="attribution">
+— sundb
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>翻译过来：当在中间进行插入和删除时，ziplist 也许会产生级联更新，这是一个大问题。&lt;/p>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_编码规范">编码规范&lt;/h3>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/redis/listpack.png" alt="listpack 编码格式" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. listpack 编码格式&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>相比 ziplist，listpack 更偏向空间换时间。淡化极致的内存使用率，向更快的方向发力。&lt;/p>
+&lt;/div>
+&lt;div class="sect3">
+&lt;h4 id="integer">对整数编码&lt;/h4>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/redis/listpack-integer.png" alt="listpack 整数编码" width="95%"/>
+&lt;/div></description></item><item><title>Raft 论文摘要（二）</title><link>https://www.diguage.com/post/summary-of-the-raft-paper-2/</link><pubDate>Mon, 05 Jul 2021 19:58:32 +0800</pubDate><guid>https://www.diguage.com/post/summary-of-the-raft-paper-2/</guid><description>&lt;div class="paragraph">
+&lt;p>在上一篇文章中，通过阅读 &lt;a href="https://raft.github.io/raft.pdf">《In Search of an Understandable Consensus Algorithm》&lt;/a> 前三节的内容，对论文的大致内容做了简介，简单说明了一下 Replicated state machines 的用途以及 Paxos 本身存在的问题。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_4_designing_for_understandability">4. Designing for understandability&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="quoteblock">
+&lt;blockquote>
+&lt;div class="paragraph">
+&lt;p>several goals in designing Raft:&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>it must providea complete and practical foundation for system building;&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>it must be safe under all conditions and available under typical operating conditions;&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>it must be efficient for common operations.&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>Our most important goal — and most difficult challenge — was &lt;strong>understandability&lt;/strong>.&lt;/p>
+&lt;/div>
+&lt;/blockquote>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>从这里可以看出，Raft 设计的初衷就是为了易于理解和便于构建。&lt;/p>
+&lt;/div>
+&lt;div class="quoteblock">
+&lt;blockquote>
+There were numerous points in the design of Raft where we had to choose among alternative approaches. In these situations we evaluated the alternatives based on understandability.
+&lt;/blockquote>
+&lt;/div></description></item><item><title>Raft 论文摘要（一）</title><link>https://www.diguage.com/post/summary-of-the-raft-paper-1/</link><pubDate>Fri, 02 Jul 2021 11:42:26 +0800</pubDate><guid>https://www.diguage.com/post/summary-of-the-raft-paper-1/</guid><description>&lt;div class="paragraph">
+&lt;p>前一段时间，在一次开组会的时候，给小组成员简单介绍了一下 Raft 协议。大概四年前读过 Raft 的论文，这次分享的时候，好多好多细节都忘了。所以，再次把 &lt;a href="https://raft.github.io/raft.pdf">《In Search of an Understandable Consensus Algorithm》&lt;/a> 这篇论文找出来，重读一遍，做个笔记和摘要，方便后续学习和复习。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_abstract">Abstract&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="quoteblock">
+&lt;blockquote>
+Raft is a consensus algorithm for managing a replicated log.
+&lt;/blockquote>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>开篇摘要就点出了 Raft 的特点： Raft 是一种管理复制日志的共识算法。&lt;/p>
+&lt;/div>
+&lt;div class="quoteblock">
+&lt;blockquote>
+In order to enhance understandability, Raft separates the key elements of consensus, such as leader election, log replication, and safety, and it enforcesa stronger degree of coherency to reduce the number of states that must be considered.
+&lt;/blockquote>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>为了增强可理解性，Raft 将共识分解成几个关键元素，例如 Leader 选举，日志复制，以及安全性等；同时，为了降低需要考虑的状态的数量，还强制实施了更强的一致性。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_1_introduction">1. Introduction&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="quoteblock">
+&lt;blockquote>
+Consensus algorithms allow a collection of machines to work as a coherent group that can survive the failures of some of its members.
+&lt;/blockquote>
+&lt;/div></description></item><item><title>Redis 核心数据结构（二）</title><link>https://www.diguage.com/post/redis-core-data-structure-2/</link><pubDate>Fri, 03 Jul 2020 00:39:43 +0800</pubDate><guid>https://www.diguage.com/post/redis-core-data-structure-2/</guid><description>&lt;div class="sidebarblock">
+&lt;div class="content">
+&lt;div class="paragraph">
+&lt;p>本文内容对于 Redis 7+ 来说已经过时，最新实现请看下面两篇文章：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/redis-core-data-structure-3/">Redis 核心数据结构（3）&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/redis-core-data-structure-4/">Redis 核心数据结构（4）&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在上一篇文章： &lt;a href="https://www.diguage.com/post/redis-core-data-structure-1/">Redis 核心数据结构（1）&lt;/a> 中，介绍了链表、ziplist、quicklist 数据结构。这篇文章，来介绍一下 skiplist、dict。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="skiplist">skiplist&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>跳跃表是一种有序数据结构，支持平均 O(logN)、最坏 O(N) 复杂度的节点查找；大部分情况效率可以和平衡树相媲美，实现却比平衡树简单。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>跳跃表就是 Redis 中有序集合键的底层实现之一。&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="title">server.h&lt;/div>
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="c">&lt;span class="k">typedef&lt;/span> &lt;span class="k">struct&lt;/span> &lt;span class="n">zskiplistNode&lt;/span> &lt;span class="p">{&lt;/span>
+ &lt;span class="n">sds&lt;/span> &lt;span class="n">ele&lt;/span>&lt;span class="p">;&lt;/span>
+ &lt;span class="kt">double&lt;/span> &lt;span class="n">score&lt;/span>&lt;span class="p">;&lt;/span>
+ &lt;span class="k">struct&lt;/span> &lt;span class="n">zskiplistNode&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">backward&lt;/span>&lt;span class="p">;&lt;/span>
+ &lt;span class="k">struct&lt;/span> &lt;span class="n">zskiplistLevel&lt;/span> &lt;span class="p">{&lt;/span>
+ &lt;span class="k">struct&lt;/span> &lt;span class="n">zskiplistNode&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">forward&lt;/span>&lt;span class="p">;&lt;/span>
+ &lt;span class="kt">unsigned&lt;/span> &lt;span class="kt">long&lt;/span> &lt;span class="n">span&lt;/span>&lt;span class="p">;&lt;/span>
+ &lt;span class="p">}&lt;/span> &lt;span class="n">level&lt;/span>&lt;span class="p">[];&lt;/span>
+&lt;span class="p">}&lt;/span> &lt;span class="n">zskiplistNode&lt;/span>&lt;span class="p">;&lt;/span>
+
+&lt;span class="k">typedef&lt;/span> &lt;span class="k">struct&lt;/span> &lt;span class="n">zskiplist&lt;/span> &lt;span class="p">{&lt;/span>
+ &lt;span class="k">struct&lt;/span> &lt;span class="n">zskiplistNode&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">header&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">tail&lt;/span>&lt;span class="p">;&lt;/span>
+ &lt;span class="kt">unsigned&lt;/span> &lt;span class="kt">long&lt;/span> &lt;span class="n">length&lt;/span>&lt;span class="p">;&lt;/span>
+ &lt;span class="kt">int&lt;/span> &lt;span class="n">level&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="p">}&lt;/span> &lt;span class="n">zskiplist&lt;/span>&lt;span class="p">;&lt;/span>
+
+&lt;span class="k">typedef&lt;/span> &lt;span class="k">struct&lt;/span> &lt;span class="n">zset&lt;/span> &lt;span class="p">{&lt;/span>
+ &lt;span class="n">dict&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">dict&lt;/span>&lt;span class="p">;&lt;/span>
+ &lt;span class="n">zskiplist&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">zsl&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="p">}&lt;/span> &lt;span class="n">zset&lt;/span>&lt;span class="p">;&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>skiplist，顾名思义，首先它是一个list。实际上，它是在有序链表的基础上发展起来的。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/redis/skiplist.png" alt="skiplist" width="95%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>当我们想查找数据的时候，可以先沿着跨度大的链进行查找。当碰到比待查数据大的节点时，再回到跨度小的链表中进行查找。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>skiplist正是受这种多层链表的想法的启发而设计出来的。按照上面生成链表的方式，上面每一层链表的节点个数，是下面一层的节点个数的一半，这样查找过程就非常类似于一个二分查找，使得查找的时间复杂度可以降低到 O(logN)。但是，存在的一个问题是：如果插入新节点后就会打乱上下相邻两层节点是 2:1 的对应关系。如果要维持，则需要调整后面所有的节点。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>skiplist为了避免这一问题，它不要求上下相邻两层链表之间的节点个数有严格的对应关系，而是为每个节点随机出一个层数(level)。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/redis/redis-skiplist-insertions.png" alt="redis skiplist insertions" width="95%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>插入操作只需要修改插入节点前后的指针，而不需要对很多节点都进行调整。这就降低了插入操作的复杂度。实际上，这是 skiplist 的一个很重要的特性，这让它在插入性能上明显优于平衡树的方案。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>skiplist，翻译成中文，可以翻译成“跳表”或“跳跃表”，指的就是除了最下面第1层链表之外，它会产生若干层稀疏的链表，这些链表里面的指针故意跳过了一些节点（而且越高层的链表跳过的节点越多）。这就使得我们在查找数据的时候能够先在高层的链表中进行查找，然后逐层降低，最终降到第1层链表来精确地确定数据位置。在这个过程中，我们跳过了一些节点，从而也就加快了查找速度。&lt;/p>
+&lt;/div>
+&lt;div class="sidebarblock">
+&lt;div class="content">
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>在中间插入一个有比较高 Level 的节点，如何维护前面节点到这个节点的这些链接？&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>在平衡树种，如何做范围查找？先确定边界，然后其他节点怎么查找？&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/redis/redis_skiplist_example.png" alt="redis skiplist example" width="95%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>skiplist 中 key 允许重复。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>在比较时，不仅比较分数（即key），还要比较数据自身。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>第一层链表是双向链表，并且反向指针只有一个。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>在 skiplist 中可以很方便计算每个元素的排名。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>Redis 中的有序集合（sorted set），是在 skiplist, dict 和 ziplist 基础上构建起来的:&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>当数据较少时，sorted set是由一个 ziplist 来实现的。其中集合元素按照分值从小到大排序。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>当数据多的时候，sorted set 是由一个叫 zset 的数据结构来实现的，这个 zset 包含一个 dict + 一个 skiplist。dict 用来查询数据到分数(score)的对应关系，而 skiplist 用来根据分数查询数据（可能是范围查找）。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div></description></item><item><title>Redis 核心数据结构（一）</title><link>https://www.diguage.com/post/redis-core-data-structure-1/</link><pubDate>Thu, 02 Jul 2020 10:13:16 +0800</pubDate><guid>https://www.diguage.com/post/redis-core-data-structure-1/</guid><description>&lt;div class="sidebarblock">
+&lt;div class="content">
+&lt;div class="paragraph">
+&lt;p>本文内容对于 Redis 7+ 来说已经过时，最新实现请看下面两篇文章：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/redis-core-data-structure-3/">Redis 核心数据结构（3）&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/redis-core-data-structure-4/">Redis 核心数据结构（4）&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>Redis 目前是使用最广泛的缓存中间件。其突出特点就是支持多种常见的数据结构。对比 JDK 集合类的实现，Redis 的实现表现出很多独到之处，很多地方设计得别具匠心。下面就来简要介绍一下。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_linkedlist">linkedlist&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>Redis 底层也有很多地方使用到 linkedlist，并且也是双向链表。&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="title">adlist.h&lt;/div>
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="c">&lt;span class="k">typedef&lt;/span> &lt;span class="k">struct&lt;/span> &lt;span class="n">listNode&lt;/span> &lt;span class="p">{&lt;/span>
+ &lt;span class="k">struct&lt;/span> &lt;span class="n">listNode&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">prev&lt;/span>&lt;span class="p">;&lt;/span>
+ &lt;span class="k">struct&lt;/span> &lt;span class="n">listNode&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">next&lt;/span>&lt;span class="p">;&lt;/span>
+ &lt;span class="kt">void&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">value&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="p">}&lt;/span> &lt;span class="n">listNode&lt;/span>&lt;span class="p">;&lt;/span>
+
+&lt;span class="k">typedef&lt;/span> &lt;span class="k">struct&lt;/span> &lt;span class="n">listIter&lt;/span> &lt;span class="p">{&lt;/span>
+ &lt;span class="n">listNode&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">next&lt;/span>&lt;span class="p">;&lt;/span>
+ &lt;span class="kt">int&lt;/span> &lt;span class="n">direction&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="p">}&lt;/span> &lt;span class="n">listIter&lt;/span>&lt;span class="p">;&lt;/span>
+
+&lt;span class="k">typedef&lt;/span> &lt;span class="k">struct&lt;/span> &lt;span class="n">list&lt;/span> &lt;span class="p">{&lt;/span>
+ &lt;span class="n">listNode&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">head&lt;/span>&lt;span class="p">;&lt;/span>
+ &lt;span class="n">listNode&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">tail&lt;/span>&lt;span class="p">;&lt;/span>
+ &lt;span class="kt">void&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">dup&lt;/span>&lt;span class="p">)(&lt;/span>&lt;span class="kt">void&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">ptr&lt;/span>&lt;span class="p">);&lt;/span>
+ &lt;span class="kt">void&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">free&lt;/span>&lt;span class="p">)(&lt;/span>&lt;span class="kt">void&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">ptr&lt;/span>&lt;span class="p">);&lt;/span>
+ &lt;span class="kt">int&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="o">*&lt;/span>&lt;span class="n">match&lt;/span>&lt;span class="p">)(&lt;/span>&lt;span class="kt">void&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">ptr&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">void&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">key&lt;/span>&lt;span class="p">);&lt;/span>
+ &lt;span class="kt">unsigned&lt;/span> &lt;span class="kt">long&lt;/span> &lt;span class="n">len&lt;/span>&lt;span class="p">;&lt;/span>
+&lt;span class="p">}&lt;/span> &lt;span class="n">list&lt;/span>&lt;span class="p">;&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>Redis 的 linkedlist 实现特点是：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>双向：节点带有前后指针；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>无环：首尾没有相连，所以没有构成环状；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>链表保存了首尾指针；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>多态：可以保存不同类型的值，这里成为泛型也许更符合 Java 中的语义。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>Redis 在 2014 年实现了 &lt;a href="#quicklist">quicklist&lt;/a>，并使用 quicklist 代替了 linkedlist。所以，现在 linkedlist 几乎已经是废弃状态。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_ziplist">ziplist&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>Redis 官方在 ziplist.c 文件的注释中对 ziplist 进行了定义：&lt;/p>
+&lt;/div>
+&lt;div class="quoteblock">
+&lt;blockquote>
+&lt;div class="paragraph">
+&lt;p>The ziplist is a specially encoded dually linked list that is designed
+to be very memory efficient. It stores both strings and integer values,
+where integers are encoded as actual integers instead of a series of
+characters. It allows push and pop operations on either side of the list
+in O(1) time. However, because every operation requires a reallocation of
+the memory used by the ziplist, the actual complexity is related to the
+amount of memory used by the ziplist.&lt;/p>
+&lt;/div></description></item><item><title>Kafka 常见面试题</title><link>https://www.diguage.com/post/kafka-interview-questions/</link><pubDate>Wed, 01 Jul 2020 18:08:51 +0800</pubDate><guid>https://www.diguage.com/post/kafka-interview-questions/</guid><description>&lt;div class="paragraph">
+&lt;p>Kafka 是由 LinkedIn 开发的一个分布式的消息系统，使用 Scala 编写，它以可水平扩展和高吞吐率而被广泛使用。Kafka 本身设计也非常精巧，有很多关键的知识点需要注意。在面试中，也常常被问到。整理篇文章，梳理一下自己的知识点。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_架构设计问题">架构设计问题&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>Kafka 整体架构如下：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/kafka/kafka-architecture.png" alt="Kafka 架构" width="98%"/>
+&lt;/div>
+&lt;div class="title">图 1. Kafka 架构&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>Kafka 架构分为以下几个部分&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;strong>Producer&lt;/strong>：消息生产者，就是向 Kafka Broker 发消息的客户端。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>Consumer&lt;/strong>：消息消费者，向 Kafka Broker 取消息的客户端。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>Topic&lt;/strong>：可以理解为一个队列，一个 Topic 又分为一个或多个分区。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>Consumer Group&lt;/strong>：这是 Kafka 用来实现一个 Topic 消息的广播（发给所有的 Consumer）和单播（发给任意一个 Consumer）的手段。一个 Topic 可以有多个 Consumer Group。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>Broker&lt;/strong>：一台 Kafka 服务器就是一个 Broker。一个集群由多个 Broker 组成。一个 Broker 可以容纳多个 Topic。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>Partition&lt;/strong>：为了实现扩展性，一个非常大的 Topic 可以分布到多个 Broker上，每个 Partition 是一个有序的队列。Partition 中的每条消息都会被分配一个有序的id（offset）。将消息发给 Consumer，Kafka 只保证按一个 Partition 中的消息的顺序，不保证一个 Topic 的整体（多个 Partition 间）的顺序。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>Offset&lt;/strong>：Kafka 的存储文件都是按照 offset.Kafka 来命名，用 offset 做名字的好处是方便查找。例如你想找位于 2049 的位置，只要找到 2048.Kafka 的文件即可。当然 the first offset 就是 00000000000.Kafka。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div></description></item><item><title>负载均衡算法及实践</title><link>https://www.diguage.com/post/load-balancing-algorithm/</link><pubDate>Fri, 15 May 2020 11:37:25 +0800</pubDate><guid>https://www.diguage.com/post/load-balancing-algorithm/</guid><description>&lt;div class="paragraph">
+&lt;p>前几天在看一个资料时，看到关于负载均衡算法的介绍。最近也在研究 Spring Cloud 和 Apache Dubbo 等微服务框架。正好负载均衡是微服务框架中一个很重要的知识点。就动手做个整理和总结。方便后续学习。&lt;/p>
+&lt;/div>
+&lt;div class="sidebarblock">
+&lt;div class="content">
+&lt;div class="paragraph">
+&lt;p>听朋友建议，这篇文章还可以在算法对比，客户端负载均衡与服务端负载均衡区分等两方面做些补充。这些内容后续再补充加入进来。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_常见的负载均衡算法">常见的负载均衡算法&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="sect2">
+&lt;h3 id="round-robin">轮询(Round Robin)法&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>轮询选择指的是从已有的后端节点列表中按顺序依次选择一个节点出来提供服务。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/load-balancing-algorithm/round-robin.png" alt="round robin"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>优点：试图做到请求转移的绝对均衡。实现简单，使用广泛。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="weighted-round-robin">加权轮询(Weighted Round Robin)法&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>实际使用中各个节点往往都带有不同的权重，所以一般都需要实现带权重的轮询选择。 权重高的被选中的次数多，权重低的被选中的次数少。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/load-balancing-algorithm/weighted-round_robin.jpg" alt="weighted round robin"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>优点：是 &lt;a href="#round-robin">轮询(Round Robin)法&lt;/a> 改良版。适用于服务器配置不一致时，可以将配置好的服务器多干活，配置差的服务器少干活以使机器的负载达到相同的水平。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="static-round-robin">静态轮询(Static Round Robin)法&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>HAProxy 中实现的一个负载均衡算法。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>没有后台服务器的限制，服务器启动时，修改权重也不会生效。增删服务器时，服务器准备就绪后，会立即加入到服务队列中。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="random">随机(Random)法&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>通过随机函数，根据后端服务器列表的大小值来随机选择其中一台进行访问。由概率统计理论可以得知，随着调用量的增大，其实际效果越来越接近于平均分配流量到每一台后端服务器，也就是轮询的效果。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="weighted-random">加权随机(Weighted Random)法&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>与加权轮询法类似，加权随机法也是根据后端服务器不同的配置和负载情况来配置不同的权重。不同的是，它是按照权重来随机选择服务器的，而不是顺序。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="ip-hash">原地址哈希(IP Hashing)法&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>源地址哈希的思想是获取客户端访问的IP地址值，通过哈希函数计算得到一个数值，用该数值对服务器列表的大小进行取模运算，得到的结果便是要访问的服务器的序号。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>优点：保证了相同客户端 IP 地址将会被哈希到同一台后端服务器，直到后端服务器列表变更。根据此特性可以在服务消费者与服务提供者之间建立有状态的 Session 会话。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="uri-hash">URI 哈希(URI Hashing)法&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>HAProxy 中实现的一个负载均衡算法。支持部分 URI（问号之前）和完整 URI 两种模式。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这个算法可以把同一个 URI 的访问发送到同一台服务器上，以最大程度提高缓存命中率。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>该算法支持两个可选参数 &lt;code>len&lt;/code> 和 &lt;code>depth&lt;/code>，后跟一个正整数。仅在需要基于URI的开头来平衡服务器时，这些选项可能会很有用。 &lt;code>len&lt;/code> 参数指示算法仅应考虑URI开头的许多字符来计算哈希。请注意，将 &lt;code>len&lt;/code> 设置为 &lt;code>1&lt;/code> 几乎没有意义，因为大多数URI都以前导 &lt;code>/&lt;/code> 开头。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;code>depth&lt;/code> 参数指示用于计算哈希的最大目录深度。请求中的每个斜杠都计为一个级别。如果同时指定了两个参数，则在达到任意一个参数时都将停止评估。&lt;/p>
+&lt;/div></description></item><item><title>分布式事务概述</title><link>https://www.diguage.com/post/overview-of-distributed-transaction/</link><pubDate>Mon, 23 Mar 2020 12:36:58 +0800</pubDate><guid>https://www.diguage.com/post/overview-of-distributed-transaction/</guid><description>&lt;div class="paragraph">
+&lt;p>现在手机银行转账已经司空见惯。但是，D瓜哥一直在思考，银卡跨行转账是如何保证事务一致性的？借机就对分布式事务，做了简单地了解。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_2pc">2PC&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>两阶段提交（2pc， two-phase commit protocol），2pc是非常经典的强一致性、中心化的原子提交协议。中心化是指协议中有两类节点：一个中心化协调者节点（coordinator）和N个参与者节点（participant、cohort）。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>顾名思义，两阶段提交协议的每一次事务提交分为两个阶段：&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在第一阶段，协调者询问所有的参与者是否可以提交事务（请参与者投票），所有参与者向协调者投票。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在第二阶段，协调者根据所有参与者的投票结果做出是否事务可以全局提交的决定，并通知所有的参与者执行该决定。在一个两阶段提交流程中，参与者不能改变自己的投票结果。两阶段提交协议的可以全局提交的前提是所有的参与者都同意提交事务，只要有一个参与者投票选择放弃(abort)事务，则事务必须被放弃。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/overview-of-distributed-transaction/two-phase-commit-process.png" alt="two phase commit process"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>两阶段提交协议也依赖与日志，只要存储介质不出问题，两阶段协议就能最终达到一致的状态（成功或者回滚）&lt;/p>
+&lt;/div>
+&lt;div class="imageblock">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/overview-of-distributed-transaction/2pc-example.png" alt="2pc example"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="imageblock">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/overview-of-distributed-transaction/two-phase-commit-diagram.jpg" alt="two phase commit diagram"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_优点">优点&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>强一致性，只要节点或者网络最终恢复正常，协议就能保证顺利结束；部分关系型数据库（Oracle）、框架直接支持&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_缺点">缺点&lt;/h3>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;strong>网络抖动导致的数据不一致&lt;/strong>： 第二阶段中协调者向参与者发送commit命令之后，一旦此时发生网络抖动，导致一部分参与者接收到了commit请求并执行，可其他未接到commit请求的参与者无法执行事务提交。进而导致整个分布式系统出现了数据不一致。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>超时导致的同步阻塞问题&lt;/strong>： 2PC中的所有的参与者节点都为事务阻塞型，当某一个参与者节点出现通信超时，其余参与者都会被动阻塞占用资源不能释放。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>单点故障的风险&lt;/strong>： 由于严重的依赖协调者，一旦协调者发生故障，而此时参与者还都处于锁定资源的状态，无法完成事务commit操作。虽然协调者出现故障后，会重新选举一个协调者，可无法解决因前一个协调者宕机导致的参与者处于阻塞状态的问题。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>基于两阶段提交的分布式事务在提交事务时需要在多个节点之间进行协调,最大限度地推后了提交事务的时间点，客观上延长了事务的执行时间，这会导致事务在访问共享资源时发生冲突和死锁的概率增高，随着数据库节点的增多，这种趋势会越来越严重，从而成为系统在数据库层面上水平伸缩的&amp;#34;枷锁&amp;#34;， 这是很多Sharding系统不采用分布式事务的主要原因。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_3pc">3PC&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>三阶段提交协议（3pc Three-phase_commit_protocol）主要是为了解决两阶段提交协议的阻塞问题，从原来的两个阶段扩展为三个阶段，并且增加了超时机制。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/overview-of-distributed-transaction/three-phase-commit-protocol.png" alt="three phase commit protocol"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>3PC 的三个阶段分别是 &lt;code>CanCommit&lt;/code>、&lt;code>PreCommit&lt;/code>、&lt;code>DoCommit&lt;/code>&lt;/p>
+&lt;/div>
+&lt;div class="dlist">
+&lt;dl>
+&lt;dt class="hdlist1">CanCommit&lt;/dt>
+&lt;dd>
+&lt;p>协调者向所有参与者发送CanCommit命令，询问是否可以执行事务提交操作。如果全部响应YES则进入下一个阶段。&lt;/p>
+&lt;/dd>
+&lt;dt class="hdlist1">PreCommit&lt;/dt>
+&lt;dd>
+&lt;p>协调者向所有参与者发送PreCommit命令，询问是否可以进行事务的预提交操作，参与者接收到PreCommit请求后，如参与者成功的执行了事务操作，则返回Yes响应，进入最终commit阶段。一旦参与者中有向协调者发送了No响应，或因网络造成超时，协调者没有接到参与者的响应，协调者向所有参与者发送abort请求，参与者接受abort命令执行事务的中断。&lt;/p>
+&lt;/dd>
+&lt;dt class="hdlist1">DoCommit&lt;/dt>
+&lt;dd>
+&lt;p>在前两个阶段中所有参与者的响应反馈均是YES后，协调者向参与者发送DoCommit命令正式提交事务，如协调者没有接收到参与者发送的ACK响应，会向所有参与者发送abort请求命令，执行事务的中断。&lt;/p>
+&lt;/dd>
+&lt;/dl>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>3PC只是解决了在异常情况下2PC的阻塞问题，但导致一次提交要传递6条消息，延时很大。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_tcc">TCC&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>TCC是Try、Commit、Cancel的缩写，TCC在保证强一致性的同时，最大限度提高系统的可伸缩性与可用性。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>TCC（Try-Confirm-Cancel）又被称&lt;strong>补偿事务&lt;/strong>，TCC 与 2PC 的思想很相似，事务处理流程也很相似，但 2PC 是应用于在 DB 层面，TCC 则可以理解为在应用层面的 2PC，是需要我们编写业务逻辑来实现。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>TCC 的核心思想是：&amp;#34;针对每个操作都要注册一个与其对应的确认（Try）和补偿（Cancel）&amp;#34;。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/overview-of-distributed-transaction/tcc.jpg" alt="tcc"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>一个完整的业务包含一组子业务，Try操作完成所有的子业务检查，预留必要的业务资源，实现与其他事务的隔离；Confirm使用Try阶段预留的业务资源真正执行业务，而且Confirm操作满足幂等性，以遍支持重试；Cancel操作释放Try阶段预留的业务资源，同样也满足幂等性。“一次完整的交易由一系列微交易的Try 操作组成，如果所有的Try 操作都成功，最终由微交易框架来统一Confirm，否则统一Cancel，从而实现了类似经典两阶段提交协议（2PC）的强一致性。”&lt;/p>
+&lt;/div>
+&lt;div class="imageblock">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/overview-of-distributed-transaction/tcc-process.jpeg" alt="tcc process"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>再来一个例子：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/overview-of-distributed-transaction/tcc-example.png" alt="tcc example"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>与2PC协议比较 ，TCC拥有以下特点：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>位于业务服务层而非资源层 ，由业务层保证原子性&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>没有单独的准备(Prepare)阶段，降低了提交协议的成本&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Try操作 兼备资源操作与准备能力&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Try操作可以灵活选择业务资源的锁定粒度，而不是锁住整个资源，提高了并发度&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_缺点_2">缺点&lt;/h3>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;strong>应用侵入性强&lt;/strong>：TCC由于基于在业务层面，至使每个操作都需要有 try、confirm、cancel三个接口。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>开发难度大&lt;/strong>：代码开发量很大，要保证数据一致性 confirm 和 cancel 接口还必须实现幂等性。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div></description></item><item><title>Google 三驾马车：MapReduce、GFS、Bigtable</title><link>https://www.diguage.com/post/map-reduce-gfs-bigtable/</link><pubDate>Mon, 23 Mar 2020 10:13:57 +0800</pubDate><guid>https://www.diguage.com/post/map-reduce-gfs-bigtable/</guid><description>&lt;div class="sect1">
+&lt;h2 id="_mapreduce">MapReduce&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>MapReduce编程模型来自函数式编程，包含两个最基本的算子：map，reduce&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>将一个运算任务分解成大量独立正交的子任务，每个子任务通过map算子计算，得到中间结果，然后用reduce算子进行聚合，得到最终结果。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这两个算子有一个很重要的特征：确定性的纯过程调用（pure function），函数既不会修改输入，也不存在中间状态，也没有共享的内存。因此，输入一致的情况下，输出也是一致的，这大大方便了容错性设计。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/map-reduce-gfs-bigtable/map-reduce-framework.png" alt="map reduce framework"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>系统中有两类主要的进程节点：master（单点），worker（多个）。其中，worker根据不同的计算任务，又分为map worker（对应上图中的Map phase）、reduce worker（对应上图中的Reduce phase）。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>master是系统的中心节点，负责计算任务到worker节点的分配，同时监控worker节点的状态。如果某个worker计算太慢，或者宕机，master会将该worker进程负责的计算任务转移到其他进程。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>map worker从GFS（google file system）中读取输入数据，然后将中间结果写到本地文件；reduce worker从master处得知中间结果的问题，通过rpc读取中间文件，计算之后将最终结果写入到可靠存储GFS。生产环境中，一个MapReduce过程的输出通常是另一个MapReduce计算的输入，类似Unix 的 pipeline，只不过unix pipeline通过stdin、stdout连接两个程序，而MapReduce使用GFS连接两个计算过程。&lt;/p>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_scalability">Scalability&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>由于计算任务的正交性，很容易通过增加map worker、reduce worker来处理计算任务的增长。Input file 到 Map phase这个阶段，使用了基于范围（range based）的分片方法，master作为元数据服务器会记录split到worker的映射关系。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_availability">Availability&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>系统对worker的容错性较好，但对master的容错性较差。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>对于map worker，计算结果是写到本地文件，本地文件的位置需要通知到master，即使同一个task被多个map worker执行，单点的master只会采纳一份中间结果。而且上面提到了map function是pure function，所以计算结果也是一样的。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>对于reduce worker，reduce task的计算结果会先写到临时文件（temporary file），task完成之后再重命名写入gfs，那么如果一个reduce task再多个reduce worker上计算，那么会不会有问题呢，答案是不会的&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_performance">Performance&lt;/h3>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>data locality — 将任务调度到数据所在的节点进行计算，减少网络传输；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>backup task — master在发现某个worker上的task进展异常缓慢的时候，会将这个task调度到其他worker，以缩短这个任务（Job）的完成时间。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_gfs">GFS&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>GFS（Google File System）是Google研发的可伸缩、高可用、高可靠的分布式文件系统，提供了类似POSIX的API，按层级目录来组织文件。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/map-reduce-gfs-bigtable/gfs-architecture.png" alt="gfs architecture"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>GFS master、GFS Client、GFS chunkserver。其中，GFS master任意时刻只有一个，而chunkserver和gfs client可能有多个。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>一份文件被分为多个固定大小的chunk（默认64M），每个chunk有全局唯一的文件句柄 －－ 一个64位的chunk ID，每一份chunk会被复制到多个chunkserver（默认值是3)，以此保证可用性与可靠性。chunkserver将chunk当做普通的Linux文件存储在本地磁盘上。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>GFS master是系统的元数据服务器，维护的元数据包括：命令空间（GFS按层级目录管理文件）、文件到chunk的映射，chunk的位置。其中，前两者是会持久化的，而chunk的位置信息来自于Chunkserver的汇报。&lt;/p>
+&lt;/div></description></item></channel></rss>

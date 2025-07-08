@@ -1,0 +1,1020 @@
+<!doctype html><html class=no-js lang=zh-cn><head><meta name=generator content="Hugo 0.134.3"><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><meta http-equiv=X-UA-Compatible content="IE=edge"><title>"地瓜哥"博客网</title>
+<script>(function(e,t){e[t]=e[t].replace("no-js","js")})(document.documentElement,"className")</script><meta name=keywords content="java,架构,设计,spring,算法模式,微服务,书籍,分布式,数组,方法论,linux,树,kubernetes,个人提升,序列化,数据库,最佳实践,gc,虚拟机,源码分析,算法,产品,图,翻译,团队建设,"><meta name=description content='"地瓜哥"博客网是由 D瓜哥 维护的以分享技术文章的博客网站。'><meta property="og:url" content="https://www.diguage.com/"><meta property="og:site_name" content='"地瓜哥"博客网'><meta property="og:title" content='"地瓜哥"博客网'><meta property="og:description" content='"地瓜哥"博客网是由 D瓜哥 维护的以分享技术文章的博客网站。'><meta property="og:locale" content="zh_cn"><meta property="og:type" content="website"><meta name=twitter:card content="summary"><meta name=twitter:title content='"地瓜哥"博客网'><meta name=twitter:description content='"地瓜哥"博客网是由 D瓜哥 维护的以分享技术文章的博客网站。'><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link rel=dns-prefetch href=//fonts.googleapis.com><link rel=dns-prefetch href=//fonts.gstatic.com><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Open+Sans:400,400i,700"><link rel=alternate type=application/rss+xml href=/index.xml title 地瓜哥"博客网"><link rel=stylesheet href=/css/style.min.css><link rel=stylesheet href=/css/asciidoctor.css><link rel=stylesheet href=/css/rouge-monokai.css><link rel=alternate type=application/rss+xml href=/index.xml title 地瓜哥"博客网"><link rel="shortcut icon" href=/favicon.ico><script async src="https://www.googletagmanager.com/gtag/js?id=G-1MMT2NLEL4"></script><script>var dnt,doNotTrack=!1;if(!1&&(dnt=navigator.doNotTrack||window.doNotTrack||navigator.msDoNotTrack,doNotTrack=dnt=="1"||dnt=="yes"),!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-1MMT2NLEL4")}</script><script id=baidu_analytics>var _hmt=_hmt||[];(function(){var e,t=document.createElement("script");t.src="https://hm.baidu.com/hm.js?e56e7dd0a120b414f5741f4c5e5218ea",e=document.getElementsByTagName("script")[0],e.parentNode.insertBefore(t,e)})()</script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css></head><body class=body><div class="container container--outer"><header class=header><div class="container header__container"><div class=logo><a class=logo__link href=/ title='"地瓜哥"博客网' rel=home><div class="logo__item logo__text"><div class=logo__title>"地瓜哥"博客网</div><div class=logo__tagline>分享技术带来的喜悦 — https://www.diguage.com/</div></div></a></div><nav class=menu><button class=menu__btn aria-haspopup=true aria-expanded=false tabindex=0>
+<span class=menu__btn-title tabindex=-1>菜单</span></button><ul class=menu__list><li class=menu__item><a class=menu__link href=/><span class=menu__text>首页</span></a></li><li class=menu__item><a class=menu__link href=/categories/><span class=menu__text>分类</span></a></li><li class=menu__item><a class=menu__link href=/about/><span class=menu__text>关于</span></a></li><li class=menu__item><a class=menu__link href=/archives/><span class=menu__text>归档</span></a></li></ul></nav></div></header><div class="wrapper flex"><div class=primary><main class="main list" role=main><article class="list__item post"><figure class="list__thumbnail thumbnail"><a class=thumbnail__link href=/post/jvm-instruction-set/><img class=thumbnail__image src=/images/java/bytecode.svg alt="Java 虚拟机指令(操作码)集"></a></figure><header class=list__header><h2 class="list__title post__title"><a href=/post/jvm-instruction-set/ rel=bookmark>Java 虚拟机指令(操作码)集</a></h2><div class="list__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2022-08-31T13:00:44+08:00>2022-08-31</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/ rel=category>系统架构</a></span></div></div></header><div class="content list__excerpt post__content clearfix">最近在研究 Java 虚拟机字节码。在 《Java虚拟机规范》 看到一个整理完整的 Java 虚拟机指令集（也叫操作码）列表。转载过来，方便查阅。
+关于 Java 虚拟机指令(操作码)，准备写一个“探秘”系列：
+Java 虚拟机操作码探秘：常量指令 — 重点介绍一下关于“常量”指令。
+分类 操作码 助记符 指令含义 常量
+0
+0x00
+nop
+什么都不做
+1
+0x01
+aconst_null
+将 null 推送至栈顶
+2
+0x02
+iconst_m1
+将 int 类型 -1 推送至栈顶
+3
+0x03
+iconst_0
+将 int 类型 0 推送至栈顶
+4
+0x04
+iconst_1
+将 int 类型 1 推送至栈顶
+5
+0x05
+iconst_2
+将 int 类型 2 推送至栈顶
+6
+0x06
+iconst_3
+将 int 类型 3 推送至栈顶
+7
+0x07
+iconst_4
+将 int 类型 4 推送至栈顶
+8
+0x08
+iconst_5
+将 int 类型 5 推送至栈顶
+9
+0x09
+lconst_0
+将 long 类型 0 推送至栈顶
+10
+0x0a
+lconst_1
+将 long 类型 1 推送至栈顶
+11
+0x0b
+fconst_0
+将 float 类型 0 推送至栈顶
+12
+0x0c
+fconst_1
+将 float 类型 1 推送至栈顶
+13
+0x0d
+fconst_2
+将 float 类型 2 推送至栈顶
+14
+0x0e
+dconst_0
+将 double 类型 0 推送至栈顶
+15
+0x0f
+dconst_1
+将 double 类型 1 推送至栈顶
+16
+0x10
+bipush
+将单字节的常量值(-128 ~ 127)推送至栈顶
+17
+0x11
+sipush
+将一个短整类型常量值(-32,768 ~ 32,767)推送栈顶
+18
+0x12
+ldc
+将 int、 float 或 String 类型常量值从常量池中推送至栈顶
+19
+0x13
+ldc_w
+将int、 float 或 String 类型常量值从常量池中推送栈顶(宽索引)
+20
+0x14
+ldc2_w
+将 long 或 double 类型常量值从常量池中推送至栈(宽索引)
+加载
+21
+0x15
+iload
+将指定的 int 类型本地变量推送至栈顶
+22
+0x16
+lload
+将指定的 long 类型本地变量推送至栈顶
+23
+0x17
+fload
+将指定的 float 类型本地变量推送至栈顶
+24
+0x18
+dload
+将指定的 double 类型本地变量推送至栈顶
+25
+0x19
+aload
+将指定的引用类型本地变量推送至栈顶
+26
+0x1a
+iload_0
+将第 1 个 int 类型本地变量推送至栈顶
+27
+0x1b
+iload_1
+将第 2 个 int 类型本地变量推送至栈顶
+28
+0x1c
+iload_2
+将第 3 个 int 类型本地变量推送至栈顶
+29
+0x1d
+iload_3
+将第 4 个 int 类型本地变量推送至栈顶
+30
+0x1e
+lload_0
+将第 1 个 long 类型本地变量推送至栈顶
+31
+0x1f
+lload_1
+将第 2 个 long 类型本地变量推送至栈顶
+32
+0x20
+lload_2
+将第 3 个 long 类型本地变量推送至栈顶
+33
+0x21
+lload_3
+将第 4 个 long 类型本地变量推送至栈顶
+34
+0x22
+fload_0
+将第 1 个 float 类型本地变量推送至栈顶
+35
+0x23
+fload_1
+将第 2 个 float 类型本地变量推送至栈顶
+36
+0x24
+fload_2
+将第 3 个 float 类型本地变量推送至栈顶
+37
+0x25
+fload_3
+将第 4 个 float 类型本地变量推送至栈顶
+38
+0x26
+dload_0
+将第 1 个 double 类型本地变量推送至栈顶
+39
+0x27
+dload_1
+将第 2 个 double 类型本地变量推送至栈顶
+40
+0x28
+dload_2
+将第 3 个 double 类型本地变量推送至栈顶
+41
+0x29
+dload_3
+将第 4 个 double 类型本地变量推送至栈顶
+42
+0x2a
+aload_0
+将第 1 个引用类型本地变量推送至栈顶
+43
+0x2b
+aload_1
+将第 2 个引用类型本地变量推送至栈顶
+44
+0x2c
+aload_2
+将第 3 个引用类型本地变量推送至栈顶
+45
+0x2d
+aload_3
+将第 4 个引用类型本地变量推送至栈顶
+46
+0x2e
+iaload
+将 int 类型数组的指定元素推送至栈顶
+47
+0x2f
+laload
+将 long 类型数组的指定元素推送至栈顶
+48
+0x30
+faload
+将 float 类型数组的指定元素推送至栈顶
+49
+0x31
+daload
+将 double 类型数组的指定元素推送至栈顶
+50
+0x32
+aaload
+将引用类型数组的指定元素推送至栈顶
+51
+0x33
+baload
+将 boolean 或 byte 类型数组的指定元素推送至栈顶
+52
+0x34
+caload
+将 char 类型数组的指定元素推送至栈顶
+53
+0x35
+saload
+将 short 类型数组的指定元素推送至栈顶
+存储
+54
+0x36
+istore
+将栈顶 int 类型数值存入指定本地变量
+55
+0x37
+lstore
+将栈顶 long 类型数值存入指定本地变量
+56
+0x38
+fstore
+将栈顶 float 类型数值存入指定本地变量
+57
+0x39
+dstore
+将栈顶 double 类型数值存入指定本地变量
+58
+0x3a
+astore
+将栈顶引用类型数值存入指定本地变量
+59
+0x3b
+istore_0
+将栈顶 int 类型数值存入第 1 个本地变量
+60
+0x3c
+istore_1
+将栈顶 int 类型数值存入第 2 个本地变量
+61
+0x3d
+istore_2
+将栈顶 int 类型数值存入第 3 个本地变量
+62
+0x3e
+istore_3
+将栈顶 int 类型数值存入第 4 个本地变量
+63
+0x3f
+lstore_0
+将栈顶 long 类型数值存入第 1 个本地变量
+64
+0x40
+lstore_1
+将栈顶 long 类型数值存入第 2 个本地变量
+65
+0x41
+lstore_2
+将栈顶 long 类型数值存入第 3 个本地变量
+66
+0x42
+lstore_3
+将栈顶 long 类型数值存入第 4 个本地变量
+67
+0x43
+fstore_0
+将栈顶 float 类型数值存入第 1 个本地变量
+68
+0x44
+fstore_1
+将栈顶 float 类型数值存入第 2 个本地变量
+69
+0x45
+fstore_2
+将栈顶 float 类型数值存入第 3 个本地变量
+70
+0x46
+fstore_3
+将栈顶 float 类型数值存入第 4 个本地变量
+71
+0x47
+dstore_0
+将栈顶 double 类型数值存入第 1 个本地变量
+72
+0x48
+dstore_1
+将栈顶 double 类型数值存入第 2 个本地变量
+73
+0x49
+dstore_2
+将栈顶 double 类型数值存入第 3 个本地变量
+74
+0x4a
+dstore_3
+将栈顶 double 类型数值存入第 4 个本地变量
+75
+0x4b
+astore_0
+将栈顶引用类型数值存入第 1 个本地变量
+76
+0x4c
+astore_1
+将栈顶引用类型数值存入第 2 个本地变量
+77
+0x4d
+astore_2
+将栈顶引用类型数值存入第 3 个本地变量
+78
+0x4e
+astore_3
+将栈顶引用类型数值存入第 4 个本地变量
+79
+0x4f
+iastore
+将栈顶 int 类型数值存入指定数组的指定索引位置
+80
+0x50
+lastore
+将栈顶 long 类型数值存入指定数组的指定索引位置
+81
+0x51
+fastore
+将栈顶 float 类型数值存入指定数组的指定索引位置
+82
+0x52
+dastore
+将栈顶 double 类型数值存入指定数组的指定索引位置
+83
+0x53
+aastore
+将栈顶引用类型数值存入指定数组的指定索引位置
+84
+0x54
+bastore
+将栈顶 boolean 或 byte 类型数值存入指定数组的指定索引位置
+85
+0x55
+castore
+将栈顶 char 类型数值存入指定数组的指定索引位置
+86
+0x56
+sastore
+将栈顶 short 类型数值存入指定数组的指定索引位置
+栈
+87
+0x57
+pop
+将栈顶数值弹出(数值不能是 long 或 double 类型的)
+88
+0x58
+pop2
+将栈顶的一个 long 或 double 类型的数值或两个其他类型的数值弹出
+89
+0x59
+dup
+复制栈顶数值并将复制值压入栈顶
+90
+0x5a
+dup_x1
+复制栈顶值并将其插入栈顶那两个值的下面
+91
+0x5b
+dup_x2
+复制栈顶值并将其插入栈顶那两个或三个值的下面
+92
+0x5c
+dup2
+复制栈顶的一个 long 或 double 类型的值，或两个其他类型的值，并将其压入栈顶
+93
+0x5d
+dup2_x1
+复制栈顶的一个或两个值，并将其插入栈顶那两个或三个值的下面
+94
+0x5e
+dup2_x2
+复制栈顶的一个或两个值，并将其插入栈顶那两个、三个或四个值的下面
+95
+0x5f
+swap
+将栈顶的两个数值互换(数值不能是 long 或 double 类型的)
+数学
+96
+0x60
+iadd
+将栈顶两 int 类型数值相加并将结果压入栈顶
+97
+0x61
+ladd
+将栈顶两 1ong 类型数值相加并将结果压入栈顶
+98
+0x62
+fadd
+将栈顶两 float 类型数值相加并将结果压入栈顶
+99
+0x63
+dadd
+将栈顶两 double 类型数值相加并将结果压入栈顶
+100
+0x64
+isub
+将栈顶两 int 类型数值相减并将结果压入栈顶
+101
+0x65
+lsub
+将栈顶两 long 类型数值相减并将结果压入栈顶
+102
+0x66
+fsub
+将栈顶两 float 类型数值相减并将结果压入栈顶
+103
+0x67
+dsub
+将栈顶两 double 类型数值相减并将结果压入栈顶
+104
+0x68
+imul
+将栈顶两 int 类型数值相乘并将结果压入栈顶
+105
+0x69
+lmul
+将栈顶两 long 类型数值相乘并将结果压入栈顶
+106
+0x6a
+fmul
+将栈顶两 float 类型数值相乘并将结果压入栈顶
+107
+0x6b
+dmul
+将栈顶两 double 类型数值相乘并将结果压入栈顶
+108
+0x6с
+idiv
+将栈顶两 int 类型数值相除并将结果压入栈顶
+109
+0x6d
+ldiv
+将栈顶两 long 类型数值相除并将结果压入栈顶
+110
+0x6e
+fdiv
+将栈顶两 float 类型数值相除并将结果压入栈顶
+111
+0x6f
+ddiv
+将栈顶两 double 类型数值相除并将结果压入栈顶
+112
+0x70
+irem
+将栈顶两 int 类型数值作取模运算并将结果压入栈顶
+113
+0x71
+lrem
+将栈顶两 long 类型数值作取模运算并将结果压入栈顶
+114
+0x72
+frem
+将栈顶两 float 类型数值作取模运算并将结果压入栈顶
+115
+0x73
+drem
+将栈顶两 double 类型数值作取模运算并将结果压入栈顶
+116
+0x74
+ineg
+将栈顶 int 类型数值取负并将结果压入栈顶
+117
+0x75
+lneg
+将栈顶 long 类型数值取负并将结果压入栈顶
+118
+0x76
+fneg
+将栈顶 float 类型数值取负并将结果压入栈顶
+119
+0x77
+dneg
+将栈顶 double 类型数值取负并将结果压入栈顶
+120
+0x78
+ishl
+将 int 类型数值左移位指定位数并将结果压入栈顶
+121
+0x79
+lshl
+将 long 类型数值左移位指定位数并将结果压入栈顶
+122
+0x7a
+ishr
+将 int 类型数值(有符号)右移位指定位数并将结果压入栈顶
+123
+0x7b
+lshr
+将 long 类型数值(有符号)右移位指定位数并将结果压入栈顶
+124
+0x7c
+iushr
+将 int 类型数值(无符号)右移位指定位数并将结果压入栈顶
+125
+0x7d
+lushr
+将 long 类型数值(无符号)右移位指定位数并将结果压入栈顶
+126
+0x7e
+iand
+将栈顶两 int 类型数值作“按位与”并将结果压入栈顶
+127
+0x7f
+land
+将栈顶两 long 类型数值作“按位与”并将结果压入栈顶
+128
+0x80
+ior
+将栈顶两 int 类型数值作“按位或”并将结果压入栈顶
+129
+0x81
+lor
+将栈顶两 long 类型数值作“按位或”并将结果压入栈顶
+130
+0x82
+ixor
+将栈顶两 int 类型数值作“按位异或”并将结果压入栈顶
+131
+0x83
+lxor
+将栈顶两 long 类型数值作“按位异或”并将结果压入栈顶
+132
+0x84
+iinc
+将指定 int 类型变量增加指定值(i++，i--，i += 2)
+转换
+133
+0x85
+i2l
+将栈顶 int 类型数值强制转换成 long 类型数值并将结果压入栈顶
+134
+0x86
+i2f
+将栈顶 int 类型数值强制转换成 float 类型数值并将结果压入栈顶
+135
+0x87
+i2d
+将栈顶 int 类型数值强制转换成 double 类型数值并将结果压入栈顶
+136
+0x88
+l2i
+将栈顶 long 类型数值强制转换成 int 类型数值并将结果压入栈顶
+137
+0x89
+l2f
+将栈顶 long 类型数值强制转换成 float 类型数值并将结果压入栈顶
+138
+0x8a
+l2d
+将栈顶 long 类型数值强制转换成 double 类型数值并将结果压入栈顶
+139
+0x8b
+f2i
+将栈顶 float 类型数值强制转换成 int 类型数值并将结果压入栈顶
+140
+0x8c
+f2l
+将栈顶 float 类型数值强制转换成 long 类型数值并将结果压入栈顶
+141
+0x8d
+f2d
+将栈顶 float 类型数值强制转换成 double 类型数值并将结果压入栈顶
+142
+0x8e
+d2i
+将栈顶 double 类型数值强制转换成 int 类型数值并将结果压入栈顶
+143
+0x8f
+d2l
+将栈顶 double 类型数值强制转换成 long 类型数值并将结果压入栈顶
+144
+0x90
+d2f
+将栈顶 double 类型数值强制转换成 float 类型数值并将结果压入栈顶
+145
+0x91
+i2b
+将栈顶 int 类型数值强制转换成 byte 类型数值并将结果压入栈顶
+146
+0x92
+i2c
+将栈顶 int 类型数值强制转换成 char 类型数值并将结果压入栈顶
+147
+0x93
+i2s
+将栈顶 int 类型数值强制转换成 short 类型数值并将结果压入栈顶
+比较
+148
+0x94
+lcmp
+比较栈顶两 long 类型数值大小，并将结果(1，0，-1)压入栈顶
+149
+0x95
+fcmpl
+比较栈顶两 float 类型数值大小，并将结果(1，0，-1)压入栈顶；当其中一个数值为“NaN”时，将 -1 压入栈顶
+150
+0x96
+fcmpg
+比较栈顶两 float 类型数值大小，并将结果(1，0，-1)压入栈顶；当其中一个数值为“NaN”时，将1压入栈顶
+151
+0x97
+dcmpl
+比较栈顶两 double 类型数值大小，并将结果(1，0，-1)压入栈顶；当其中一个数值为“NaN”时，将-1压入栈顶
+152
+0x98
+dcmpg
+比较栈顶两 double 类型数值大小，并将结果(1，0，-1)压入栈顶；当其中一个数值为“NaN”时，将1压入栈顶
+153
+0x99
+ifeq
+当栈顶 int 类型数值等于 0 时跳转
+154
+0x9a
+ifne
+当栈顶 int 类型数值不等于 0 时跳转
+155
+0x9b
+iflt
+当栈顶 int 类型数值小于 0 时跳转
+156
+0x9c
+ifge
+当栈顶 int 类型数值大于等于 0 时跳转
+157
+0x9d
+ifgt
+当栈顶 int 类型数值大于 0 时跳转
+158
+0x9e
+ifle
+当栈顶 int 类型数值小于等于 0 时跳转
+159
+0x9f
+if_icmpeq
+比较栈顶两 int 类型数值大小，当前者等于后者时跳转
+160
+0xa0
+if_icmpne
+比较栈顶两 int 类型数值大小，当前者不等于后者时跳转
+161
+0xa1
+if_icmplt
+比较栈顶两 int 类型数值大小，当前者小于后者时跳转
+162
+0xa2
+if_icmpge
+比较栈顶两 int 类型数值大小，当前者大于等于后者时跳转
+163
+0xa3
+if_icmpgt
+比较栈顶两 int 类型数值大小，当前者大于后者时跳转
+164
+0xa4
+if_icmple
+比较栈顶两 int 类型数值大小，当前者小于等于后者时跳转
+165
+0xa5
+if_acmpeq
+比较栈顶两引用类型数值，当结果相等时跳转
+166
+0xa6
+ifacmpne
+比较栈顶两引用类型数值，当结果不相等时跳转
+控制
+167
+0xa7
+goto
+无条件跳转
+168
+0xa8
+jsr
+跳转至指定 16 位 offset 位置，并将 jsr 下一条指令地址压入栈顶
+169
+0xa9
+ret
+返回至由指定的局部变量所给出的指令位置(一般与 jsr、jsr_w 联合使用)
+170
+0xaa
+tableswitch
+用于 switch 条件跳转，case 值连续(变长指令)
+171
+0xab
+lookupswitch
+用于 switch 条件跳转，case 值不连续(变长指令)
+172
+0xac
+ireturn
+从当前方法返回 int
+173
+Oxad
+lreturn
+从当前方法返回 long
+174
+0xae
+freturn
+从当前方法返回 float
+175
+0xaf
+dreturn
+从当前方法返回 double
+176
+0xb0
+areturn
+从当前方法返回对象引用
+177
+0xb1
+return
+从当前方法返回void
+引用
+178
+0xb2
+getstatic
+获取指定类的静态字段，并将其值压入栈顶
+179
+0xb3
+putstatic
+为指定类的静态字段赋值
+180
+0xb4
+getfield
+获取指定类的实例字段，并将其值压入栈顶
+181
+0xb5
+putfield
+为指定类的实例字段赋值
+182
+0xb6
+invokevirtual
+调用实例方法
+183
+0xb7
+invokespecial
+调用父类方法、实例初始化方法、私有方法
+184
+0xb8
+invokestatic
+调用静态方法
+185
+0xb9
+invokeinterface
+调用接口方法
+186
+0xba
+invokedynamic
+调用动态链接方法
+187
+0xbb
+new
+创建一个对象，并将其引用值压入栈顶
+188
+0xbc
+newarray
+创建一个指定原始类型(如int、float 、char等)的数组，并将其引用值压入栈顶
+189
+0xbd
+anewarray
+创建一个引用型(如类、接口、数组)的数组，并将其引用值压入栈顶
+190
+0xbe
+arraylength
+获得数组的长度值并压入栈顶
+191
+0xbf
+athrow
+将栈顶的异常抛出
+192
+0xcO
+checkcast
+检验类型转换，检验未通过将抛出 ClassCastException
+193
+0xc1
+instanceof
+检验对象是否是指定类的实例。如果是，就将 1 压入栈顶，否则将 0 压入栈顶
+194
+0xc2
+monitorenter
+获得对象的锁，用于实现同步块
+195
+0xc3
+monitorexit
+释放对象的锁，用于实现同步块
+扩展
+196
+0xc4
+wide
+扩展本地变量索引的宽度
+197
+0xс5
+multianewarray
+创建指定类型和指定维度的多维数组(执行该指令时，操作栈中必须包含各维度的长度值)，并将其引用值压入栈顶
+198
+0xc6
+ifnull
+为nu11时跳转
+199
+0xc7
+ifnonnull
+不为nu11时跳转
+200
+0xc8
+goto_w
+无条件跳转(宽索引)
+201
+0xc9
+jsr_w
+跳转至指定 32 位 offset 位置，并将 jsr_w 下一条指令地址压入栈顶
+保留指令
+202
+Оxca
+breakpoint
+调试时的断点标记
+254
+Oxfe
+impdep1
+为特定软件面预留的语言后门
+255
+0xff
+impdep2
+为特定硬件面预留的语言后门
+参考资料 Chapter 6. The Java Virtual Machine Instruction Set
+Java bytecode
+List of Java bytecode instructions</div><div class="list__footer clearfix"><a class="list__footer-readmore btn" href=/post/jvm-instruction-set/>阅读全文…</a></div></article><article class="list__item post"><figure class="list__thumbnail thumbnail"><a class=thumbnail__link href=/post/experience-about-upgrading-java-dependencies/><img class=thumbnail__image src=/images/java/spring-maven-java.png alt="关于升级 Spring 等依赖的一些经验"></a></figure><header class=list__header><h2 class="list__title post__title"><a href=/post/experience-about-upgrading-java-dependencies/ rel=bookmark>关于升级 Spring 等依赖的一些经验</a></h2><div class="list__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2022-08-28T09:19:59+08:00>2022-08-28</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E5%BC%80%E5%8F%91%E5%B7%A5%E5%85%B7/ rel=category>开发工具</a>, <a class=meta__link href=/categories/%E8%BD%AF%E4%BB%B6%E5%B7%A5%E7%A8%8B/ rel=category>软件工程</a></span></div></div></header><div class="content list__excerpt post__content clearfix">到公司后，熟悉了一些项目后，发现大部分项目的依赖都比较陈旧，比如某些项目还在使用 Spring 3.x 的版本。所以，在进行需求开发时，也顺手把一些项目的依赖给升级了一下。周五，一个小伙伴问我关于升级 Spring 的经验。正好趁此机会，把一些经验总结一下。
+下面的描述以 Java 8 为准，没有在其他版本 Java 上试验过。参考时，请慎重。描述的原则如下：
+尽量选择还在维护中的版本，而不是已经 End of Life 的过时版。这样有问题可以及时反馈并得到修复。
+Java 8 是目标版本，所以，一定要兼容 Java 8。
+Spring Framework 升级 Spring Framework 从 3.2.6.RELEASE 开始提供 BOM。可以利用 BOM 简化 Spring 依赖声明：
+&lt;!-- D瓜哥 · https://www.diguage.com --> &lt;dependencyManagement> &lt;dependencies> &lt;dependency> &lt;groupId>org.springframework&lt;/groupId> &lt;artifactId>spring-framework-bom&lt;/artifactId> &lt;version>5.3.25&lt;/version> &lt;type>pom&lt;/type> &lt;scope>import&lt;/scope> &lt;/dependency> &lt;/dependencies> &lt;/dependencyManagement> 这样，就不需要重复声明 Spring 依赖的版本，直接使用即可。 Spring Framework Bom 保证了 Spring 自身依赖的版本统一。
+这里，关于 Spring 的升级，还有几点需要说明：
+从 Spring 3.X 升级到 Spring 4.X+ 后，原来的 MappingJacksonHttpMessageConverter 已经被删除了；直接使用 MappingJackson2HttpMessageConverter 即可。
+从 Spring 3.0.0.RELEASE 到 Spring 3.1.4.RELEASE，Spring 有一个 spring-asm，如果不再使用这个区间的 Spring，请把这个依赖删掉。
+如果使用了 Apache Velocity 1.X 作为前端模板，由于 Spring 5+ 将相关集成代码删除，所以，只能将 Spring 升级到 4.3.30.RELEASE。相关 BOM 如下：
+&lt;!-- D瓜哥 · https://www.diguage.com --> &lt;dependency> &lt;groupId>org.springframework&lt;/groupId> &lt;artifactId>spring-framework-bom&lt;/artifactId> &lt;version>4.3.30.RELEASE&lt;/version> &lt;type>pom&lt;/type> &lt;scope>import&lt;/scope> &lt;/dependency></div><div class="list__footer clearfix"><a class="list__footer-readmore btn" href=/post/experience-about-upgrading-java-dependencies/>阅读全文…</a></div></article><article class="list__item post"><figure class="list__thumbnail thumbnail"><a class=thumbnail__link href=/post/schema-evolution-in-avro-protobuf-thrift/><img class=thumbnail__image src=/images/marshal/pb-thrift-avro.jpg alt="Avro、ProtoBuf、Thrift 的模式演进之法【翻译】"></a></figure><header class=list__header><h2 class="list__title post__title"><a href=/post/schema-evolution-in-avro-protobuf-thrift/ rel=bookmark>Avro、ProtoBuf、Thrift 的模式演进之法【翻译】</a></h2><div class="list__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2022-08-27T08:30:43+08:00>2022-08-27</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/ rel=category>系统架构</a>, <a class=meta__link href=/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/ rel=category>程序设计</a></span></div></div></header><div class="content list__excerpt post__content clearfix">前面系统研究了 Hessian 序列化协议。并以此为契机，顺带实例对比了 Hessian、MessagePack 和 JSON 的序列化。早在 2012 年，Martin Kleppmann 就写了一篇文章 《Schema evolution in Avro, Protocol Buffers and Thrift》，也是基于实例，对比了 Avro、ProtoBuf、Thrift 的差别。现在翻译出来，方便做系列研究。
+整个“序列化系列”目录如下：
+Hessian 2.0 序列化协议（中文版） — Hessian 序列化协议的中文翻译版。根据后面的“协议解释与实战”系列文章，增加了协议内容错误提示。
+Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数 — 介绍布尔型数据、日期类型、浮点类型数据和整数类型数据等四种类型的数据的处理。
+Hessian 协议解释与实战（二）：长整型、二进制数据与 Null — 介绍长整数类型数据、二进制数据和 null 等三种类型的数据的处理。
+Hessian 协议解释与实战（三）：字符串 — 专门介绍了关于字符串的处理。由于字符串需要铺垫的基础知识比较多，处理细节也有繁琐，所以单独成篇来介绍。
+Hessian 源码分析（Java） — 开始第四篇分析之前，先来介绍一下 Hessian 的源码实现。方便后续展开说明。
+Hessian 协议解释与实战（四）：数组与集合 — 铺垫了一些关于实例对象的处理，重点介绍关于数组和集合的相关处理。
+Hessian 协议解释与实战（五）：对象与映射 — 重点介绍关于对象与映射的相关处理。
+Hessian、Msgpack 和 JSON 实例对比 — 用实例对比 JSON、Hessian 和 MessagePack 的区别。
+Avro、ProtoBuf、Thrift 的模式演进之路 — 翻译的 Martin Kleppmann 的文章，重点对比了 Avro、ProtoBuf、Thrift 的序列化处理思路。</div><div class="list__footer clearfix"><a class="list__footer-readmore btn" href=/post/schema-evolution-in-avro-protobuf-thrift/>阅读全文…</a></div></article><article class="list__item post"><figure class="list__thumbnail thumbnail"><a class=thumbnail__link href=/post/show-my-respect-to-medical-workers-by-my-story-on-medical-workers-day/><img class=thumbnail__image src=/images/medical-workers-day/medical-0.jpg alt=用自己的小故事致敬白衣天使></a></figure><header class=list__header><h2 class="list__title post__title"><a href=/post/show-my-respect-to-medical-workers-by-my-story-on-medical-workers-day/ rel=bookmark>用自己的小故事致敬白衣天使</a></h2><div class="list__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2022-08-19T08:55:06+08:00>2022-08-19</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E9%80%B8%E9%97%BB%E8%B6%A3%E4%BA%8B/ rel=category>逸闻趣事</a></span></div></div></header><div class="content list__excerpt post__content clearfix">8·19中国医师节
+致敬守护健康的白衣天使
+虽然我一直挺健康，但我与医生的故事有好多。按时间顺序，挑选几个来说一说。
+早在 2018 年，由于智齿斜长，顶住最后大牙，担心影响到大牙的健康，就到北京大学口腔医院魏公村总院，做智齿拔除手术。由于去排队时间较晚，就被分配了一个急诊号，不知道医生是何许人也。拍片做完检查，医生说我上下有两个智齿，可以考虑一起拔除。麻药敲击拔牙，一气呵成。医生说，你可以走啦。我疑问，不是拔两颗吗？怎么只拔了一颗？医生说，两颗都拔啦。没想到这么迅速。实在是太专业啦！这名医生叫郭华秋。
+在 2019 年，在盆友圈看到一个纪录片《医者·脊梁》，认识了一个医生，在业余时间，利用自己的专业知识，深入偏远地区，为这些偏远地区免费义诊，并且建立了一个基金会，为需要手术的脊柱侧弯患者承担必要的费用。经过短暂思考后就决定，要为这个基金会捐款，让他们去救助更多的人。初步定在每年六一儿童节这天，每年捐一千块钱，连续捐十年。这家基金会叫北京海鹰脊柱健康公益基金会。这名医生叫刘海鹰。（他是我的安阳老乡，也是我的大学师兄。真是荣幸之至！）放两张盆友圈截图：
+图 1. 2018年捐款 图 2. 2022年捐款 2020年，一场突如其来的疫情，让很多很多医护工作者舍小家为大家，用自己的臂膀组建了守护大家健康的卫生长城。这些医生和护士叫中国医护人员。
+感谢他们的付出，感谢他们的辛劳，也感谢他们的专业。有感于此，我在2021年初，就请我认识的每一位医护朋友吃一顿饭。可惜到现在为止，还没有成行。以后有机会一起吃饭的话，希望医护朋友不要可以客气，给我一个表达感激的机会。
+图 3. 向医护人员致敬 这是公众号的一篇文章。昨天早晨出门吃早餐，刷朋友圈才知道昨天是医师节。在地铁上写了这篇文章。本来是昨天群发的。由于没有想尝试一次群发多篇文章，就在手机APP上先发表了附加的文章，以为只是发布而不群发。结果，搞了个乌龙，直接群发了，也没办法撤销群发。所以，这篇文章只能今天发表了。</div></article><article class="list__item post"><figure class="list__thumbnail thumbnail"><a class=thumbnail__link href=/post/hessian-vs-msgpack-vs-json/><img class=thumbnail__image src=/images/common/bahe.jpg alt="Hessian、Msgpack 和 JSON 实例对比"></a></figure><header class=list__header><h2 class="list__title post__title"><a href=/post/hessian-vs-msgpack-vs-json/ rel=bookmark>Hessian、Msgpack 和 JSON 实例对比</a></h2><div class="list__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2022-08-05T11:28:03+08:00>2022-08-05</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/ rel=category>系统架构</a>, <a class=meta__link href=/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/ rel=category>程序设计</a></span></div></div></header><div class="content list__excerpt post__content clearfix">前段时间，翻译了 Hessian 2.0 的序列化协议，发布在了 Hessian 2.0 序列化协议（中文版）。但是，其中有很多言语不详之处。所以，接下来会用几篇文章来详细解释并实践一下 Hessian 序列化协议，以求做到知其然知其所以然。
+目录如下：
+Hessian 2.0 序列化协议（中文版） — Hessian 序列化协议的中文翻译版。根据后面的“协议解释与实战”系列文章，增加了协议内容错误提示。
+Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数 — 介绍布尔型数据、日期类型、浮点类型数据和整数类型数据等四种类型的数据的处理。
+Hessian 协议解释与实战（二）：长整型、二进制数据与 Null — 介绍长整数类型数据、二进制数据和 null 等三种类型的数据的处理。
+Hessian 协议解释与实战（三）：字符串 — 专门介绍了关于字符串的处理。由于字符串需要铺垫的基础知识比较多，处理细节也有繁琐，所以单独成篇来介绍。
+Hessian 源码分析（Java） — 开始第四篇分析之前，先来介绍一下 Hessian 的源码实现。方便后续展开说明。
+Hessian 协议解释与实战（四）：数组与集合 — 铺垫了一些关于实例对象的处理，重点介绍关于数组和集合的相关处理。
+Hessian 协议解释与实战（五）：对象与映射 — 重点介绍关于对象与映射的相关处理。
+Hessian、Msgpack 和 JSON 实例对比 — 用实例对比 JSON、Hessian 和 MessagePack 的区别。
+Avro、ProtoBuf、Thrift 的模式演进之路 — 翻译的 Martin Kleppmann 的文章，重点对比了 Avro、ProtoBuf、Thrift 的序列化处理思路。
+本文用实际来对比一下 JSON、Hessian 和 MessagePack 的区别。</div><div class="list__footer clearfix"><a class="list__footer-readmore btn" href=/post/hessian-vs-msgpack-vs-json/>阅读全文…</a></div></article><article class="list__item post"><figure class="list__thumbnail thumbnail"><a class=thumbnail__link href=/post/hessian-protocol-interpretation-and-practice-5/><img class=thumbnail__image src=/images/common/confused-target-vector.jpg alt="Hessian 协议解释与实战（五）：对象与映射"></a></figure><header class=list__header><h2 class="list__title post__title"><a href=/post/hessian-protocol-interpretation-and-practice-5/ rel=bookmark>Hessian 协议解释与实战（五）：对象与映射</a></h2><div class="list__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2022-05-31T16:02:13+08:00>2022-05-31</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/ rel=category>系统架构</a>, <a class=meta__link href=/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/ rel=category>程序设计</a></span></div></div></header><div class="content list__excerpt post__content clearfix">前段时间，翻译了 Hessian 2.0 的序列化协议，发布在了 Hessian 2.0 序列化协议（中文版）。但是，其中有很多言语不详之处。所以，接下来会用几篇文章来详细解释并实践一下 Hessian 序列化协议，以求做到知其然知其所以然。目录如下：
+Hessian 2.0 序列化协议（中文版） — Hessian 序列化协议的中文翻译版。根据后面的“协议解释与实战”系列文章，增加了协议内容错误提示。
+Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数 — 介绍布尔型数据、日期类型、浮点类型数据和整数类型数据等四种类型的数据的处理。
+Hessian 协议解释与实战（二）：长整型、二进制数据与 Null — 介绍长整数类型数据、二进制数据和 null 等三种类型的数据的处理。
+Hessian 协议解释与实战（三）：字符串 — 专门介绍了关于字符串的处理。由于字符串需要铺垫的基础知识比较多，处理细节也有繁琐，所以单独成篇来介绍。
+Hessian 源码分析（Java） — 开始第四篇分析之前，先来介绍一下 Hessian 的源码实现。方便后续展开说明。
+Hessian 协议解释与实战（四）：数组与集合 — 铺垫了一些关于实例对象的处理，重点介绍关于数组和集合的相关处理。
+Hessian 协议解释与实战（五）：对象与映射 — 重点介绍关于对象与映射的相关处理。
+Hessian、Msgpack 和 JSON 实例对比 — 用实例对比 JSON、Hessian 和 MessagePack 的区别。
+Avro、ProtoBuf、Thrift 的模式演进之路 — 翻译的 Martin Kleppmann 的文章，重点对比了 Avro、ProtoBuf、Thrift 的序列化处理思路。
+在上一篇文章 Hessian 协议解释与实战（四）：数组与集合 中研究了数组和集合的处理方式。接下来介绍对象和映射的处理。
+基础工具方法 基础工具方法就不再赘述，请直接参考 Hessian 协议解释与实战（一）：基础工具方法 中提到的几个方法。</div><div class="list__footer clearfix"><a class="list__footer-readmore btn" href=/post/hessian-protocol-interpretation-and-practice-5/>阅读全文…</a></div></article><article class="list__item post"><figure class="list__thumbnail thumbnail"><a class=thumbnail__link href=/post/hessian-protocol-interpretation-and-practice-4/><img class=thumbnail__image src=/images/common/confused-target-vector.jpg alt="Hessian 协议解释与实战（四）：数组与集合"></a></figure><header class=list__header><h2 class="list__title post__title"><a href=/post/hessian-protocol-interpretation-and-practice-4/ rel=bookmark>Hessian 协议解释与实战（四）：数组与集合</a></h2><div class="list__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2022-05-26T18:01:43+08:00>2022-05-26</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/ rel=category>系统架构</a>, <a class=meta__link href=/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/ rel=category>程序设计</a></span></div></div></header><div class="content list__excerpt post__content clearfix">前段时间，翻译了 Hessian 2.0 的序列化协议，发布在了 Hessian 2.0 序列化协议（中文版）。但是，其中有很多言语不详之处。所以，接下来会用几篇文章来详细解释并实践一下 Hessian 序列化协议，以求做到知其然知其所以然。目录如下：
+Hessian 2.0 序列化协议（中文版） — Hessian 序列化协议的中文翻译版。根据后面的“协议解释与实战”系列文章，增加了协议内容错误提示。
+Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数 — 介绍布尔型数据、日期类型、浮点类型数据和整数类型数据等四种类型的数据的处理。
+Hessian 协议解释与实战（二）：长整型、二进制数据与 Null — 介绍长整数类型数据、二进制数据和 null 等三种类型的数据的处理。
+Hessian 协议解释与实战（三）：字符串 — 专门介绍了关于字符串的处理。由于字符串需要铺垫的基础知识比较多，处理细节也有繁琐，所以单独成篇来介绍。
+Hessian 源码分析（Java） — 开始第四篇分析之前，先来介绍一下 Hessian 的源码实现。方便后续展开说明。
+Hessian 协议解释与实战（四）：数组与集合 — 铺垫了一些关于实例对象的处理，重点介绍关于数组和集合的相关处理。
+Hessian 协议解释与实战（五）：对象与映射 — 重点介绍关于对象与映射的相关处理。
+Hessian、Msgpack 和 JSON 实例对比 — 用实例对比 JSON、Hessian 和 MessagePack 的区别。
+Avro、ProtoBuf、Thrift 的模式演进之路 — 翻译的 Martin Kleppmann 的文章，重点对比了 Avro、ProtoBuf、Thrift 的序列化处理思路。
+在上一篇文章 Hessian 源码分析（Java） 对 Hessian 的 Java 实现做了一个概要的分析，对处理流程以及整体架构做了一个简单的分析。接下来，回到主题，继续来解释 Hessian 序列化协议。这篇文章，我们来重点分析一下数组与集合相关的操作。</div><div class="list__footer clearfix"><a class="list__footer-readmore btn" href=/post/hessian-protocol-interpretation-and-practice-4/>阅读全文…</a></div></article><article class="list__item post"><figure class="list__thumbnail thumbnail"><a class=thumbnail__link href=/post/hessian-source-analysis-for-java/><img class=thumbnail__image src=/images/common/best-architecture.png alt="Hessian 源码分析（Java）"></a></figure><header class=list__header><h2 class="list__title post__title"><a href=/post/hessian-source-analysis-for-java/ rel=bookmark>Hessian 源码分析（Java）</a></h2><div class="list__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2022-05-21T09:39:44+08:00>2022-05-21</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/ rel=category>系统架构</a>, <a class=meta__link href=/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/ rel=category>程序设计</a></span></div></div></header><div class="content list__excerpt post__content clearfix">前面通过几篇文章，解释并实践了一下 Hessian 的序列化协议。文章目录如下：
+Hessian 2.0 序列化协议（中文版） — Hessian 序列化协议的中文翻译版。根据后面的“协议解释与实战”系列文章，增加了协议内容错误提示。
+Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数 — 介绍布尔型数据、日期类型、浮点类型数据和整数类型数据等四种类型的数据的处理。
+Hessian 协议解释与实战（二）：长整型、二进制数据与 Null — 介绍长整数类型数据、二进制数据和 null 等三种类型的数据的处理。
+Hessian 协议解释与实战（三）：字符串 — 专门介绍了关于字符串的处理。由于字符串需要铺垫的基础知识比较多，处理细节也有繁琐，所以单独成篇来介绍。
+Hessian 源码分析（Java） — 开始第四篇分析之前，先来介绍一下 Hessian 的源码实现。方便后续展开说明。
+Hessian 协议解释与实战（四）：数组与集合 — 铺垫了一些关于实例对象的处理，重点介绍关于数组和集合的相关处理。
+Hessian 协议解释与实战（五）：对象与映射 — 重点介绍关于对象与映射的相关处理。
+Hessian、Msgpack 和 JSON 实例对比 — 用实例对比 JSON、Hessian 和 MessagePack 的区别。
+Avro、ProtoBuf、Thrift 的模式演进之路 — 翻译的 Martin Kleppmann 的文章，重点对比了 Avro、ProtoBuf、Thrift 的序列化处理思路。
+该系列第四篇文章准备详细介绍一下 Hessian 对对象、链表以及 Map 等处理。但是，越调试代码，越发觉得应该先对 Hessian 的实现做一个源码分析。于是，就有了本文。
+这里有几点需要声明一下：
+在上面“解释与实战”系列文章中提到的代码就不再重复说明。
+通过“解释与实战”系列文章，大家应该可以领略到，处理序列化有大量的细节。但是，本文并不打算涉及。本文重点是介绍 Hessian 的 Java 实现的架构蓝图。相当于给指明一条路，沿着这条路，大家就可以探索 Hessian 的各种细节。
+本文的介绍，全部基于 Hessian 4.0.60 的源码。由于没有找到 Hessian 的仓库，D瓜哥从 Hessian 的网站下，下载了源码包，解压后发布在了 GitHub 上： Hessian — The source code of Hessian Library.。</div><div class="list__footer clearfix"><a class="list__footer-readmore btn" href=/post/hessian-source-analysis-for-java/>阅读全文…</a></div></article><article class="list__item post"><figure class="list__thumbnail thumbnail"><a class=thumbnail__link href=/post/hessian-protocol-interpretation-and-practice-3/><img class=thumbnail__image src=/images/common/confused-target-vector.jpg alt="Hessian 协议解释与实战（三）：字符串"></a></figure><header class=list__header><h2 class="list__title post__title"><a href=/post/hessian-protocol-interpretation-and-practice-3/ rel=bookmark>Hessian 协议解释与实战（三）：字符串</a></h2><div class="list__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2022-05-04T16:09:05Z>2022-05-04</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/ rel=category>系统架构</a>, <a class=meta__link href=/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/ rel=category>程序设计</a></span></div></div></header><div class="content list__excerpt post__content clearfix">前段时间，翻译了 Hessian 2.0 的序列化协议，发布在了 Hessian 2.0 序列化协议（中文版）。但是，其中有很多言语不详之处。所以，接下来会用几篇文章来详细解释并实践一下 Hessian 序列化协议，以求做到知其然知其所以然。目录如下：
+Hessian 2.0 序列化协议（中文版） — Hessian 序列化协议的中文翻译版。根据后面的“协议解释与实战”系列文章，增加了协议内容错误提示。
+Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数 — 介绍布尔型数据、日期类型、浮点类型数据和整数类型数据等四种类型的数据的处理。
+Hessian 协议解释与实战（二）：长整型、二进制数据与 Null — 介绍长整数类型数据、二进制数据和 null 等三种类型的数据的处理。
+Hessian 协议解释与实战（三）：字符串 — 专门介绍了关于字符串的处理。由于字符串需要铺垫的基础知识比较多，处理细节也有繁琐，所以单独成篇来介绍。
+Hessian 源码分析（Java） — 开始第四篇分析之前，先来介绍一下 Hessian 的源码实现。方便后续展开说明。
+Hessian 协议解释与实战（四）：数组与集合 — 铺垫了一些关于实例对象的处理，重点介绍关于数组和集合的相关处理。
+Hessian 协议解释与实战（五）：对象与映射 — 重点介绍关于对象与映射的相关处理。
+Hessian、Msgpack 和 JSON 实例对比 — 用实例对比 JSON、Hessian 和 MessagePack 的区别。
+Avro、ProtoBuf、Thrift 的模式演进之路 — 翻译的 Martin Kleppmann 的文章，重点对比了 Avro、ProtoBuf、Thrift 的序列化处理思路。
+在上一篇文章 Hessian 协议解释与实战（二）：长整型、二进制数据与 Null 中研究了长整型、二进制数据与 null 等三种数据类型的处理方式。接下来，我们再来介绍字符串的处理情况。</div><div class="list__footer clearfix"><a class="list__footer-readmore btn" href=/post/hessian-protocol-interpretation-and-practice-3/>阅读全文…</a></div></article><article class="list__item post"><figure class="list__thumbnail thumbnail"><a class=thumbnail__link href=/post/hessian-protocol-interpretation-and-practice-2/><img class=thumbnail__image src=/images/common/confused-target-vector.jpg alt="Hessian 协议解释与实战（二）：长整型、二进制数据与 Null"></a></figure><header class=list__header><h2 class="list__title post__title"><a href=/post/hessian-protocol-interpretation-and-practice-2/ rel=bookmark>Hessian 协议解释与实战（二）：长整型、二进制数据与 Null</a></h2><div class="list__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2022-05-03T16:09:15+08:00>2022-05-03</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/ rel=category>系统架构</a>, <a class=meta__link href=/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/ rel=category>程序设计</a></span></div></div></header><div class="content list__excerpt post__content clearfix">前段时间，翻译了 Hessian 2.0 的序列化协议，发布在了 Hessian 2.0 序列化协议（中文版）。但是，其中有很多言语不详之处。所以，接下来会用几篇文章来详细解释并实践一下 Hessian 序列化协议，以求做到知其然知其所以然。目录如下：
+Hessian 2.0 序列化协议（中文版） — Hessian 序列化协议的中文翻译版。根据后面的“协议解释与实战”系列文章，增加了协议内容错误提示。
+Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数 — 介绍布尔型数据、日期类型、浮点类型数据和整数类型数据等四种类型的数据的处理。
+Hessian 协议解释与实战（二）：长整型、二进制数据与 Null — 介绍长整数类型数据、二进制数据和 null 等三种类型的数据的处理。
+Hessian 协议解释与实战（三）：字符串 — 专门介绍了关于字符串的处理。由于字符串需要铺垫的基础知识比较多，处理细节也有繁琐，所以单独成篇来介绍。
+Hessian 源码分析（Java） — 开始第四篇分析之前，先来介绍一下 Hessian 的源码实现。方便后续展开说明。
+Hessian 协议解释与实战（四）：数组与集合 — 铺垫了一些关于实例对象的处理，重点介绍关于数组和集合的相关处理。
+Hessian 协议解释与实战（五）：对象与映射 — 重点介绍关于对象与映射的相关处理。
+Hessian、Msgpack 和 JSON 实例对比 — 用实例对比 JSON、Hessian 和 MessagePack 的区别。
+Avro、ProtoBuf、Thrift 的模式演进之路 — 翻译的 Martin Kleppmann 的文章，重点对比了 Avro、ProtoBuf、Thrift 的序列化处理思路。
+在上一篇文章 Hessian 协议解释与实战（一） 中研究了布尔型数据、日期类型、浮点类型数据、整数类型数据等四种数据类型的处理方式。接下来，我们再来介绍长整数类型数据、二进制数据和 null 的处理情况。
+基础工具方法 基础工具方法就不再赘述，请直接参考 Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数：基础工具方法 中提到的几个方法。</div><div class="list__footer clearfix"><a class="list__footer-readmore btn" href=/post/hessian-protocol-interpretation-and-practice-2/>阅读全文…</a></div></article></main><div class=pagination><a class="pagination__item pagination__item--else" href=/>«
+</a><a class="pagination__item pagination__item--else" href=/page/7/>&lt;
+</a><a class="pagination__item pagination__item--else" href=/page/4/>4
+</a><a class="pagination__item pagination__item--else" href=/page/5/>5
+</a><a class="pagination__item pagination__item--else" href=/page/6/>6
+</a><a class="pagination__item pagination__item--else" href=/page/7/>7
+</a><a class="pagination__item pagination__item--current" href=#>8
+</a><a class="pagination__item pagination__item--else" href=/page/9/>9
+</a><a class="pagination__item pagination__item--else" href=/page/10/>10
+</a><a class="pagination__item pagination__item--else" href=/page/11/>11
+</a><a class="pagination__item pagination__item--else" href=/page/12/>12
+</a><a class="pagination__item pagination__item--else" href=/page/9/>>
+</a><a class="pagination__item pagination__item--else" href=/page/16/>»</a></div></div><aside class=sidebar><div class="widget-search widget"><form class=widget-search__form role=search method=get action=https://google.com/search><label><input class=widget-search__field type=search placeholder=搜索… name=q aria-label=搜索…>
+</label><input class=widget-search__submit type=submit value=Search>
+<input type=hidden name=sitesearch value=https://www.diguage.com/></form></div><div class="widget-wechat widget"><h4 class=widget__title>微信公众号</h4><img alt=微信公众号 class=center src=/images/wx-jikerizhi-qrcode.jpg></div><div class="widget-wechat widget"><h4 class=widget__title>知识星球</h4><img alt=微信公众号 class=center src=/images/zhishixingqiu.png></div><div class="widget-recent widget"><h4 class=widget__title>近期文章</h4><div class=widget__content><ul class=widget__list><li class=widget__item><a class=widget__link href=/post/spring-boot-startup-process-overview/>Spring Boot 启动流程概述</a></li><li class=widget__item><a class=widget__link href=/post/redis-core-data-structure-4/>Redis 核心数据结构（四）</a></li><li class=widget__item><a class=widget__link href=/post/redis-core-data-structure-3/>Redis 核心数据结构（三）</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-subsets/>算法模式：子集</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-backtracking/>算法模式：回溯</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-transform-and-conquer/>算法模式：变治法</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-divide-and-conquer/>算法模式：分治法</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-decrease-and-conquer/>算法模式：减治法</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-topological-sort/>算法模式：拓扑排序</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-union-find/>算法模式：并查集</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-trie/>算法模式：前缀树</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-depth-first-search/>算法模式：深度优先搜索</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-breadth-first-search/>算法模式：广度优先搜索</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-k-way-merge/>算法模式：多路归并</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-two-heaps/>算法模式：双堆</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-cyclic-sort/>算法模式：循环排序</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-quickselect/>算法模式：快速选择</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-top-k-elements/>算法模式：Top K 问题</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-monotonic-stack/>算法模式：单调栈</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-sliding-window/>算法模式：滑动窗口</a></li></ul></div></div><div class="widget-categories widget"><h4 class=widget__title>分类</h4><div class=widget__content><ul class=widget__list><li class=widget__item><a class=widget__link href=/categories/%E4%B8%AA%E4%BA%BA%E6%88%90%E9%95%BF/>个人成长</a></li><li class=widget__item><a class=widget__link href=/categories/%E5%88%86%E5%B8%83%E5%BC%8F/>分布式</a></li><li class=widget__item><a class=widget__link href=/categories/%E5%BC%80%E5%8F%91%E5%B7%A5%E5%85%B7/>开发工具</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/>性能优化</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/>操作系统</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%95%B0%E6%8D%AE%E5%AD%98%E5%82%A8/>数据存储</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%96%87%E5%AD%A6/>文学</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%96%B9%E6%B3%95%E8%AE%BA/>方法论</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/>程序设计</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%AE%97%E6%B3%95/>算法</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/>系统架构</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%BB%8F%E6%B5%8E%E9%87%91%E8%9E%8D/>经济金融</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/>编程语言</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%BD%91%E7%BB%9C/>网络</a></li><li class=widget__item><a class=widget__link href=/categories/%E8%81%8C%E4%B8%9A%E5%8F%91%E5%B1%95/>职业发展</a></li><li class=widget__item><a class=widget__link href=/categories/%E8%BD%AF%E4%BB%B6%E5%B7%A5%E7%A8%8B/>软件工程</a></li><li class=widget__item><a class=widget__link href=/categories/%E9%80%B8%E9%97%BB%E8%B6%A3%E4%BA%8B/>逸闻趣事</a></li><li class=widget__item><a class=widget__link href=/categories/%E9%98%85%E8%AF%BB%E6%91%98%E8%A6%81/>阅读摘要</a></li></ul></div></div><div class="widget-taglist widget"><h4 class=widget__title>标签</h4><div class=widget__content><a class="widget-taglist__link widget__link btn" href=/tags/gc/ title=GC>GC (9)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/http/ title=HTTP>HTTP (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/java/ title=Java>Java (64)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/jvm/ title=JVM>JVM (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/kpi/ title=KPI>KPI (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/kubernetes/ title=Kubernetes>Kubernetes (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/linux/ title=Linux>Linux (12)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/okr/ title=OKR>OKR (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/redis/ title=Redis>Redis (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/shell/ title=Shell>Shell (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/spring/ title=Spring>Spring (26)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/tcp/ title=TCP>TCP (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/udp/ title=UDP>UDP (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/zookeeper/ title=ZooKeeper>ZooKeeper (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E4%B8%AA%E4%BA%BA%E6%8F%90%E5%8D%87/ title=个人提升>个人提升 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E4%B9%A6%E7%B1%8D/ title=书籍>书籍 (15)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E4%BA%A7%E5%93%81/ title=产品>产品 (7)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%80%BA%E5%88%B8/ title=债券>债券 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%88%86%E5%B8%83%E5%BC%8F/ title=分布式>分布式 (15)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%88%86%E6%B2%BB/ title=分治>分治 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/ title=动态规划>动态规划 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9B%A2%E9%98%9F%E5%BB%BA%E8%AE%BE/ title=团队建设>团队建设 (6)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9B%A2%E9%98%9F%E6%96%87%E5%8C%96/ title=团队文化>团队文化 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9B%BE/ title=图>图 (7)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9F%BA%E9%87%91/ title=基金>基金 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%A0%86/ title=堆>堆 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%AD%98%E5%82%A8/ title=存储>存储 (6)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%B7%A5%E4%BD%9C%E6%96%B9%E6%B3%95/ title=工作方法>工作方法 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%B9%B6%E5%8F%91/ title=并发>并发 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%BA%8F%E5%88%97%E5%8C%96/ title=序列化>序列化 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/ title=微服务>微服务 (17)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%BF%83%E7%90%86%E5%AD%A6/ title=心理学>心理学 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95/ title=性能测试>性能测试 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%8A%95%E8%B5%84%E7%90%86%E8%B4%A2/ title=投资理财>投资理财 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/ title=数据库>数据库 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/ title=数据结构>数据结构 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%95%B0%E7%BB%84/ title=数组>数组 (13)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%96%B9%E6%B3%95%E8%AE%BA/ title=方法论>方法论 (13)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%97%85%E8%A1%8C/ title=旅行>旅行 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5/ title=最佳实践>最佳实践 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%9E%B6%E6%9E%84/ title=架构>架构 (44)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%A0%88/ title=栈>栈 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%A0%91/ title=树>树 (11)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%B2%9F%E9%80%9A%E6%8A%80%E5%B7%A7/ title=沟通技巧>沟通技巧 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/ title=源码分析>源码分析 (8)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%90%86%E8%B4%A2/ title=理财>理财 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%94%9F%E6%B4%BB/ title=生活>生活 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%AC%94%E8%AE%B0/ title=笔记>笔记 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%AE%97%E6%B3%95/ title=算法>算法 (8)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%AE%97%E6%B3%95%E6%A8%A1%E5%BC%8F/ title=算法模式>算法模式 (23)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BB%8F%E6%B5%8E/ title=经济>经济 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BC%96%E7%A0%81/ title=编码>编码 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BD%91%E7%BB%9C/ title=网络>网络 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BF%BB%E8%AF%91/ title=翻译>翻译 (7)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%82%A1%E7%A5%A8/ title=股票>股票 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%84%91%E5%9B%BE/ title=脑图>脑图 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%8A%82%E6%97%A5/ title=节日>节日 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%8B%B1%E8%AF%AD/ title=英语>英语 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%99%9A%E6%8B%9F%E6%9C%BA/ title=虚拟机>虚拟机 (9)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AE%BA%E6%96%87/ title=论文>论文 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AE%BE%E8%AE%A1/ title=设计>设计 (36)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/ title=设计模式>设计模式 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AF%97%E6%AD%8C/ title=诗歌>诗歌 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AF%BB%E4%B9%A6/ title=读书>读书 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%80%92%E5%BD%92/ title=递归>递归 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%87%91%E8%9E%8D/ title=金融>金融 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%93%BE%E8%A1%A8/ title=链表>链表 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1/ title=面向对象>面向对象 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%A2%86%E5%9F%9F%E9%A9%B1%E5%8A%A8%E8%AE%BE%E8%AE%A1/ title=领域驱动设计>领域驱动设计 (5)</a></div></div><div class="widget-social widget"><h4 class="widget-social__title widget__title">社交</h4><div class="widget-social__content widget__content"><div class="widget-social__item widget__item"><a class="widget-social__link widget__link btn" title=Twitter rel="noopener noreferrer" href=https://twitter.com/diguage target=_blank><svg class="widget-social__link-icon icon icon-twitter" width="24" height="24" viewBox="0 0 384 312"><path d="m384 36.9c-14.1 6.3-29.3 10.5-45.2 12.4 16.3-9.7 28.8-25.2 34.6-43.6-15.2 9-32.1 15.6-50 19.1-14.4-15.2-34.9-24.8-57.5-24.8-43.5.0-78.8 35.3-78.8 78.8.0 6.2.7 12.2 2 17.9-65.5-3.3-123.5-34.6-162.4-82.3C20 26 16.1 39.6 16.1 54c0 27.3 13.9 51.4 35 65.6-12.9-.4-25.1-4-35.7-9.9v1c0 38.2 27.2 70 63.2 77.2-6.6 1.8-13.6 2.8-20.8 2.8-5.1.0-10-.5-14.8-1.4 10 31.3 39.1 54.1 73.6 54.7-27 21.1-60.9 33.7-97.8 33.7-6.4.0-12.6-.4-18.8-1.1C34.9 299 76.3 312 120.8 312c144.9.0 224.1-120 224.1-224.1.0-3.4-.1-6.8-.2-10.2 15.4-11.1 28.7-25 39.3-40.8z"/></svg>
+<span>Twitter</span></a></div><div class="widget-social__item widget__item"><a class="widget-social__link widget__link btn" title=GitHub rel="noopener noreferrer" href=https://github.com/diguage target=_blank><svg class="widget-social__link-icon icon icon-github" width="24" height="24" viewBox="0 0 384 374"><path d="m192 0C85.9.0.0 85.8.0 191.7c0 84.7 55 156.6 131.3 181.9 9.6 1.8 13.1-4.2 13.1-9.2.0-4.6-.2-16.6-.3-32.6-53.4 11.6-64.7-25.7-64.7-25.7-8.7-22.1-21.3-28-21.3-28-17.4-11.9 1.3-11.6 1.3-11.6 19.3 1.4 29.4 19.8 29.4 19.8 17.1 29.3 44.9 20.8 55.9 15.9 1.7-12.4 6.7-20.8 12.2-25.6-42.6-4.8-87.5-21.3-87.5-94.8.0-20.9 7.5-38 19.8-51.4-2-4.9-8.6-24.3 1.9-50.7.0.0 16.1-5.2 52.8 19.7 15.3-4.2 31.7-6.4 48.1-6.5 16.3.1 32.7 2.2 48.1 6.5 36.7-24.8 52.8-19.7 52.8-19.7 10.5 26.4 3.9 45.9 1.9 50.7 12.3 13.4 19.7 30.5 19.7 51.4.0 73.7-44.9 89.9-87.7 94.6 6.9 5.9 13 17.6 13 35.5.0 25.6-.2 46.3-.2 52.6.0 5.1 3.5 11.1 13.2 9.2C329 348.2 384 276.4 384 191.7 384 85.8 298 0 192 0z"/></svg>
+<span>GitHub</span></a></div><div class="widget-social__item widget__item"><a class="widget-social__link widget__link btn" title=Email href=mailto:leejun119@gmail.com><svg class="widget-social__link-icon icon icon-mail" width="24" height="24" viewBox="0 0 416 288"><path d="m0 16v256 16h16 384 16v-16V16 0h-16H16 0zm347 16-139 92.5L69 32zM199 157.5l9 5.5 9-5.5L384 46v210H32V46z"/></svg>
+<span>leejun119@gmail.com</span></a></div></div></div></aside></div><footer class=footer><div class="container footer__container flex"><div class=footer__copyright>&copy; 2025 "地瓜哥"博客网.
+<span class=footer__copyright-credits>基于 <a href=https://gohugo.io/ rel="nofollow noopener" target=_blank>Hugo</a> 引擎和 <a href=https://github.com/Vimux/Mainroad/ rel="nofollow noopener" target=_blank>Mainroad</a> 主题</span>
+<span><a href=https://beian.miit.gov.cn/ target=_target>京ICP备14046450号-4</a></span></div></div></footer></div><script async defer src=/js/menu.js></script></body></html>

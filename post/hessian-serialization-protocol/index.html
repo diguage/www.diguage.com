@@ -1,0 +1,638 @@
+<!doctype html><html class=no-js lang=zh-cn><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><meta http-equiv=X-UA-Compatible content="IE=edge"><title>Hessian 2.0 序列化协议（中文版） - "地瓜哥"博客网</title>
+<script>(function(e,t){e[t]=e[t].replace("no-js","js")})(document.documentElement,"className")</script><meta name=keywords content="Hessian,序列化,协议,Java,微服务,架构,程序设计,Java,微服务,架构,设计,序列化,系统架构,程序设计"><meta name=description content><meta property="og:url" content="https://www.diguage.com/post/hessian-serialization-protocol/"><meta property="og:site_name" content='"地瓜哥"博客网'><meta property="og:title" content="Hessian 2.0 序列化协议（中文版）"><meta property="og:description" content=" 公司在微服务系统中，序列化协议大多数使用 MessagePack。但是，由于 MessagePack 设计限制，导致微服务接口在增减参数时，只能在最后操作。但是，由于个人操作，难免失误，结果造成因为增减字段导致的事故层出不穷。最近，一些条件成熟，准备推动部门将序列化协议切换到 Hessian。
+原以为，切换到 Hessian 就可以万事大吉。但是，在和同事的沟通中发现，同事反馈，Hessian 本身也有一些限制。为了对 Hessian 有一个更深入的了解，干脆就把 Hessian 序列化协议读一遍。看协议，文字不多，干脆就把协议完整翻译一遍。闲言少叙，正文开始。
+Hessian 2.0 序列化协议 协议解释 针对该协议有很多言语不详，甚至模糊不清之处，专门做了一些解释和实践，叙述系列文章，用于辅助消化理解。目录如下：
+Hessian 2.0 序列化协议（中文版） — Hessian 序列化协议的中文翻译版。根据后面的“协议解释与实战”系列文章，增加了协议内容错误提示。
+Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数 — 介绍布尔型数据、日期类型、浮点类型数据和整数类型数据等四种类型的数据的处理。
+Hessian 协议解释与实战（二）：长整型、二进制数据与 Null — 介绍长整数类型数据、二进制数据和 null 等三种类型的数据的处理。
+Hessian 协议解释与实战（三）：字符串 — 专门介绍了关于字符串的处理。由于字符串需要铺垫的基础知识比较多，处理细节也有繁琐，所以单独成篇来介绍。
+Hessian 源码分析（Java） — 开始第四篇分析之前，先来介绍一下 Hessian 的源码实现。方便后续展开说明。
+Hessian 协议解释与实战（四）：数组与集合 — 铺垫了一些关于实例对象的处理，重点介绍关于数组和集合的相关处理。
+Hessian 协议解释与实战（五）：对象与映射 — 重点介绍关于对象与映射的相关处理。
+Hessian、Msgpack 和 JSON 实例对比 — 用实例对比 JSON、Hessian 和 MessagePack 的区别。
+Avro、ProtoBuf、Thrift 的模式演进之路 — 翻译的 Martin Kleppmann 的文章，重点对比了 Avro、ProtoBuf、Thrift 的序列化处理思路。"><meta property="og:locale" content="zh_cn"><meta property="og:type" content="article"><meta property="article:section" content="post"><meta property="article:published_time" content="2022-04-20T17:30:08+08:00"><meta property="article:modified_time" content="2024-05-05T14:47:12+08:00"><meta property="article:tag" content="Java"><meta property="article:tag" content="微服务"><meta property="article:tag" content="架构"><meta property="article:tag" content="设计"><meta property="article:tag" content="序列化"><meta name=twitter:card content="summary"><meta name=twitter:title content="Hessian 2.0 序列化协议（中文版）"><meta name=twitter:description content=" 公司在微服务系统中，序列化协议大多数使用 MessagePack。但是，由于 MessagePack 设计限制，导致微服务接口在增减参数时，只能在最后操作。但是，由于个人操作，难免失误，结果造成因为增减字段导致的事故层出不穷。最近，一些条件成熟，准备推动部门将序列化协议切换到 Hessian。
+原以为，切换到 Hessian 就可以万事大吉。但是，在和同事的沟通中发现，同事反馈，Hessian 本身也有一些限制。为了对 Hessian 有一个更深入的了解，干脆就把 Hessian 序列化协议读一遍。看协议，文字不多，干脆就把协议完整翻译一遍。闲言少叙，正文开始。
+Hessian 2.0 序列化协议 协议解释 针对该协议有很多言语不详，甚至模糊不清之处，专门做了一些解释和实践，叙述系列文章，用于辅助消化理解。目录如下：
+Hessian 2.0 序列化协议（中文版） — Hessian 序列化协议的中文翻译版。根据后面的“协议解释与实战”系列文章，增加了协议内容错误提示。
+Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数 — 介绍布尔型数据、日期类型、浮点类型数据和整数类型数据等四种类型的数据的处理。
+Hessian 协议解释与实战（二）：长整型、二进制数据与 Null — 介绍长整数类型数据、二进制数据和 null 等三种类型的数据的处理。
+Hessian 协议解释与实战（三）：字符串 — 专门介绍了关于字符串的处理。由于字符串需要铺垫的基础知识比较多，处理细节也有繁琐，所以单独成篇来介绍。
+Hessian 源码分析（Java） — 开始第四篇分析之前，先来介绍一下 Hessian 的源码实现。方便后续展开说明。
+Hessian 协议解释与实战（四）：数组与集合 — 铺垫了一些关于实例对象的处理，重点介绍关于数组和集合的相关处理。
+Hessian 协议解释与实战（五）：对象与映射 — 重点介绍关于对象与映射的相关处理。
+Hessian、Msgpack 和 JSON 实例对比 — 用实例对比 JSON、Hessian 和 MessagePack 的区别。
+Avro、ProtoBuf、Thrift 的模式演进之路 — 翻译的 Martin Kleppmann 的文章，重点对比了 Avro、ProtoBuf、Thrift 的序列化处理思路。"><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link rel=dns-prefetch href=//fonts.googleapis.com><link rel=dns-prefetch href=//fonts.gstatic.com><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Open+Sans:400,400i,700"><link rel=stylesheet href=/css/style.min.css><link rel=stylesheet href=/css/asciidoctor.css><link rel=stylesheet href=/css/rouge-monokai.css><link rel="shortcut icon" href=/favicon.ico><script async src="https://www.googletagmanager.com/gtag/js?id=G-1MMT2NLEL4"></script><script>var dnt,doNotTrack=!1;if(!1&&(dnt=navigator.doNotTrack||window.doNotTrack||navigator.msDoNotTrack,doNotTrack=dnt=="1"||dnt=="yes"),!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-1MMT2NLEL4")}</script><script id=baidu_analytics>var _hmt=_hmt||[];(function(){var e,t=document.createElement("script");t.src="https://hm.baidu.com/hm.js?e56e7dd0a120b414f5741f4c5e5218ea",e=document.getElementsByTagName("script")[0],e.parentNode.insertBefore(t,e)})()</script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css></head><body class=body><div class="container container--outer"><header class=header><div class="container header__container"><div class=logo><a class=logo__link href=/ title='"地瓜哥"博客网' rel=home><div class="logo__item logo__text"><div class=logo__title>"地瓜哥"博客网</div><div class=logo__tagline>分享技术带来的喜悦 — https://www.diguage.com/</div></div></a></div><nav class=menu><button class=menu__btn aria-haspopup=true aria-expanded=false tabindex=0>
+<span class=menu__btn-title tabindex=-1>菜单</span></button><ul class=menu__list><li class=menu__item><a class=menu__link href=/><span class=menu__text>首页</span></a></li><li class=menu__item><a class=menu__link href=/categories/><span class=menu__text>分类</span></a></li><li class=menu__item><a class=menu__link href=/about/><span class=menu__text>关于</span></a></li><li class=menu__item><a class=menu__link href=/archives/><span class=menu__text>归档</span></a></li></ul></nav></div></header><div class="wrapper flex"><div class=primary><main class=main role=main><article class=post><header class=post__header><h1 class=post__title>Hessian 2.0 序列化协议（中文版）</h1><div class="post__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2022-04-20T17:30:08+08:00>2022-04-20</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/ rel=category>系统架构</a>, <a class=meta__link href=/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/ rel=category>程序设计</a></span></div></div></header><figure class="post__thumbnail thumbnail"><img class=thumbnail__image src=/images/marshal/serialization-and-deserialization.png alt="Hessian 2.0 序列化协议（中文版）"></figure><div class="content post__content clearfix"><div class=paragraph><p>公司在微服务系统中，序列化协议大多数使用 <a href=https://msgpack.org/ target=_blank rel=noopener>MessagePack</a>。但是，由于 MessagePack 设计限制，导致微服务接口在增减参数时，只能在最后操作。但是，由于个人操作，难免失误，结果造成因为增减字段导致的事故层出不穷。最近，一些条件成熟，准备推动部门将序列化协议切换到 Hessian。</p></div><div class=paragraph><p>原以为，切换到 Hessian 就可以万事大吉。但是，在和同事的沟通中发现，同事反馈，Hessian 本身也有一些限制。为了对 Hessian 有一个更深入的了解，干脆就把 Hessian 序列化协议读一遍。看协议，文字不多，干脆就把协议完整翻译一遍。闲言少叙，正文开始。</p></div><hr><div class="sect1 text-center"><h2 id=_hessian_2_0_序列化协议><span class=big><strong>Hessian 2.0 序列化协议</strong></span></h2><div class=sectionbody></div></div><div class=sect1><h2 id=_协议解释>协议解释</h2><div class=sectionbody><div class=paragraph><p>针对该协议有很多言语不详，甚至模糊不清之处，专门做了一些解释和实践，叙述系列文章，用于辅助消化理解。目录如下：</p></div><div class="olist arabic"><ol class=arabic><li><p><a href=https://www.diguage.com/post/hessian-serialization-protocol/ target=_blank rel=noopener>Hessian 2.0 序列化协议（中文版）</a> — Hessian 序列化协议的中文翻译版。根据后面的“协议解释与实战”系列文章，增加了协议内容错误提示。</p></li><li><p><a href=https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/ target=_blank rel=noopener>Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数</a> — 介绍布尔型数据、日期类型、浮点类型数据和整数类型数据等四种类型的数据的处理。</p></li><li><p><a href=https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-2/ target=_blank rel=noopener>Hessian 协议解释与实战（二）：长整型、二进制数据与 Null</a> — 介绍长整数类型数据、二进制数据和 <code>null</code> 等三种类型的数据的处理。</p></li><li><p><a href=https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-3/ target=_blank rel=noopener>Hessian 协议解释与实战（三）：字符串</a> — 专门介绍了关于字符串的处理。由于字符串需要铺垫的基础知识比较多，处理细节也有繁琐，所以单独成篇来介绍。</p></li><li><p><a href=https://www.diguage.com/post/hessian-source-analysis-for-java/ target=_blank rel=noopener>Hessian 源码分析（Java）</a> — 开始第四篇分析之前，先来介绍一下 Hessian 的源码实现。方便后续展开说明。</p></li><li><p><a href=https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-4/ target=_blank rel=noopener>Hessian 协议解释与实战（四）：数组与集合</a> — 铺垫了一些关于实例对象的处理，重点介绍关于数组和集合的相关处理。</p></li><li><p><a href=https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-5/ target=_blank rel=noopener>Hessian 协议解释与实战（五）：对象与映射</a> — 重点介绍关于对象与映射的相关处理。</p></li><li><p><a href=https://www.diguage.com/post/hessian-vs-msgpack-vs-json/ target=_blank rel=noopener>Hessian、Msgpack 和 JSON 实例对比</a> — 用实例对比 JSON、Hessian 和 MessagePack 的区别。</p></li><li><p><a href=https://www.diguage.com/post/schema-evolution-in-avro-protobuf-thrift target=_blank rel=noopener>Avro、ProtoBuf、Thrift 的模式演进之路</a> — 翻译的 Martin Kleppmann 的文章，重点对比了 Avro、ProtoBuf、Thrift 的序列化处理思路。</p></li></ol></div><hr></div></div><div class=sect1><h2 id=_简介>1. 简介</h2><div class=sectionbody><div class=paragraph><p>Hessian 是一种设计用于面向对象传输的，动态类型的，二进制序列化 Web 服务协议。</p></div></div></div><div class=sect1><h2 id=_设计目标>2. 设计目标</h2><div class=sectionbody><div class=paragraph><p>Hessian 是动态类型的，紧凑，跨语言的。</p></div><div class=paragraph><p>Hessian 协议有如下设计目标：</p></div><div class=ulist><ul><li><p>它必须自我描述序列化类型，即不需要外部架构或接口定义。</p></li><li><p>它必须是语言独立的，同时支持脚本语言。</p></li><li><p>它必须一次性读取或者写入。</p></li><li><p>它必须尽可能紧凑。</p></li><li><p>它必须简单，以便可以有效地测试和实施。</p></li><li><p>它必须尽可能快。</p></li><li><p>它必须支持 Unicode 字符串。</p></li><li><p>它必须支持8位二进制数据而不必转义或使用附件。</p></li><li><p>它必须支持加密，压缩，签名和事务上下文信封。</p></li></ul></div></div></div><div class=sect1><h2 id=_hessian_语法>3. Hessian 语法</h2><div class=sectionbody><div class=paragraph><p>序列化语法</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code>//               D瓜哥 · https://www.diguage.com/ · 出品            //
+---------------------------------------------------------------------
+
+           # 开始
+top        ::= value
+
+           # 8-bit 编码的二进制数据，分割为 64k 的 chunks
+binary     ::= x41 b1 b0 &lt;binary-data&gt; binary # 非结尾 chunk
+           ::= &#39;B&#39; b1 b0 &lt;binary-data&gt;  # 结尾 chunk  <i class=conum data-value=1></i><b>(1)</b>
+           ::= [x20-x2f] &lt;binary-data&gt;  # 长度为 0-15 的二进制数据
+           ::= [x34-x37] &lt;binary-data&gt;  # 长度为 0-1023 的二进制数据
+
+           # 布尔 true/false
+boolean    ::= &#39;T&#39;
+           ::= &#39;F&#39;
+
+           # 对象定义 (紧凑映射)
+class-def  ::= &#39;C&#39; string int string*
+
+           # 自 epoch（1970-01-01 00:00:00 UTC）
+           # 以来的毫秒数，用 64 bit 编码
+date       ::= x4a b7 b6 b5 b4 b3 b2 b1 b0
+           # 自 epoch（1970-01-01 00:00:00 UTC）
+           # 以来的分钟数，用 32 bit 编码
+           ::= x4b b3 b2 b1 b0
+
+           # 64-bit IEEE double 双精度浮点类型
+double     ::= &#39;D&#39; b7 b6 b5 b4 b3 b2 b1 b0
+           ::= x5b              # 0.0
+           ::= x5c              # 1.0
+           ::= x5d b0           # byte 转化的 double (-128.0 to 127.0)
+           ::= x5e b1 b0        # short 转化的 double
+           ::= x5f b3 b2 b1 b0  # 32-bit float 单精度浮点数转化的 double
+
+           # 32-bit 有符合整数
+int        ::= &#39;I&#39; b3 b2 b1 b0
+           ::= [x80-xbf]             # -x10 to x3f
+           ::= [xc0-xcf] b0          # -x800 to x7ff
+           ::= [xd0-xd7] b1 b0       # -x40000 to x3ffff
+
+           # list/vector
+list       ::= x55 type value* &#39;Z&#39;   # 可变长度链表，类似 List <i class=conum data-value=2></i><b>(2)</b>
+           ::= &#39;V&#39; type int value*   # 固定长度链表，类似 数组
+           ::= x57 value* &#39;Z&#39;        # 可变长度的无类型链表
+           ::= x58 int value*        # 固定长度的无类型链表
+           ::= [x70-77] type value*  # 固定长度的有类型链表
+           ::= [x78-7f] value*       # 固定长度的无类型链表
+           // TODO 最后一种和倒数第三种有什么区别？
+
+           # 64-bit 有符号长整型
+long       ::= &#39;L&#39; b7 b6 b5 b4 b3 b2 b1 b0
+           ::= [xd8-xef]             # -x08 to x0f
+           ::= [xf0-xff] b0          # -x800 to x7ff
+           ::= [x38-x3f] b1 b0       # -x40000 to x3ffff
+           ::= x59 b3 b2 b1 b0       # 32-bit integer cast to long
+
+           # map/object 映射或对象
+map        ::= &#39;M&#39; type (value value)* &#39;Z&#39;  # key, value 映射键值对
+           ::= &#39;H&#39; (value value)* &#39;Z&#39;  # 无类型 key, value 键值对
+
+           # null 值
+null       ::= &#39;N&#39;
+
+           # Object 实例
+object     ::= &#39;O&#39; int value*
+           ::= [x60-x6f] value*
+
+           # 值引用 (例如循环树或图)
+ref        ::= x51 int  # reference to nth map/list/object
+
+           # UTF-8 编码的字符串，分割为 64k 的 chunk
+string     ::= x52 b1 b0 &lt;utf8-data&gt; string  # non-final chunk
+           ::= &#39;S&#39; b1 b0 &lt;utf8-data&gt;  # 长度为 0-65535 的字符串 <i class=conum data-value=3></i><b>(3)</b>
+           ::= [x00-x1f] &lt;utf8-data&gt;  # 长度为 0-31   的字符串
+           ::= [x30-x34] &lt;utf8-data&gt;  # 长度为 0-1023 的字符串 <i class=conum data-value=4></i><b>(4)</b>
+
+           # 用于面向对象语言的 map/list 类型
+type       ::= string                        # 类型名称
+           ::= int                           # 类型引用
+
+           # main production
+value      ::= null
+           ::= binary
+           ::= boolean
+           ::= class-def value
+           ::= date
+           ::= double
+           ::= int
+           ::= list
+           ::= long
+           ::= map
+           ::= object
+           ::= ref
+           ::= string
+
+---------------------------------------------------------------------
+//               D瓜哥 · https://www.diguage.com/ · 出品            //</code></pre></div></div><div class="colist arabic"><table><tbody><tr><td><i class=conum data-value=1></i><b>1</b></td><td>这里错误！相关解释请看： <a href=https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-2/#binary target=_blank rel=noopener>Hessian 协议解释与实战（二）：长整型、二进制数据与 Null：二进制数据</a>。</td></tr><tr><td><i class=conum data-value=2></i><b>2</b></td><td>没有发现这种场景，代码也不可达。相关解释请看： <a href=https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-4/ target=_blank rel=noopener>Hessian 协议解释与实战（四）：数组与集合</a>。</td></tr><tr><td><i class=conum data-value=3></i><b>3</b></td><td>这里错误！应该是 1024 ~ 32767。代码中也明确写有 <code>length > 0x8000</code>。相关解释请看： <a href=https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-3/#string target=_blank rel=noopener>Hessian 协议解释与实战（三）：字符串</a>。</td></tr><tr><td><i class=conum data-value=4></i><b>4</b></td><td>这里地方错误！ <code>x34</code> 不会再这里出现！相关解释请看： <a href=https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-3/#string target=_blank rel=noopener>Hessian 协议解释与实战（三）：字符串</a>。</td></tr></tbody></table></div></div></div><div class=sect1><h2 id=_序列化协议>4. 序列化协议</h2><div class=sectionbody><div class=paragraph><p>Hessian 的对象序列化支持八种基本类型：</p></div><div class="olist arabic"><ol class=arabic><li><p>原始 <a href=#binary>二进制数据</a>（<code>binary</code>）</p></li><li><p><a href=#boolean>布尔型数据</a>（<code>boolean</code>）</p></li><li><p>64位 毫秒 <a href=#date>日期类型数据</a>（<code>date</code>）</p></li><li><p>64位 双精度 <a href=#double>浮点类型数据</a>（<code>double</code>）</p></li><li><p>32位 <a href=#int>整数类型数据</a>（<code>int</code>）</p></li><li><p>64位 <a href=#long>长整数类型数据</a>（<code>long</code>）</p></li><li><p><a href=#null><code>null</code></a>（<code>null</code>）</p></li><li><p>UTF-8 编码的 <a href=#string>字符串类型数据</a>（<code>string</code>）</p></li></ol></div><div class=paragraph><p>同时，还支持三种递归类型（<code>recursive type</code>）：</p></div><div class="olist arabic"><ol class=arabic><li><p>支持链表（<code>list</code>）和数组（<code>array</code>）的 <a href=#list>链表数据</a> （<code>list</code>）</p></li><li><p>支持映射（<code>map</code>）和字典（<code>dictionary</code>）的 <a href=#map>映射</a>（ <code>map</code>）</p></li><li><p>支持对象的 <a href=#object>对象</a>（<code>object</code>）。</p></li></ol></div><div class=paragraph><p>最后，还支持一种特殊的构件：</p></div><div class="olist arabic"><ol class=arabic><li><p>支持共享和循环引用的 <a href=#ref>引用</a>（<code>ref</code>）。</p></li></ol></div><div class=paragraph><p>Hessian 2.0 又增加了三种内部引用映射：</p></div><div class="olist arabic"><ol class=arabic><li><p><a href=#ref-map>一种 object/list 引用映射</a></p></li><li><p><a href=#class-map>一种类定义引用映射</a></p></li><li><p><a href=#type-map>一种类型（类名）引用映射</a></p></li></ol></div><div class=sect2><h3 id=binary>4.1. 二进制数据</h3><div class=paragraph><p>二进制语法：</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code>//               D瓜哥 · https://www.diguage.com/ · 出品            //
+---------------------------------------------------------------------
+
+binary ::= b b1 b0 &lt;binary-data&gt; binary
+       ::= B b1 b0 &lt;binary-data&gt;
+       ::= [x20-x2f] &lt;binary-data&gt;
+
+---------------------------------------------------------------------
+//               D瓜哥 · https://www.diguage.com/ · 出品            //</code></pre></div></div><div class=paragraph><p>二进制数据编码在 chunk 里面。字节 <code>x42</code>（<code>B</code>）表示结尾 chunk，字节 <code>x62</code>（<code>b</code>）表示任何非结尾 chunk。每个 chunk 有一个 16-bit 的长度值.</p></div><div class="admonitionblock warning"><table><tbody><tr><td class=icon><i class="fa icon-warning" title=Warning></i></td><td class=content><div class=paragraph><p>“ <code>x42</code>（<code>B</code>）表示结尾 chunk”表述不正确！这个得看截取完前面的 chunk 之后，剩余的字符的个数。如果大于 1023 才会以 <code>x42</code>（<code>B</code>）开头。</p></div><div class=paragraph><p>另外，“字节 <code>x62</code>（<code>b</code>）表示任何非结尾 chunk”的也不正确。根据实际测试来看，应该是 <code>0x41</code>（<code>A</code>）。</p></div><div class=paragraph><p>相关解释请看： <a href=https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-2/#binary target=_blank rel=noopener>Hessian 协议解释与实战（二）：长整型、二进制数据与 Null：二进制数据</a>。</p></div></td></tr></tbody></table></div><div class=paragraph><p>len = 256 * b1 + b0</p></div><div class=sect3><h4 id=_紧凑简小二进制数据>4.1.1. 紧凑：简小二进制数据</h4><div class=paragraph><p>对于长度小于 15 的二进制数据，可以使用一个字节的长度标识 <code>[x20-x2f]</code> 来进行编码。</p></div><div class=paragraph><p>len = code - 0x20</p></div></div><div class=sect3><h4 id=_二进制示例>4.1.2. 二进制示例</h4><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code>//               D瓜哥 · https://www.diguage.com/ · 出品            //
+---------------------------------------------------------------------
+
+x20               # zero-length binary data
+
+x23 x01 x02 x03   # 3 octet data
+
+B x10 x00 ....    # 4k final chunk of data
+
+b x04 x00 ....    # 1k non-final chunk of data
+
+---------------------------------------------------------------------
+//               D瓜哥 · https://www.diguage.com/ · 出品            //</code></pre></div></div></div><div class=sect3><h4 id=_附录解释与实践>4.1.3. 附录：解释与实践</h4><div class=paragraph><p>更详细的解释与实践，请移步 <a href=https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-2/#binary target=_blank rel=noopener>Hessian 协议解释与实战（二）：长整型、二进制数据与 Null：二进制数据</a>。</p></div></div></div><div class=sect2><h3 id=boolean>4.2. 布尔型数据</h3><div class=paragraph><p>布尔型语法：</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code>//               D瓜哥 · https://www.diguage.com/ · 出品            //
+---------------------------------------------------------------------
+
+boolean ::= T
+        ::= F
+
+---------------------------------------------------------------------
+//               D瓜哥 · https://www.diguage.com/ · 出品            //</code></pre></div></div><div class=paragraph><p>字节 <code>F</code> 表示 <code>false</code>，字节 <code>T</code> 表示 <code>true</code>。</p></div><div class=sect3><h4 id=_布尔型示例>4.2.1. 布尔型示例</h4><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code>//               D瓜哥 · https://www.diguage.com/ · 出品            //
+---------------------------------------------------------------------
+
+T   # true
+F   # false
+
+---------------------------------------------------------------------
+//               D瓜哥 · https://www.diguage.com/ · 出品            //</code></pre></div></div></div><div class=sect3><h4 id=_附录解释与实践_2>4.2.2. 附录：解释与实践</h4><div class=paragraph><p>更详细的解释与实践，请移步 <a href=https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/#boolean target=_blank rel=noopener>Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数：布尔型数据</a>。</p></div></div></div><div class=sect2><h3 id=date>4.3. 日期类型数据</h3><div class=paragraph><p>日期语法：</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code>//               D瓜哥 · https://www.diguage.com/ · 出品            //
+---------------------------------------------------------------------
+
+date ::= x4a b7 b6 b5 b4 b3 b2 b1 b0
+     ::= x4b b4 b3 b2 b1 b0
+
+---------------------------------------------------------------------
+//               D瓜哥 · https://www.diguage.com/ · 出品            //</code></pre></div></div><div class=paragraph><p>使用以 64 bit 编码的自 epoch（1970-01-01 00:00:00 UTC）以来的毫秒数来标识日期。</p></div><div class=sect3><h4 id=_紧凑以分钟表示的日期>4.3.1. 紧凑：以分钟表示的日期</h4><div class=paragraph><p>使用以 32 bit 编码的自 epoch（1970-01-01 00:00:00 UTC）以来的分钟数来标识日期。</p></div></div><div class=sect3><h4 id=_日期示例>4.3.2. 日期示例</h4><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code>//               D瓜哥 · https://www.diguage.com/ · 出品            //
+---------------------------------------------------------------------
+
+x4a x00 x00 x00 xd0 x4b x92 x84 xb8   # 09:51:31 May 8, 1998 UTC
+
+x4b x4b x92 x0b xa0                   # 09:51:00 May 8, 1998 UTC
+
+---------------------------------------------------------------------
+//               D瓜哥 · https://www.diguage.com/ · 出品            //</code></pre></div></div></div><div class=sect3><h4 id=_附录解释与实践_3>4.3.3. 附录：解释与实践</h4><div class=paragraph><p>更详细的解释与实践，请移步 <a href=https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/#date target=_blank rel=noopener>Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数：日期类型数据</a>。</p></div></div></div><div class=sect2><h3 id=double>4.4. 浮点类型数据</h3><div class=paragraph><p>浮点数语法：</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code>//               D瓜哥 · https://www.diguage.com/ · 出品            //
+---------------------------------------------------------------------
+
+double ::= D b7 b6 b5 b4 b3 b2 b1 b0
+       ::= x5b
+       ::= x5c
+       ::= x5d b0
+       ::= x5e b1 b0
+       ::= x5f b3 b2 b1 b0
+
+---------------------------------------------------------------------
+//               D瓜哥 · https://www.diguage.com/ · 出品            //</code></pre></div></div><div class=paragraph><p>浮点数使用 IEEE 64-bit 标准来表示。</p></div><div class=sect3><h4 id=_紧凑0_0>4.4.1. 紧凑：0.0</h4><div class=paragraph><p>浮点数 <code>0.0</code> 可以使用字节 <code>x5b</code> 来标识。</p></div></div><div class=sect3><h4 id=_紧凑1_0>4.4.2. 紧凑：1.0</h4><div class=paragraph><p>浮点数 <code>1.0</code> 可以使用字节 <code>x5c</code> 来标识。</p></div></div><div class=sect3><h4 id=_紧凑单字节浮点数>4.4.3. 紧凑：单字节浮点数</h4><div class=paragraph><p>对于在 -128.0 ~ 127.0 之间并且没有小数部分的浮点数，可以使用两个字节来表示；通过类型转换，将 <code>byte</code> 值转化为浮点数。</p></div><div class=paragraph><p>value = (double) b0</p></div></div><div class=sect3><h4 id=_紧凑短整型浮点数>4.4.4. 紧凑：短整型浮点数</h4><div class=paragraph><p>对于在 -32768.0 ~ 32767.0 之间并且没有小数部分的浮点数，可以使用三个字节来表示；通过类型转换，将 <code>short</code> 值转化为浮点数。</p></div><div class=paragraph><p>value = (double) (256 * b1 + b0)</p></div></div><div class=sect3><h4 id=_紧凑单精度浮点数>4.4.5. 紧凑：单精度浮点数</h4><div class=paragraph><p>与 32位浮点数等价的双精度浮点数，可以用四个字节来表示；通过类型转换，将 <code>float</code> 值转化为浮点数。</p></div><div class="admonitionblock tip"><table><tbody><tr><td class=icon><i class="fa icon-tip" title=Tip></i></td><td class=content>这里的说明非常不严谨。更具体的说明请移步： <a href=https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/#double target=_blank rel=noopener>Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数：浮点类型数据</a>。</td></tr></tbody></table></div></div><div class=sect3><h4 id=_浮点类型示例>4.4.6. 浮点类型示例</h4><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code>//               D瓜哥 · https://www.diguage.com/ · 出品            //
+---------------------------------------------------------------------
+
+x5b          # 0.0
+x5c          # 1.0
+
+x5d x00      # 0.0
+x5d x80      # -128.0
+x5d x7f      # 127.0
+
+x5e x00 x00  # 0.0
+x5e x80 x00  # -32768.0
+x5e x7f xff  # 32767.0
+
+D x40 x28 x80 x00 x00 x00 x00 x00  # 12.25
+
+---------------------------------------------------------------------
+//               D瓜哥 · https://www.diguage.com/ · 出品            //</code></pre></div></div></div><div class=sect3><h4 id=_附录解释与实践_4>4.4.7. 附录：解释与实践</h4><div class=paragraph><p>更详细的解释与实践，请移步 <a href=https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/#double target=_blank rel=noopener>Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数：浮点类型数据</a>。</p></div></div></div><div class=sect2><h3 id=int>4.5. 整数类型数据</h3><div class=paragraph><p>整数语法：</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code>//               D瓜哥 · https://www.diguage.com/ · 出品            //
+---------------------------------------------------------------------
+
+int ::= &#39;I&#39; b3 b2 b1 b0
+    ::= [x80-xbf]
+    ::= [xc0-xcf] b0
+    ::= [xd0-xd7] b1 b0
+
+---------------------------------------------------------------------
+//               D瓜哥 · https://www.diguage.com/ · 出品            //</code></pre></div></div><div class=paragraph><p>这是 32 位有符号整数。一个整数使用一个字节 <code>x49</code>（<code>I</code>），再跟 4 个字节且以大端法表示的数字。</p></div><div class=paragraph><p>value = (b3 &lt;&lt; 24) + (b2 &lt;&lt; 16) + (b1 &lt;&lt; 8) + b0;</p></div><div class=sect3><h4 id=_紧凑单字节整数>4.5.1. 紧凑：单字节整数</h4><div class=paragraph><p>-16 ~ 47 的整数，可以用一个字节编码，编码范围是从 <code>x80</code> 到 <code>xBF</code>。</p></div><div class=paragraph><p>value = code - 0x90</p></div></div><div class=sect3><h4 id=_紧凑双字节整数>4.5.2. 紧凑：双字节整数</h4><div class=paragraph><p>-2048 ~ 2047 的整数，可以用两个字节编码，并且首字节编码是从 <code>xC0</code> 到 <code>xCF</code>。</p></div><div class=paragraph><p>value = ((code - 0xc8) &lt;&lt; 8) + b0;</p></div></div><div class=sect3><h4 id=_紧凑三字节整数>4.5.3. 紧凑：三字节整数</h4><div class=paragraph><p>-262144 ~ 262143 的整数，可以用三个字节编码，并且首字节是从 <code>xD0</code> 到 <code>xD7</code>。</p></div><div class=paragraph><p>value = ((code - 0xd4) &lt;&lt; 16) + (b1 &lt;&lt; 8) + b0;</p></div></div><div class=sect3><h4 id=_整数示例>4.5.4. 整数示例</h4><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code>//               D瓜哥 · https://www.diguage.com/ · 出品            //
+---------------------------------------------------------------------
+
+x90                # 0
+x80                # -16
+xbf                # 47
+
+xc8 x00            # 0
+xc0 x00            # -2048
+xc7 x00            # -256
+xcf xff            # 2047
+
+xd4 x00 x00        # 0
+xd0 x00 x00        # -262144
+xd7 xff xff        # 262143
+
+I x00 x00 x00 x00  # 0
+I x00 x00 x01 x2c  # 300
+
+---------------------------------------------------------------------
+//               D瓜哥 · https://www.diguage.com/ · 出品            //</code></pre></div></div></div><div class=sect3><h4 id=_附录解释与实践_5>4.5.5. 附录：解释与实践</h4><div class=paragraph><p>更详细的解释与实践，请移步 <a href=https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/#int target=_blank rel=noopener>Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数：整数类型数据</a>。</p></div></div></div><div class=sect2><h3 id=list>4.6. 链表数据</h3><div class=paragraph><p>链表语法：</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code>//               D瓜哥 · https://www.diguage.com/ · 出品            //
+---------------------------------------------------------------------
+
+list ::= x55 type value* &#39;Z&#39;   # variable-length list <i class=conum data-value=1></i><b>(1)</b>
+     ::= &#39;V&#39; type int value*   # fixed-length list
+     ::= x57 value* &#39;Z&#39;        # variable-length untyped list
+     ::= x58 int value*        # fixed-length untyped list
+     ::= [x70-77] type value*  # fixed-length typed list
+     ::= [x78-7f] value*       # fixed-length untyped list
+
+---------------------------------------------------------------------
+//               D瓜哥 · https://www.diguage.com/ · 出品            //</code></pre></div></div><div class="colist arabic"><table><tbody><tr><td><i class=conum data-value=1></i><b>1</b></td><td>没有发现这种场景，代码也不可达。</td></tr></tbody></table></div><div class=paragraph><p>一个有序链表，比如数组。两种链表分别是定长链表（注：比如数组）和变长链表（注：比如 <code>List</code>）。这两种链表都有一个类型。这个类型可以是一个能够被服务识别的 UTF-8 字符串。</p></div><div class=paragraph><p>每个列表项都被添加到引用列表中，以处理共享和循环元素。参见 <a href=#ref>ref</a> 元素。</p></div><div class=paragraph><p>任何需要列表的解析器还必须接受空引用或共享引用。</p></div><div class=paragraph><p>类型的有效值没必要一定在本文档中指定，这取决于特定的应用程序。例如，使用带有静态类型的语言实现的公开 Hessian 服务，可以使用类型信息实例化特定的数组类型。另一方面，用动态类型语言编写的服务器可能会完全忽略类型的内容，而创建一个泛型数组。</p></div><div class=sidebarblock><div class=content><div class=title>D瓜哥注</div><div class=paragraph><p>参考 <a href=https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-4/ target=_blank rel=noopener>Hessian 协议解释与实战（四）：数组与集合</a> 会发现，在 Hessian 的协议中，虽然英文是 <code>list</code>，但这里的内涵更仿佛，还包括数组、 <code>Set</code> 和迭代器。感觉翻译成“集合”更合适。</p></div></div></div><div class=sect3><h4 id=_紧凑定长链表>4.6.1. 紧凑：定长链表</h4><div class=paragraph><p>Hessian 2.0 允许使用紧凑形式的列表，用于预先已知长度的，类型相同的连续列表。类型和长度由整数编码，其中类型是对先前指定类型的引用。</p></div></div><div class=sect3><h4 id=_链表示例>4.6.2. 链表示例</h4><div class=paragraph><p>整型数组的序列化： int[] = {0, 1} ：</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code>//               D瓜哥 · https://www.diguage.com/ · 出品            //
+---------------------------------------------------------------------
+
+V                    # fixed length, typed list
+  x04 [int           # encoding of int[] type
+  x92                # length = 2
+  x90                # integer 0
+  x91                # integer 1
+
+---------------------------------------------------------------------
+//               D瓜哥 · https://www.diguage.com/ · 出品            //</code></pre></div></div><div class=paragraph><p>无类型变长链表： list = {0, 1} ：</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code>//               D瓜哥 · https://www.diguage.com/ · 出品            //
+---------------------------------------------------------------------
+
+x57                  # variable-length, untyped
+  x90                # integer 0
+  x91                # integer 1
+  Z
+
+---------------------------------------------------------------------
+//               D瓜哥 · https://www.diguage.com/ · 出品            //</code></pre></div></div><div class=paragraph><p>定长类型：</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code>//               D瓜哥 · https://www.diguage.com/ · 出品            //
+---------------------------------------------------------------------
+
+x72                # typed list length=2
+  x04 [int         # type for int[] (save as type #0)
+  x90              # integer 0
+  x91              # integer 1
+
+x73                # typed list length = 3
+  x90              # type reference to int[] (integer #0)
+  x92              # integer 2
+  x93              # integer 3
+  x94              # integer 4
+
+---------------------------------------------------------------------
+//               D瓜哥 · https://www.diguage.com/ · 出品            //</code></pre></div></div></div><div class=sect3><h4 id=_附录解释与实践_6>4.6.3. 附录：解释与实践</h4><div class=paragraph><p>更详细的解释与实践，请移步 <a href=https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-4/ target=_blank rel=noopener>Hessian 协议解释与实战（四）：数组与集合</a>。</p></div></div></div><div class=sect2><h3 id=long>4.7. 长整数类型数据</h3><div class=paragraph><p>长整数语法：</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code>//               D瓜哥 · https://www.diguage.com/ · 出品            //
+---------------------------------------------------------------------
+
+long ::= L b7 b6 b5 b4 b3 b2 b1 b0
+     ::= [xd8-xef]
+     ::= [xf0-xff] b0
+     ::= [x38-x3f] b1 b0
+     ::= x4c b3 b2 b1 b0
+
+---------------------------------------------------------------------
+//               D瓜哥 · https://www.diguage.com/ · 出品            //</code></pre></div></div><div class=sect3><h4 id=_紧凑单字节长整数>4.7.1. 紧凑：单字节长整数</h4><div class=paragraph><p>-8 ~ 15 的长整数，可以用一个字节编码，并且首字节编码是从 <code>xD8</code> 到 <code>xEF</code>。</p></div><div class=paragraph><p>value = (code - 0xe0)</p></div></div><div class=sect3><h4 id=_紧凑双字节长整数>4.7.2. 紧凑：双字节长整数</h4><div class=paragraph><p>-2048 ~ 2047 的长整数，可以用两个字节编码，并且首字节编码是从 <code>xF0</code> 到 <code>xFF</code>。</p></div><div class=paragraph><p>value = ((code - 0xf8) &lt;&lt; 8) + b0</p></div></div><div class=sect3><h4 id=_紧凑三字节长整数>4.7.3. 紧凑：三字节长整数</h4><div class=paragraph><p>-262144 ~ 262143 的长整数，可以用三个字节编码，并且首字节编码是从 <code>x38</code> 到 <code>x3F</code>。</p></div><div class=paragraph><p>value = ((code - 0x3c) &lt;&lt; 16) + (b1 &lt;&lt; 8) + b0</p></div></div><div class=sect3><h4 id=_紧凑四字节长整数>4.7.4. 紧凑：四字节长整数</h4><div class=paragraph><p>32 位的长整数，可以用五个字节编码，并且首字节编码为 <code>x4C</code>。</p></div><div class=paragraph><p>value = (b3 &lt;&lt; 24) + (b2 &lt;&lt; 16) + (b1 &lt;&lt; 8) + b0</p></div><div class="admonitionblock warning"><table><tbody><tr><td class=icon><i class="fa icon-warning" title=Warning></i></td><td class=content><div class=paragraph><p>这里的“首字节编码为 <code>x4C</code>”是错误的，正确的应该是 <code>0x59</code>！</p></div><div class=paragraph><p>详情请移步： <a href=https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-2/#long target=_blank rel=noopener>Hessian 协议解释与实战（二）：长整型、二进制数据与 Null：长整数类型数据</a>。</p></div></td></tr></tbody></table></div></div><div class=sect3><h4 id=_示例>4.7.5. 示例</h4><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code>//               D瓜哥 · https://www.diguage.com/ · 出品            //
+---------------------------------------------------------------------
+
+xe0                  # 0
+xd8                  # -8
+xef                  # 15
+
+xf8 x00              # 0
+xf0 x00              # -2048
+xf7 x00              # -256
+xff xff              # 2047
+
+x3c x00 x00          # 0
+x38 x00 x00          # -262144
+x3f xff xff          # 262143
+
+x4c x00 x00 x00 x00  # 0
+x4c x00 x00 x01 x2c  # 300
+
+L x00 x00 x00 x00 x00 x00 x01 x2c  # 300
+
+---------------------------------------------------------------------
+//               D瓜哥 · https://www.diguage.com/ · 出品            //</code></pre></div></div></div><div class=sect3><h4 id=_附录解释与实践_7>4.7.6. 附录：解释与实践</h4><div class=paragraph><p>更详细的解释与实践，请移步 <a href=https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-2/#long target=_blank rel=noopener>Hessian 协议解释与实战（二）：长整型、二进制数据与 Null：长整数类型数据</a>。</p></div></div></div><div class=sect2><h3 id=map>4.8. 映射</h3><div class=paragraph><p>映射语法：</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code>//               D瓜哥 · https://www.diguage.com/ · 出品            //
+---------------------------------------------------------------------
+
+map        ::= M type (value value)* Z
+
+---------------------------------------------------------------------
+//               D瓜哥 · https://www.diguage.com/ · 出品            //</code></pre></div></div><div class=paragraph><p>映射的序列化模式同时也能够序列化对象。类型元素用于描述映射的类型。</p></div><div class=paragraph><p>这个类型可以为空，长度为零。如果没有指定类型，那么解析器可以自己选择类型。对于对象类型来说，不被识别的字段则会被忽略。</p></div><div class=paragraph><p>每个映射都会被添加到引用列表中。无论何时，解析器在解析映射时，必须能够兼容 <code>null</code> 或 <a href=#ref>引用</a> 类型。</p></div><div class=paragraph><p>类型可以有服务自己选择。</p></div><div class=sect3><h4 id=_映射示例>4.8.1. 映射示例</h4><div class=paragraph><p>一个稀疏数组：</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code>//               D瓜哥 · https://www.diguage.com/ · 出品            //
+---------------------------------------------------------------------
+
+map = new HashMap();
+map.put(new Integer(1), &#34;fee&#34;);
+map.put(new Integer(16), &#34;fie&#34;);
+map.put(new Integer(256), &#34;foe&#34;);
+
+---
+
+H           # untyped map (HashMap for Java)
+  x91       # 1
+  x03 fee   # &#34;fee&#34;
+
+  xa0       # 16
+  x03 fie   # &#34;fie&#34;
+
+  xc9 x00   # 256
+  x03 foe   # &#34;foe&#34;
+
+  Z
+
+---------------------------------------------------------------------
+//               D瓜哥 · https://www.diguage.com/ · 出品            //</code></pre></div></div><div class=paragraph><p>一个 Java 对象的映射表示：</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code>//               D瓜哥 · https://www.diguage.com/ · 出品            //
+---------------------------------------------------------------------
+
+public class Car implements Serializable {
+  String color = &#34;aquamarine&#34;;
+  String model = &#34;Beetle&#34;;
+  int mileage = 65536;
+}
+
+---
+M
+  x13 com.caucho.test.Car  # type
+
+  x05 color                # color field
+  x0a aquamarine
+
+  x05 model                # model field
+  x06 Beetle
+
+  x07 mileage              # mileage field
+  I x00 x01 x00 x00
+  Z
+
+---------------------------------------------------------------------
+//               D瓜哥 · https://www.diguage.com/ · 出品            //</code></pre></div></div></div><div class=sect3><h4 id=_附录解释与实践_8>4.8.2. 附录：解释与实践</h4><div class="admonitionblock tip"><table><tbody><tr><td class=icon><i class="fa icon-tip" title=Tip></i></td><td class=content>最初把 <strong>map</strong> 翻译为了 <strong>哈希</strong>。后来又觉得翻译成 <strong>映射</strong> 更合适，就将“哈希”改为了“映射”。所以，如果行文中，有不一致的地方，还请海涵。</td></tr></tbody></table></div><div class=paragraph><p>更详细的解释与实践，请移步 <a href=https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-5/#map target=_blank rel=noopener>Hessian 协议解释与实战（五）：对象与映射：映射</a>。</p></div></div></div><div class=sect2><h3 id=null>4.9. <code>null</code></h3><div class=paragraph><p><code>null</code> 语法：</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code>//               D瓜哥 · https://www.diguage.com/ · 出品            //
+---------------------------------------------------------------------
+
+null ::= N
+
+---------------------------------------------------------------------
+//               D瓜哥 · https://www.diguage.com/ · 出品            //</code></pre></div></div><div class=paragraph><p><code>null</code> 表示一个“空”对象。</p></div><div class=paragraph><p>字节 <code>N</code> 表示这个“空”对象。</p></div><div class=sect3><h4 id=_附录解释与实践_9>4.9.1. 附录：解释与实践</h4><div class=paragraph><p>更详细的解释与实践，请移步 <a href=https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-2/#null target=_blank rel=noopener>Hessian 协议解释与实战（二）：长整型、二进制数据与 Null： <code>null</code></a>。</p></div></div></div><div class=sect2><h3 id=object>4.10. 对象</h3><div class=paragraph><p>对象语法：</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code>//               D瓜哥 · https://www.diguage.com/ · 出品            //
+---------------------------------------------------------------------
+
+class-def  ::= &#39;C&#39; string int string*
+
+object     ::= &#39;O&#39; int value*
+           ::= [x60-x6f] value*
+
+---------------------------------------------------------------------
+//               D瓜哥 · https://www.diguage.com/ · 出品            //</code></pre></div></div><div class=sect3><h4 id=_紧凑类型定义>4.10.1. 紧凑：类型定义</h4><div class=paragraph><p>Hessian 2.0 有一个紧凑的对象形式，其中字段名只序列化一次。后面的对象只需要序列化它们的值。</p></div><div class=paragraph><p>对象定义包括强制类型字符串、字段数量和字段名称。对象定义存储在对象定义映射中，并将被对象实例使用整数引用来引用。</p></div></div><div class=sect3><h4 id=_紧凑对象实例>4.10.2. 紧凑：对象实例</h4><div class=paragraph><p>Hessian 2.0 有一个紧凑的对象形式，其中字段名只序列化一次。后面的对象只需要序列化它们的值。</p></div><div class=paragraph><p>对象实例化是基于前面的类型定义创建一个新对象，使用整数值引用对象定义。</p></div></div><div class=sect3><h4 id=_示例_2>4.10.3. 示例</h4><div class=paragraph><p>对象序列化：</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code>//               D瓜哥 · https://www.diguage.com/ · 出品            //
+---------------------------------------------------------------------
+
+class Car {
+  String color;
+  String model;
+}
+
+out.writeObject(new Car(&#34;red&#34;, &#34;corvette&#34;));
+out.writeObject(new Car(&#34;green&#34;, &#34;civic&#34;));
+
+---
+
+C                        # object definition (#0)
+  x0b example.Car        # type is example.Car
+  x92                    # two fields
+  x05 color              # color field name
+  x05 model              # model field name
+
+O                        # object def (long form)
+  x90                    # object definition #0
+  x03 red                # color field value
+  x08 corvette           # model field value
+
+x60                      # object def #0 (short form)
+  x05 green              # color field value
+  x05 civic              # model field value
+
+---------------------------------------------------------------------
+//               D瓜哥 · https://www.diguage.com/ · 出品            //</code></pre></div></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code>//               D瓜哥 · https://www.diguage.com/ · 出品            //
+---------------------------------------------------------------------
+
+enum Color {
+  RED,
+  GREEN,
+  BLUE,
+}
+
+out.writeObject(Color.RED);
+out.writeObject(Color.GREEN);
+out.writeObject(Color.BLUE);
+out.writeObject(Color.GREEN);
+
+---
+
+C                         # class definition #0
+  x0b example.Color       # type is example.Color
+  x91                     # one field
+  x04 name                # enumeration field is &#34;name&#34;
+
+x60                       # object #0 (class def #0)
+  x03 RED                 # RED value
+
+x60                       # object #1 (class def #0)
+  x90                     # object definition ref #0
+  x05 GREEN               # GREEN value
+
+x60                       # object #2 (class def #0)
+  x04 BLUE                # BLUE value
+
+x51 x91                   # object ref #1, i.e. Color.GREEN
+
+---------------------------------------------------------------------
+//               D瓜哥 · https://www.diguage.com/ · 出品            //</code></pre></div></div></div><div class=sect3><h4 id=_附录解释与实践_10>4.10.4. 附录：解释与实践</h4><div class=paragraph><p>更详细的解释与实践，请移步 <a href=https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-5/#object target=_blank rel=noopener>Hessian 协议解释与实战（五）：对象与映射：再谈实例对象</a>。</p></div></div></div><div class=sect2><h3 id=ref>4.11. 引用</h3><div class=paragraph><p>引用语法：</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code>//               D瓜哥 · https://www.diguage.com/ · 出品            //
+---------------------------------------------------------------------
+
+ref ::= x51 int
+
+---------------------------------------------------------------------
+//               D瓜哥 · https://www.diguage.com/ · 出品            //</code></pre></div></div><div class=paragraph><p>在一次 Hessian 2.0 序列化过程中，已经被链表、映射或者对象实例化过的类型，可以通过一个整数数值来进行引用。当从输入流读取每个列表、映射或对象时，它被赋值为流中的整数位置，即第一个列表或映射为 <code>0</code>，下一个为 <code>1</code>，等等。之后的引用可以使用之前的对象。生产者可以生成引用；解析器必须能够识别它们。</p></div><div class=paragraph><p>引用能够关联到非完全读取的条目。例如，循环链表将在整个链表被读取之前引用第一个链接。</p></div><div class=paragraph><p>一种可能的实现是在读取数组时将每个映射、列表和对象添加到数组中。引用将返回数组中相应的值。为了支持循环结构，该实现将在填充内容之前，首先存储映射、列表或对象。</p></div><div class=paragraph><p>每个映射或列表在被解析时被存储到一个数组中。引用选择一个存储对象。第一个对象编号为 <code>0</code>。</p></div><div class=sect3><h4 id=_引用示例>4.11.1. 引用示例</h4><div class=paragraph><p>循环链表：</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code>//               D瓜哥 · https://www.diguage.com/ · 出品            //
+---------------------------------------------------------------------
+
+list = new LinkedList();
+list.data = 1;
+list.tail = list;
+
+---
+C
+  x0a LinkedList
+  x92
+  x04 head
+  x04 tail
+
+o x90      # object stores ref #0
+  x91      # data = 1
+  x51 x90  # next field refers to itself, i.e. ref #0
+
+---------------------------------------------------------------------
+//               D瓜哥 · https://www.diguage.com/ · 出品            //</code></pre></div></div><div class=paragraph><p>引用仅指向链表、映射和对象元素。特别是对于字符串和二进制数据，只有当它们包装在列表或映射中时才会共享引用。</p></div></div></div><div class=sect2><h3 id=string>4.12. 字符串类型数据</h3><div class=paragraph><p>字符串语法：</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code>//               D瓜哥 · https://www.diguage.com/ · 出品            //
+---------------------------------------------------------------------
+
+string ::= x52 b1 b0 &lt;utf8-data&gt; string
+       ::= S b1 b0 &lt;utf8-data&gt;
+       ::= [x00-x1f] &lt;utf8-data&gt;
+       ::= [x30-x33] b0 &lt;utf8-data&gt;
+
+---------------------------------------------------------------------
+//               D瓜哥 · https://www.diguage.com/ · 出品            //</code></pre></div></div><div class=paragraph><p>以 UTF-8 编码的 16 位 Unicode 字符串。字符串被编码成块。<code>x53</code>（<code>S</code>）表示最终块，<code>x52</code>（<code>R</code>）表示任何非最终块。每个块有一个 16 位无符号整型长度值。</p></div><div class=paragraph><p>长度为 16 位字符的个数，可能与字节数不同。</p></div><div class=paragraph><p>字符串 chunk 可能不会拆分替代对。</p></div><div class="admonitionblock warning"><table><tbody><tr><td class=icon><i class="fa icon-warning" title=Warning></i></td><td class=content>“<code>x53</code>（<code>S</code>）表示最终块”表述不正确！这个得看截取完前面的 chunk 之后，剩余的字符的个数。如果大于 1023 才会以 <code>x53</code>（<code>S</code>）开头。相关解释请看： <a href=https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-3/#string target=_blank rel=noopener>Hessian 协议解释与实战（三）：字符串</a>。</td></tr></tbody></table></div><div class=sect3><h4 id=_紧凑短字符串>4.12.1. 紧凑：短字符串</h4><div class=paragraph><p>长度小于 32 的字符串可以用一个字节长度编码 <code>[x00-x1f]</code>。</p></div><div class=paragraph><p>value = code</p></div></div><div class=sect3><h4 id=_字符串示例>4.12.2. 字符串示例</h4><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code>//               D瓜哥 · https://www.diguage.com/ · 出品            //
+---------------------------------------------------------------------
+
+x00                 # &#34;&#34;, empty string
+x05 hello           # &#34;hello&#34;
+x01 xc3 x83         # &#34;\u00c3&#34;
+
+S x00 x05 hello     # &#34;hello&#34; in long form
+
+x52 x00 x07 hello,  # &#34;hello, world&#34; split into two chunks
+    x05 world       # 注：这里是最终块，为啥没有用 S 开头呢？
+
+# 上面的示例中，使用 S 开头，而这里却用 x52 开头，格式上非常不统一。感觉很奇怪！
+
+---------------------------------------------------------------------
+//               D瓜哥 · https://www.diguage.com/ · 出品            //</code></pre></div></div></div><div class=sect3><h4 id=_附录解释与实践_11>4.12.3. 附录：解释与实践</h4><div class=paragraph><p>更详细的解释与实践，请移步 <a href=https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-3/#string target=_blank rel=noopener>Hessian 协议解释与实战（三）：字符串</a>。</p></div></div></div><div class=sect2><h3 id=type>4.13. 类型</h3><div class=paragraph><p>类型语法：</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code>//               D瓜哥 · https://www.diguage.com/ · 出品            //
+---------------------------------------------------------------------
+
+type ::= string
+     ::= int
+
+---------------------------------------------------------------------
+//               D瓜哥 · https://www.diguage.com/ · 出品            //</code></pre></div></div><div class=paragraph><p><a href=#map>映射</a> 和 <a href=#list>链表数据</a> 包含一个“类型”属性，用于为面向对象语言，指明映射和链表的类型名称。</p></div><div class=paragraph><p>任何一个类型都会被加入到 <a href=#type-map>类型引用</a> 中，以便将来引用。</p></div></div><div class=sect2><h3 id=type-ref>4.14. 压缩：类型引用</h3><div class=paragraph><p>重复的类型字符串可以使用 <a href=#type-map>类型引用</a> 来引用以前使用的类型。解析期间，对于所有的类型，类型引用都是从零开始的。</p></div></div></div></div><div class=sect1><h2 id=ref-maps>5. 引用映射</h2><div class=sectionbody><div class=paragraph><p>Hessian 2.0 有三个内置的引用映射：</p></div><div class="olist arabic"><ol class=arabic><li><p>一个 映射/对象/链表 引用映射。</p></li><li><p>一个类定义映射。</p></li><li><p>一个类型（类名）映射。</p></li></ol></div><div class=paragraph><p>值引用映射允许 Hessian 支持任意图，递归和循环数据结构。</p></div><div class=paragraph><p>类和类型映射通过避免常见字符串数据的重复来提高 Hessian 效率。</p></div><div class=sect2><h3 id=ref-map>5.1. 值引用</h3><div class=paragraph><p>当 Hessian 在字节码流中遇到任意图形时，它通过添加 <a href=#list>链表数据</a>、 <a href=#object>对象</a> 和 <a href=#map>映射</a> 来支持这些图形。</p></div><div class=paragraph><p>解析器必须在遇到每个列表、对象和映射时，必须将它们存储在引用映射中。</p></div><div class=paragraph><p>存储的对象可以与 <a href=#ref>引用</a> 字节码一起使用。</p></div></div><div class=sect2><h3 id=class-map>5.2. 类引用</h3><div class=paragraph><p>每个 <a href=#object>对象定义</a> 都会自动添加到类映射中。解析器必须在遇到类定义时向类映射添加类定义。后面的对象实例将引用已被定义的类。</p></div></div><div class=sect2><h3 id=type-map>5.3. 类型引用</h3><div class=paragraph><p><a href=#map>映射</a> 和 <a href=#list>链表数据</a> 值的类型字符串存储在类型映射中以供参考。</p></div><div class=paragraph><p>解析器必须在遇到类型字符串时向类型映射添加类型字符串。</p></div></div></div></div><div class=sect1><h2 id=_字节码映射>6. 字节码映射</h2><div class=sectionbody><div class=paragraph><p>Hessian 被组织为字节码协议。Hessian 反序列化本质上是对其实字节的 <code>switch</code> 语句。</p></div><div class=paragraph><p>字节码编码：</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code data-lang=bash>//               D瓜哥 · https://www.diguage.com/ · 出品            //
+<span class=nt>---------------------------------------------------------------------</span>
+
+x00 - x1f    <span class=c># utf-8 string length 0-31 </span><i class=conum data-value=1></i><b>(1)</b>
+x20 - x2f    <span class=c># binary data length 0-15 </span><i class=conum data-value=2></i><b>(2)</b>
+x30 - x33    <span class=c># utf-8 string length 32-1023  </span><i class=conum data-value=3></i><b>(3)</b> <i class=conum data-value=5></i><b>(5)</b>
+x34 - x37    <span class=c># binary data length 16-1023  </span><i class=conum data-value=4></i><b>(4)</b> <i class=conum data-value=5></i><b>(5)</b>
+x38 - x3f    <span class=c># three-octet compact long (-x40000 to x3ffff) </span><i class=conum data-value=5></i><b>(5)</b>
+x40          <span class=c># reserved (expansion/escape)</span>
+x41          <span class=c># 8-bit binary data non-final chunk (&#39;A&#39;)</span>
+x42          <span class=c># 8-bit binary data final chunk (&#39;B&#39;)</span>
+x43          <span class=c># object type definition (&#39;C&#39;)</span>
+x44          <span class=c># 64-bit IEEE encoded double (&#39;D&#39;)</span>
+x45          <span class=c># reserved</span>
+x46          <span class=c># boolean false (&#39;F&#39;)</span>
+x47          <span class=c># reserved</span>
+x48          <span class=c># untyped map (&#39;H&#39;)</span>
+x49          <span class=c># 32-bit signed integer (&#39;I&#39;)</span>
+x4a          <span class=c># 64-bit UTC millisecond date</span>
+x4b          <span class=c># 32-bit UTC minute date</span>
+x4c          <span class=c># 64-bit signed long integer (&#39;L&#39;)</span>
+x4d          <span class=c># map with type (&#39;M&#39;)</span>
+x4e          <span class=c># null (&#39;N&#39;)</span>
+x4f          <span class=c># object instance (&#39;O&#39;)</span>
+x50          <span class=c># reserved</span>
+x51          <span class=c># reference to map/list/object - integer (&#39;Q&#39;)</span>
+x52          <span class=c># utf-8 string non-final chunk (&#39;R&#39;)</span>
+x53          <span class=c># utf-8 string final chunk (&#39;S&#39;)</span>
+x54          <span class=c># boolean true (&#39;T&#39;)</span>
+x55          <span class=c># variable-length list/vector (&#39;U&#39;)</span>
+x56          <span class=c># fixed-length list/vector (&#39;V&#39;)</span>
+x57          <span class=c># variable-length untyped list/vector (&#39;W&#39;)</span>
+x58          <span class=c># fixed-length untyped list/vector (&#39;X&#39;)</span>
+x59          <span class=c># long encoded as 32-bit int (&#39;Y&#39;)</span>
+x5a          <span class=c># list/map terminator (&#39;Z&#39;)</span>
+x5b          <span class=c># double 0.0</span>
+x5c          <span class=c># double 1.0</span>
+x5d          <span class=c># double represented as byte (-128.0 to 127.0)</span>
+x5e          <span class=c># double represented as short (-32768.0 to 327676.0)</span>
+x5f          <span class=c># double represented as float</span>
+x60 - x6f    <span class=c># object with direct type</span>
+x70 - x77    <span class=c># fixed list with direct length</span>
+x78 - x7f    <span class=c># fixed untyped list with direct length</span>
+x80 - xbf    <span class=c># one-octet compact int (-x10 to 47, x90 is 0) </span><i class=conum data-value=6></i><b>(6)</b>
+xc0 - xcf    <span class=c># two-octet compact int (-x800 to x7ff) </span><i class=conum data-value=5></i><b>(5)</b>
+xd0 - xd7    <span class=c># three-octet compact int (-x40000 to x3ffff) </span><i class=conum data-value=5></i><b>(5)</b>
+xd8 - xef    <span class=c># one-octet compact long (-x8 to xf, xe0 is 0)</span>
+xf0 - xff    <span class=c># two-octet compact long (-x800 to x7ff, xf8 is 0) </span><i class=conum data-value=5></i><b>(5)</b>
+
+<span class=nt>---------------------------------------------------------------------</span>
+//               D瓜哥 · https://www.diguage.com/ · 出品            //</code></pre></div></div><div class="colist arabic"><table><tbody><tr><td><i class=conum data-value=1></i><b>1</b></td><td>由 <code>32</code> 改为 <code>31</code>；</td></tr><tr><td><i class=conum data-value=2></i><b>2</b></td><td>由 <code>16</code> 改为 <code>15</code>；</td></tr><tr><td><i class=conum data-value=3></i><b>3</b></td><td>由 <code>0</code> 改为 <code>32</code>；</td></tr><tr><td><i class=conum data-value=4></i><b>4</b></td><td>由 <code>0</code> 改为 <code>16</code>；</td></tr><tr><td><i class=conum data-value=5></i><b>5</b></td><td>具体范围划分，请看下面的图表；</td></tr><tr><td><i class=conum data-value=6></i><b>6</b></td><td>由 <code>x3f</code> 改为 <code>47</code>；</td></tr></tbody></table></div><div class="imageblock text-center"><div class=content><img src=/images/marshal/hessian-bytecode.svg alt="hessian bytecode" width=95%></div></div></div></div><div class=sect1><h2 id=_后记>后记</h2><div class=sectionbody><div class=paragraph><p>经过多天断断续续的尝试，终于在“无疫节”当天，把这篇协议给翻译完了。坦白讲，我觉得有些稀里糊涂。一方便是D瓜哥自身英语水平所限；另外一方面，Hessian 协议有很多言语不详之处，有很多不做实验，根本搞不清楚它说的是啥意思。如有问题，欢迎反馈。</p></div><div class=paragraph><p>为了便于理解 Hessian 协议，在网上找了找 Hessian 的源码库，似乎源码没有开源。在 <a href=http://hessian.caucho.com/#Java target=_blank rel=noopener>Hessian Binary Web Service Protocol</a> 中，提供了 Java 各个版本的源码包，为了方便调试，D瓜哥将其源码下载下来，然后推送到了 GitHub 上： <a href=https://github.com/diguage/hessian target=_blank rel=noopener>diguage/hessian</a>，由于是解压的源码包，所以这里没有提交记录，只有各个已经发布版本对应的源代码。感兴趣，也欢迎 Fork。</p></div><div class=paragraph><p>后续，D瓜哥还会做一些实验，来帮助理解这个协议，敬请期待。</p></div></div></div><div class=sect1><h2 id=_参考资料>参考资料</h2><div class=sectionbody><div class="olist arabic"><ol class=arabic><li><p><a href=http://hessian.caucho.com/doc/hessian-serialization.html target=_blank rel=noopener>Hessian 2.0 Serialization Protocol</a></p></li></ol></div></div></div></div><footer class=post__footer><div class="post__tags tags clearfix"><svg class="tags__badge icon icon-tag" width="16" height="16" viewBox="0 0 32 32"><path d="M32 19c0 1-1 2-1 2L21 31s-1 1-2 1-2-1-2-1L2 16c-1-1-1.4-2-1.4-2S0 12.5.0 11V3C0 1.5.8.8.8.8S1.5.0 3 0h8c1.5.0 3 .6 3 .6S15 1 16 2l15 15s1 1 1 2zM7 10a3 3 0 100-6 3 3 0 000 6z"/></svg><ul class=tags__list><li class=tags__item><a class="tags__link btn" href=/tags/java/ rel=tag>Java</a></li><li class=tags__item><a class="tags__link btn" href=/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/ rel=tag>微服务</a></li><li class=tags__item><a class="tags__link btn" href=/tags/%E6%9E%B6%E6%9E%84/ rel=tag>架构</a></li><li class=tags__item><a class="tags__link btn" href=/tags/%E8%AE%BE%E8%AE%A1/ rel=tag>设计</a></li><li class=tags__item><a class="tags__link btn" href=/tags/%E5%BA%8F%E5%88%97%E5%8C%96/ rel=tag>序列化</a></li></ul></div></footer></article></main><div class=clearfix><h3>看在D瓜哥码字的辛苦上，请友情支持一下，D瓜哥感激不尽，😜</h3><table><tr><td><img alt=微信打赏码 src=/images/wxpay.jpg></td><td><img alt=支付宝打赏码 src=/images/alipay.png></td></tr></table></div><br><div class=clearfix><h3>欢迎关注D瓜哥的微信公众号，在公众号可以获取我的微信二维码：</h3><img alt=微信公众号 src=/images/wx-jikerizhi.jpg></div><div class="admonitionblock tip"><table><tbody><tr><td class=icon><i class="fa icon-tip" title=Tip></i></td><td class=content><strong>公众号的微信号是: <code>jikerizhi</code></strong>。如果图片加载不出来，可以直接通过搜索公众号的微信号来查找D瓜哥的公众号。</td></tr></tbody></table></div><div class="authorbox clearfix"><figure class=authorbox__avatar><a target=_blank href=/about/><img alt="D瓜哥 avatar" src=/images/avatar.jpg class=avatar height=110 width=110></a></figure><div class=authorbox__header><span class=authorbox__name>关于 D瓜哥</span></div><div class=authorbox__description>厨艺界最好的码农，挨踢界最棒的厨师。<ul><li><a target=_blank href=https://wordpress.diguage.com/>旧版“地瓜哥”博客网</a></li><li><a target=_blank href=https://notes.diguage.com/mysql/>MySQL 学习笔记<sup>Alpha</sup></a></li><li><a target=_blank href=https://diguage.github.io/jdk-source-analysis/>JDK 源码分析<sup>Alpha</sup></a></li></ul></div></div><nav class="pager flex"><div class="pager__item pager__item--prev"><a class=pager__link href=/post/jackson-date-format-on-spring-boot/ rel=prev><span class=pager__subtitle>«&#8201;上一篇</span><p class=pager__title>在 Spring Boot 中 Jackson 日期格式化技巧</p></a></div><div class="pager__item pager__item--next"><a class=pager__link href=/post/hessian-protocol-interpretation-and-practice-1/ rel=next><span class=pager__subtitle>下一篇&#8201;»</span><p class=pager__title>Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数</p></a></div></nav><section class=comments><div id=SOHUCS sid=/post/hessian-serialization-protocol/></div><script type=text/javascript>(function(){if(window.location.hostname==="localhost")return;var n,e="cyuuTeBp3",t="prod_2906c47c31e735e0ed518282fec489a6",s=window.innerWidth||document.documentElement.clientWidth;s<960?window.document.write('<script id="changyan_mobile_js" charset="utf-8" type="text/javascript" src="https://changyan.sohu.com/upload/mobile/wap-js/changyan_mobile.js?client_id='+e+"&conf="+t+'"><\/script>'):(n=function(e,t){var s=document.getElementsByTagName("head")[0]||document.head||document.documentElement,n=document.createElement("script");n.setAttribute("type","text/javascript"),n.setAttribute("charset","UTF-8"),n.setAttribute("src",e),typeof t=="function"&&(window.attachEvent?n.onreadystatechange=function(){var e=n.readyState;(e==="loaded"||e==="complete")&&(n.onreadystatechange=null,t())}:n.onload=t),s.appendChild(n)},n("https://changyan.sohu.com/upload/changyan.js",function(){window.changyan.api.config({appid:e,conf:t})}))})()</script></section></div><aside class=sidebar><div class="widget-search widget"><form class=widget-search__form role=search method=get action=https://google.com/search><label><input class=widget-search__field type=search placeholder=搜索… name=q aria-label=搜索…>
+</label><input class=widget-search__submit type=submit value=Search>
+<input type=hidden name=sitesearch value=https://www.diguage.com/></form></div><div class="widget-wechat widget"><h4 class=widget__title>微信公众号</h4><img alt=微信公众号 class=center src=/images/wx-jikerizhi-qrcode.jpg></div><div class="widget-wechat widget"><h4 class=widget__title>知识星球</h4><img alt=微信公众号 class=center src=/images/zhishixingqiu.png></div><div class="widget-recent widget"><h4 class=widget__title>近期文章</h4><div class=widget__content><ul class=widget__list><li class=widget__item><a class=widget__link href=/post/spring-boot-startup-process-overview/>Spring Boot 启动流程概述</a></li><li class=widget__item><a class=widget__link href=/post/redis-core-data-structure-4/>Redis 核心数据结构（四）</a></li><li class=widget__item><a class=widget__link href=/post/redis-core-data-structure-3/>Redis 核心数据结构（三）</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-subsets/>算法模式：子集</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-backtracking/>算法模式：回溯</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-transform-and-conquer/>算法模式：变治法</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-divide-and-conquer/>算法模式：分治法</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-decrease-and-conquer/>算法模式：减治法</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-topological-sort/>算法模式：拓扑排序</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-union-find/>算法模式：并查集</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-trie/>算法模式：前缀树</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-depth-first-search/>算法模式：深度优先搜索</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-breadth-first-search/>算法模式：广度优先搜索</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-k-way-merge/>算法模式：多路归并</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-two-heaps/>算法模式：双堆</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-cyclic-sort/>算法模式：循环排序</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-quickselect/>算法模式：快速选择</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-top-k-elements/>算法模式：Top K 问题</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-monotonic-stack/>算法模式：单调栈</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-sliding-window/>算法模式：滑动窗口</a></li></ul></div></div><div class="widget-categories widget"><h4 class=widget__title>分类</h4><div class=widget__content><ul class=widget__list><li class=widget__item><a class=widget__link href=/categories/%E4%B8%AA%E4%BA%BA%E6%88%90%E9%95%BF/>个人成长</a></li><li class=widget__item><a class=widget__link href=/categories/%E5%88%86%E5%B8%83%E5%BC%8F/>分布式</a></li><li class=widget__item><a class=widget__link href=/categories/%E5%BC%80%E5%8F%91%E5%B7%A5%E5%85%B7/>开发工具</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/>性能优化</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/>操作系统</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%95%B0%E6%8D%AE%E5%AD%98%E5%82%A8/>数据存储</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%96%87%E5%AD%A6/>文学</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%96%B9%E6%B3%95%E8%AE%BA/>方法论</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/>程序设计</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%AE%97%E6%B3%95/>算法</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/>系统架构</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%BB%8F%E6%B5%8E%E9%87%91%E8%9E%8D/>经济金融</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/>编程语言</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%BD%91%E7%BB%9C/>网络</a></li><li class=widget__item><a class=widget__link href=/categories/%E8%81%8C%E4%B8%9A%E5%8F%91%E5%B1%95/>职业发展</a></li><li class=widget__item><a class=widget__link href=/categories/%E8%BD%AF%E4%BB%B6%E5%B7%A5%E7%A8%8B/>软件工程</a></li><li class=widget__item><a class=widget__link href=/categories/%E9%80%B8%E9%97%BB%E8%B6%A3%E4%BA%8B/>逸闻趣事</a></li><li class=widget__item><a class=widget__link href=/categories/%E9%98%85%E8%AF%BB%E6%91%98%E8%A6%81/>阅读摘要</a></li></ul></div></div><div class="widget-taglist widget"><h4 class=widget__title>标签</h4><div class=widget__content><a class="widget-taglist__link widget__link btn" href=/tags/gc/ title=GC>GC (9)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/http/ title=HTTP>HTTP (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/java/ title=Java>Java (64)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/jvm/ title=JVM>JVM (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/kpi/ title=KPI>KPI (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/kubernetes/ title=Kubernetes>Kubernetes (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/linux/ title=Linux>Linux (12)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/okr/ title=OKR>OKR (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/redis/ title=Redis>Redis (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/shell/ title=Shell>Shell (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/spring/ title=Spring>Spring (26)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/tcp/ title=TCP>TCP (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/udp/ title=UDP>UDP (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/zookeeper/ title=ZooKeeper>ZooKeeper (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E4%B8%AA%E4%BA%BA%E6%8F%90%E5%8D%87/ title=个人提升>个人提升 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E4%B9%A6%E7%B1%8D/ title=书籍>书籍 (15)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E4%BA%A7%E5%93%81/ title=产品>产品 (7)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%80%BA%E5%88%B8/ title=债券>债券 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%88%86%E5%B8%83%E5%BC%8F/ title=分布式>分布式 (15)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%88%86%E6%B2%BB/ title=分治>分治 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/ title=动态规划>动态规划 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9B%A2%E9%98%9F%E5%BB%BA%E8%AE%BE/ title=团队建设>团队建设 (6)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9B%A2%E9%98%9F%E6%96%87%E5%8C%96/ title=团队文化>团队文化 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9B%BE/ title=图>图 (7)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9F%BA%E9%87%91/ title=基金>基金 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%A0%86/ title=堆>堆 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%AD%98%E5%82%A8/ title=存储>存储 (6)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%B7%A5%E4%BD%9C%E6%96%B9%E6%B3%95/ title=工作方法>工作方法 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%B9%B6%E5%8F%91/ title=并发>并发 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%BA%8F%E5%88%97%E5%8C%96/ title=序列化>序列化 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/ title=微服务>微服务 (17)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%BF%83%E7%90%86%E5%AD%A6/ title=心理学>心理学 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95/ title=性能测试>性能测试 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%8A%95%E8%B5%84%E7%90%86%E8%B4%A2/ title=投资理财>投资理财 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/ title=数据库>数据库 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/ title=数据结构>数据结构 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%95%B0%E7%BB%84/ title=数组>数组 (13)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%96%B9%E6%B3%95%E8%AE%BA/ title=方法论>方法论 (13)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%97%85%E8%A1%8C/ title=旅行>旅行 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5/ title=最佳实践>最佳实践 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%9E%B6%E6%9E%84/ title=架构>架构 (44)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%A0%88/ title=栈>栈 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%A0%91/ title=树>树 (11)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%B2%9F%E9%80%9A%E6%8A%80%E5%B7%A7/ title=沟通技巧>沟通技巧 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/ title=源码分析>源码分析 (8)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%90%86%E8%B4%A2/ title=理财>理财 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%94%9F%E6%B4%BB/ title=生活>生活 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%AC%94%E8%AE%B0/ title=笔记>笔记 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%AE%97%E6%B3%95/ title=算法>算法 (8)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%AE%97%E6%B3%95%E6%A8%A1%E5%BC%8F/ title=算法模式>算法模式 (23)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BB%8F%E6%B5%8E/ title=经济>经济 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BC%96%E7%A0%81/ title=编码>编码 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BD%91%E7%BB%9C/ title=网络>网络 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BF%BB%E8%AF%91/ title=翻译>翻译 (7)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%82%A1%E7%A5%A8/ title=股票>股票 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%84%91%E5%9B%BE/ title=脑图>脑图 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%8A%82%E6%97%A5/ title=节日>节日 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%8B%B1%E8%AF%AD/ title=英语>英语 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%99%9A%E6%8B%9F%E6%9C%BA/ title=虚拟机>虚拟机 (9)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AE%BA%E6%96%87/ title=论文>论文 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AE%BE%E8%AE%A1/ title=设计>设计 (36)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/ title=设计模式>设计模式 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AF%97%E6%AD%8C/ title=诗歌>诗歌 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AF%BB%E4%B9%A6/ title=读书>读书 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%80%92%E5%BD%92/ title=递归>递归 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%87%91%E8%9E%8D/ title=金融>金融 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%93%BE%E8%A1%A8/ title=链表>链表 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1/ title=面向对象>面向对象 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%A2%86%E5%9F%9F%E9%A9%B1%E5%8A%A8%E8%AE%BE%E8%AE%A1/ title=领域驱动设计>领域驱动设计 (5)</a></div></div><div class="widget-social widget"><h4 class="widget-social__title widget__title">社交</h4><div class="widget-social__content widget__content"><div class="widget-social__item widget__item"><a class="widget-social__link widget__link btn" title=Twitter rel="noopener noreferrer" href=https://twitter.com/diguage target=_blank><svg class="widget-social__link-icon icon icon-twitter" width="24" height="24" viewBox="0 0 384 312"><path d="m384 36.9c-14.1 6.3-29.3 10.5-45.2 12.4 16.3-9.7 28.8-25.2 34.6-43.6-15.2 9-32.1 15.6-50 19.1-14.4-15.2-34.9-24.8-57.5-24.8-43.5.0-78.8 35.3-78.8 78.8.0 6.2.7 12.2 2 17.9-65.5-3.3-123.5-34.6-162.4-82.3C20 26 16.1 39.6 16.1 54c0 27.3 13.9 51.4 35 65.6-12.9-.4-25.1-4-35.7-9.9v1c0 38.2 27.2 70 63.2 77.2-6.6 1.8-13.6 2.8-20.8 2.8-5.1.0-10-.5-14.8-1.4 10 31.3 39.1 54.1 73.6 54.7-27 21.1-60.9 33.7-97.8 33.7-6.4.0-12.6-.4-18.8-1.1C34.9 299 76.3 312 120.8 312c144.9.0 224.1-120 224.1-224.1.0-3.4-.1-6.8-.2-10.2 15.4-11.1 28.7-25 39.3-40.8z"/></svg>
+<span>Twitter</span></a></div><div class="widget-social__item widget__item"><a class="widget-social__link widget__link btn" title=GitHub rel="noopener noreferrer" href=https://github.com/diguage target=_blank><svg class="widget-social__link-icon icon icon-github" width="24" height="24" viewBox="0 0 384 374"><path d="m192 0C85.9.0.0 85.8.0 191.7c0 84.7 55 156.6 131.3 181.9 9.6 1.8 13.1-4.2 13.1-9.2.0-4.6-.2-16.6-.3-32.6-53.4 11.6-64.7-25.7-64.7-25.7-8.7-22.1-21.3-28-21.3-28-17.4-11.9 1.3-11.6 1.3-11.6 19.3 1.4 29.4 19.8 29.4 19.8 17.1 29.3 44.9 20.8 55.9 15.9 1.7-12.4 6.7-20.8 12.2-25.6-42.6-4.8-87.5-21.3-87.5-94.8.0-20.9 7.5-38 19.8-51.4-2-4.9-8.6-24.3 1.9-50.7.0.0 16.1-5.2 52.8 19.7 15.3-4.2 31.7-6.4 48.1-6.5 16.3.1 32.7 2.2 48.1 6.5 36.7-24.8 52.8-19.7 52.8-19.7 10.5 26.4 3.9 45.9 1.9 50.7 12.3 13.4 19.7 30.5 19.7 51.4.0 73.7-44.9 89.9-87.7 94.6 6.9 5.9 13 17.6 13 35.5.0 25.6-.2 46.3-.2 52.6.0 5.1 3.5 11.1 13.2 9.2C329 348.2 384 276.4 384 191.7 384 85.8 298 0 192 0z"/></svg>
+<span>GitHub</span></a></div><div class="widget-social__item widget__item"><a class="widget-social__link widget__link btn" title=Email href=mailto:leejun119@gmail.com><svg class="widget-social__link-icon icon icon-mail" width="24" height="24" viewBox="0 0 416 288"><path d="m0 16v256 16h16 384 16v-16V16 0h-16H16 0zm347 16-139 92.5L69 32zM199 157.5l9 5.5 9-5.5L384 46v210H32V46z"/></svg>
+<span>leejun119@gmail.com</span></a></div></div></div></aside></div><footer class=footer><div class="container footer__container flex"><div class=footer__copyright>&copy; 2025 "地瓜哥"博客网.
+<span class=footer__copyright-credits>基于 <a href=https://gohugo.io/ rel="nofollow noopener" target=_blank>Hugo</a> 引擎和 <a href=https://github.com/Vimux/Mainroad/ rel="nofollow noopener" target=_blank>Mainroad</a> 主题</span>
+<span><a href=https://beian.miit.gov.cn/ target=_target>京ICP备14046450号-4</a></span></div></div></footer></div><script async defer src=/js/menu.js></script><script type=text/x-mathjax-config>
+	MathJax.Hub.Config({
+	  messageStyle: "none",
+	  tex2jax: {
+		inlineMath: [["\\(", "\\)"]],
+		displayMath: [["\\[", "\\]"]],
+		ignoreClass: "nostem|nolatexmath"
+	  },
+	  asciimath2jax: {
+		delimiters: [["\\$", "\\$"]],
+		ignoreClass: "nostem|noasciimath"
+	  },
+	  TeX: { equationNumbers: { autoNumber: "none" } }
+	})
+	MathJax.Hub.Register.StartupHook("AsciiMath Jax Ready", function () {
+	  MathJax.InputJax.AsciiMath.postfilterHooks.Add(function (data, node) {
+		if ((node = data.script.parentNode) && (node = node.parentNode) && node.classList.contains("stemblock")) {
+		  data.math.root.display = "block"
+		}
+		return data
+	  })
+	})
+</script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js?config=TeX-MML-AM_HTMLorMML" async></script></body></html>

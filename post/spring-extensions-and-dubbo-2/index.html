@@ -1,0 +1,255 @@
+<!doctype html><html class=no-js lang=zh-cn><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><meta http-equiv=X-UA-Compatible content="IE=edge"><title>Spring 扩展点实践：整合 Apache Dubbo（二） - "地瓜哥"博客网</title>
+<script>(function(e,t){e[t]=e[t].replace("no-js","js")})(document.documentElement,"className")</script><meta name=keywords content="Java,Spring,Java,设计,架构,微服务,分布式,Spring,程序设计"><meta name=description content><meta property="og:url" content="https://www.diguage.com/post/spring-extensions-and-dubbo-2/"><meta property="og:site_name" content='"地瓜哥"博客网'><meta property="og:title" content="Spring 扩展点实践：整合 Apache Dubbo（二）"><meta property="og:description" content=' 在 Spring 扩展点实践：整合 Apache Dubbo（一） 中，D瓜哥介绍了 Dubbo 如何使用 Spring 的插件机制与 Spring 整合。限于篇幅原因，上一篇文章只介绍到了服务提供者的注册。本篇文章继续上一篇文章的主题，继续介绍 Spring 与 Dubbo 的整合过程。先来讲解一下服务消费者的生成过程。
+Dubbo 生成服务消费者的过程 先来看看 XML 配置文件：
+dubbo-demo/dubbo-demo-xml/dubbo-demo-xml-consumer/src/main/resources/spring/dubbo-consumer.xml <?xml version="1.0" encoding="UTF-8"?> <beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:dubbo="http://dubbo.apache.org/schema/dubbo" xmlns="http://www.springframework.org/schema/beans" xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://dubbo.apache.org/schema/dubbo http://dubbo.apache.org/schema/dubbo/dubbo.xsd"> <dubbo:application name="demo-consumer"/> <dubbo:registry address="zookeeper://127.0.0.1:2181"/> <dubbo:reference id="demoService" check="false" interface="org.apache.dubbo.demo.DemoService"/> </beans> 我们先看一下 ReferenceBean 类的声明：
+org.apache.dubbo.config.spring.ReferenceBean public class ReferenceBean<T> extends ReferenceConfig<T> implements FactoryBean, ApplicationContextAware, InitializingBean, DisposableBean { // 此处省略 N 行代码 @Override public Object getObject() { return get(); } // 此处省略 N 行代码 @Override @SuppressWarnings({"unchecked"}) public void afterPropertiesSet() throws Exception { // Initializes Dubbo&#39;s Config Beans before @Reference bean autowiring prepareDubboConfigBeans(); // lazy init by default. if (init == null) { init = false; } // eager init if necessary. if (shouldInit()) { getObject(); } } // 此处省略 N 行代码 } 这个类实现了 FactoryBean 接口，D瓜哥在 Spring 扩展点概览及实践：FactoryBean 中对 FactoryBean 介绍。所以，请在上面的 getObject() 打个断点。
+另外，这个类还实现了 InitializingBean，D瓜哥在 Spring Bean 生命周期概述 中介绍了这个接口的用途。不了解的，请移步。'><meta property="og:locale" content="zh_cn"><meta property="og:type" content="article"><meta property="article:section" content="post"><meta property="article:published_time" content="2020-07-11T16:20:00+08:00"><meta property="article:modified_time" content="2023-05-03T21:25:46+08:00"><meta property="article:tag" content="Java"><meta property="article:tag" content="设计"><meta property="article:tag" content="架构"><meta property="article:tag" content="微服务"><meta property="article:tag" content="分布式"><meta property="article:tag" content="Spring"><meta name=twitter:card content="summary"><meta name=twitter:title content="Spring 扩展点实践：整合 Apache Dubbo（二）"><meta name=twitter:description content=' 在 Spring 扩展点实践：整合 Apache Dubbo（一） 中，D瓜哥介绍了 Dubbo 如何使用 Spring 的插件机制与 Spring 整合。限于篇幅原因，上一篇文章只介绍到了服务提供者的注册。本篇文章继续上一篇文章的主题，继续介绍 Spring 与 Dubbo 的整合过程。先来讲解一下服务消费者的生成过程。
+Dubbo 生成服务消费者的过程 先来看看 XML 配置文件：
+dubbo-demo/dubbo-demo-xml/dubbo-demo-xml-consumer/src/main/resources/spring/dubbo-consumer.xml <?xml version="1.0" encoding="UTF-8"?> <beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:dubbo="http://dubbo.apache.org/schema/dubbo" xmlns="http://www.springframework.org/schema/beans" xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://dubbo.apache.org/schema/dubbo http://dubbo.apache.org/schema/dubbo/dubbo.xsd"> <dubbo:application name="demo-consumer"/> <dubbo:registry address="zookeeper://127.0.0.1:2181"/> <dubbo:reference id="demoService" check="false" interface="org.apache.dubbo.demo.DemoService"/> </beans> 我们先看一下 ReferenceBean 类的声明：
+org.apache.dubbo.config.spring.ReferenceBean public class ReferenceBean<T> extends ReferenceConfig<T> implements FactoryBean, ApplicationContextAware, InitializingBean, DisposableBean { // 此处省略 N 行代码 @Override public Object getObject() { return get(); } // 此处省略 N 行代码 @Override @SuppressWarnings({"unchecked"}) public void afterPropertiesSet() throws Exception { // Initializes Dubbo&#39;s Config Beans before @Reference bean autowiring prepareDubboConfigBeans(); // lazy init by default. if (init == null) { init = false; } // eager init if necessary. if (shouldInit()) { getObject(); } } // 此处省略 N 行代码 } 这个类实现了 FactoryBean 接口，D瓜哥在 Spring 扩展点概览及实践：FactoryBean 中对 FactoryBean 介绍。所以，请在上面的 getObject() 打个断点。
+另外，这个类还实现了 InitializingBean，D瓜哥在 Spring Bean 生命周期概述 中介绍了这个接口的用途。不了解的，请移步。'><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link rel=dns-prefetch href=//fonts.googleapis.com><link rel=dns-prefetch href=//fonts.gstatic.com><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Open+Sans:400,400i,700"><link rel=stylesheet href=/css/style.min.css><link rel=stylesheet href=/css/asciidoctor.css><link rel=stylesheet href=/css/rouge-monokai.css><link rel="shortcut icon" href=/favicon.ico><script async src="https://www.googletagmanager.com/gtag/js?id=G-1MMT2NLEL4"></script><script>var dnt,doNotTrack=!1;if(!1&&(dnt=navigator.doNotTrack||window.doNotTrack||navigator.msDoNotTrack,doNotTrack=dnt=="1"||dnt=="yes"),!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-1MMT2NLEL4")}</script><script id=baidu_analytics>var _hmt=_hmt||[];(function(){var e,t=document.createElement("script");t.src="https://hm.baidu.com/hm.js?e56e7dd0a120b414f5741f4c5e5218ea",e=document.getElementsByTagName("script")[0],e.parentNode.insertBefore(t,e)})()</script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css></head><body class=body><div class="container container--outer"><header class=header><div class="container header__container"><div class=logo><a class=logo__link href=/ title='"地瓜哥"博客网' rel=home><div class="logo__item logo__text"><div class=logo__title>"地瓜哥"博客网</div><div class=logo__tagline>分享技术带来的喜悦 — https://www.diguage.com/</div></div></a></div><nav class=menu><button class=menu__btn aria-haspopup=true aria-expanded=false tabindex=0>
+<span class=menu__btn-title tabindex=-1>菜单</span></button><ul class=menu__list><li class=menu__item><a class=menu__link href=/><span class=menu__text>首页</span></a></li><li class=menu__item><a class=menu__link href=/categories/><span class=menu__text>分类</span></a></li><li class=menu__item><a class=menu__link href=/about/><span class=menu__text>关于</span></a></li><li class=menu__item><a class=menu__link href=/archives/><span class=menu__text>归档</span></a></li></ul></nav></div></header><div class="wrapper flex"><div class=primary><main class=main role=main><article class=post><header class=post__header><h1 class=post__title>Spring 扩展点实践：整合 Apache Dubbo（二）</h1><div class="post__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2020-07-11T16:20:00+08:00>2020-07-11</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/ rel=category>程序设计</a></span></div></div></header><figure class="post__thumbnail thumbnail"><img class=thumbnail__image src=/images/spring-framework/dubbo-logo.jpg alt="Spring 扩展点实践：整合 Apache Dubbo（二）"></figure><div class="content post__content clearfix"><div class=paragraph><p>在 <a href=https://www.diguage.com/post/spring-extensions-and-dubbo-1/ target=_blank rel=noopener>Spring 扩展点实践：整合 Apache Dubbo（一）</a> 中，D瓜哥介绍了 Dubbo 如何使用 Spring 的插件机制与 Spring 整合。限于篇幅原因，上一篇文章只介绍到了服务提供者的注册。本篇文章继续上一篇文章的主题，继续介绍 Spring 与 Dubbo 的整合过程。先来讲解一下服务消费者的生成过程。</p></div><div class=sect1><h2 id=_dubbo_生成服务消费者的过程>Dubbo 生成服务消费者的过程</h2><div class=sectionbody><div class=paragraph><p>先来看看 XML 配置文件：</p></div><div class=listingblock><div class=title><code>dubbo-demo/dubbo-demo-xml/dubbo-demo-xml-consumer/src/main/resources/spring/dubbo-consumer.xml</code></div><div class=content><pre class="rouge highlight"><code data-lang=xml><span class=cp>&lt;?xml version=&#34;1.0&#34; encoding=&#34;UTF-8&#34;?&gt;</span>
+<span class=nt>&lt;beans</span> <span class=na>xmlns:xsi=</span><span class=s>&#34;http://www.w3.org/2001/XMLSchema-instance&#34;</span>
+       <span class=na>xmlns:dubbo=</span><span class=s>&#34;http://dubbo.apache.org/schema/dubbo&#34;</span>
+       <span class=na>xmlns=</span><span class=s>&#34;http://www.springframework.org/schema/beans&#34;</span>
+       <span class=na>xsi:schemaLocation=</span><span class=s>&#34;http://www.springframework.org/schema/beans
+                           http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://dubbo.apache.org/schema/dubbo
+                           http://dubbo.apache.org/schema/dubbo/dubbo.xsd&#34;</span><span class=nt>&gt;</span>
+
+    <span class=nt>&lt;dubbo:application</span> <span class=na>name=</span><span class=s>&#34;demo-consumer&#34;</span><span class=nt>/&gt;</span>
+
+    <span class=nt>&lt;dubbo:registry</span> <span class=na>address=</span><span class=s>&#34;zookeeper://127.0.0.1:2181&#34;</span><span class=nt>/&gt;</span>
+
+    <span class=nt>&lt;dubbo:reference</span> <span class=na>id=</span><span class=s>&#34;demoService&#34;</span> <span class=na>check=</span><span class=s>&#34;false&#34;</span> <span class=na>interface=</span><span class=s>&#34;org.apache.dubbo.demo.DemoService&#34;</span><span class=nt>/&gt;</span>
+
+<span class=nt>&lt;/beans&gt;</span></code></pre></div></div><div class=paragraph><p>我们先看一下 <code>ReferenceBean</code> 类的声明：</p></div><div class=listingblock><div class=title><code>org.apache.dubbo.config.spring.ReferenceBean</code></div><div class=content><pre class="rouge highlight"><code data-lang=java><span class=kd>public</span> <span class=kd>class</span> <span class=nc>ReferenceBean</span><span class=o>&lt;</span><span class=no>T</span><span class=o>&gt;</span> <span class=kd>extends</span> <span class=nc>ReferenceConfig</span><span class=o>&lt;</span><span class=no>T</span><span class=o>&gt;</span> <span class=kd>implements</span> <span class=nc>FactoryBean</span><span class=o>,</span>
+        <span class=nc>ApplicationContextAware</span><span class=o>,</span> <span class=nc>InitializingBean</span><span class=o>,</span> <span class=nc>DisposableBean</span> <span class=o>{</span>
+
+    <span class=c1>// 此处省略 N 行代码</span>
+
+    <span class=nd>@Override</span>
+    <span class=kd>public</span> <span class=nc>Object</span> <span class=nf>getObject</span><span class=o>()</span> <span class=o>{</span>
+        <span class=k>return</span> <span class=nf>get</span><span class=o>();</span>
+    <span class=o>}</span>
+
+    <span class=c1>// 此处省略 N 行代码</span>
+
+    <span class=nd>@Override</span>
+    <span class=nd>@SuppressWarnings</span><span class=o>({</span><span class=s>&#34;unchecked&#34;</span><span class=o>})</span>
+    <span class=kd>public</span> <span class=kt>void</span> <span class=nf>afterPropertiesSet</span><span class=o>()</span> <span class=kd>throws</span> <span class=nc>Exception</span> <span class=o>{</span>
+
+        <span class=c1>// Initializes Dubbo&#39;s Config Beans before @Reference bean autowiring</span>
+        <span class=n>prepareDubboConfigBeans</span><span class=o>();</span>
+
+        <span class=c1>// lazy init by default.</span>
+        <span class=k>if</span> <span class=o>(</span><span class=n>init</span> <span class=o>==</span> <span class=kc>null</span><span class=o>)</span> <span class=o>{</span>
+            <span class=n>init</span> <span class=o>=</span> <span class=kc>false</span><span class=o>;</span>
+        <span class=o>}</span>
+
+        <span class=c1>// eager init if necessary.</span>
+        <span class=k>if</span> <span class=o>(</span><span class=n>shouldInit</span><span class=o>())</span> <span class=o>{</span>
+            <span class=n>getObject</span><span class=o>();</span>
+        <span class=o>}</span>
+    <span class=o>}</span>
+
+    <span class=c1>// 此处省略 N 行代码</span>
+<span class=o>}</span></code></pre></div></div><div class=paragraph><p>这个类实现了 <code>FactoryBean</code> 接口，D瓜哥在 <a href=https://www.diguage.com/post/spring-extensions-overview/#factory-bean>Spring 扩展点概览及实践：FactoryBean</a> 中对 <code>FactoryBean</code> 介绍。所以，请在上面的 <code>getObject()</code> 打个断点。</p></div><div class=paragraph><p>另外，这个类还实现了 <code>InitializingBean</code>，D瓜哥在 <a href=https://www.diguage.com/post/spring-bean-lifecycle-overview/>Spring Bean 生命周期概述</a> 中介绍了这个接口的用途。不了解的，请移步。</p></div><div class=paragraph><p>启动服务消费者程序，开始调试代码。跳过上文结束的配置解析阶段，进入到 <code>org.apache.dubbo.config.bootstrap.DubboBootstrap#start</code> 方法中。在这里，它调用了内部私有方法 <code>referServices()</code>。但是，这个方法其实啥也没做。</p></div><div class=paragraph><p>上面提到，<code>ReferenceBean</code> 实现了 <code>FactoryBean</code> 接口，那么直接在 <code>org.apache.dubbo.config.spring.ReferenceBean#getObject</code> 方法上打断点。当调用 <code>applicationContext.getBean(XXX)</code> 时，就会触发断点，一路跟下去就会发现，现在 <code>org.apache.dubbo.config.ReferenceConfig#init</code> 方法中完成各种初始化准备工作，然后调用 <code>org.apache.dubbo.config.ReferenceConfig#createProxy</code> 方法创建代理。而实际代理的创建工作是由 <code>org.apache.dubbo.rpc.proxy.AbstractProxyFactory#getProxy(Invoker&lt;T>, boolean)</code> 方法创建的。这样说，也不算准确。因为 <code>AbstractProxyFactory</code> 对象是一个子类对象，子类是通过 Dubbo 的类 SPI 加载机制来动态选择创建的。</p></div><div class=paragraph><p>其实，Dubbo 服务消费者实例只是一个代理，通过代理封装统一的网络请求，实现 RPC 的调用过程。</p></div></div></div><div class=sect1><h2 id=_dubbo_注解集成简述>Dubbo 注解集成简述</h2><div class=sectionbody><div class=paragraph><p>使用 Dubbo 注解集成的入口是 <code>org.apache.dubbo.config.spring.context.annotation.EnableDubbo</code>，直接上代码：</p></div><div class=listingblock><div class=title><code>org.apache.dubbo.config.spring.context.annotation.EnableDubbo</code></div><div class=content><pre class="rouge highlight"><code data-lang=java><span class=cm>/**
+ * Enables Dubbo components as Spring Beans, equals
+ * {@link DubboComponentScan} and {@link EnableDubboConfig} combination.
+ * &lt;p&gt;
+ * Note : {@link EnableDubbo} must base on Spring Framework 4.2 and above
+ *
+ * @see DubboComponentScan
+ * @see EnableDubboConfig
+ * @since 2.5.8
+ */</span>
+<span class=nd>@Target</span><span class=o>({</span><span class=nc>ElementType</span><span class=o>.</span><span class=na>TYPE</span><span class=o>})</span>
+<span class=nd>@Retention</span><span class=o>(</span><span class=nc>RetentionPolicy</span><span class=o>.</span><span class=na>RUNTIME</span><span class=o>)</span>
+<span class=nd>@Inherited</span>
+<span class=nd>@Documented</span>
+<span class=nd>@EnableDubboConfig</span>
+<span class=nd>@DubboComponentScan</span>
+<span class=kd>public</span> <span class=nd>@interface</span> <span class=nc>EnableDubbo</span> <span class=o>{</span>
+
+    <span class=cm>/**
+     * Base packages to scan for annotated @Service classes.
+     * &lt;p&gt;
+     * Use {@link #scanBasePackageClasses()} for a type-safe alternative to String-based
+     * package names.
+     *
+     * @return the base packages to scan
+     * @see DubboComponentScan#basePackages()
+     */</span>
+    <span class=nd>@AliasFor</span><span class=o>(</span><span class=n>annotation</span> <span class=o>=</span> <span class=nc>DubboComponentScan</span><span class=o>.</span><span class=na>class</span><span class=o>,</span> <span class=n>attribute</span> <span class=o>=</span> <span class=s>&#34;basePackages&#34;</span><span class=o>)</span>
+    <span class=nc>String</span><span class=o>[]</span> <span class=nf>scanBasePackages</span><span class=o>()</span> <span class=k>default</span> <span class=o>{};</span>
+
+    <span class=cm>/**
+     * Type-safe alternative to {@link #scanBasePackages()} for specifying the packages to
+     * scan for annotated @Service classes. The package of each class specified will be
+     * scanned.
+     *
+     * @return classes from the base packages to scan
+     * @see DubboComponentScan#basePackageClasses
+     */</span>
+    <span class=nd>@AliasFor</span><span class=o>(</span><span class=n>annotation</span> <span class=o>=</span> <span class=nc>DubboComponentScan</span><span class=o>.</span><span class=na>class</span><span class=o>,</span> <span class=n>attribute</span> <span class=o>=</span> <span class=s>&#34;basePackageClasses&#34;</span><span class=o>)</span>
+    <span class=nc>Class</span><span class=o>&lt;?&gt;[]</span> <span class=n>scanBasePackageClasses</span><span class=o>()</span> <span class=k>default</span> <span class=o>{};</span>
+
+
+    <span class=cm>/**
+     * It indicates whether {@link AbstractConfig} binding to multiple Spring Beans.
+     *
+     * @return the default value is &lt;code&gt;true&lt;/code&gt;
+     * @see EnableDubboConfig#multiple()
+     */</span>
+    <span class=nd>@AliasFor</span><span class=o>(</span><span class=n>annotation</span> <span class=o>=</span> <span class=nc>EnableDubboConfig</span><span class=o>.</span><span class=na>class</span><span class=o>,</span> <span class=n>attribute</span> <span class=o>=</span> <span class=s>&#34;multiple&#34;</span><span class=o>)</span>
+    <span class=kt>boolean</span> <span class=nf>multipleConfig</span><span class=o>()</span> <span class=k>default</span> <span class=kc>true</span><span class=o>;</span>
+
+<span class=o>}</span></code></pre></div></div><div class=paragraph><p>这个注解非常重要。一共有两点需要注意。这个方法就是注解的三个属性，分别给出了三个最重要的参数：</p></div><div class="olist arabic"><ol class=arabic><li><p><code>scanBasePackages</code> — 定义了基础扫描的包。通过 <code>@AliasFor</code> 注解表明，这是定义 <code>@DubboComponentScan</code> 注解的 <code>basePackages</code> 属性。</p></li><li><p><code>scanBasePackageClasses</code> — 定义扫描的基础类。通过 <code>@AliasFor</code> 注解表明，这是定义 <code>@DubboComponentScan</code> 注解的 <code>basePackageClasses</code> 属性。</p></li><li><p><code>multipleConfig</code> — 可以将 <code>AbstractConfig</code>(上一篇文章 <a href=https://www.diguage.com/post/spring-extensions-and-dubbo-1/>Spring 扩展点实践：整合 Apache Dubbo（一）</a> 已经做过说明) 向 Spring 中多次注册。换句话说，你可以配置多个注册中心，配置多个监控中心等等。通过 <code>@AliasFor</code> 注解表明，这是定义 <code>@EnableDubboConfig</code> 注解的 <code>multiple</code> 属性，默认为 <code>true</code>。</p></li></ol></div><div class=paragraph><p>接下来，让我们看看非常重要的两点内容。</p></div><div class=sect2><h3 id=_enabledubboconfig><code>@EnableDubboConfig</code></h3><div class=paragraph><p><code>@EnableDubbo</code> 注解上面加了 <code>@EnableDubboConfig</code> 注解，我们来看一下它的源码：</p></div><div class=listingblock><div class=title><code>org.apache.dubbo.config.spring.context.annotation.EnableDubboConfig</code></div><div class=content><pre class="rouge highlight"><code data-lang=java><span class=nd>@Target</span><span class=o>({</span><span class=nc>ElementType</span><span class=o>.</span><span class=na>TYPE</span><span class=o>})</span>
+<span class=nd>@Retention</span><span class=o>(</span><span class=nc>RetentionPolicy</span><span class=o>.</span><span class=na>RUNTIME</span><span class=o>)</span>
+<span class=nd>@Inherited</span>
+<span class=nd>@Documented</span>
+<span class=nd>@Import</span><span class=o>(</span><span class=nc>DubboConfigConfigurationRegistrar</span><span class=o>.</span><span class=na>class</span><span class=o>)</span>
+<span class=kd>public</span> <span class=nd>@interface</span> <span class=nc>EnableDubboConfig</span> <span class=o>{</span>
+
+    <span class=cm>/**
+     * It indicates whether binding to multiple Spring Beans.
+     *
+     * @return the default value is &lt;code&gt;true&lt;/code&gt;
+     * @revised 2.5.9
+     */</span>
+    <span class=kt>boolean</span> <span class=nf>multiple</span><span class=o>()</span> <span class=k>default</span> <span class=kc>true</span><span class=o>;</span>
+
+<span class=o>}</span></code></pre></div></div><div class=paragraph><p>这里，我们看到了熟悉的 <code>@Import</code>。 <code>DubboConfigConfigurationRegistrar</code> 从名字就能看出应该是实现了 <code>ImportBeanDefinitionRegistrar</code> 接口的，打开代码，果然如此。更</p></div><div class=paragraph><p>在 <a href=https://www.diguage.com/post/spring-extensions-overview/>Spring 扩展点概览及实践</a> 和 <a href=https://www.diguage.com/post/spring-extensions-and-mybatis/>Spring 扩展点实践：整合 MyBATIS</a> 中有针对 <code>@Import</code> 和 <code>ImportBeanDefinitionRegistrar</code> 的详细介绍。尤其是 MyBATIS 就是使用 <code>ImportBeanDefinitionRegistrar</code> 来做扩展的。不懂的，请移步。</p></div><div class=paragraph><p>关于 <code>DubboConfigConfigurationRegistrar</code> 的功能，这里做个简要总结：</p></div><div class="olist arabic"><ol class=arabic><li><p>使用 <code>@EnableConfigurationBeanBindings</code> 注解，将配置项和对一个的 Bean 类型做一个绑定。如果 <code>multiple</code> 属性为 <code>true</code>，则指出多次注册。</p></li><li><p>调用 <code>org.apache.dubbo.config.spring.util.DubboBeanUtils#registerCommonBeans</code> 方法，将公共的 Bean 注册到 Spring 中。这部分内容在 <a href=https://www.diguage.com/post/spring-extensions-and-dubbo-1/#register-common-beans>Spring 扩展点实践：整合 Apache Dubbo（一）：registerCommonBeans</a> 中已经给出了详细介绍，就不再赘述。</p></li></ol></div></div><div class=sect2><h3 id=_dubbocomponentscan><code>@DubboComponentScan</code></h3><div class=paragraph><p><code>@EnableDubbo</code> 注解上面加了 <code>@DubboComponentScan</code> 注解，直接上代码：</p></div><div class=listingblock><div class=title><code>org.apache.dubbo.config.spring.context.annotation.DubboComponentScan</code></div><div class=content><pre class="rouge highlight"><code data-lang=java><span class=nd>@Target</span><span class=o>(</span><span class=nc>ElementType</span><span class=o>.</span><span class=na>TYPE</span><span class=o>)</span>
+<span class=nd>@Retention</span><span class=o>(</span><span class=nc>RetentionPolicy</span><span class=o>.</span><span class=na>RUNTIME</span><span class=o>)</span>
+<span class=nd>@Documented</span>
+<span class=nd>@Import</span><span class=o>(</span><span class=nc>DubboComponentScanRegistrar</span><span class=o>.</span><span class=na>class</span><span class=o>)</span>
+<span class=kd>public</span> <span class=nd>@interface</span> <span class=nc>DubboComponentScan</span> <span class=o>{</span>
+
+    <span class=cm>/**
+     * Alias for the {@link #basePackages()} attribute. Allows for more concise annotation
+     * declarations e.g.: {@code @DubboComponentScan(&#34;org.my.pkg&#34;)} instead of
+     * {@code @DubboComponentScan(basePackages=&#34;org.my.pkg&#34;)}.
+     *
+     * @return the base packages to scan
+     */</span>
+    <span class=nc>String</span><span class=o>[]</span> <span class=nf>value</span><span class=o>()</span> <span class=k>default</span> <span class=o>{};</span>
+
+    <span class=cm>/**
+     * Base packages to scan for annotated @Service classes. {@link #value()} is an
+     * alias for (and mutually exclusive with) this attribute.
+     * &lt;p&gt;
+     * Use {@link #basePackageClasses()} for a type-safe alternative to String-based
+     * package names.
+     *
+     * @return the base packages to scan
+     */</span>
+    <span class=nc>String</span><span class=o>[]</span> <span class=nf>basePackages</span><span class=o>()</span> <span class=k>default</span> <span class=o>{};</span>
+
+    <span class=cm>/**
+     * Type-safe alternative to {@link #basePackages()} for specifying the packages to
+     * scan for annotated @Service classes. The package of each class specified will be
+     * scanned.
+     *
+     * @return classes from the base packages to scan
+     */</span>
+    <span class=nc>Class</span><span class=o>&lt;?&gt;[]</span> <span class=n>basePackageClasses</span><span class=o>()</span> <span class=k>default</span> <span class=o>{};</span>
+
+<span class=o>}</span></code></pre></div></div><div class=paragraph><p>又双叒叕看到了 <code>@Import</code>；又双叒叕看到了 <code>Registrar</code>，只是这次名字叫 <code>DubboComponentScanRegistrar</code>。跟上面的一样，不再赘述。</p></div><div class=paragraph><p>这里总结一下 <code>DubboComponentScanRegistrar</code> 的功能：注册了一个类为 <code>ServiceAnnotationBeanPostProcessor</code> 的 <code>BeanDefinition</code>，将配置项的配置信息传递给这个 <code>BeanDefinition</code> 实例。 <code>ServiceAnnotationBeanPostProcessor</code> 实现了 <code>BeanDefinitionRegistryPostProcessor</code> 接口，会在 Spring 的启动过程中，通过调用 <code>postProcessBeanDefinitionRegistry</code> 方法来注册相关的 <code>BeanDefinition</code>。关于这部分内容，请移步： <a href=https://www.diguage.com/post/spring-aop-process-overview/>Spring AOP 处理流程概述</a>。</p></div><div class=paragraph><p>在 Spring 启动过程中，就会调用 <code>ServiceAnnotationBeanPostProcessor</code> 的 <code>postProcessBeanDefinitionRegistry</code> 方法，在这个方法中，通过创建 <code>DubboClassPathBeanDefinitionScanner</code> (继承了 <code>ClassPathBeanDefinitionScanner</code> 类)实例，调用 <code>scanner.scan(packageToScan)</code> 来注册 <code>BeanDefinition</code>。另外，有一点需要指出的是： <code>ServiceAnnotationBeanPostProcessor</code> 目前是 <code>@Deprecated</code>，后续推荐使用 <code>ServiceClassPostProcessor</code>，而 <code>ServiceAnnotationBeanPostProcessor</code> 就是 <code>ServiceClassPostProcessor</code> 的子类。所以，目前处理逻辑都集中在了 <code>ServiceClassPostProcessor</code> 中。</p></div><div class=paragraph><p>关于 Apache Dubbo 与 Spring 的整合原理就全部介绍完毕了。如有什么问题，欢迎留言讨论。以后有时间，写写分布式事务解决方案 Seata 的一些原理。</p></div></div></div></div></div><footer class=post__footer><div class="post__tags tags clearfix"><svg class="tags__badge icon icon-tag" width="16" height="16" viewBox="0 0 32 32"><path d="M32 19c0 1-1 2-1 2L21 31s-1 1-2 1-2-1-2-1L2 16c-1-1-1.4-2-1.4-2S0 12.5.0 11V3C0 1.5.8.8.8.8S1.5.0 3 0h8c1.5.0 3 .6 3 .6S15 1 16 2l15 15s1 1 1 2zM7 10a3 3 0 100-6 3 3 0 000 6z"/></svg><ul class=tags__list><li class=tags__item><a class="tags__link btn" href=/tags/java/ rel=tag>Java</a></li><li class=tags__item><a class="tags__link btn" href=/tags/%E8%AE%BE%E8%AE%A1/ rel=tag>设计</a></li><li class=tags__item><a class="tags__link btn" href=/tags/%E6%9E%B6%E6%9E%84/ rel=tag>架构</a></li><li class=tags__item><a class="tags__link btn" href=/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/ rel=tag>微服务</a></li><li class=tags__item><a class="tags__link btn" href=/tags/%E5%88%86%E5%B8%83%E5%BC%8F/ rel=tag>分布式</a></li><li class=tags__item><a class="tags__link btn" href=/tags/spring/ rel=tag>Spring</a></li></ul></div></footer></article></main><div class=clearfix><h3>看在D瓜哥码字的辛苦上，请友情支持一下，D瓜哥感激不尽，😜</h3><table><tr><td><img alt=微信打赏码 src=/images/wxpay.jpg></td><td><img alt=支付宝打赏码 src=/images/alipay.png></td></tr></table></div><br><div class=clearfix><h3>欢迎关注D瓜哥的微信公众号，在公众号可以获取我的微信二维码：</h3><img alt=微信公众号 src=/images/wx-jikerizhi.jpg></div><div class="admonitionblock tip"><table><tbody><tr><td class=icon><i class="fa icon-tip" title=Tip></i></td><td class=content><strong>公众号的微信号是: <code>jikerizhi</code></strong>。如果图片加载不出来，可以直接通过搜索公众号的微信号来查找D瓜哥的公众号。</td></tr></tbody></table></div><div class="authorbox clearfix"><figure class=authorbox__avatar><a target=_blank href=/about/><img alt="D瓜哥 avatar" src=/images/avatar.jpg class=avatar height=110 width=110></a></figure><div class=authorbox__header><span class=authorbox__name>关于 D瓜哥</span></div><div class=authorbox__description>厨艺界最好的码农，挨踢界最棒的厨师。<ul><li><a target=_blank href=https://wordpress.diguage.com/>旧版“地瓜哥”博客网</a></li><li><a target=_blank href=https://notes.diguage.com/mysql/>MySQL 学习笔记<sup>Alpha</sup></a></li><li><a target=_blank href=https://diguage.github.io/jdk-source-analysis/>JDK 源码分析<sup>Alpha</sup></a></li></ul></div></div><nav class="pager flex"><div class="pager__item pager__item--prev"><a class=pager__link href=/post/spring-extensions-and-dubbo-1/ rel=prev><span class=pager__subtitle>«&#8201;上一篇</span><p class=pager__title>Spring 扩展点实践：整合 Apache Dubbo（一）</p></a></div><div class="pager__item pager__item--next"><a class=pager__link href=/post/distributed-lock-apache-curator-interprocessmutex/ rel=next><span class=pager__subtitle>下一篇&#8201;»</span><p class=pager__title>分布式锁之 Apache Curator InterProcessMutex</p></a></div></nav><section class=comments><div id=SOHUCS sid=/post/spring-extensions-and-dubbo-2/></div><script type=text/javascript>(function(){if(window.location.hostname==="localhost")return;var n,e="cyuuTeBp3",t="prod_2906c47c31e735e0ed518282fec489a6",s=window.innerWidth||document.documentElement.clientWidth;s<960?window.document.write('<script id="changyan_mobile_js" charset="utf-8" type="text/javascript" src="https://changyan.sohu.com/upload/mobile/wap-js/changyan_mobile.js?client_id='+e+"&conf="+t+'"><\/script>'):(n=function(e,t){var s=document.getElementsByTagName("head")[0]||document.head||document.documentElement,n=document.createElement("script");n.setAttribute("type","text/javascript"),n.setAttribute("charset","UTF-8"),n.setAttribute("src",e),typeof t=="function"&&(window.attachEvent?n.onreadystatechange=function(){var e=n.readyState;(e==="loaded"||e==="complete")&&(n.onreadystatechange=null,t())}:n.onload=t),s.appendChild(n)},n("https://changyan.sohu.com/upload/changyan.js",function(){window.changyan.api.config({appid:e,conf:t})}))})()</script></section></div><aside class=sidebar><div class="widget-search widget"><form class=widget-search__form role=search method=get action=https://google.com/search><label><input class=widget-search__field type=search placeholder=搜索… name=q aria-label=搜索…>
+</label><input class=widget-search__submit type=submit value=Search>
+<input type=hidden name=sitesearch value=https://www.diguage.com/></form></div><div class="widget-wechat widget"><h4 class=widget__title>微信公众号</h4><img alt=微信公众号 class=center src=/images/wx-jikerizhi-qrcode.jpg></div><div class="widget-wechat widget"><h4 class=widget__title>知识星球</h4><img alt=微信公众号 class=center src=/images/zhishixingqiu.png></div><div class="widget-recent widget"><h4 class=widget__title>近期文章</h4><div class=widget__content><ul class=widget__list><li class=widget__item><a class=widget__link href=/post/spring-boot-startup-process-overview/>Spring Boot 启动流程概述</a></li><li class=widget__item><a class=widget__link href=/post/redis-core-data-structure-4/>Redis 核心数据结构（四）</a></li><li class=widget__item><a class=widget__link href=/post/redis-core-data-structure-3/>Redis 核心数据结构（三）</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-subsets/>算法模式：子集</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-backtracking/>算法模式：回溯</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-transform-and-conquer/>算法模式：变治法</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-divide-and-conquer/>算法模式：分治法</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-decrease-and-conquer/>算法模式：减治法</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-topological-sort/>算法模式：拓扑排序</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-union-find/>算法模式：并查集</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-trie/>算法模式：前缀树</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-depth-first-search/>算法模式：深度优先搜索</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-breadth-first-search/>算法模式：广度优先搜索</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-k-way-merge/>算法模式：多路归并</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-two-heaps/>算法模式：双堆</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-cyclic-sort/>算法模式：循环排序</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-quickselect/>算法模式：快速选择</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-top-k-elements/>算法模式：Top K 问题</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-monotonic-stack/>算法模式：单调栈</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-sliding-window/>算法模式：滑动窗口</a></li></ul></div></div><div class="widget-categories widget"><h4 class=widget__title>分类</h4><div class=widget__content><ul class=widget__list><li class=widget__item><a class=widget__link href=/categories/%E4%B8%AA%E4%BA%BA%E6%88%90%E9%95%BF/>个人成长</a></li><li class=widget__item><a class=widget__link href=/categories/%E5%88%86%E5%B8%83%E5%BC%8F/>分布式</a></li><li class=widget__item><a class=widget__link href=/categories/%E5%BC%80%E5%8F%91%E5%B7%A5%E5%85%B7/>开发工具</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/>性能优化</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/>操作系统</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%95%B0%E6%8D%AE%E5%AD%98%E5%82%A8/>数据存储</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%96%87%E5%AD%A6/>文学</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%96%B9%E6%B3%95%E8%AE%BA/>方法论</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/>程序设计</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%AE%97%E6%B3%95/>算法</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/>系统架构</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%BB%8F%E6%B5%8E%E9%87%91%E8%9E%8D/>经济金融</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/>编程语言</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%BD%91%E7%BB%9C/>网络</a></li><li class=widget__item><a class=widget__link href=/categories/%E8%81%8C%E4%B8%9A%E5%8F%91%E5%B1%95/>职业发展</a></li><li class=widget__item><a class=widget__link href=/categories/%E8%BD%AF%E4%BB%B6%E5%B7%A5%E7%A8%8B/>软件工程</a></li><li class=widget__item><a class=widget__link href=/categories/%E9%80%B8%E9%97%BB%E8%B6%A3%E4%BA%8B/>逸闻趣事</a></li><li class=widget__item><a class=widget__link href=/categories/%E9%98%85%E8%AF%BB%E6%91%98%E8%A6%81/>阅读摘要</a></li></ul></div></div><div class="widget-taglist widget"><h4 class=widget__title>标签</h4><div class=widget__content><a class="widget-taglist__link widget__link btn" href=/tags/gc/ title=GC>GC (9)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/http/ title=HTTP>HTTP (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/java/ title=Java>Java (64)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/jvm/ title=JVM>JVM (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/kpi/ title=KPI>KPI (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/kubernetes/ title=Kubernetes>Kubernetes (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/linux/ title=Linux>Linux (12)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/okr/ title=OKR>OKR (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/redis/ title=Redis>Redis (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/shell/ title=Shell>Shell (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/spring/ title=Spring>Spring (26)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/tcp/ title=TCP>TCP (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/udp/ title=UDP>UDP (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/zookeeper/ title=ZooKeeper>ZooKeeper (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E4%B8%AA%E4%BA%BA%E6%8F%90%E5%8D%87/ title=个人提升>个人提升 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E4%B9%A6%E7%B1%8D/ title=书籍>书籍 (15)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E4%BA%A7%E5%93%81/ title=产品>产品 (7)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%80%BA%E5%88%B8/ title=债券>债券 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%88%86%E5%B8%83%E5%BC%8F/ title=分布式>分布式 (15)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%88%86%E6%B2%BB/ title=分治>分治 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/ title=动态规划>动态规划 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9B%A2%E9%98%9F%E5%BB%BA%E8%AE%BE/ title=团队建设>团队建设 (6)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9B%A2%E9%98%9F%E6%96%87%E5%8C%96/ title=团队文化>团队文化 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9B%BE/ title=图>图 (7)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9F%BA%E9%87%91/ title=基金>基金 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%A0%86/ title=堆>堆 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%AD%98%E5%82%A8/ title=存储>存储 (6)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%B7%A5%E4%BD%9C%E6%96%B9%E6%B3%95/ title=工作方法>工作方法 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%B9%B6%E5%8F%91/ title=并发>并发 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%BA%8F%E5%88%97%E5%8C%96/ title=序列化>序列化 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/ title=微服务>微服务 (17)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%BF%83%E7%90%86%E5%AD%A6/ title=心理学>心理学 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95/ title=性能测试>性能测试 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%8A%95%E8%B5%84%E7%90%86%E8%B4%A2/ title=投资理财>投资理财 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/ title=数据库>数据库 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/ title=数据结构>数据结构 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%95%B0%E7%BB%84/ title=数组>数组 (13)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%96%B9%E6%B3%95%E8%AE%BA/ title=方法论>方法论 (13)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%97%85%E8%A1%8C/ title=旅行>旅行 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5/ title=最佳实践>最佳实践 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%9E%B6%E6%9E%84/ title=架构>架构 (44)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%A0%88/ title=栈>栈 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%A0%91/ title=树>树 (11)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%B2%9F%E9%80%9A%E6%8A%80%E5%B7%A7/ title=沟通技巧>沟通技巧 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/ title=源码分析>源码分析 (8)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%90%86%E8%B4%A2/ title=理财>理财 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%94%9F%E6%B4%BB/ title=生活>生活 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%AC%94%E8%AE%B0/ title=笔记>笔记 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%AE%97%E6%B3%95/ title=算法>算法 (8)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%AE%97%E6%B3%95%E6%A8%A1%E5%BC%8F/ title=算法模式>算法模式 (23)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BB%8F%E6%B5%8E/ title=经济>经济 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BC%96%E7%A0%81/ title=编码>编码 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BD%91%E7%BB%9C/ title=网络>网络 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BF%BB%E8%AF%91/ title=翻译>翻译 (7)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%82%A1%E7%A5%A8/ title=股票>股票 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%84%91%E5%9B%BE/ title=脑图>脑图 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%8A%82%E6%97%A5/ title=节日>节日 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%8B%B1%E8%AF%AD/ title=英语>英语 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%99%9A%E6%8B%9F%E6%9C%BA/ title=虚拟机>虚拟机 (9)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AE%BA%E6%96%87/ title=论文>论文 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AE%BE%E8%AE%A1/ title=设计>设计 (36)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/ title=设计模式>设计模式 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AF%97%E6%AD%8C/ title=诗歌>诗歌 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AF%BB%E4%B9%A6/ title=读书>读书 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%80%92%E5%BD%92/ title=递归>递归 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%87%91%E8%9E%8D/ title=金融>金融 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%93%BE%E8%A1%A8/ title=链表>链表 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1/ title=面向对象>面向对象 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%A2%86%E5%9F%9F%E9%A9%B1%E5%8A%A8%E8%AE%BE%E8%AE%A1/ title=领域驱动设计>领域驱动设计 (5)</a></div></div><div class="widget-social widget"><h4 class="widget-social__title widget__title">社交</h4><div class="widget-social__content widget__content"><div class="widget-social__item widget__item"><a class="widget-social__link widget__link btn" title=Twitter rel="noopener noreferrer" href=https://twitter.com/diguage target=_blank><svg class="widget-social__link-icon icon icon-twitter" width="24" height="24" viewBox="0 0 384 312"><path d="m384 36.9c-14.1 6.3-29.3 10.5-45.2 12.4 16.3-9.7 28.8-25.2 34.6-43.6-15.2 9-32.1 15.6-50 19.1-14.4-15.2-34.9-24.8-57.5-24.8-43.5.0-78.8 35.3-78.8 78.8.0 6.2.7 12.2 2 17.9-65.5-3.3-123.5-34.6-162.4-82.3C20 26 16.1 39.6 16.1 54c0 27.3 13.9 51.4 35 65.6-12.9-.4-25.1-4-35.7-9.9v1c0 38.2 27.2 70 63.2 77.2-6.6 1.8-13.6 2.8-20.8 2.8-5.1.0-10-.5-14.8-1.4 10 31.3 39.1 54.1 73.6 54.7-27 21.1-60.9 33.7-97.8 33.7-6.4.0-12.6-.4-18.8-1.1C34.9 299 76.3 312 120.8 312c144.9.0 224.1-120 224.1-224.1.0-3.4-.1-6.8-.2-10.2 15.4-11.1 28.7-25 39.3-40.8z"/></svg>
+<span>Twitter</span></a></div><div class="widget-social__item widget__item"><a class="widget-social__link widget__link btn" title=GitHub rel="noopener noreferrer" href=https://github.com/diguage target=_blank><svg class="widget-social__link-icon icon icon-github" width="24" height="24" viewBox="0 0 384 374"><path d="m192 0C85.9.0.0 85.8.0 191.7c0 84.7 55 156.6 131.3 181.9 9.6 1.8 13.1-4.2 13.1-9.2.0-4.6-.2-16.6-.3-32.6-53.4 11.6-64.7-25.7-64.7-25.7-8.7-22.1-21.3-28-21.3-28-17.4-11.9 1.3-11.6 1.3-11.6 19.3 1.4 29.4 19.8 29.4 19.8 17.1 29.3 44.9 20.8 55.9 15.9 1.7-12.4 6.7-20.8 12.2-25.6-42.6-4.8-87.5-21.3-87.5-94.8.0-20.9 7.5-38 19.8-51.4-2-4.9-8.6-24.3 1.9-50.7.0.0 16.1-5.2 52.8 19.7 15.3-4.2 31.7-6.4 48.1-6.5 16.3.1 32.7 2.2 48.1 6.5 36.7-24.8 52.8-19.7 52.8-19.7 10.5 26.4 3.9 45.9 1.9 50.7 12.3 13.4 19.7 30.5 19.7 51.4.0 73.7-44.9 89.9-87.7 94.6 6.9 5.9 13 17.6 13 35.5.0 25.6-.2 46.3-.2 52.6.0 5.1 3.5 11.1 13.2 9.2C329 348.2 384 276.4 384 191.7 384 85.8 298 0 192 0z"/></svg>
+<span>GitHub</span></a></div><div class="widget-social__item widget__item"><a class="widget-social__link widget__link btn" title=Email href=mailto:leejun119@gmail.com><svg class="widget-social__link-icon icon icon-mail" width="24" height="24" viewBox="0 0 416 288"><path d="m0 16v256 16h16 384 16v-16V16 0h-16H16 0zm347 16-139 92.5L69 32zM199 157.5l9 5.5 9-5.5L384 46v210H32V46z"/></svg>
+<span>leejun119@gmail.com</span></a></div></div></div></aside></div><footer class=footer><div class="container footer__container flex"><div class=footer__copyright>&copy; 2025 "地瓜哥"博客网.
+<span class=footer__copyright-credits>基于 <a href=https://gohugo.io/ rel="nofollow noopener" target=_blank>Hugo</a> 引擎和 <a href=https://github.com/Vimux/Mainroad/ rel="nofollow noopener" target=_blank>Mainroad</a> 主题</span>
+<span><a href=https://beian.miit.gov.cn/ target=_target>京ICP备14046450号-4</a></span></div></div></footer></div><script async defer src=/js/menu.js></script><script type=text/x-mathjax-config>
+	MathJax.Hub.Config({
+	  messageStyle: "none",
+	  tex2jax: {
+		inlineMath: [["\\(", "\\)"]],
+		displayMath: [["\\[", "\\]"]],
+		ignoreClass: "nostem|nolatexmath"
+	  },
+	  asciimath2jax: {
+		delimiters: [["\\$", "\\$"]],
+		ignoreClass: "nostem|noasciimath"
+	  },
+	  TeX: { equationNumbers: { autoNumber: "none" } }
+	})
+	MathJax.Hub.Register.StartupHook("AsciiMath Jax Ready", function () {
+	  MathJax.InputJax.AsciiMath.postfilterHooks.Add(function (data, node) {
+		if ((node = data.script.parentNode) && (node = node.parentNode) && node.classList.contains("stemblock")) {
+		  data.math.root.display = "block"
+		}
+		return data
+	  })
+	})
+</script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js?config=TeX-MML-AM_HTMLorMML" async></script></body></html>
