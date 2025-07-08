@@ -1,0 +1,18 @@
+---
+title: "Spring Boot 启动流程概述"
+date: 2025-07-08T09:23:05+08:00
+draft: false
+keywords: ["Java","Spring", "Spring Boot"]
+tags: ["Java","设计","架构","Spring"]
+categories: ["程序设计"]
+thumbnail: "images/logo/spring.svg"
+
+weight: 1
+---
+
+在 https://www.diguage.com/post/spring-startup-process-overview/[Spring 启动流程概述^] 中，D瓜哥简要介绍了一下 Spring 的启动流程概述。前段时间查看了一下 Spring Boot 的启动流程，画了个时序图，分享一下。
+
+image::/images/spring-boot/SpringApplication-run.svg[title="Spring Boot 启动流程",alt="Spring Boot 启动流程",{image_attr}]
+
+结合这张时序图，再加上 https://www.diguage.com/post/spring-startup-process-overview/[Spring 启动流程概述^] 中的 Spring 启动时序图，就可以看到 Spring Boot 和 Spring 启动的全貌了。
+

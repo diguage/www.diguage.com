@@ -549,3 +549,5 @@ image::/images/spring-framework/AbstractApplicationContext-refresh.svg[title="Ab
 
 不知道有没有人关注这个附录日志，这里再重复一遍：在下一篇文章 https://www.diguage.com/post/spring-bean-lifecycle-overview/[Spring Bean 生命周期概述^] 中，D瓜哥将针对 Spring Bean 的整个生命周期展开详细说明。
 
+对 Spring Boot 启动流程感兴趣的，请移步： https://www.diguage.com/post/spring-boot-startup-process-overview/[Spring Boot 启动流程概述^]。
+
