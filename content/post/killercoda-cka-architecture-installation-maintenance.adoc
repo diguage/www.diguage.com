@@ -181,8 +181,9 @@ spec:
   containers:
   - name: alpine-container
     image: alpine:latest
-    command: ["/bin/sh"]
-    args: ["-c", "tail -f /config/log.txt"]
+# 注意：这里必须把 "-c" 放在这后面，否则校验不通过！
+    command: ["/bin/sh", "-c"]
+    args: ["tail -f /config/log.txt"]
     volumeMounts:
     - name: config-volume
       mountPath: "/config"
@@ -213,6 +214,8 @@ $ cat log.txt
 ----
 
 NOTE: 所有要求都满足，但是检查没有通过！奇怪！
+
+TIP: 经过各种尝试，终于通过了！必须 `command: ["/bin/sh", "-c"]` 这样写，不能把 `-c` 放在 `args` 里面。
 
 == Architecture, Installation & Maintenance - Pod Logs - 1
 
