@@ -99,3 +99,7 @@ public int firstMissingPositive(int[] nums) {
 }
 ----
 
+[TIP]
+====
+在解答 https://leetcode.cn/problems/find-all-duplicates-in-an-array/description/[442. 数组中重复的数据^] 时发现，在本题中可以省略的一层循环，在 https://leetcode.cn/problems/find-all-duplicates-in-an-array/description/[442. 数组中重复的数据^] 中却不能省略。这道题之所以可以省略，是因为这道题的题目有一个隐含条件：它不关注重复元素的个数，或者说它把所有元素都当做不可重复的元素了。但是， https://leetcode.cn/problems/find-all-duplicates-in-an-array/description/[442. 数组中重复的数据^] 中却存在多个重复元素，所以，不使用循环来把元素放到自己的位置上，会导致交换一次后，新元素还是不再自己本应所在的位置。
+====
