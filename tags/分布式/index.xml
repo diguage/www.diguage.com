@@ -1,0 +1,1075 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>分布式 on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/%E5%88%86%E5%B8%83%E5%BC%8F/</link><description>Recent content in 分布式 on "地瓜哥"博客网</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Wed, 25 Dec 2024 21:08:16 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/%E5%88%86%E5%B8%83%E5%BC%8F/index.xml" rel="self" type="application/rss+xml"/><item><title>理解数据库分片</title><link>https://www.diguage.com/post/understanding-database-sharding/</link><pubDate>Sun, 01 Dec 2024 15:42:01 +0800</pubDate><guid>https://www.diguage.com/post/understanding-database-sharding/</guid><description>&lt;div class="sidebarblock">
+&lt;div class="content">
+&lt;div class="paragraph">
+&lt;p>最近在 DigitalOcean 社区看到一篇文章，讲解数据库分片架构的，感觉非常不错，图文并茂，翻译过来，分享给需要的朋友。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_介绍">介绍&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>任何应用程序或网站，如果出现大幅增长，最终都需要进行扩展，以适应流量的增加。对于数据驱动型应用程序和网站来说，在进行扩展时必须确保数据的安全性和完整性。很难预测一个网站或应用程序会变得多受欢迎，或者它的受欢迎程度会维持多久，这就是为什么一些组织会选择一种允许他们动态扩展数据库的数据库架构。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在这篇概念性文章中，我们将讨论这样一种数据库架构：分片数据库。近年来，分片数据库受到了广泛关注，但很多人并不清楚什么是分片数据库，也不知道在哪些情况下分片数据库才有意义。我们将介绍什么是分片、分片的一些主要优点和缺点，以及几种常见的分片方法。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_什么是分片">什么是分片？&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>分片是一种与水平分区相关的数据库架构模式，即把一个表的行分成多个不同的表，称为分区。每个分区都有相同的模式和列，但也有完全不同的行。同样，每个分区中的数据都是唯一的，与其他分区中的数据无关。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>从水平分区与垂直分区的关系角度来思考水平分区可能会有所帮助。在垂直分区表中，整个列都被分离出来并放入新的、不同的表中。一个垂直分区中的数据独立于所有其他分区中的数据，每个分区都有不同的行和列。下图说明了如何对表格进行水平和垂直分区：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/databases/sharding-1.png" alt="水平分区与垂直分区" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. 水平分区与垂直分区&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>分片是指将数据分割成两个或多个较小的块，称为逻辑分片。然后，逻辑分片分布在不同的数据库节点上，称为物理分片，物理分片可容纳多个逻辑分片。尽管如此，所有分片中保存的数据共同代表了一个完整的逻辑数据集。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>数据库分片是无共享架构的典范。这意味着分片是独立的，它们不共享任何相同的数据或计算资源。不过，在某些情况下，将某些表复制到每个分片中作为参考表是有意义的。例如，假设有一个应用程序的数据库依赖于重量测量的固定转换率。通过将包含必要转换率数据的表复制到每个分片中，有助于确保每个分片中都包含查询所需的所有数据。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>通常，分片是在应用程序级实现的，这意味着应用程序包含定义向哪个分片传输读写的代码。不过，有些数据库管理系统内置了分片功能，允许你直接在数据库级实施分片。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>鉴于以上对分片的概述，让我们来看看这种数据库架构的一些优点和缺点。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_分片的优点">分片的优点&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>对数据库进行分片的主要吸引力在于，它有助于促进水平扩展，也称为向外扩展，横向扩展。水平扩展是指在现有堆栈中添加更多机器，以分散负载，允许更多流量和更快处理。这通常与垂直扩展（也称向上扩展）形成对比，后者涉及升级现有服务器的硬件，通常是增加更多内存或 CPU。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在一台机器上运行一个关系数据库，并根据需要通过升级其计算资源来扩大其规模相对简单。但归根结底，任何非分布式数据库在存储和计算能力方面都是有限的，因此可以自由横向扩展，会让你的设置更加灵活。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>一些人选择分片数据库架构的另一个原因是为了加快查询响应速度。在未分片的数据库上提交查询时，数据库可能需要搜索查询表中的每一行，然后才能找到所需的结果集。对于使用大型单体数据库的应用程序来说，查询速度会慢得令人望而却步。不过，通过将一个表分片成多个表后，查询需要处理的行数就会减少，返回结果集的速度也会快得多。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>分片还可以减轻中断造成的影响，从而提高应用程序的可靠性。如果您的应用程序或网站依赖的是未分片的数据库，中断有可能导致整个应用程序不可用。 而使用分片数据库时，故障可能只影响单个分片。尽管这可能会导致部分用户无法使用应用程序或网站的某些部分，但总体影响仍小于整个数据库崩溃的影响。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_分片的缺点">分片的缺点&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>虽然分片可以使数据库的扩展更容易并提高性能，但它也会带来一些限制。在此，我们将讨论其中的一些限制，以及为什么要避免使用分片。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>人们在使用分片时遇到的第一个困难是正确实施分片数据库架构的复杂性。如果操作不当，分片过程很有可能导致数据丢失或表损坏。即使操作正确，分片也可能对团队的工作流程产生重大影响。用户必须跨多个分片位置管理数据，而不是从一个入口点访问和管理数据，这可能会对某些团队造成干扰。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>用户在对数据库进行分片后有时会遇到一个问题，那就是分片最终会变得不平衡。举例来说，假设你的数据库有两个独立的分片，一个用于存储姓氏以字母 A 至 M 开头的客户，另一个用于存储姓氏以字母 N 至 Z 开头的客户。然而，你的应用程序为大量姓氏以字母 G 开头的人提供服务。 A-M 分区已成为所谓的数据库热点。在这种情况下，分片给数据库带来的任何好处都会被速度变慢和崩溃所抵消。数据库很可能需要修复和重新分片，以使数据分布更均匀。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>另一个主要缺点是，一旦数据库被分片，就很难将其恢复到未分片的架构。数据库分片前的任何备份都不包括分片后写入的数据。 因此，要重建未分片的原始架构，就需要将新的分片数据与旧的备份合并，或者将分片后的数据库变回单一数据库，这两种方法都会耗费大量成本和时间。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>最后一个需要考虑的缺点是，并非每个数据库引擎都支持分片。例如，PostgreSQL 不包括自动分片功能，但可以手动分片 PostgreSQL 数据库。 有一些 Postgres 变种确实包含自动分片功能，但它们往往落后于最新的 PostgreSQL 版本，而且缺乏某些其他功能。一些专门的数据库技术（如 MySQL Cluster 或某些数据库即服务产品（如 MongoDB Atlas））确实包含自动分片功能，但这些数据库管理系统的普通版本并不包含。因此，分片通常需要“自己开发”。这意味着通常很难找到分片文档或故障排除技巧。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>当然，这些只是分片前需要考虑的一些一般性问题。根据其用例，对数据库进行分片可能会有更多潜在的缺点。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>现在，我们已经介绍了分片的一些缺点和优点，下面将介绍几种不同的分片数据库架构。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_分片架构">分片架构&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>一旦决定对数据库进行分片，接下来需要考虑的就是如何分片。在运行查询或将输入数据分发到分片表或数据库时，将数据分发到正确的分片至关重要。否则，可能会导致数据丢失或查询缓慢。在本节中，我们将介绍几种常见的分片架构，每种架构都使用略有不同的流程在分片间分发数据。&lt;/p>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_基于键的分片">基于键的分片&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>基于密钥的分片，也称为基于散列的分片，涉及使用从新写入的数据中提取的值，例如客户的 ID 编号、客户端应用程序的 IP 地址、邮政编码等并将其输入散列函数，以确定数据应进入哪个分片。散列函数是一种输入数据（如客户电子邮件）并输出离散值（即散列值）的函数。在分片的情况下，散列值是一个分片 ID，用于确定输入的数据将存储在哪个分片上。整个过程如下：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/databases/sharding-2.png" alt="基于键的分片" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 2. 基于键的分片&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>为确保条目以一致的方式放置于正确的分片，输入散列函数的值都应来自同一列。此列被称为分片键。简单来说，分片键与主键类似，都是用于为单个行建立唯一标识符的列。从广义上讲，分片键应该是静态的，也就是说，它不应该包含可能会随时间变化的值。否则，会增加更新操作的工作量，并可能降低性能。&lt;/p>
+&lt;/div></description></item><item><title>基于 Docker 搭建开发环境（三）：链路追踪</title><link>https://www.diguage.com/post/building-a-develop-environment-based-on-docker-3/</link><pubDate>Sun, 20 Oct 2024 16:50:11 +0800</pubDate><guid>https://www.diguage.com/post/building-a-develop-environment-based-on-docker-3/</guid><description>&lt;div class="paragraph">
+&lt;p>&lt;strong>基于 Docker 搭建开发环境系列&lt;/strong>:&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/building-a-develop-environment-based-on-docker-1/" target="_blank" rel="noopener">基于 Docker 搭建开发环境（一）：数据库+监控&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/building-a-develop-environment-based-on-docker-2/" target="_blank" rel="noopener">基于 Docker 搭建开发环境（二）：EFK 日志套件&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/building-a-develop-environment-based-on-docker-3/" target="_blank" rel="noopener">基于 Docker 搭建开发环境（三）：链路追踪&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/building-a-develop-environment-based-on-docker-1/" target="_blank" rel="noopener">基于 Docker 搭建开发环境（一）：数据库+监控&lt;/a> 和 &lt;a href="https://www.diguage.com/post/building-a-develop-environment-based-on-docker-2/" target="_blank" rel="noopener">基于 Docker 搭建开发环境（二）：EFK 日志套件&lt;/a> 两篇文章中，分别介绍了“数据库+监控”和“EFK 日志套件”。这篇文章给大家分享一下如何在本地搭建起一套简单的分布式链路追踪。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在 AI 的帮助下，如同砍瓜切菜一样，非常迅速地就完成了 &lt;a href="https://www.diguage.com/post/building-a-develop-environment-based-on-docker-2/" target="_blank" rel="noopener">基于 Docker 搭建开发环境（二）：EFK 日志套件&lt;/a> 的搭建。原以为搞这个也会分分钟的问题，结果应用的追踪数据一致无法正常发送到 Jaeger 中，各种改端口号都不行。后来，无意间看了 OpenTelemetry 的配置文档，增加了一个协议配置，全部流程竟然通了，非常神奇！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>站在更高的视角去看，链路追踪其实是可观测性的一部分，包括上篇文章的日志，也是可观测性的一部分。日志、追踪、度量，三者是相辅相成的。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/it/observability.png" alt="可观测性" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. 可观测性&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在 OpenTelemetry 出现之前，日志、追踪、度量是分离的，三者各各自为战。而 OpenTelemetry 的出现，则是试图将三者统一。目前 OpenTelemetry 是云原生架构中，最炙手可热的分布式链路追踪解决方案，它提供了一套相关标准，各个厂商可以在这套标准之上进行各种各样的组件开发，大家可以根据自己的需要，选择不同的组件，进行可插拔式的安装。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/it/opentelemetry-collection.webp" alt="OpenTelemetry 的野心" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 2. OpenTelemetry 的野心&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在这篇文章中，链路追踪的解决方案选择的是 OpenTelemetry + OpenTelemetry Collector + Jaeger。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_opentelemetry">OpenTelemetry&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>OpenTelemetry 并不需要在 Docker 中启动或者配置什么。在目前的架构中，Jaeger 是作为 OpenTelemetry 的一个实现来出现的。 OpenTelemetry 需要做的就是下载一个 Java Agent，执行 &lt;code>docker/config/opentelemetry/download-opentelemetry-agent.sh&lt;/code> 脚本即可下载最新版的 Java Agent。在业务应用启动时，增加如下 JVM 参数：&lt;/p>
+&lt;/div></description></item><item><title>基于 Docker 搭建开发环境（二）：EFK 日志套件</title><link>https://www.diguage.com/post/building-a-develop-environment-based-on-docker-2/</link><pubDate>Thu, 17 Oct 2024 22:42:11 +0800</pubDate><guid>https://www.diguage.com/post/building-a-develop-environment-based-on-docker-2/</guid><description>&lt;div class="paragraph">
+&lt;p>&lt;strong>基于 Docker 搭建开发环境系列&lt;/strong>:&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/building-a-develop-environment-based-on-docker-1/" target="_blank" rel="noopener">基于 Docker 搭建开发环境（一）：数据库+监控&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/building-a-develop-environment-based-on-docker-2/" target="_blank" rel="noopener">基于 Docker 搭建开发环境（二）：EFK 日志套件&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/building-a-develop-environment-based-on-docker-3/" target="_blank" rel="noopener">基于 Docker 搭建开发环境（三）：链路追踪&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/building-a-develop-environment-based-on-docker-1/" target="_blank" rel="noopener">基于 Docker 搭建开发环境（一）：数据库+监控&lt;/a> 中，介绍了一下如何使用 Docker 搭建起 MySQL + NACOS + Prometheus + Grafana 集成数据库、注册中心+配置管理、监控的开发环境。这篇文章来介绍一下如何在原来的基础上接入 Elasticsearch + Fluentd + Kibana 套件，并且将 NACOS 的日志接入到 Elasticsearch 里。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_elasticsearch">Elasticsearch&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>由于 Elasticsearch 8+ 的版本修改了安全策略，不允许 Kibana 使用超级管理员 &lt;code>elastic&lt;/code> 连接 Elasticsearch，这里选用 7.x 版本做演示。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>还有一点需要提醒，在设置 Elasticsearch 的超级管理员 &lt;code>elastic&lt;/code> 的账户密码时，如果密码是全部的阿拉伯数字，那么需要用双引号或者单引号括起来。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在测试中，还遇到一个磁盘过载导致的只读问题。解决方式如下：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;code>curl -X GET &amp;#34;localhost:9200/_cat/allocation?v&amp;amp;pretty&amp;#34;&lt;/code> 查看磁盘使用情况&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>解除只读状态&lt;/p>
+&lt;div class="openblock">
+&lt;div class="content">
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="nv">$ &lt;/span>curl &lt;span class="nt">-X&lt;/span> PUT &lt;span class="s2">&amp;#34;localhost:9200/test/_settings&amp;#34;&lt;/span> &lt;span class="nt">-H&lt;/span> &lt;span class="s1">&amp;#39;Content-Type: application/json&amp;#39;&lt;/span> &lt;span class="nt">-d&lt;/span>&lt;span class="s1">&amp;#39;
+{
+ &amp;#34;index.blocks.read_only_allow_delete&amp;#34;: null
+}
+&amp;#39;&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>Spring 应用合并之路</title><link>https://www.diguage.com/post/the-merging-spring-applications-road/</link><pubDate>Sat, 23 Dec 2023 20:38:47 +0800</pubDate><guid>https://www.diguage.com/post/the-merging-spring-applications-road/</guid><description>&lt;div class="paragraph">
+&lt;p>公司最近一年在推进降本增效，在用尽各种手段之后，发现应用太多，每个应用都做跨机房容灾部署，则最少需要 4 台机器（称为容器更合适）。那么，将相近应用做一个合并，减少维护项目，提高机器利用率就是一个可选方案。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>经过前后三次不同的折腾，最后探索出来一个可行方案。记录一下，分享出来，希望对有相关需求的研发童鞋有所帮助。下面按照四种可能的方案，分别做介绍。另外，为了方便做演示，专门整了两个演示项目：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;a href="https://github.com/diguage/merge-demo-boot" target="_blank" rel="noopener">diguage/merge-demo-boot&lt;/a> — 合并项目，下面简称为 &lt;code>boot&lt;/code>。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://github.com/diguage/merge-demo-web" target="_blank" rel="noopener">diguage/merge-demo-web&lt;/a> — 被合并项目，下面简称为 &lt;code>web&lt;/code>。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_jar_包引用">Jar 包引用&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>这个方式，可能是给人印象最容易的方式。仔细思考一下，从维护性的角度来看，这个方式反而是最麻烦的方式，理由如下：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;code>web&lt;/code> 项目每次更新，都需要重新打包发布新版； &lt;code>boot&lt;/code> 项目也需要跟着更新发布。拉一次屎，脱两次裤子。属实麻烦。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>还需要考虑 &lt;code>web&lt;/code> 项目的加载问题，类似下面要描述的，是否共用容器：&lt;/p>
+&lt;div class="olist loweralpha">
+&lt;ol class="loweralpha" type="a">
+&lt;li>
+&lt;p>共用容器 — 这是最容器想到的方式。但是这种方式，需要解决 Bean 冲突的问题。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>不共用容器 — 这种方式需要处理 &lt;code>web&lt;/code> 容器如何加载的问题。默认应该是无法识别。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>基于这些考虑，这种方式直接被抛弃了。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_仓库合并公用一套容器">仓库合并，公用一套容器&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>这是第一次尝试使用的方案。也是遇到问题最多的方案。&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>将两个仓库做合并。&lt;/p>
+&lt;div class="olist loweralpha">
+&lt;ol class="loweralpha" type="a">
+&lt;li>
+&lt;p>将 &lt;code>web&lt;/code> 仓库的地址配置到 &lt;code>boot&lt;/code> 项目里： &lt;code>git remote add web &lt;a href="mailto:git@github.com">git@github.com&lt;/a>:diguage/merge-demo-web.git&lt;/code>；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>在 &lt;code>boot&lt;/code> 项目里，切出来一个分支： &lt;code>git switch -c web&lt;/code>；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>将 &lt;code>web&lt;/code> 分支的提交清空： &lt;code>git update-ref -d HEAD&lt;/code>，然后做一次提交；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>将 &lt;code>web&lt;/code> 项目的代码克隆到 &lt;code>web&lt;/code> 分支上： &lt;code>git pull --rebase --allow-unrelated-histories web master&lt;/code>；注意，这里需要加 &lt;code>--allow-unrelated-histories&lt;/code> 参数，以允许不相干的仓库进行合并。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>从 &lt;code>boot&lt;/code> 项目的 &lt;code>master&lt;/code> 分支上，切出来一个合并分支： &lt;code>git switch -c merge&lt;/code>；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>将 &lt;code>web&lt;/code> 项目向 &lt;code>boot&lt;/code> 项目合并： &lt;code>git merge --allow-unrelated-histories web&lt;/code>；注意，这里需要加 &lt;code>--allow-unrelated-histories&lt;/code> 参数，以允许不相干的仓库进行合并。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>处理代码冲突，完成合并即可。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div></description></item><item><title>Raft 论文摘要（二）</title><link>https://www.diguage.com/post/summary-of-the-raft-paper-2/</link><pubDate>Mon, 05 Jul 2021 19:58:32 +0800</pubDate><guid>https://www.diguage.com/post/summary-of-the-raft-paper-2/</guid><description>&lt;div class="paragraph">
+&lt;p>在上一篇文章中，通过阅读 &lt;a href="https://raft.github.io/raft.pdf">《In Search of an Understandable Consensus Algorithm》&lt;/a> 前三节的内容，对论文的大致内容做了简介，简单说明了一下 Replicated state machines 的用途以及 Paxos 本身存在的问题。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_4_designing_for_understandability">4. Designing for understandability&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="quoteblock">
+&lt;blockquote>
+&lt;div class="paragraph">
+&lt;p>several goals in designing Raft:&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>it must providea complete and practical foundation for system building;&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>it must be safe under all conditions and available under typical operating conditions;&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>it must be efficient for common operations.&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>Our most important goal — and most difficult challenge — was &lt;strong>understandability&lt;/strong>.&lt;/p>
+&lt;/div>
+&lt;/blockquote>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>从这里可以看出，Raft 设计的初衷就是为了易于理解和便于构建。&lt;/p>
+&lt;/div>
+&lt;div class="quoteblock">
+&lt;blockquote>
+There were numerous points in the design of Raft where we had to choose among alternative approaches. In these situations we evaluated the alternatives based on understandability.
+&lt;/blockquote>
+&lt;/div></description></item><item><title>Raft 论文摘要（一）</title><link>https://www.diguage.com/post/summary-of-the-raft-paper-1/</link><pubDate>Fri, 02 Jul 2021 11:42:26 +0800</pubDate><guid>https://www.diguage.com/post/summary-of-the-raft-paper-1/</guid><description>&lt;div class="paragraph">
+&lt;p>前一段时间，在一次开组会的时候，给小组成员简单介绍了一下 Raft 协议。大概四年前读过 Raft 的论文，这次分享的时候，好多好多细节都忘了。所以，再次把 &lt;a href="https://raft.github.io/raft.pdf">《In Search of an Understandable Consensus Algorithm》&lt;/a> 这篇论文找出来，重读一遍，做个笔记和摘要，方便后续学习和复习。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_abstract">Abstract&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="quoteblock">
+&lt;blockquote>
+Raft is a consensus algorithm for managing a replicated log.
+&lt;/blockquote>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>开篇摘要就点出了 Raft 的特点： Raft 是一种管理复制日志的共识算法。&lt;/p>
+&lt;/div>
+&lt;div class="quoteblock">
+&lt;blockquote>
+In order to enhance understandability, Raft separates the key elements of consensus, such as leader election, log replication, and safety, and it enforcesa stronger degree of coherency to reduce the number of states that must be considered.
+&lt;/blockquote>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>为了增强可理解性，Raft 将共识分解成几个关键元素，例如 Leader 选举，日志复制，以及安全性等；同时，为了降低需要考虑的状态的数量，还强制实施了更强的一致性。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_1_introduction">1. Introduction&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="quoteblock">
+&lt;blockquote>
+Consensus algorithms allow a collection of machines to work as a coherent group that can survive the failures of some of its members.
+&lt;/blockquote>
+&lt;/div></description></item><item><title>分布式锁之 Apache Curator InterProcessReadWriteLock</title><link>https://www.diguage.com/post/distributed-lock-apache-curator-interprocessreadwritelock/</link><pubDate>Wed, 22 Jul 2020 10:45:44 +0800</pubDate><guid>https://www.diguage.com/post/distributed-lock-apache-curator-interprocessreadwritelock/</guid><description>&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/distributed-lock-apache-curator-interprocessmutex/">分布式锁之 Apache Curator InterProcessMutex&lt;/a> 中介绍了基于 ZooKeeper 实现的互斥锁。除此之外，还可以实现读写锁。这篇文章就来简要介绍一下 &lt;code>InterProcessReadWriteLock&lt;/code> 的实现原理。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>老规矩，先看看类的注释：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="cm">/**
+ * &amp;lt;p&amp;gt;
+ * A re-entrant read/write mutex that works across JVMs. Uses Zookeeper to hold the lock. All processes
+ * in all JVMs that use the same lock path will achieve an inter-process critical section. Further, this mutex is
+ * &amp;#34;fair&amp;#34; - each user will get the mutex in the order requested (from ZK&amp;#39;s point of view).
+ * &amp;lt;/p&amp;gt;
+ *
+ * &amp;lt;p&amp;gt;
+ * A read write lock maintains a pair of associated locks, one for read-only operations and one
+ * for writing. The read lock may be held simultaneously by multiple reader processes, so long as
+ * there are no writers. The write lock is exclusive.
+ * &amp;lt;/p&amp;gt;
+ *
+ * &amp;lt;p&amp;gt;
+ * &amp;lt;b&amp;gt;Reentrancy&amp;lt;/b&amp;gt;&amp;lt;br&amp;gt;
+ * This lock allows both readers and writers to reacquire read or write locks in the style of a
+ * re-entrant lock. Non-re-entrant readers are not allowed until all write locks held by the
+ * writing thread/process have been released. Additionally, a writer can acquire the read lock, but not
+ * vice-versa. If a reader tries to acquire the write lock it will never succeed.&amp;lt;br&amp;gt;&amp;lt;br&amp;gt;
+ *
+ * &amp;lt;b&amp;gt;Lock downgrading&amp;lt;/b&amp;gt;&amp;lt;br&amp;gt;
+ * Re-entrancy also allows downgrading from the write lock to a read lock, by acquiring the write
+ * lock, then the read lock and then releasing the write lock. However, upgrading from a read
+ * lock to the write lock is not possible.
+ * &amp;lt;/p&amp;gt;
+ */&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">InterProcessReadWriteLock&lt;/span>
+&lt;span class="o">{&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>分布式锁之 Apache Curator InterProcessMutex</title><link>https://www.diguage.com/post/distributed-lock-apache-curator-interprocessmutex/</link><pubDate>Tue, 21 Jul 2020 10:13:21 +0800</pubDate><guid>https://www.diguage.com/post/distributed-lock-apache-curator-interprocessmutex/</guid><description>&lt;div class="paragraph">
+&lt;p>对分布式锁耳熟能详。不过，一直关注的是基于 Redis 实现的分布式锁。知道 ZooKeeper 也可以实现分布式锁。但是，原来的想法是把 Redis 那个思路切换到 ZooKeeper 上来实现就好。今天了解到 Apache Curator 内置了分布式锁的实现： &lt;code>InterProcessMutex&lt;/code>。查看了一下源码实现，发现跟基于 Redis 实现的源码相比，在思路上还是有很大不同的。所以，特别作文记录一下。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>先来看一下，整体流程：&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;span class="image">&lt;img src="https://www.diguage.com/images/distributed-system/InterProcessMutex-process.png" alt="InterProcessMutex process" width="95%"/>&lt;/span>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>结合流程图和源码，加锁的过程是这样的：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>先判断本地是否有锁数据，如果有则对锁定次数自增一下，然后返回 &lt;code>true&lt;/code>；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>如果没有锁数据，则尝试获取锁：&lt;/p>
+&lt;div class="olist loweralpha">
+&lt;ol class="loweralpha" type="a">
+&lt;li>
+&lt;p>在指定路径下创建临时顺序节点&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>获取指定路径下，所有节点，检查自身是否是序号最小的节点：&lt;/p>
+&lt;div class="olist lowerroman">
+&lt;ol class="lowerroman" type="i">
+&lt;li>
+&lt;p>如果自身序号最小，则获得锁；否则&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>如果自身不是序号最小的节点，则通过 &lt;code>while&lt;/code> 自旋 + &lt;code>wait(times)&lt;/code> 不断尝试获取锁，直到成功。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>获得锁后，把锁信息缓存在本地 &lt;code>ConcurrentMap&amp;lt;Thread, LockData&amp;gt; threadData&lt;/code> 变量中，方便计算重入。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在 ZooKeeper 中的结构大致如下：&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;span class="image">&lt;img src="https://www.diguage.com/images/distributed-system/InterProcessMutex-structure.png" alt="InterProcessMutex structure" width="95%"/>&lt;/span>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>下面我们逐个方法进行分析说明。先来看一下 &lt;code>InterProcessMutex&lt;/code> 的注释：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="cm">/**
+ * A re-entrant mutex that works across JVMs. Uses Zookeeper to hold the lock. All processes in all JVMs that
+ * use the same lock path will achieve an inter-process critical section. Further, this mutex is
+ * &amp;#34;fair&amp;#34; - each user will get the mutex in the order requested (from ZK&amp;#39;s point of view)
+ */&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">InterProcessMutex&lt;/span> &lt;span class="kd">implements&lt;/span> &lt;span class="nc">InterProcessLock&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="nc">Revocable&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="nc">InterProcessMutex&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>Spring 扩展点实践：整合 Apache Dubbo（二）</title><link>https://www.diguage.com/post/spring-extensions-and-dubbo-2/</link><pubDate>Sat, 11 Jul 2020 16:20:00 +0800</pubDate><guid>https://www.diguage.com/post/spring-extensions-and-dubbo-2/</guid><description>&lt;div class="paragraph">
+&lt;p>在 &lt;a href="https://www.diguage.com/post/spring-extensions-and-dubbo-1/" target="_blank" rel="noopener">Spring 扩展点实践：整合 Apache Dubbo（一）&lt;/a> 中，D瓜哥介绍了 Dubbo 如何使用 Spring 的插件机制与 Spring 整合。限于篇幅原因，上一篇文章只介绍到了服务提供者的注册。本篇文章继续上一篇文章的主题，继续介绍 Spring 与 Dubbo 的整合过程。先来讲解一下服务消费者的生成过程。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_dubbo_生成服务消费者的过程">Dubbo 生成服务消费者的过程&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>先来看看 XML 配置文件：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="title">&lt;code>dubbo-demo/dubbo-demo-xml/dubbo-demo-xml-consumer/src/main/resources/spring/dubbo-consumer.xml&lt;/code>&lt;/div>
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="xml">&lt;span class="cp">&amp;lt;?xml version=&amp;#34;1.0&amp;#34; encoding=&amp;#34;UTF-8&amp;#34;?&amp;gt;&lt;/span>
+&lt;span class="nt">&amp;lt;beans&lt;/span> &lt;span class="na">xmlns:xsi=&lt;/span>&lt;span class="s">&amp;#34;http://www.w3.org/2001/XMLSchema-instance&amp;#34;&lt;/span>
+ &lt;span class="na">xmlns:dubbo=&lt;/span>&lt;span class="s">&amp;#34;http://dubbo.apache.org/schema/dubbo&amp;#34;&lt;/span>
+ &lt;span class="na">xmlns=&lt;/span>&lt;span class="s">&amp;#34;http://www.springframework.org/schema/beans&amp;#34;&lt;/span>
+ &lt;span class="na">xsi:schemaLocation=&lt;/span>&lt;span class="s">&amp;#34;http://www.springframework.org/schema/beans
+ http://www.springframework.org/schema/beans/spring-beans.xsd
+ http://dubbo.apache.org/schema/dubbo
+ http://dubbo.apache.org/schema/dubbo/dubbo.xsd&amp;#34;&lt;/span>&lt;span class="nt">&amp;gt;&lt;/span>
+
+ &lt;span class="nt">&amp;lt;dubbo:application&lt;/span> &lt;span class="na">name=&lt;/span>&lt;span class="s">&amp;#34;demo-consumer&amp;#34;&lt;/span>&lt;span class="nt">/&amp;gt;&lt;/span>
+
+ &lt;span class="nt">&amp;lt;dubbo:registry&lt;/span> &lt;span class="na">address=&lt;/span>&lt;span class="s">&amp;#34;zookeeper://127.0.0.1:2181&amp;#34;&lt;/span>&lt;span class="nt">/&amp;gt;&lt;/span>
+
+ &lt;span class="nt">&amp;lt;dubbo:reference&lt;/span> &lt;span class="na">id=&lt;/span>&lt;span class="s">&amp;#34;demoService&amp;#34;&lt;/span> &lt;span class="na">check=&lt;/span>&lt;span class="s">&amp;#34;false&amp;#34;&lt;/span> &lt;span class="na">interface=&lt;/span>&lt;span class="s">&amp;#34;org.apache.dubbo.demo.DemoService&amp;#34;&lt;/span>&lt;span class="nt">/&amp;gt;&lt;/span>
+
+&lt;span class="nt">&amp;lt;/beans&amp;gt;&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>我们先看一下 &lt;code>ReferenceBean&lt;/code> 类的声明：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="title">&lt;code>org.apache.dubbo.config.spring.ReferenceBean&lt;/code>&lt;/div>
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="kd">public&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">ReferenceBean&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="kd">extends&lt;/span> &lt;span class="nc">ReferenceConfig&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="kd">implements&lt;/span> &lt;span class="nc">FactoryBean&lt;/span>&lt;span class="o">,&lt;/span>
+ &lt;span class="nc">ApplicationContextAware&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="nc">InitializingBean&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="nc">DisposableBean&lt;/span> &lt;span class="o">{&lt;/span>
+
+ &lt;span class="c1">// 此处省略 N 行代码&lt;/span>
+
+ &lt;span class="nd">@Override&lt;/span>
+ &lt;span class="kd">public&lt;/span> &lt;span class="nc">Object&lt;/span> &lt;span class="nf">getObject&lt;/span>&lt;span class="o">()&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="k">return&lt;/span> &lt;span class="nf">get&lt;/span>&lt;span class="o">();&lt;/span>
+ &lt;span class="o">}&lt;/span>
+
+ &lt;span class="c1">// 此处省略 N 行代码&lt;/span>
+
+ &lt;span class="nd">@Override&lt;/span>
+ &lt;span class="nd">@SuppressWarnings&lt;/span>&lt;span class="o">({&lt;/span>&lt;span class="s">&amp;#34;unchecked&amp;#34;&lt;/span>&lt;span class="o">})&lt;/span>
+ &lt;span class="kd">public&lt;/span> &lt;span class="kt">void&lt;/span> &lt;span class="nf">afterPropertiesSet&lt;/span>&lt;span class="o">()&lt;/span> &lt;span class="kd">throws&lt;/span> &lt;span class="nc">Exception&lt;/span> &lt;span class="o">{&lt;/span>
+
+ &lt;span class="c1">// Initializes Dubbo&amp;#39;s Config Beans before @Reference bean autowiring&lt;/span>
+ &lt;span class="n">prepareDubboConfigBeans&lt;/span>&lt;span class="o">();&lt;/span>
+
+ &lt;span class="c1">// lazy init by default.&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">init&lt;/span> &lt;span class="o">==&lt;/span> &lt;span class="kc">null&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="n">init&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="kc">false&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>
+
+ &lt;span class="c1">// eager init if necessary.&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">shouldInit&lt;/span>&lt;span class="o">())&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="n">getObject&lt;/span>&lt;span class="o">();&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="o">}&lt;/span>
+
+ &lt;span class="c1">// 此处省略 N 行代码&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这个类实现了 &lt;code>FactoryBean&lt;/code> 接口，D瓜哥在 &lt;a href="https://www.diguage.com/post/spring-extensions-overview/#factory-bean">Spring 扩展点概览及实践：FactoryBean&lt;/a> 中对 &lt;code>FactoryBean&lt;/code> 介绍。所以，请在上面的 &lt;code>getObject()&lt;/code> 打个断点。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>另外，这个类还实现了 &lt;code>InitializingBean&lt;/code>，D瓜哥在 &lt;a href="https://www.diguage.com/post/spring-bean-lifecycle-overview/">Spring Bean 生命周期概述&lt;/a> 中介绍了这个接口的用途。不了解的，请移步。&lt;/p>
+&lt;/div></description></item><item><title>Spring 扩展点实践：整合 Apache Dubbo（一）</title><link>https://www.diguage.com/post/spring-extensions-and-dubbo-1/</link><pubDate>Thu, 09 Jul 2020 16:28:35 +0800</pubDate><guid>https://www.diguage.com/post/spring-extensions-and-dubbo-1/</guid><description>&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/spring-extensions-overview/" target="_blank" rel="noopener">Spring 扩展点概览及实践&lt;/a> 中介绍了 Spring 内部存在的扩展点。 &lt;a href="https://www.diguage.com/post/spring-extensions-and-mybatis/" target="_blank" rel="noopener">Spring 扩展点实践：整合 MyBATIS&lt;/a> 中，D瓜哥带大家了解了一下 MyBATIS 如何利用 Spring 的扩展点实现了与 Spring 的完美整合。现在，学以致用，我们继续来分析一下 Spring 与 Apache Dubbo 的整合流程。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_示例程序">示例程序&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>Apache Dubbo 仓库中就有很完整的示例。D瓜哥直接拿来使用就不再搭建示例程序了。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>首先，需要启动一个 ZooKeeper 实例。查看 Dubbo 的依赖可以看出，最新版代码依赖的 ZooKeeper 是 3.4.13 版。所以，为了最好的兼容性，就要选用 3.4.X 版的 ZooKeeper 服务器。D瓜哥直接使用 Docker 启动 ZooKeeper 了。命令如下：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="bash">docker run &lt;span class="nt">--rm&lt;/span> &lt;span class="nt">--name&lt;/span> zookeeper &lt;span class="nt">-d&lt;/span> &lt;span class="nt">-p&lt;/span> 2181:2181 zookeeper:3.4.14&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这次我们使用 &lt;a href="https://github.com/apache/dubbo" target="_blank" rel="noopener">Apache Dubbo&lt;/a> 的 &lt;code>dubbo-demo/dubbo-demo-xml&lt;/code> 示例。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>第二步，启动服务提供者程序，找到 &lt;code>DUBBO/dubbo-demo/dubbo-demo-xml/dubbo-demo-xml-provider/src/main/java/org/apache/dubbo/demo/provider/Application.java&lt;/code>，运行该类。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>第三步，运行服务消费者程序，找到 &lt;code>DUBBO/dubbo-demo/dubbo-demo-xml/dubbo-demo-xml-consumer/src/main/java/org/apache/dubbo/demo/consumer/Application.java&lt;/code>，运行该类。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>如果没有任何错误，则在终端可以看到 &lt;code>result: async result&lt;/code> 输出。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在开始正餐之前，D瓜哥先给大家来个开胃菜。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="spring-plugin">Spring 插件机制简介&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>不知道大家有没有想过一个问题：Spring 框架是如何支持越来越多的功能的？&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在D瓜哥了解到 Spring 的插件机制后，非常叹服 Spring 精巧的设计和灵活的扩展性。闲言少叙，好戏上演。&lt;/p>
+&lt;/div></description></item><item><title>Kafka 常见面试题</title><link>https://www.diguage.com/post/kafka-interview-questions/</link><pubDate>Wed, 01 Jul 2020 18:08:51 +0800</pubDate><guid>https://www.diguage.com/post/kafka-interview-questions/</guid><description>&lt;div class="paragraph">
+&lt;p>Kafka 是由 LinkedIn 开发的一个分布式的消息系统，使用 Scala 编写，它以可水平扩展和高吞吐率而被广泛使用。Kafka 本身设计也非常精巧，有很多关键的知识点需要注意。在面试中，也常常被问到。整理篇文章，梳理一下自己的知识点。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_架构设计问题">架构设计问题&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>Kafka 整体架构如下：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/kafka/kafka-architecture.png" alt="Kafka 架构" width="98%"/>
+&lt;/div>
+&lt;div class="title">图 1. Kafka 架构&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>Kafka 架构分为以下几个部分&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;strong>Producer&lt;/strong>：消息生产者，就是向 Kafka Broker 发消息的客户端。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>Consumer&lt;/strong>：消息消费者，向 Kafka Broker 取消息的客户端。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>Topic&lt;/strong>：可以理解为一个队列，一个 Topic 又分为一个或多个分区。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>Consumer Group&lt;/strong>：这是 Kafka 用来实现一个 Topic 消息的广播（发给所有的 Consumer）和单播（发给任意一个 Consumer）的手段。一个 Topic 可以有多个 Consumer Group。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>Broker&lt;/strong>：一台 Kafka 服务器就是一个 Broker。一个集群由多个 Broker 组成。一个 Broker 可以容纳多个 Topic。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>Partition&lt;/strong>：为了实现扩展性，一个非常大的 Topic 可以分布到多个 Broker上，每个 Partition 是一个有序的队列。Partition 中的每条消息都会被分配一个有序的id（offset）。将消息发给 Consumer，Kafka 只保证按一个 Partition 中的消息的顺序，不保证一个 Topic 的整体（多个 Partition 间）的顺序。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>Offset&lt;/strong>：Kafka 的存储文件都是按照 offset.Kafka 来命名，用 offset 做名字的好处是方便查找。例如你想找位于 2049 的位置，只要找到 2048.Kafka 的文件即可。当然 the first offset 就是 00000000000.Kafka。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div></description></item><item><title>负载均衡算法及实践</title><link>https://www.diguage.com/post/load-balancing-algorithm/</link><pubDate>Fri, 15 May 2020 11:37:25 +0800</pubDate><guid>https://www.diguage.com/post/load-balancing-algorithm/</guid><description>&lt;div class="paragraph">
+&lt;p>前几天在看一个资料时，看到关于负载均衡算法的介绍。最近也在研究 Spring Cloud 和 Apache Dubbo 等微服务框架。正好负载均衡是微服务框架中一个很重要的知识点。就动手做个整理和总结。方便后续学习。&lt;/p>
+&lt;/div>
+&lt;div class="sidebarblock">
+&lt;div class="content">
+&lt;div class="paragraph">
+&lt;p>听朋友建议，这篇文章还可以在算法对比，客户端负载均衡与服务端负载均衡区分等两方面做些补充。这些内容后续再补充加入进来。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_常见的负载均衡算法">常见的负载均衡算法&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="sect2">
+&lt;h3 id="round-robin">轮询(Round Robin)法&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>轮询选择指的是从已有的后端节点列表中按顺序依次选择一个节点出来提供服务。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/load-balancing-algorithm/round-robin.png" alt="round robin"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>优点：试图做到请求转移的绝对均衡。实现简单，使用广泛。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="weighted-round-robin">加权轮询(Weighted Round Robin)法&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>实际使用中各个节点往往都带有不同的权重，所以一般都需要实现带权重的轮询选择。 权重高的被选中的次数多，权重低的被选中的次数少。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/load-balancing-algorithm/weighted-round_robin.jpg" alt="weighted round robin"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>优点：是 &lt;a href="#round-robin">轮询(Round Robin)法&lt;/a> 改良版。适用于服务器配置不一致时，可以将配置好的服务器多干活，配置差的服务器少干活以使机器的负载达到相同的水平。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="static-round-robin">静态轮询(Static Round Robin)法&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>HAProxy 中实现的一个负载均衡算法。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>没有后台服务器的限制，服务器启动时，修改权重也不会生效。增删服务器时，服务器准备就绪后，会立即加入到服务队列中。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="random">随机(Random)法&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>通过随机函数，根据后端服务器列表的大小值来随机选择其中一台进行访问。由概率统计理论可以得知，随着调用量的增大，其实际效果越来越接近于平均分配流量到每一台后端服务器，也就是轮询的效果。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="weighted-random">加权随机(Weighted Random)法&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>与加权轮询法类似，加权随机法也是根据后端服务器不同的配置和负载情况来配置不同的权重。不同的是，它是按照权重来随机选择服务器的，而不是顺序。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="ip-hash">原地址哈希(IP Hashing)法&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>源地址哈希的思想是获取客户端访问的IP地址值，通过哈希函数计算得到一个数值，用该数值对服务器列表的大小进行取模运算，得到的结果便是要访问的服务器的序号。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>优点：保证了相同客户端 IP 地址将会被哈希到同一台后端服务器，直到后端服务器列表变更。根据此特性可以在服务消费者与服务提供者之间建立有状态的 Session 会话。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="uri-hash">URI 哈希(URI Hashing)法&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>HAProxy 中实现的一个负载均衡算法。支持部分 URI（问号之前）和完整 URI 两种模式。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这个算法可以把同一个 URI 的访问发送到同一台服务器上，以最大程度提高缓存命中率。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>该算法支持两个可选参数 &lt;code>len&lt;/code> 和 &lt;code>depth&lt;/code>，后跟一个正整数。仅在需要基于URI的开头来平衡服务器时，这些选项可能会很有用。 &lt;code>len&lt;/code> 参数指示算法仅应考虑URI开头的许多字符来计算哈希。请注意，将 &lt;code>len&lt;/code> 设置为 &lt;code>1&lt;/code> 几乎没有意义，因为大多数URI都以前导 &lt;code>/&lt;/code> 开头。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;code>depth&lt;/code> 参数指示用于计算哈希的最大目录深度。请求中的每个斜杠都计为一个级别。如果同时指定了两个参数，则在达到任意一个参数时都将停止评估。&lt;/p>
+&lt;/div></description></item><item><title>在世界读书日，推荐书单</title><link>https://www.diguage.com/post/books-on-book-day/</link><pubDate>Thu, 23 Apr 2020 20:15:14 +0800</pubDate><guid>https://www.diguage.com/post/books-on-book-day/</guid><description>&lt;div class="paragraph">
+&lt;p>今天是世界读书日，各种人都在推荐书单。D瓜哥也凑个热闹，水一篇文章，推荐一些书籍。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在前一段时间，D瓜哥已经写了一个书单： &lt;a href="https://www.diguage.com/post/java-concurrent-books/">推荐几本 Java 并发编程的书&lt;/a>。为了避免重复，上一个书单中推荐过的书籍，这次就不再重复推荐了。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>每年十二个月，D瓜哥就推荐 12 本书，每个月读一本想必压力也不算大。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_如何阅读一本书">&lt;a href="https://book.douban.com/subject/1013208/" target="_blank" rel="noopener">如何阅读一本书？&lt;/a>&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/books/how-to-read-a-book.jpg" alt="how to read a book" width="60%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥在年初的时候，刚刚再次重读了这本书。而且，还写了一篇读书笔记： &lt;a href="https://www.diguage.com/post/how-to-read-a-book/">《如何阅读一本书？》之读书笔记&lt;/a>。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>如果喜欢读书，那么这本书绝对应该是首先阅读的第一本书。一句话总结一下：&lt;strong>用检视阅读的方法来快速筛选出你关注主题的书籍；用分析阅读的方法来吸收一本书的精华；用主题阅读的办法来对多本同一主题的书去伪存真，加工再输出。&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_远见">&lt;a href="https://book.douban.com/subject/27609489/" target="_blank" rel="noopener">远见&lt;/a>&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/books/the-long-view.jpg" alt="the long view" width="60%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥在去年年末写的年终总结 &lt;a href="https://www.diguage.com/post/goodbye-2019-hello-2020/">“告别 2019，迎接 2020”&lt;/a> 中提到了这本书。考虑这本书的实用性和对自身发展的指导意义，所以决定再次推荐这本书。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在这本书中，作者将职业生涯分为：强势开局、聚焦长板和实现持续的影响力三个阶段。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在强势开局阶段，就像要开始一个汽车拉力赛，要努力加添燃料。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在聚焦长板阶段，要努力提高自己的核心竞争力，创造自己的制高点。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在实现持续的影响力阶段，则要优化长尾效应，让自己持续保持领先。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>对于职业生涯有追求的小伙伴，尤其是在读大学生，一定要去尽早认真读一读这本书。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_思考快与慢">&lt;a href="https://book.douban.com/subject/10785583/" target="_blank" rel="noopener">思考，快与慢&lt;/a>&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/books/thinking-fast-and-slow.jpg" alt="thinking fast and slow" width="60%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这是一本有关心理学方面的书籍。作者丹尼尔•卡尼曼因其与阿莫斯•特沃斯基在决策制定上的研究而荣获了 2002 年度的诺贝尔经济学奖。所以，这本书质量上肯定是有保证的。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这本书主要是介绍认知心理学的。作者在书中，把人的认知分为系统一和系统二。系统一是那种不需要思考的，已经固化在我们基因中的反应，比如看见危险会跑路等；而系统二，则是需要深入思考才能有所收获的事情，比如在新税法下，计算个人应该缴纳的个人所得税。两个系统相辅相成，时刻影响着我们的生活，但我们却有些熟视无睹。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_穷查理宝典">&lt;a href="https://book.douban.com/subject/26831789/" target="_blank" rel="noopener">穷查理宝典&lt;/a>&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/books/poor-charlies-almanack.jpg" alt="poor charlies almanack" width="60%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>提起查理·芒格，也许有些人不知道是谁。（看这篇文章的读者估计都了解）但是，他的搭档估计是人尽皆知，那就是世界股神沃伦·巴菲特。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>虽然这本书不是查理·芒格书写的，里面的精华部分，却都是查理的演讲稿。通过这些演讲，你可以看到一个睿智的老人，如何在循循善诱地向你传授他的思维方法。查理给我们介绍了他的思维模型：逆向思维，多元思维模型，打造自己的核心圈，避免嫉妒效应，内部积分卡（用我们古人的话说就是反求诸己）等等。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_社会性动物">&lt;a href="https://book.douban.com/subject/2328458/" target="_blank" rel="noopener">社会性动物&lt;/a>&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/books/the-social-animal.jpg" alt="the social animal" width="60%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥是去年开始读这本书的，非常抱歉目前还没有读完。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这本书是讲述社会心理学的，讲述在这个社会中，人与人之间是如何相互影响的。举一个典型的例子：你思考过吗，什么样的广告最能打动你吗？&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_事实">&lt;a href="https://book.douban.com/subject/33385402/" target="_blank" rel="noopener">事实&lt;/a>&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/books/factfulness.jpg" alt="factfulness" width="60%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>比尔·盖茨也推荐了这本书。我也是最近刚刚开始读这本书。还没有读完。就不做过多评价了。用一个问题，勾引一下你的兴趣：&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>问题：在全世界所有的低收入国家里面，有多少百分比的女孩能够上完小学？&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>选项：A. 20% B. 40% C. 60%&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>想知道答案，就快点去读这本书吧。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>最近更新：D瓜哥终于把这本书读完了：https://www.diguage.com/post/factfulness/[《事实》之读书笔记^]。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_人类简史">&lt;a href="https://book.douban.com/subject/26953606/" target="_blank" rel="noopener">人类简史&lt;/a>&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/books/a-brief-history-of-humankind.jpg" alt="a brief history of humankind" width="60%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>坦白讲，这本书D瓜哥才读了一半。但是，作者最近发表的一篇文章： &lt;a href="http://www.ruanyifeng.com/blog/2020/03/the-world-after-coronavirus.html">尤瓦尔·赫拉利《冠状病毒之后的世界》&lt;/a>，一个史学家站在历史发展的角度去看待疫情对世界发展的影响。由此可对赫拉利的思想窥得一斑。那么，如果感兴趣，他的成名大作《人类简史》就不得不读了。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>最近因为疫情影响，在网上看到各种五毛的无脑言论，怼天怼地，仿佛中国要征服世界，征服宇宙一样，真是让人呵呵…&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>未来几十年时间里，中国未来寻求自身发展，还需要融入到整个世界经济中，在全世界产业链中，力争上游，占领高附加值的产业，比如芯片，5G，大飞机等等。怼这个，怼那个，只能让自己像二战时期的纳粹德国和日本，让自己四面树敌，最后被全世界群殴。&lt;/p>
+&lt;/div></description></item><item><title>分布式事务概述</title><link>https://www.diguage.com/post/overview-of-distributed-transaction/</link><pubDate>Mon, 23 Mar 2020 12:36:58 +0800</pubDate><guid>https://www.diguage.com/post/overview-of-distributed-transaction/</guid><description>&lt;div class="paragraph">
+&lt;p>现在手机银行转账已经司空见惯。但是，D瓜哥一直在思考，银卡跨行转账是如何保证事务一致性的？借机就对分布式事务，做了简单地了解。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_2pc">2PC&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>两阶段提交（2pc， two-phase commit protocol），2pc是非常经典的强一致性、中心化的原子提交协议。中心化是指协议中有两类节点：一个中心化协调者节点（coordinator）和N个参与者节点（participant、cohort）。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>顾名思义，两阶段提交协议的每一次事务提交分为两个阶段：&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在第一阶段，协调者询问所有的参与者是否可以提交事务（请参与者投票），所有参与者向协调者投票。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在第二阶段，协调者根据所有参与者的投票结果做出是否事务可以全局提交的决定，并通知所有的参与者执行该决定。在一个两阶段提交流程中，参与者不能改变自己的投票结果。两阶段提交协议的可以全局提交的前提是所有的参与者都同意提交事务，只要有一个参与者投票选择放弃(abort)事务，则事务必须被放弃。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/overview-of-distributed-transaction/two-phase-commit-process.png" alt="two phase commit process"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>两阶段提交协议也依赖与日志，只要存储介质不出问题，两阶段协议就能最终达到一致的状态（成功或者回滚）&lt;/p>
+&lt;/div>
+&lt;div class="imageblock">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/overview-of-distributed-transaction/2pc-example.png" alt="2pc example"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="imageblock">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/overview-of-distributed-transaction/two-phase-commit-diagram.jpg" alt="two phase commit diagram"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_优点">优点&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>强一致性，只要节点或者网络最终恢复正常，协议就能保证顺利结束；部分关系型数据库（Oracle）、框架直接支持&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_缺点">缺点&lt;/h3>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;strong>网络抖动导致的数据不一致&lt;/strong>： 第二阶段中协调者向参与者发送commit命令之后，一旦此时发生网络抖动，导致一部分参与者接收到了commit请求并执行，可其他未接到commit请求的参与者无法执行事务提交。进而导致整个分布式系统出现了数据不一致。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>超时导致的同步阻塞问题&lt;/strong>： 2PC中的所有的参与者节点都为事务阻塞型，当某一个参与者节点出现通信超时，其余参与者都会被动阻塞占用资源不能释放。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>单点故障的风险&lt;/strong>： 由于严重的依赖协调者，一旦协调者发生故障，而此时参与者还都处于锁定资源的状态，无法完成事务commit操作。虽然协调者出现故障后，会重新选举一个协调者，可无法解决因前一个协调者宕机导致的参与者处于阻塞状态的问题。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>基于两阶段提交的分布式事务在提交事务时需要在多个节点之间进行协调,最大限度地推后了提交事务的时间点，客观上延长了事务的执行时间，这会导致事务在访问共享资源时发生冲突和死锁的概率增高，随着数据库节点的增多，这种趋势会越来越严重，从而成为系统在数据库层面上水平伸缩的&amp;#34;枷锁&amp;#34;， 这是很多Sharding系统不采用分布式事务的主要原因。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_3pc">3PC&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>三阶段提交协议（3pc Three-phase_commit_protocol）主要是为了解决两阶段提交协议的阻塞问题，从原来的两个阶段扩展为三个阶段，并且增加了超时机制。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/overview-of-distributed-transaction/three-phase-commit-protocol.png" alt="three phase commit protocol"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>3PC 的三个阶段分别是 &lt;code>CanCommit&lt;/code>、&lt;code>PreCommit&lt;/code>、&lt;code>DoCommit&lt;/code>&lt;/p>
+&lt;/div>
+&lt;div class="dlist">
+&lt;dl>
+&lt;dt class="hdlist1">CanCommit&lt;/dt>
+&lt;dd>
+&lt;p>协调者向所有参与者发送CanCommit命令，询问是否可以执行事务提交操作。如果全部响应YES则进入下一个阶段。&lt;/p>
+&lt;/dd>
+&lt;dt class="hdlist1">PreCommit&lt;/dt>
+&lt;dd>
+&lt;p>协调者向所有参与者发送PreCommit命令，询问是否可以进行事务的预提交操作，参与者接收到PreCommit请求后，如参与者成功的执行了事务操作，则返回Yes响应，进入最终commit阶段。一旦参与者中有向协调者发送了No响应，或因网络造成超时，协调者没有接到参与者的响应，协调者向所有参与者发送abort请求，参与者接受abort命令执行事务的中断。&lt;/p>
+&lt;/dd>
+&lt;dt class="hdlist1">DoCommit&lt;/dt>
+&lt;dd>
+&lt;p>在前两个阶段中所有参与者的响应反馈均是YES后，协调者向参与者发送DoCommit命令正式提交事务，如协调者没有接收到参与者发送的ACK响应，会向所有参与者发送abort请求命令，执行事务的中断。&lt;/p>
+&lt;/dd>
+&lt;/dl>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>3PC只是解决了在异常情况下2PC的阻塞问题，但导致一次提交要传递6条消息，延时很大。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_tcc">TCC&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>TCC是Try、Commit、Cancel的缩写，TCC在保证强一致性的同时，最大限度提高系统的可伸缩性与可用性。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>TCC（Try-Confirm-Cancel）又被称&lt;strong>补偿事务&lt;/strong>，TCC 与 2PC 的思想很相似，事务处理流程也很相似，但 2PC 是应用于在 DB 层面，TCC 则可以理解为在应用层面的 2PC，是需要我们编写业务逻辑来实现。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>TCC 的核心思想是：&amp;#34;针对每个操作都要注册一个与其对应的确认（Try）和补偿（Cancel）&amp;#34;。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/overview-of-distributed-transaction/tcc.jpg" alt="tcc"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>一个完整的业务包含一组子业务，Try操作完成所有的子业务检查，预留必要的业务资源，实现与其他事务的隔离；Confirm使用Try阶段预留的业务资源真正执行业务，而且Confirm操作满足幂等性，以遍支持重试；Cancel操作释放Try阶段预留的业务资源，同样也满足幂等性。“一次完整的交易由一系列微交易的Try 操作组成，如果所有的Try 操作都成功，最终由微交易框架来统一Confirm，否则统一Cancel，从而实现了类似经典两阶段提交协议（2PC）的强一致性。”&lt;/p>
+&lt;/div>
+&lt;div class="imageblock">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/overview-of-distributed-transaction/tcc-process.jpeg" alt="tcc process"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>再来一个例子：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/overview-of-distributed-transaction/tcc-example.png" alt="tcc example"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>与2PC协议比较 ，TCC拥有以下特点：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>位于业务服务层而非资源层 ，由业务层保证原子性&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>没有单独的准备(Prepare)阶段，降低了提交协议的成本&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Try操作 兼备资源操作与准备能力&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Try操作可以灵活选择业务资源的锁定粒度，而不是锁住整个资源，提高了并发度&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_缺点_2">缺点&lt;/h3>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;strong>应用侵入性强&lt;/strong>：TCC由于基于在业务层面，至使每个操作都需要有 try、confirm、cancel三个接口。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>开发难度大&lt;/strong>：代码开发量很大，要保证数据一致性 confirm 和 cancel 接口还必须实现幂等性。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div></description></item><item><title>Google 三驾马车：MapReduce、GFS、Bigtable</title><link>https://www.diguage.com/post/map-reduce-gfs-bigtable/</link><pubDate>Mon, 23 Mar 2020 10:13:57 +0800</pubDate><guid>https://www.diguage.com/post/map-reduce-gfs-bigtable/</guid><description>&lt;div class="sect1">
+&lt;h2 id="_mapreduce">MapReduce&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>MapReduce编程模型来自函数式编程，包含两个最基本的算子：map，reduce&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>将一个运算任务分解成大量独立正交的子任务，每个子任务通过map算子计算，得到中间结果，然后用reduce算子进行聚合，得到最终结果。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这两个算子有一个很重要的特征：确定性的纯过程调用（pure function），函数既不会修改输入，也不存在中间状态，也没有共享的内存。因此，输入一致的情况下，输出也是一致的，这大大方便了容错性设计。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/map-reduce-gfs-bigtable/map-reduce-framework.png" alt="map reduce framework"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>系统中有两类主要的进程节点：master（单点），worker（多个）。其中，worker根据不同的计算任务，又分为map worker（对应上图中的Map phase）、reduce worker（对应上图中的Reduce phase）。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>master是系统的中心节点，负责计算任务到worker节点的分配，同时监控worker节点的状态。如果某个worker计算太慢，或者宕机，master会将该worker进程负责的计算任务转移到其他进程。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>map worker从GFS（google file system）中读取输入数据，然后将中间结果写到本地文件；reduce worker从master处得知中间结果的问题，通过rpc读取中间文件，计算之后将最终结果写入到可靠存储GFS。生产环境中，一个MapReduce过程的输出通常是另一个MapReduce计算的输入，类似Unix 的 pipeline，只不过unix pipeline通过stdin、stdout连接两个程序，而MapReduce使用GFS连接两个计算过程。&lt;/p>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_scalability">Scalability&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>由于计算任务的正交性，很容易通过增加map worker、reduce worker来处理计算任务的增长。Input file 到 Map phase这个阶段，使用了基于范围（range based）的分片方法，master作为元数据服务器会记录split到worker的映射关系。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_availability">Availability&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>系统对worker的容错性较好，但对master的容错性较差。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>对于map worker，计算结果是写到本地文件，本地文件的位置需要通知到master，即使同一个task被多个map worker执行，单点的master只会采纳一份中间结果。而且上面提到了map function是pure function，所以计算结果也是一样的。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>对于reduce worker，reduce task的计算结果会先写到临时文件（temporary file），task完成之后再重命名写入gfs，那么如果一个reduce task再多个reduce worker上计算，那么会不会有问题呢，答案是不会的&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_performance">Performance&lt;/h3>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>data locality — 将任务调度到数据所在的节点进行计算，减少网络传输；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>backup task — master在发现某个worker上的task进展异常缓慢的时候，会将这个task调度到其他worker，以缩短这个任务（Job）的完成时间。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_gfs">GFS&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>GFS（Google File System）是Google研发的可伸缩、高可用、高可靠的分布式文件系统，提供了类似POSIX的API，按层级目录来组织文件。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/map-reduce-gfs-bigtable/gfs-architecture.png" alt="gfs architecture"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>GFS master、GFS Client、GFS chunkserver。其中，GFS master任意时刻只有一个，而chunkserver和gfs client可能有多个。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>一份文件被分为多个固定大小的chunk（默认64M），每个chunk有全局唯一的文件句柄 －－ 一个64位的chunk ID，每一份chunk会被复制到多个chunkserver（默认值是3)，以此保证可用性与可靠性。chunkserver将chunk当做普通的Linux文件存储在本地磁盘上。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>GFS master是系统的元数据服务器，维护的元数据包括：命令空间（GFS按层级目录管理文件）、文件到chunk的映射，chunk的位置。其中，前两者是会持久化的，而chunk的位置信息来自于Chunkserver的汇报。&lt;/p>
+&lt;/div></description></item></channel></rss>

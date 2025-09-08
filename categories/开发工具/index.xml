@@ -1,0 +1,1604 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>开发工具 on "地瓜哥"博客网</title><link>https://www.diguage.com/categories/%E5%BC%80%E5%8F%91%E5%B7%A5%E5%85%B7/</link><description>Recent content in 开发工具 on "地瓜哥"博客网</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Tue, 27 May 2025 10:28:26 +0800</lastBuildDate><atom:link href="https://www.diguage.com/categories/%E5%BC%80%E5%8F%91%E5%B7%A5%E5%85%B7/index.xml" rel="self" type="application/rss+xml"/><item><title>玩转 Kubernetes（一）：离线安装 Kubernetes 2</title><link>https://www.diguage.com/post/play-with-kubernetes-01-install-kubernetes-offline-2/</link><pubDate>Mon, 10 Feb 2025 21:46:32 +0800</pubDate><guid>https://www.diguage.com/post/play-with-kubernetes-01-install-kubernetes-offline-2/</guid><description>&lt;div class="paragraph">
+&lt;p>在 &lt;a href="https://www.diguage.com/post/play-with-kubernetes-01-install-kubernetes-offline/" target="_blank" rel="noopener">玩转 Kubernetes（一）：离线安装 Kubernetes 1&lt;/a> 中，D瓜哥基于 Kubespray 进行魔改的脚本搭建起来容器镜像仓库。但是，每次都魔改着实麻烦，所以，探索 Kubespray 原生支持才是更为委托的长久之计。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>经过多次探索，终于，可以几乎无需魔改就可以利用 Kubespray 原生支持进行 Kubernetes 的离线安装。&lt;/p>
+&lt;/div>
+&lt;div class="admonitionblock tip">
+&lt;table>
+&lt;tbody>&lt;tr>
+&lt;td class="icon">
+&lt;i class="fa icon-tip" title="Tip">&lt;/i>
+&lt;/td>
+&lt;td class="content">
+以下是在 Mac 上的操作，在 Linux 等系统上操作类似。
+&lt;/td>
+&lt;/tr>
+&lt;/tbody>&lt;/table>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_按照_python_依赖">按照 Python 依赖&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>在 Mac 的虚拟机离线安装 Kubernetes，使用 Mac 当做容器镜像服务器和二进制安装文件下载服务器是一个非常好的选择。为此，需要在完成一些基本的操作。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>由于运行 Kubespray，需要一个 Python 环境以及相关依赖，所以，就需要先安装相关依赖。&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="c"># 配置 Python 镜像&lt;/span>
+pip config &lt;span class="nb">set &lt;/span>global.index-url https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
+
+&lt;span class="c"># 进入 Kubespray 的上层目录&lt;/span>
+&lt;span class="nb">cd&lt;/span> /PATH/TO/kubespray/..
+
+&lt;span class="c"># 按照 Python 相关依赖&lt;/span>
+&lt;span class="nv">VENVDIR&lt;/span>&lt;span class="o">=&lt;/span>kubespray-venv
+&lt;span class="nv">KUBESPRAYDIR&lt;/span>&lt;span class="o">=&lt;/span>kubespray
+python3 &lt;span class="nt">-m&lt;/span> venv &lt;span class="nv">$VENVDIR&lt;/span>
+&lt;span class="nb">source&lt;/span> &lt;span class="nv">$VENVDIR&lt;/span>/bin/activate
+&lt;span class="nb">cd&lt;/span> &lt;span class="nv">$KUBESPRAYDIR&lt;/span>
+pip &lt;span class="nb">install&lt;/span> &lt;span class="nt">-U&lt;/span> &lt;span class="nt">-r&lt;/span> requirements.txt&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_生成镜像列表及二进制文件列表">生成镜像列表及二进制文件列表&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>安装完相关依赖，就需要生成相关文件列表：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="c"># 生成镜像列表以及相关二进制文件列表&lt;/span>
+&lt;span class="nb">cd&lt;/span> /PATH/TO/kubespray/contrib/offline
+
+./generate_list.sh&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="admonitionblock tip">
+&lt;table>
+&lt;tbody>&lt;tr>
+&lt;td class="icon">
+&lt;i class="fa icon-tip" title="Tip">&lt;/i>
+&lt;/td>
+&lt;td class="content">
+注意：大多数情况下，我们的安装目标是 Linux。所以，建议这步操作在 Linux 上完成，这样得到的下载文件列表是 Linux 格式的。在 Mac 上完成，那么部分文件的格式就是 Mac 的，不能用于 Linux 的安装。
+&lt;/td>
+&lt;/tr>
+&lt;/tbody>&lt;/table>
+&lt;/div></description></item><item><title>玩转 Kubernetes（一）：离线安装 Kubernetes 1</title><link>https://www.diguage.com/post/play-with-kubernetes-01-install-kubernetes-offline/</link><pubDate>Tue, 14 Jan 2025 16:13:19 +0800</pubDate><guid>https://www.diguage.com/post/play-with-kubernetes-01-install-kubernetes-offline/</guid><description>&lt;div class="paragraph">
+&lt;p>在 &lt;a href="https://www.diguage.com/post/building-a-develop-environment-based-on-docker-3/" target="_blank" rel="noopener">基于 Docker 搭建开发环境（三）：链路追踪&lt;/a> 等几篇文章中，D瓜哥分享了如何使用 Docker Compose 在本地搭建起来一套应用可观测性环境。感觉还不够好玩，毕竟正在在企业中，Kubernetes 已经是绝对的主流。要玩就玩最具挑战性的东西，玩最符合企业所需的技能和工具。所以，打算将上面那套简易玩具，按照企业级的要求，搬到 Kubernetes 上去。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>如果想玩 Kubernetes，首先面临的一个问题就是 Kubernetes 集群的搭建。本来是一个非常简单的事情，但是由于众所周知的原因，变得非常具有挑战性。经过各种探索和多次试验，发现一种“离线”安装方式，感觉是一个不错的方式。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>本方法是基于 &lt;a href="https://kubespray.io/#/" target="_blank" rel="noopener">Kubespray&lt;/a> 的一种安装办法，Kubespray 是由 Kubernetes SIG 小组来负责维护的一整套安装方式。既可以支持在裸机环境上安装，也支持云上环境安装。而且，只需要简单几行可以复制粘贴的命令，即可完成安装工作。非常适合入门玩耍使用。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>本安装方法所需的软件，D瓜哥都已经上传到 GitHub，如果需要下载，请移步： &lt;a href="https://github.com/diguage/k8s-packages/releases/tag/2.26.0" target="_blank" rel="noopener">Kubespray-2.26.0 安装包大全&lt;/a>。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_搭建服务器集群">搭建服务器集群&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>这里推荐使用 &lt;a href="https://www.vagrantup.com/" target="_blank" rel="noopener">Vagrant&lt;/a> 搭建集群。搭配 &lt;a href="https://www.virtualbox.org/" target="_blank" rel="noopener">VirtualBox&lt;/a>，只需要一个配置文件，就可以轻轻松松搭建一个 Linux 服务器集群。搭建集群的配置文件 &lt;code>Vagrantfile&lt;/code> 如下：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="ruby">&lt;span class="c1"># -*- mode: ruby -*-&lt;/span>
+&lt;span class="c1"># vi: set ft=ruby :&lt;/span>
+&lt;span class="c1"># @author D瓜哥 · &lt;a href="https://www.diguage.com/" target="_blank">https://www.diguage.com/&lt;/a>&lt;/span>
+
+&lt;span class="c1"># All Vagrant configuration is done below. The &amp;#34;2&amp;#34; in Vagrant.configure&lt;/span>
+&lt;span class="c1"># configures the configuration version (we support older styles for&lt;/span>
+&lt;span class="c1"># backwards compatibility). Please don&amp;#39;t change it unless you know what&lt;/span>
+&lt;span class="c1"># you&amp;#39;re doing.&lt;/span>
+
+&lt;span class="no">Vagrant&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">configure&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s2">&amp;#34;2&amp;#34;&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="k">do&lt;/span> &lt;span class="o">|&lt;/span>&lt;span class="n">config&lt;/span>&lt;span class="o">|&lt;/span>
+ &lt;span class="c1"># The most common configuration options are documented and commented below.&lt;/span>
+ &lt;span class="c1"># For a complete reference, please see the online documentation at&lt;/span>
+ &lt;span class="c1"># &lt;a href="https://docs.vagrantup.com" target="_blank">https://docs.vagrantup.com&lt;/a>&lt;/span>
+
+ &lt;span class="c1"># 三节点集群&lt;/span>
+ &lt;span class="p">(&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="o">..&lt;/span>&lt;span class="mi">3&lt;/span>&lt;span class="p">).&lt;/span>&lt;span class="nf">each&lt;/span> &lt;span class="k">do&lt;/span> &lt;span class="o">|&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="o">|&lt;/span>
+ &lt;span class="n">config&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">vm&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">define&lt;/span> &lt;span class="s2">&amp;#34;node&lt;/span>&lt;span class="si">#{&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="si">}&lt;/span>&lt;span class="s2">&amp;#34;&lt;/span> &lt;span class="k">do&lt;/span> &lt;span class="o">|&lt;/span>&lt;span class="n">node&lt;/span>&lt;span class="o">|&lt;/span>
+
+ &lt;span class="c1"># Every Vagrant development environment requires a box. You can search for&lt;/span>
+ &lt;span class="c1"># boxes at &lt;a href="https://vagrantcloud.com/search" target="_blank">https://vagrantcloud.com/search&lt;/a>&lt;/span>
+ &lt;span class="c1"># &lt;a href="https://portal.cloud.hashicorp.com/vagrant/discover/bento/ubuntu-24.04" target="_blank">https://portal.cloud.hashicorp.com/vagrant/discover/bento/ubuntu-24.04&lt;/a>&lt;/span>
+ &lt;span class="c1"># &lt;a href="https://portal.cloud.hashicorp.com/vagrant/discover/alvistack/ubuntu-24.04" target="_blank">https://portal.cloud.hashicorp.com/vagrant/discover/alvistack/ubuntu-24.04&lt;/a>&lt;/span>
+ &lt;span class="n">node&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">vm&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">box&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s2">&amp;#34;alvistack/ubuntu-24.04&amp;#34;&lt;/span>
+ &lt;span class="n">node&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">vm&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">box_version&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s2">&amp;#34;20250210.0.0&amp;#34;&lt;/span>
+
+ &lt;span class="c1"># 设置虚拟机的主机名&lt;/span>
+ &lt;span class="n">node&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">vm&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">hostname&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s2">&amp;#34;node&lt;/span>&lt;span class="si">#{&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="si">}&lt;/span>&lt;span class="s2">&amp;#34;&lt;/span>
+
+ &lt;span class="n">config&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">vm&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">boot_timeout&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">600&lt;/span>
+
+ &lt;span class="c1"># Disable automatic box update checking. If you disable this, then&lt;/span>
+ &lt;span class="c1"># boxes will only be checked for updates when the user runs&lt;/span>
+ &lt;span class="c1"># `vagrant box outdated`. This is not recommended.&lt;/span>
+ &lt;span class="c1"># config.vm.box_check_update = false&lt;/span>
+
+ &lt;span class="c1"># Create a forwarded port mapping which allows access to a specific port&lt;/span>
+ &lt;span class="c1"># within the machine from a port on the host machine. In the example below,&lt;/span>
+ &lt;span class="c1"># accessing &amp;#34;localhost:8080&amp;#34; will access port 80 on the guest machine.&lt;/span>
+ &lt;span class="c1"># NOTE: This will enable public access to the opened port&lt;/span>
+ &lt;span class="c1"># config.vm.network &amp;#34;forwarded_port&amp;#34;, guest: 80, host: 8080&lt;/span>
+
+ &lt;span class="c1"># Create a forwarded port mapping which allows access to a specific port&lt;/span>
+ &lt;span class="c1"># within the machine from a port on the host machine and only allow access&lt;/span>
+ &lt;span class="c1"># via 127.0.0.1 to disable public access&lt;/span>
+ &lt;span class="c1"># config.vm.network &amp;#34;forwarded_port&amp;#34;, guest: 80, host: 8080, host_ip: &amp;#34;127.0.0.1&amp;#34;&lt;/span>
+
+ &lt;span class="c1"># Create a private network, which allows host-only access to the machine&lt;/span>
+ &lt;span class="c1"># using a specific IP.&lt;/span>
+ &lt;span class="c1"># 设置虚拟机的IP&lt;/span>
+ &lt;span class="n">node&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">vm&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">network&lt;/span> &lt;span class="s2">&amp;#34;private_network&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="ss">ip: &lt;/span>&lt;span class="s2">&amp;#34;10.0.2.&lt;/span>&lt;span class="si">#{&lt;/span>&lt;span class="mi">20&lt;/span>&lt;span class="o">+&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="si">}&lt;/span>&lt;span class="s2">&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="ss">auto_config: &lt;/span>&lt;span class="kp">true&lt;/span>
+
+ &lt;span class="c1"># Create a public network, which generally matched to bridged network.&lt;/span>
+ &lt;span class="c1"># Bridged networks make the machine appear as another physical device on&lt;/span>
+ &lt;span class="c1"># your network.&lt;/span>
+ &lt;span class="c1"># config.vm.network &amp;#34;public_network&amp;#34;&lt;/span>
+
+ &lt;span class="c1"># Share an additional folder to the guest VM. The first argument is&lt;/span>
+ &lt;span class="c1"># the path on the host to the actual folder. The second argument is&lt;/span>
+ &lt;span class="c1"># the path on the guest to mount the folder. And the optional third&lt;/span>
+ &lt;span class="c1"># argument is a set of non-required options.&lt;/span>
+ &lt;span class="c1"># 设置主机与虚拟机的共享目录，根据需要开启&lt;/span>
+ &lt;span class="n">node&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">vm&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">synced_folder&lt;/span> &lt;span class="s2">&amp;#34;/path/to/&lt;/span>&lt;span class="si">#{&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="si">}&lt;/span>&lt;span class="s2">&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s2">&amp;#34;/data&amp;#34;&lt;/span>
+
+
+ &lt;span class="c1"># Disable the default share of the current code directory. Doing this&lt;/span>
+ &lt;span class="c1"># provides improved isolation between the vagrant box and your host&lt;/span>
+ &lt;span class="c1"># by making sure your Vagrantfile isn&amp;#39;t accessible to the vagrant box.&lt;/span>
+ &lt;span class="c1"># If you use this you may want to enable additional shared subfolders as&lt;/span>
+ &lt;span class="c1"># shown above.&lt;/span>
+ &lt;span class="c1"># config.vm.synced_folder &amp;#34;.&amp;#34;, &amp;#34;/vagrant&amp;#34;, disabled: true&lt;/span>
+
+ &lt;span class="c1"># Provider-specific configuration so you can fine-tune various&lt;/span>
+ &lt;span class="c1"># backing providers for Vagrant. These expose provider-specific options.&lt;/span>
+ &lt;span class="c1"># Example for VirtualBox:&lt;/span>
+
+ &lt;span class="n">node&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">vm&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">provider&lt;/span> &lt;span class="s2">&amp;#34;virtualbox&amp;#34;&lt;/span> &lt;span class="k">do&lt;/span> &lt;span class="o">|&lt;/span>&lt;span class="n">vb&lt;/span>&lt;span class="o">|&lt;/span>
+ &lt;span class="c1"># 设置虚拟机的名称&lt;/span>
+ &lt;span class="c1"># vb.name = &amp;#34;node#{i}&amp;#34;&lt;/span>
+
+ &lt;span class="c1"># if node.vm.hostname == &amp;#34;node1&amp;#34;&lt;/span>
+ &lt;span class="c1"># # Display the VirtualBox GUI when booting the machine&lt;/span>
+ &lt;span class="c1"># vb.gui = true&lt;/span>
+ &lt;span class="c1"># end&lt;/span>
+
+ &lt;span class="c1"># Customize the amount of memory on the VM:&lt;/span>
+ &lt;span class="n">vb&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">memory&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s2">&amp;#34;6144&amp;#34;&lt;/span>
+
+ &lt;span class="c1"># 设置虚拟机的CPU个数&lt;/span>
+ &lt;span class="n">vb&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">cpus&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">2&lt;/span>
+ &lt;span class="k">end&lt;/span>
+
+ &lt;span class="c1"># View the documentation for the provider you are using for more&lt;/span>
+ &lt;span class="c1"># information on available options.&lt;/span>
+
+ &lt;span class="c1"># Enable provisioning with a shell script. Additional provisioners such as&lt;/span>
+ &lt;span class="c1"># Ansible, Chef, Docker, Puppet and Salt are also available. Please see the&lt;/span>
+ &lt;span class="c1"># documentation for more information about their specific syntax and use.&lt;/span>
+ &lt;span class="c1"># config.vm.provision &amp;#34;shell&amp;#34;, inline: &amp;lt;&amp;lt;-SHELL&lt;/span>
+ &lt;span class="c1"># sudo yum makecache --refresh&lt;/span>
+ &lt;span class="c1"># sudo yum install -y tcpdump&lt;/span>
+ &lt;span class="c1"># sudo yum install -y nc&lt;/span>
+ &lt;span class="c1"># sudo yum install -y net-tools&lt;/span>
+ &lt;span class="c1"># SHELL&lt;/span>
+ &lt;span class="k">end&lt;/span>
+ &lt;span class="k">end&lt;/span>
+&lt;span class="k">end&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>基于 Docker 搭建开发环境（三）：链路追踪</title><link>https://www.diguage.com/post/building-a-develop-environment-based-on-docker-3/</link><pubDate>Sun, 20 Oct 2024 16:50:11 +0800</pubDate><guid>https://www.diguage.com/post/building-a-develop-environment-based-on-docker-3/</guid><description>&lt;div class="paragraph">
+&lt;p>&lt;strong>基于 Docker 搭建开发环境系列&lt;/strong>:&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/building-a-develop-environment-based-on-docker-1/" target="_blank" rel="noopener">基于 Docker 搭建开发环境（一）：数据库+监控&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/building-a-develop-environment-based-on-docker-2/" target="_blank" rel="noopener">基于 Docker 搭建开发环境（二）：EFK 日志套件&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/building-a-develop-environment-based-on-docker-3/" target="_blank" rel="noopener">基于 Docker 搭建开发环境（三）：链路追踪&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/building-a-develop-environment-based-on-docker-1/" target="_blank" rel="noopener">基于 Docker 搭建开发环境（一）：数据库+监控&lt;/a> 和 &lt;a href="https://www.diguage.com/post/building-a-develop-environment-based-on-docker-2/" target="_blank" rel="noopener">基于 Docker 搭建开发环境（二）：EFK 日志套件&lt;/a> 两篇文章中，分别介绍了“数据库+监控”和“EFK 日志套件”。这篇文章给大家分享一下如何在本地搭建起一套简单的分布式链路追踪。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在 AI 的帮助下，如同砍瓜切菜一样，非常迅速地就完成了 &lt;a href="https://www.diguage.com/post/building-a-develop-environment-based-on-docker-2/" target="_blank" rel="noopener">基于 Docker 搭建开发环境（二）：EFK 日志套件&lt;/a> 的搭建。原以为搞这个也会分分钟的问题，结果应用的追踪数据一致无法正常发送到 Jaeger 中，各种改端口号都不行。后来，无意间看了 OpenTelemetry 的配置文档，增加了一个协议配置，全部流程竟然通了，非常神奇！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>站在更高的视角去看，链路追踪其实是可观测性的一部分，包括上篇文章的日志，也是可观测性的一部分。日志、追踪、度量，三者是相辅相成的。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/it/observability.png" alt="可观测性" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. 可观测性&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在 OpenTelemetry 出现之前，日志、追踪、度量是分离的，三者各各自为战。而 OpenTelemetry 的出现，则是试图将三者统一。目前 OpenTelemetry 是云原生架构中，最炙手可热的分布式链路追踪解决方案，它提供了一套相关标准，各个厂商可以在这套标准之上进行各种各样的组件开发，大家可以根据自己的需要，选择不同的组件，进行可插拔式的安装。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/it/opentelemetry-collection.webp" alt="OpenTelemetry 的野心" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 2. OpenTelemetry 的野心&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在这篇文章中，链路追踪的解决方案选择的是 OpenTelemetry + OpenTelemetry Collector + Jaeger。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_opentelemetry">OpenTelemetry&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>OpenTelemetry 并不需要在 Docker 中启动或者配置什么。在目前的架构中，Jaeger 是作为 OpenTelemetry 的一个实现来出现的。 OpenTelemetry 需要做的就是下载一个 Java Agent，执行 &lt;code>docker/config/opentelemetry/download-opentelemetry-agent.sh&lt;/code> 脚本即可下载最新版的 Java Agent。在业务应用启动时，增加如下 JVM 参数：&lt;/p>
+&lt;/div></description></item><item><title>基于 Docker 搭建开发环境（二）：EFK 日志套件</title><link>https://www.diguage.com/post/building-a-develop-environment-based-on-docker-2/</link><pubDate>Thu, 17 Oct 2024 22:42:11 +0800</pubDate><guid>https://www.diguage.com/post/building-a-develop-environment-based-on-docker-2/</guid><description>&lt;div class="paragraph">
+&lt;p>&lt;strong>基于 Docker 搭建开发环境系列&lt;/strong>:&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/building-a-develop-environment-based-on-docker-1/" target="_blank" rel="noopener">基于 Docker 搭建开发环境（一）：数据库+监控&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/building-a-develop-environment-based-on-docker-2/" target="_blank" rel="noopener">基于 Docker 搭建开发环境（二）：EFK 日志套件&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/building-a-develop-environment-based-on-docker-3/" target="_blank" rel="noopener">基于 Docker 搭建开发环境（三）：链路追踪&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/building-a-develop-environment-based-on-docker-1/" target="_blank" rel="noopener">基于 Docker 搭建开发环境（一）：数据库+监控&lt;/a> 中，介绍了一下如何使用 Docker 搭建起 MySQL + NACOS + Prometheus + Grafana 集成数据库、注册中心+配置管理、监控的开发环境。这篇文章来介绍一下如何在原来的基础上接入 Elasticsearch + Fluentd + Kibana 套件，并且将 NACOS 的日志接入到 Elasticsearch 里。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_elasticsearch">Elasticsearch&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>由于 Elasticsearch 8+ 的版本修改了安全策略，不允许 Kibana 使用超级管理员 &lt;code>elastic&lt;/code> 连接 Elasticsearch，这里选用 7.x 版本做演示。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>还有一点需要提醒，在设置 Elasticsearch 的超级管理员 &lt;code>elastic&lt;/code> 的账户密码时，如果密码是全部的阿拉伯数字，那么需要用双引号或者单引号括起来。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在测试中，还遇到一个磁盘过载导致的只读问题。解决方式如下：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;code>curl -X GET &amp;#34;localhost:9200/_cat/allocation?v&amp;amp;pretty&amp;#34;&lt;/code> 查看磁盘使用情况&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>解除只读状态&lt;/p>
+&lt;div class="openblock">
+&lt;div class="content">
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="nv">$ &lt;/span>curl &lt;span class="nt">-X&lt;/span> PUT &lt;span class="s2">&amp;#34;localhost:9200/test/_settings&amp;#34;&lt;/span> &lt;span class="nt">-H&lt;/span> &lt;span class="s1">&amp;#39;Content-Type: application/json&amp;#39;&lt;/span> &lt;span class="nt">-d&lt;/span>&lt;span class="s1">&amp;#39;
+{
+ &amp;#34;index.blocks.read_only_allow_delete&amp;#34;: null
+}
+&amp;#39;&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>基于 Docker 搭建开发环境（一）：数据库+监控</title><link>https://www.diguage.com/post/building-a-develop-environment-based-on-docker-1/</link><pubDate>Wed, 16 Oct 2024 21:48:11 +0800</pubDate><guid>https://www.diguage.com/post/building-a-develop-environment-based-on-docker-1/</guid><description>&lt;div class="paragraph">
+&lt;p>&lt;strong>基于 Docker 搭建开发环境系列&lt;/strong>:&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/building-a-develop-environment-based-on-docker-1/" target="_blank" rel="noopener">基于 Docker 搭建开发环境（一）：数据库+监控&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/building-a-develop-environment-based-on-docker-2/" target="_blank" rel="noopener">基于 Docker 搭建开发环境（二）：EFK 日志套件&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/building-a-develop-environment-based-on-docker-3/" target="_blank" rel="noopener">基于 Docker 搭建开发环境（三）：链路追踪&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>去年，很多同事要换 Mac 本，所以，写了 &lt;a href="https://www.diguage.com/post/install-software-for-new-mac/" target="_blank" rel="noopener">新 Mac 安装软件脚本&lt;/a>，方便大家一键换机。最近想玩一下 Spring Cloud 以及相关周边的部署、监控等开源解决方案。由于组件众多及为了便于迁移和共享，计划基于 Docker 及 Docker Compose 搭建一套相关的开发环境。记录一下，方便有相同需求的朋友借鉴。&lt;/p>
+&lt;/div>
+&lt;div class="admonitionblock tip">
+&lt;table>
+&lt;tbody>&lt;tr>
+&lt;td class="icon">
+&lt;i class="fa icon-tip" title="Tip">&lt;/i>
+&lt;/td>
+&lt;td class="content">
+最新版的 Docker 在下载镜像时，会先访问一下 Docker 的官方站点。由于国内众所周知的网络情况，访问 Docker 官方站点总失败。所以，即使配置了国内 Docker 镜像站点也会失败。只需要将 Docker 软件回滚到 4.30.0 即可。（Mac 下验证有效，其他操作系统待进一步验证。）
+&lt;/td>
+&lt;/tr>
+&lt;/tbody>&lt;/table>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_mysql">MySQL&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>开发中，最常用的应该就是数据库了。所以，先来搞 MySQL 数据库。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>创建如下目录结构，并添加相关相关文件：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="nv">$ &lt;/span>tree
+&lt;span class="nb">.&lt;/span>
+├── README.adoc
+├── clean.sh
+├── data
+│ └── mysql
+│ └── .gitkeep
+├── docker
+│ ├── config
+│ │ └── mysql
+│ │ └── init.sql
+│ ├── &lt;span class="nb">env&lt;/span>
+│ │ └── mysql.env
+│ └── images
+│ └── mysql.dockerfile
+└── docker-compose.yml&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>生产环境中 Java 21 启动参数</title><link>https://www.diguage.com/post/java-21-boot-parameters-in-the-production/</link><pubDate>Mon, 13 May 2024 17:04:11 +0800</pubDate><guid>https://www.diguage.com/post/java-21-boot-parameters-in-the-production/</guid><description>&lt;div class="paragraph">
+&lt;p>在 &lt;a href="https://www.diguage.com/post/upgrade-to-openjdk21/" target="_blank" rel="noopener">OpenJDK 21 升级指南&lt;/a> 中，给大家分享了一下升级到 OpenJDK 21 中遇到的一些问题。文末留了一个小问题：生产环境的 Java 21 启动参数怎么配置？这篇文章将给出 D瓜哥的答案。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>先说明一下生产环境的机器配置：4C8G，四个内核，8G 内存。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_启动参数">启动参数&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>鉴于 &lt;a href="https://www.diguage.com/post/gc-performance-incremental-qps/" target="_blank" rel="noopener">JVM GC 性能测试（二）：递增流量&lt;/a> 和 &lt;a href="https://www.diguage.com/post/gc-performance-real-qps/" target="_blank" rel="noopener">JVM GC 性能测试（三）：真实流量&lt;/a> 中，G1 GC 的惊艳表现，这里分别提供 Gen ZGC 和 G1 GC 两个配置。&lt;/p>
+&lt;/div>
+&lt;div class="admonitionblock tip">
+&lt;table>
+&lt;tbody>&lt;tr>
+&lt;td class="icon">
+&lt;i class="fa icon-tip" title="Tip">&lt;/i>
+&lt;/td>
+&lt;td class="content">
+两个配置差距级小，为了方便复制粘贴，还是分两个来展示。
+&lt;/td>
+&lt;/tr>
+&lt;/tbody>&lt;/table>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_gen_zgc_配置">Gen ZGC 配置&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>追求极致低延迟，就上 GenZGC，它通过牺牲大约 10% 的吞吐量，换来无与伦比的低延时。&lt;/p>
+&lt;/div>
+&lt;div class="admonitionblock tip">
+&lt;table>
+&lt;tbody>&lt;tr>
+&lt;td class="icon">
+&lt;i class="fa icon-tip" title="Tip">&lt;/i>
+&lt;/td>
+&lt;td class="content">
+注意：使用时，请修改日志目录！
+&lt;/td>
+&lt;/tr>
+&lt;/tbody>&lt;/table>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="c">## 变量配置 #######################################################################&lt;/span>
+&lt;span class="c"># java -XshowSettings:all --展示所有配置项（测试发现也不全）&lt;/span>
+&lt;span class="nt">-Dfile&lt;/span>.encoding&lt;span class="o">=&lt;/span>UTF-8
+
+&lt;span class="c"># &lt;a href="https://zhuanlan.zhihu.com/p/455313866" target="_blank">https://zhuanlan.zhihu.com/p/455313866&lt;/a>&lt;/span>
+&lt;span class="c"># &lt;a href="https://zhuanlan.zhihu.com/p/455746995" target="_blank">https://zhuanlan.zhihu.com/p/455746995&lt;/a>&lt;/span>
+&lt;span class="c"># &lt;a href="https://blog.csdn.net/u014149685/article/details/83002405" target="_blank">https://blog.csdn.net/u014149685/article/details/83002405&lt;/a>&lt;/span>
+&lt;span class="c"># 随机数来源&lt;/span>
+&lt;span class="nt">-Djava&lt;/span>.security.egd&lt;span class="o">=&lt;/span>file:/dev/./urandom
+&lt;span class="nt">-Djava&lt;/span>.security&lt;span class="o">=&lt;/span>file:/dev/./urandom
+
+&lt;span class="c"># &lt;a href="https://docs.oracle.com/javase/8/docs/api/java/net/doc-files/net-properties.html" target="_blank">https://docs.oracle.com/javase/8/docs/api/java/net/doc-files/net-properties.html&lt;/a>&lt;/span>
+&lt;span class="c"># &lt;a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/net/doc-files/net-properties.html" target="_blank">https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/net/doc-files/net-properties.html&lt;/a>&lt;/span>
+&lt;span class="c"># DNS 过期时间&lt;/span>
+&lt;span class="nt">-Dnetworkaddress&lt;/span>.cache.ttl&lt;span class="o">=&lt;/span>10
+&lt;span class="c">#&lt;/span>
+&lt;span class="nt">-Dsun&lt;/span>.net.client.defaultConnectTimeout&lt;span class="o">=&lt;/span>60000
+&lt;span class="nt">-Dsun&lt;/span>.net.client.defaultReadTimeout&lt;span class="o">=&lt;/span>60000
+&lt;span class="c">#-Dsun.net.inetaddr.ttl=300&lt;/span>
+
+&lt;span class="c"># &lt;a href="https://mdnice.com/writing/47e729bbf8e44431a396a481ed173dae" target="_blank">https://mdnice.com/writing/47e729bbf8e44431a396a481ed173dae&lt;/a>&lt;/span>
+&lt;span class="nt">-Djava&lt;/span>.awt.headless&lt;span class="o">=&lt;/span>&lt;span class="nb">true&lt;/span>
+&lt;span class="c"># &lt;a href="https://blog.csdn.net/maverick0/article/details/8282472" target="_blank">https://blog.csdn.net/maverick0/article/details/8282472&lt;/a>&lt;/span>
+&lt;span class="nt">-Djmagick&lt;/span>.systemclassloader&lt;span class="o">=&lt;/span>no
+
+&lt;span class="c"># From Cassandra&lt;/span>
+&lt;span class="c"># On Java &amp;gt;= 9 Netty requires the io.netty.tryReflectionSetAccessible system property&lt;/span>
+&lt;span class="c"># to be set to true to enable creation of direct buffers using Unsafe. Without it,&lt;/span>
+&lt;span class="c"># this falls back to ByteBuffer.allocateDirect which has inferior performance and&lt;/span>
+&lt;span class="c"># risks exceeding MaxDirectMemory&lt;/span>
+&lt;span class="c"># &lt;a href="https://blog.csdn.net/jdcdev_/article/details/132843927" target="_blank">https://blog.csdn.net/jdcdev_/article/details/132843927&lt;/a>&lt;/span>
+&lt;span class="nt">-Dio&lt;/span>.netty.tryReflectionSetAccessible&lt;span class="o">=&lt;/span>&lt;span class="nb">true&lt;/span>
+&lt;span class="c"># 内部中间件&lt;/span>
+&lt;span class="c"># 注意：一些中间件会内嵌 Netty，这里建议同步修改其相关参数配置。&lt;/span>
+&lt;span class="nt">-Dump&lt;/span>.profiler.shade.io.netty.tryReflectionSetAccessible&lt;span class="o">=&lt;/span>&lt;span class="nb">true&lt;/span>
+&lt;span class="nt">-Dtitan&lt;/span>.profiler.shade.io.netty.tryReflectionSetAccessible&lt;span class="o">=&lt;/span>&lt;span class="nb">true&lt;/span>
+
+&lt;span class="c"># Revert changes in defaults introduced in &lt;a href="https://netty.io/news/2022/03/10/4-1-75-Final.html" target="_blank">https://netty.io/news/2022/03/10/4-1-75-Final.html&lt;/a>&lt;/span>
+&lt;span class="nt">-Dio&lt;/span>.netty.allocator.useCacheForAllThreads&lt;span class="o">=&lt;/span>&lt;span class="nb">true&lt;/span>
+&lt;span class="nt">-Dio&lt;/span>.netty.allocator.maxOrder&lt;span class="o">=&lt;/span>11
+
+&lt;span class="c"># 内部中间件&lt;/span>
+&lt;span class="c"># 理由上面已讲&lt;/span>
+&lt;span class="nt">-Dump&lt;/span>.profiler.shade.io.netty.allocator.useCacheForAllThreads&lt;span class="o">=&lt;/span>&lt;span class="nb">true&lt;/span>
+&lt;span class="nt">-Dump&lt;/span>.profiler.shade.io.netty.allocator.maxOrder&lt;span class="o">=&lt;/span>11
+
+&lt;span class="c"># Byte Buddy 支持21&lt;/span>
+&lt;span class="nt">-Dnet&lt;/span>.bytebuddy.experimental&lt;span class="o">=&lt;/span>&lt;span class="nb">true&lt;/span>
+&lt;span class="nt">-Dpfinder&lt;/span>.shade.net.bytebuddy.experimental&lt;span class="o">=&lt;/span>&lt;span class="nb">true&lt;/span>
+
+
+
+&lt;span class="c">## 参数配置 #####################################################################&lt;/span>
+
+&lt;span class="c"># &lt;a href="https://jacoline.dev/inspect" target="_blank">https://jacoline.dev/inspect&lt;/a> -- JVM 参数诊断&lt;/span>
+&lt;span class="c"># &lt;a href="https://chriswhocodes.com/corretto_jdk21_options.html" target="_blank">https://chriswhocodes.com/corretto_jdk21_options.html&lt;/a>&lt;/span>
+&lt;span class="c"># &lt;a href="https://docs.oracle.com/en/java/javase/21/docs/specs/man/java.html" target="_blank">https://docs.oracle.com/en/java/javase/21/docs/specs/man/java.html&lt;/a>&lt;/span>
+
+&lt;span class="c"># &lt;a href="https://blog.csdn.net/wxb880114/article/details/119888587" target="_blank">https://blog.csdn.net/wxb880114/article/details/119888587&lt;/a>&lt;/span>
+&lt;span class="c"># &lt;a href="https://www.cnblogs.com/three-fighter/p/14644152.html" target="_blank">https://www.cnblogs.com/three-fighter/p/14644152.html&lt;/a>&lt;/span>
+&lt;span class="c">#- &lt;a href="https://www.skjava.com/article/2134434173" target="_blank">https://www.skjava.com/article/2134434173&lt;/a>&lt;/span>
+
+&lt;span class="c"># 解锁诊断参数&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:+UnlockDiagnosticVMOptions
+
+&lt;span class="c"># 解锁试验参数&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:+UnlockExperimentalVMOptions
+
+&lt;span class="c"># 启用 ZGC&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:+UseZGC
+&lt;span class="c"># 启用分代ZGC&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:+ZGenerational
+
+&lt;span class="c"># &lt;a href="https://tech.meituan.com/2020/08/06/new-zgc-practice-in-meituan.html" target="_blank">https://tech.meituan.com/2020/08/06/new-zgc-practice-in-meituan.html&lt;/a>&lt;/span>
+&lt;span class="c"># 加快 GC 的时间和能力&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:ZAllocationSpikeTolerance&lt;span class="o">=&lt;/span>5
+&lt;span class="nt">-XX&lt;/span>:ConcGCThreads&lt;span class="o">=&lt;/span>2
+&lt;span class="nt">-XX&lt;/span>:ParallelGCThreads&lt;span class="o">=&lt;/span>4
+
+&lt;span class="c"># G1 GC&lt;/span>
+&lt;span class="c">#-XX:+UseG1GC&lt;/span>
+&lt;span class="c">#-XX:MaxGCPauseMillis=50&lt;/span>
+
+&lt;span class="c"># 初始堆大小，等价于 -XX:InitialHeapSize&lt;/span>
+&lt;span class="nt">-Xms4608m&lt;/span>
+
+&lt;span class="c"># 弱最大堆，尽量保持，但是可以突破&lt;/span>
+&lt;span class="c">#-XX:SoftMaxHeapSize=3g&lt;/span>
+
+&lt;span class="c"># 最大堆大小，等价于 -XX:MaxHeapSize&lt;/span>
+&lt;span class="nt">-Xmx4608m&lt;/span>
+
+&lt;span class="c"># 归还未使用的内存&lt;/span>
+&lt;span class="c">#-XX:+ZUncommit&lt;/span>
+
+&lt;span class="c"># 设置每个线程的堆栈大小，等价于 -XX:ThreadStackSize=512k&lt;/span>
+&lt;span class="nt">-Xss512k&lt;/span>
+
+&lt;span class="c"># &lt;a href="https://cloud.tencent.com/developer/article/1408384" target="_blank">https://cloud.tencent.com/developer/article/1408384&lt;/a>&lt;/span>
+&lt;span class="c"># 本地内存大小&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:MaxDirectMemorySize&lt;span class="o">=&lt;/span>512m
+
+&lt;span class="c"># &lt;a href="https://cloud.tencent.com/developer/article/2277327" target="_blank">https://cloud.tencent.com/developer/article/2277327&lt;/a>&lt;/span>
+&lt;span class="c"># &lt;a href="https://cloud.tencent.com/developer/article/2277328" target="_blank">https://cloud.tencent.com/developer/article/2277328&lt;/a>&lt;/span>
+&lt;span class="c"># &lt;a href="https://cloud.tencent.com/developer/article/2277329" target="_blank">https://cloud.tencent.com/developer/article/2277329&lt;/a>&lt;/span>
+&lt;span class="c"># 元空间&lt;/span>
+&lt;span class="c"># 设置为 256m 时，发生过一次频繁 GC 导致应用无法相应的问题&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:MetaspaceSize&lt;span class="o">=&lt;/span>512m
+&lt;span class="c"># 最大元空间&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:MaxMetaspaceSize&lt;span class="o">=&lt;/span>512m
+
+&lt;span class="c"># &lt;a href="https://cloud.tencent.com/developer/article/1408773" target="_blank">https://cloud.tencent.com/developer/article/1408773&lt;/a>&lt;/span>
+&lt;span class="c"># &lt;a href="https://blog.csdn.net/lidf1992/article/details/75050219" target="_blank">https://blog.csdn.net/lidf1992/article/details/75050219&lt;/a>&lt;/span>
+&lt;span class="c"># 编译代码缓存空间&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:ReservedCodeCacheSize&lt;span class="o">=&lt;/span>256m
+
+&lt;span class="c"># &lt;a href="https://cloud.tencent.com/developer/article/1408827" target="_blank">https://cloud.tencent.com/developer/article/1408827&lt;/a>&lt;/span>
+&lt;span class="c"># &lt;a href="https://malloc.se/blog/zgc-jdk15" target="_blank">https://malloc.se/blog/zgc-jdk15&lt;/a>&lt;/span>
+&lt;span class="c"># &lt;a href="https://tinyzzh.github.io/java/jvm/2022/04/24/JVM_CompressedOops.html" target="_blank">https://tinyzzh.github.io/java/jvm/2022/04/24/JVM_CompressedOops.html&lt;/a>&lt;/span>
+&lt;span class="c"># &lt;a href="https://www.cnblogs.com/star95/p/17512212.html" target="_blank">https://www.cnblogs.com/star95/p/17512212.html&lt;/a> -- 由于从 JDK15 开始，&lt;/span>
+&lt;span class="c"># -XX:+UseCompressedClassPointers 与 -XX:-UseCompressedOops 之间的强&lt;/span>
+&lt;span class="c"># 关联被打破，文章里关于上述这种搭配是不正确的。 TODO 可以从新测试验证一线。&lt;/span>
+&lt;span class="c"># TODO 如果开启 -XX:+UseCompressedClassPointers，不确定 32M 是否够用？&lt;/span>
+&lt;span class="c"># &lt;a href="https://www.zhihu.com/question/268392125" target="_blank">https://www.zhihu.com/question/268392125&lt;/a>&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:+UseCompressedClassPointers
+&lt;span class="nt">-XX&lt;/span>:CompressedClassSpaceSize&lt;span class="o">=&lt;/span>48M
+
+&lt;span class="c"># 关闭热度衰减&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:-UseCounterDecay
+
+&lt;span class="c"># 内存占座&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:+AlwaysPreTouch
+
+&lt;span class="c"># 禁止代码中显示调用GC&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:+DisableExplicitGC
+
+&lt;span class="c"># 关闭安全点间隔&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:GuaranteedSafepointInterval&lt;span class="o">=&lt;/span>0
+
+&lt;span class="c"># 避免循环无法进入安全点的问题&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:+UseCountedLoopSafepoints
+&lt;span class="c"># &lt;a href="https://blog.csdn.net/m0_46596655/article/details/123606813" target="_blank">https://blog.csdn.net/m0_46596655/article/details/123606813&lt;/a>&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:LoopStripMiningIter&lt;span class="o">=&lt;/span>1000
+
+&lt;span class="c"># 打印命令行参数&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:+PrintCommandLineFlags
+
+&lt;span class="c"># 显式地并发处理 GC 调用&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:+ExplicitGCInvokesConcurrent
+
+&lt;span class="c"># &lt;a href="https://panlw.github.io/15320998566522.html" target="_blank">https://panlw.github.io/15320998566522.html&lt;/a>&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:AutoBoxCacheMax&lt;span class="o">=&lt;/span>20000
+
+&lt;span class="c"># &lt;a href="https://blog.csdn.net/zshake/article/details/88796414" target="_blank">https://blog.csdn.net/zshake/article/details/88796414&lt;/a>&lt;/span>
+&lt;span class="c"># 省略异常栈信息从而快速抛出&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:-OmitStackTraceInFastThrow
+
+&lt;span class="c"># &lt;a href="https://www.jianshu.com/p/c9259953ca38" target="_blank">https://www.jianshu.com/p/c9259953ca38&lt;/a>&lt;/span>
+&lt;span class="c"># 致命错误日志文件&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:ErrorFile&lt;span class="o">=&lt;/span>/path/to/log/jvm/hs_err_%p.log
+
+&lt;span class="c"># &lt;a href="https://blog.csdn.net/lusa1314/article/details/84134458" target="_blank">https://blog.csdn.net/lusa1314/article/details/84134458&lt;/a>&lt;/span>
+&lt;span class="c"># &lt;a href="https://juejin.cn/post/7127557371932442632" target="_blank">https://juejin.cn/post/7127557371932442632&lt;/a>&lt;/span>
+&lt;span class="c"># 当JVM发生OOM时，自动生成DUMP文件。&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:+HeapDumpOnOutOfMemoryError
+&lt;span class="c"># 设置上述DUMP文件路径&lt;/span>
+&lt;span class="nt">-XX&lt;/span>:HeapDumpPath&lt;span class="o">=&lt;/span>/path/to/log/jvm/
+
+&lt;span class="c"># &lt;a href="https://juejin.cn/post/6959405798556434440" target="_blank">https://juejin.cn/post/6959405798556434440&lt;/a>&lt;/span>
+&lt;span class="c"># 设置 JFR 相关参数&lt;/span>
+&lt;span class="c"># TODO 感觉这里不全乎，似乎需要 -XX:+FlightRecorder 来启用&lt;/span>
+&lt;span class="c"># TODO 似乎可以设置文件，例如： -XX:StartFlightRecording=duration=200s,filename=flight.jfr&lt;/span>
+&lt;span class="c"># 不确定文件名是否可以这样配置，测试一下_%p-%t&lt;/span>
+&lt;span class="c"># Amazon Corretto JDK OK；Eclipse Temurin 不识别，并且监控报错&lt;/span>
+&lt;span class="c">#-XX:StartFlightRecording=delay=5s,disk=true,dumponexit=true,duration=24h,maxage=5d,maxsize=2g,filename=/path/to/log/jvm/jfr_%p-%t.jfr.log&lt;/span>
+&lt;span class="c">#-XX:FlightRecorderOptions=maxchunksize=128m&lt;/span>
+
+&lt;span class="c">#-XX:StringDeduplicationAgeThreshold=threshold? TODO 测试之后才可以定&lt;/span>
+
+&lt;span class="c"># &lt;a href="https://zhuanlan.zhihu.com/p/111886882" target="_blank">https://zhuanlan.zhihu.com/p/111886882&lt;/a>&lt;/span>
+&lt;span class="c"># &lt;a href="https://github.com/apache/cassandra/tree/trunk/conf" target="_blank">https://github.com/apache/cassandra/tree/trunk/conf&lt;/a>&lt;/span>
+&lt;span class="c"># &lt;a href="https://github.com/elastic/elasticsearch/blob/main/distribution/src/config/jvm.options" target="_blank">https://github.com/elastic/elasticsearch/blob/main/distribution/src/config/jvm.options&lt;/a>&lt;/span>
+&lt;span class="c"># java -Xlog:help&lt;/span>
+&lt;span class="c"># 日志配置&lt;/span>
+&lt;span class="nt">-Xlog&lt;/span>:gc&lt;span class="k">*&lt;/span>&lt;span class="o">=&lt;/span>debug,stringdedup&lt;span class="k">*&lt;/span>&lt;span class="o">=&lt;/span>debug,heap&lt;span class="k">*&lt;/span>&lt;span class="o">=&lt;/span>trace,age&lt;span class="k">*&lt;/span>&lt;span class="o">=&lt;/span>debug,promotion&lt;span class="k">*&lt;/span>&lt;span class="o">=&lt;/span>trace,jit&lt;span class="k">*&lt;/span>&lt;span class="o">=&lt;/span>info,safepoint&lt;span class="k">*&lt;/span>&lt;span class="o">=&lt;/span>debug:file&lt;span class="o">=&lt;/span>/path/to/log/jvm/gc_%p-%t.log:time,pid,tid,level,tags:filecount&lt;span class="o">=&lt;/span>10,filesize&lt;span class="o">=&lt;/span>500M
+&lt;span class="c"># 分开设置可用，使用分开的配置&lt;/span>
+&lt;span class="c">#-Xlog:gc*=debug,stringdedup*=debug,heap*=trace,age*=debug,promotion*=trace:file=/path/to/log/jvm/gc-%t.log:utctime,level,tags:filecount=10,filesize=200M&lt;/span>
+&lt;span class="c">#-Xlog:jit*=info:file=/path/to/log/jvm/jit_compile-%t.log:utctime,level,tags:filecount=10,filesize=50M&lt;/span>
+&lt;span class="c">#-Xlog:safepoint*=debug:file=/path/to/log/jvm/safepoint-%t.log:utctime,level,tags:filecount=10,filesize=50M&lt;/span>
+
+
+&lt;span class="c"># &lt;a href="https://stackoverflow.com/a/44059335" target="_blank">https://stackoverflow.com/a/44059335&lt;/a>&lt;/span>
+&lt;span class="c"># &lt;a href="https://openjdk.org/jeps/261" target="_blank">https://openjdk.org/jeps/261&lt;/a>&lt;/span>
+&lt;span class="c"># &lt;a href="https://www.diguage.com/post/upgrade-to-openjdk21/" target="_blank">https://www.diguage.com/post/upgrade-to-openjdk21/&lt;/a> -- 内有详细介绍&lt;/span>
+&lt;span class="c"># 开启模块权限：下面是D瓜哥需要的模块，请根据自己实际需求来调整。&lt;/span>
+&lt;span class="nt">--add-exports&lt;/span> java.base/sun.security.action&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="nt">--add-opens&lt;/span> java.base/java.io&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="nt">--add-opens&lt;/span> java.base/java.lang.reflect&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="nt">--add-opens&lt;/span> java.base/java.lang&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="nt">--add-opens&lt;/span> java.base/java.math&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="nt">--add-opens&lt;/span> java.base/java.net&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="nt">--add-opens&lt;/span> java.base/java.security&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="nt">--add-opens&lt;/span> java.base/java.time&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="nt">--add-opens&lt;/span> java.base/java.util.concurrent.locks&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="nt">--add-opens&lt;/span> java.base/java.util.concurrent&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="nt">--add-opens&lt;/span> java.base/java.util&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="nt">--add-opens&lt;/span> java.base/jdk.internal.loader&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="c"># Netty 内部需要 &lt;a href="https://stackoverflow.com/a/57892679" target="_blank">https://stackoverflow.com/a/57892679&lt;/a>&lt;/span>
+&lt;span class="c"># &lt;a href="https://github.com/netty/netty/issues/7769" target="_blank">https://github.com/netty/netty/issues/7769&lt;/a>&lt;/span>
+&lt;span class="c"># &lt;a href="https://blog.csdn.net/thewindkee/article/details/123618476" target="_blank">https://blog.csdn.net/thewindkee/article/details/123618476&lt;/a>&lt;/span>
+&lt;span class="nt">--add-opens&lt;/span> java.base/jdk.internal.misc&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="nt">--add-opens&lt;/span> java.base/sun.net.util&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="c"># 设置 -Dio.netty.tryReflectionSetAccessible=true 后，不设置该值也会报错&lt;/span>
+&lt;span class="nt">--add-opens&lt;/span> java.base/java.nio&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="nt">--add-opens&lt;/span> java.base/sun.nio.ch&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="nt">--add-opens&lt;/span> java.base/sun.reflect.generics.reflectiveObjects&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="nt">--add-opens&lt;/span> java.base/sun.util.calendar&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="nt">--add-opens&lt;/span> java.management/com.sun.jmx.mbeanserver&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="nt">--add-opens&lt;/span> java.management/java.lang.management&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="nt">--add-opens&lt;/span> java.management/sun.management&lt;span class="o">=&lt;/span>ALL-UNNAMED
+&lt;span class="nt">--add-opens&lt;/span> jdk.management/com.sun.management.internal&lt;span class="o">=&lt;/span>ALL-UNNAMED&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>使用 OpenRewrite 优化代码</title><link>https://www.diguage.com/post/optimize-code-using-openrewrite/</link><pubDate>Tue, 07 May 2024 17:48:49 +0800</pubDate><guid>https://www.diguage.com/post/optimize-code-using-openrewrite/</guid><description>&lt;div class="paragraph">
+&lt;p>在 &lt;a href="https://www.diguage.com/post/upgrade-to-openjdk21/" target="_blank" rel="noopener">OpenJDK 21 升级指南&lt;/a> 中提到， OpenRewrite 可以帮忙解决一些升级 OpenJDK 中发现的问题。随着不断的探索，D瓜哥发现，OpenRewrite 的功能远远不止这些。下面就挑选一些重要的功能来给大家做一些讲解。&lt;/p>
+&lt;/div>
+&lt;div class="admonitionblock tip">
+&lt;table>
+&lt;tbody>&lt;tr>
+&lt;td class="icon">
+&lt;i class="fa icon-tip" title="Tip">&lt;/i>
+&lt;/td>
+&lt;td class="content">
+为了方便查看改动点，建议将代码交给版本管理工具，比如 Git，来管理。
+&lt;/td>
+&lt;/tr>
+&lt;/tbody>&lt;/table>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_快速入门">快速入门&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>OpenRewrite 是一套对源码做重构的大型生态系统，可以帮助开发人员减少技术债。所以，它提供了一套的相关工具。对于大多数开发人员来说，最方便的也许就是基于 Maven 插件的相关工具。这里以对 Java 的 &lt;code>import&lt;/code> 语句排序来为示例展示一下 OpenRewrite 的使用方法。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在项目的 &lt;code>pom.xml&lt;/code> 中增加如下配置：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="xml">&lt;span class="c">&amp;lt;!-- @author: D瓜哥 · &lt;a href="https://www.diguage.com" target="_blank">https://www.diguage.com&lt;/a> --&amp;gt;&lt;/span>
+&lt;span class="nt">&amp;lt;plugin&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;groupId&amp;gt;&lt;/span>org.openrewrite.maven&lt;span class="nt">&amp;lt;/groupId&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;artifactId&amp;gt;&lt;/span>rewrite-maven-plugin&lt;span class="nt">&amp;lt;/artifactId&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;version&amp;gt;&lt;/span>5.30.0&lt;span class="nt">&amp;lt;/version&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;configuration&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;activeRecipes&amp;gt;&lt;/span>
+ &lt;span class="c">&amp;lt;!-- import 排序 --&amp;gt;&lt;/span>
+ &lt;span class="c">&amp;lt;!-- &lt;a href="https://docs.openrewrite.org/recipes/java/orderimports" target="_blank">https://docs.openrewrite.org/recipes/java/orderimports&lt;/a> --&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;recipe&amp;gt;&lt;/span>org.openrewrite.java.OrderImports&lt;span class="nt">&amp;lt;/recipe&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;/activeRecipes&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;/configuration&amp;gt;&lt;/span>
+&lt;span class="nt">&amp;lt;/plugin&amp;gt;&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>然后执行如下命令：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">mvn rewrite:run&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>执行会输出一大堆东西，这里就不再展示，执行完成后，使用 Git 查看一下改动点。如下图：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/open-rewrite/order-imports.png" alt="使用 OpenRewrite 排序 import 的改动点" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. 使用 OpenRewrite 排序 import 的改动点&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>将这些修改点提交，就完成了一次优化， OpenRewrite 的基本使用，你学废了吗？&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这里再多说一句： 由于 OpenRewrite 精巧的设计，可以通过使用不同的处方，进行各种各样的优化。所以，最重要的一点就是了解 OpenRewrite 各种不同的处方及使用办法。下面就介绍一下常用的处方及使用办法。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_常用处方">常用处方&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="sect2">
+&lt;h3 id="upgrade-java21">升级到 Java 21&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>在 &lt;a href="https://www.diguage.com/post/upgrade-to-openjdk21/" target="_blank" rel="noopener">OpenJDK 21 升级指南&lt;/a> 中提到，可以使用“科技与狠活”来解决很多升级中遇到的问题。这里就来实操一把。&lt;/p>
+&lt;/div></description></item><item><title>新 Mac 安装软件脚本</title><link>https://www.diguage.com/post/install-software-for-new-mac/</link><pubDate>Tue, 24 Oct 2023 16:39:37 +0800</pubDate><guid>https://www.diguage.com/post/install-software-for-new-mac/</guid><description>&lt;div class="paragraph">
+&lt;p>最近公司可以申请零净值 MacBook 笔记本，就随手申请了一个。由于有很多软件需要安装，就搜集了一下以前安装软件的命令，整理成一个安装脚本，分享出来，方便后续再次装机。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_xcode_select">1. &lt;code>xcode-select&lt;/code>&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>作为开发人员，这是基础工具包，必须安装：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">xcode-select &lt;span class="nt">--install&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_安装脚本">2. 安装脚本&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>安装脚本主要构成如下：&lt;/p>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_oh_my_zsh">2.1. oh my zsh&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>安装脚本先安装了 oh-my-zsh。最近帮同事搞 MacBook，没有 oh-my-zsh 的加持，写命令行浑身难受。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/logos/oh-my-zsh.png" alt="oh-my-zsh" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. oh-my-zsh&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>由于安装 oh my zsh 会导致脚本退出，所以，单独安装：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="c">#!/usr/bin/env bash&lt;/span>
+&lt;span class="c">#&lt;/span>
+&lt;span class="c"># Author: D瓜哥 · &lt;a href="https://www.diguage.com" target="_blank">https://www.diguage.com&lt;/a>&lt;/span>
+&lt;span class="c">#&lt;/span>
+
+&lt;span class="c"># 安装 oh-my-zsh&lt;/span>
+sh &lt;span class="nt">-c&lt;/span> &lt;span class="s2">&amp;#34;&lt;/span>&lt;span class="si">$(&lt;/span>curl &lt;span class="nt">-fsSL&lt;/span> https://cdn.jsdelivr.net/gh/ohmyzsh/ohmyzsh/tools/install.sh&lt;span class="si">)&lt;/span>&lt;span class="s2">&amp;#34;&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_homebrew">2.2. Homebrew&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>脚本里面主要使用了 Homebrew 来安装软件。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/logos/homebrew.svg" alt="Homebrew" width="50%"/>
+&lt;/div>
+&lt;div class="title">图 2. Homebrew&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_sdkman">2.3. sdkman&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>Java JDK + Maven 等相关安装，主要使用了 Sdkman，方便多个版本相互切换。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/logos/sdkman.png" alt="sdkman" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 3. sdkman&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_感谢_jsdelivr">2.4. 感谢 jsDelivr&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>为了解决安装 oh-my-zsh 和 Homebrew 时，GitHub 访问不畅，使用 jsDelivr 将它们的安装链接进行改写，可以利用 CDN 加速，让安装过程更加顺利。&lt;/p>
+&lt;/div></description></item><item><title>关于接口可维护性的一些建议</title><link>https://www.diguage.com/post/tips-for-interface-maintainability/</link><pubDate>Fri, 28 Apr 2023 17:16:24 +0800</pubDate><guid>https://www.diguage.com/post/tips-for-interface-maintainability/</guid><description>&lt;div class="paragraph">
+&lt;p>在做新需求开发或者相关系统的维护更新时，尤其是涉及到不同系统的接口调用时，在可维护性方面，总感觉有很多地方差强人意。一些零星思考，抛砖引玉，希望引发更多的思考和讨论。总结了大概有如下几条建议：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>在接口注释中加入接口文档链接&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>将调用接口处写上被调用接口文档链接&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>将接口源代码发布到私服仓库&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>对于状态值常量，优先在接口参数类或者返回值类中定义&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>如果使用 &lt;code>Map&lt;/code> 对象作为传输载体，要提供 Key 值定义常量&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>针对 &lt;code>Map&lt;/code> 返回值，可以考虑使用将 &lt;code>Map&lt;/code> 转化成对象&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>尽可能简化接口依赖&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>只传递必要字段，尽量避免大而全的接口&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>将接口的参数和返回值原始数据打印到日志中&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>将 RPC 接口的类名及方法打印到日志中&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>核心思想：以人为本，就近原则，触手可及&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>下面，D瓜哥对每一条建议做一个详细说明。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_在接口注释中加入接口文档链接">1. 在接口注释中加入接口文档链接&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>在做接口开发时，无论是对自有接口的升级改造，还是针对外部接口的从头接入，都涉及到接口文档。不同之处是，前者的工作重点是书写或者更新接口文档；而后者是根据接口文档开发合适的接入代码。但是，经常遇到的一个麻烦是，找不到接口文档。在组内需要找老同事询问；如果是跨部门，还需要两层甚至三层的进行转接，非常麻烦。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥认为，在这种情况下，为了方便大家维护，最好的办法就是将接口文档链接直接放在代码注释中，这样后续维护的人员，直接就可以点击链接直达接口文档，简单方便高效。如果是新建的接口，就可以先创建一个空文档，把链接放在注释中，后续再书写文档内容。如果是维护已有接口，可以在维护时，将缺失的链接加入到注释中，自己方便，也方便其他人进行后续的维护更新。这样，在循序渐进的过程中，逐步就可以把文档链接补充到代码中，方便维护代码，也同步更新文档。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_将调用接口处写上被调用接口文档链接">2. 将调用接口处写上被调用接口文档链接&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>在调用其他系统的接口时，没有接口文档，几乎寸步难行。在第一次接入接口时，绝大多数情况下，都是参考着接口文档做接入工作。但是，目前的情况时，接入时参考文档，参考完就随手把文档给“扔了”。后续如果还需要做进一步升级维护，还需要到处找接口文档；另外，交互的系统难免有一些 Bug，在和其他系统维护人员对接处理 Bug 时，只有接口没有文档，对方可能也需要去找文档链接。无形中，很多时间都浪费在了找文档的过程中。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥最近尝试了一个实践，就是在接口调用的地方，把接口文档链接当做注释加入到代码中。这样，无论是后续维护升级，还是沟通协调处理问题，都非常方便。别人问接口是什么，连接口+文档都可以一把复制就搞定。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>经过最近一段时间的实践情况来看，这个处理非常方便，是一个非常值得推广的实践。再插一句，也可以像一条建议一样，可以在维护代码时，不断把已接入的接口文档加入到调用接口的地方，循序渐进，方便后续人维护升级。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_将接口源代码发布到私服仓库">3. 将接口源代码发布到私服仓库&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>接口文档链接在注释中，在构建结果中就不复存在了。所以，为了方便接口使用方可以在接口中查询到对应的接口文档，就需要把源码也发布到私服仓库中。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这里只说明一下 Java 的相关处理办法。如果使用 Maven 作为构建工具的话，默认是不会将源代码发布到私服仓库中的。关于如何将源代码发布到，在 &lt;a href="https://www.diguage.com/post/upgrade-maven-plugins/#src-to-repo" target="_blank" rel="noopener">升级 Maven 插件：将源码发布到私服仓库&lt;/a> 中已经做过相关介绍，这里就不再赘述。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>除了将源码发布到私服仓库，另外，还建议编译构建时，保持方法的原始参数命名。这个也可以通过配置 Maven 插件来完成，具体配置见： &lt;a href="https://www.diguage.com/post/upgrade-maven-plugins/#compile-with-parameters" target="_blank" rel="noopener">升级 Maven 插件：字节码文件包含原始参数名称&lt;/a>。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="constant-definition">4. 对于状态值常量，优先在接口参数类或者返回值类中定义&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>在做接口开发时，很多数据都有一个状态值，比如订单状态，再比如接口状态等等。目前的一个情况时，这些状态值大部分书写在文档中，在接入接口时，需要接入方自定义这些状态值。这就有些繁琐了，而且状态定义也不明确，甚至有可能遗漏一些重要的状态值。有些懒省事，直接在代码中硬编码一个魔法值，后续维护的跟还需要根据上下文反推这个值的含义，非常不利于维护。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥个人觉得，有两个处理办法：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>如果状态值不是很多，优先在接口参数类或者返回值类中定义。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>如果状态值很多，可以考虑单独抽取成一个常量类或者枚举类。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这样使用的时候，触手可及。不需要到处去找。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="key-for-map">5. 如果使用 &lt;code>Map&lt;/code> 对象作为传输载体，要提供 Key 值定义常量&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>有些系统可能考虑方便增加字段，选择使用 &lt;code>Map&lt;/code> 作为数据载体。自己开发的时候很爽，但是给接口接入却非常不友好。接入方从 &lt;code>Map&lt;/code> 中获取数据时，要么自己定义 Key 值；要么直接使用魔法值硬编码在代码中。使用前者方案，就需要在各个接入方都需要自定义一套；使用后者，初期是省事了，后来维护的人员就懵逼了。这都无形中增加了很多维护成本。&lt;/p>
+&lt;/div></description></item><item><title>Versions Maven 插件简介</title><link>https://www.diguage.com/post/intro-to-versions-maven-plugin/</link><pubDate>Fri, 21 Apr 2023 22:07:37 +0800</pubDate><guid>https://www.diguage.com/post/intro-to-versions-maven-plugin/</guid><description>&lt;div class="paragraph">
+&lt;p>在 &lt;a href="https://www.diguage.com/post/specification-for-maven-bom/" target="_blank" rel="noopener">制定组织内 Maven BOM 的一些规范&lt;/a> 中，D瓜哥 介绍了一些组织内指定 Maven BOM 的一些规范。根据这些规范，D瓜哥 创建并维护了部门内部的 Maven BOM。今年，要求对部门内的陈旧依赖做一些升级工作。所以，在 &lt;a href="https://www.diguage.com/post/experience-about-upgrading-java-dependencies/" target="_blank" rel="noopener">关于升级 Spring 等依赖的一些经验&lt;/a> 中介绍了一些升级开源依赖的经验；在上一篇文章 &lt;a href="https://www.diguage.com/post/upgrade-maven-plugins/" target="_blank" rel="noopener">升级 Maven 插件&lt;/a> 中介绍了升级 Maven 插件的一些注意事项。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥一直坚持“机器可以干的事情，就应该交给机器干”。对于依赖管理，Maven Enforcer 插件就可以对依赖做必要的检查，所以，在 &lt;a href="https://www.diguage.com/post/use-maven-enforcer-plugin-to-check-dependencies/" target="_blank" rel="noopener">使用 Maven Enforcer 插件检查依赖&lt;/a> 中，介绍了如何使用 Apache Maven Enforcer 来管理依赖。由于要维护部门内部的 Maven BOM，同时由于版本控的特质，所以，需要时长检查依赖升级情况。原来都是手动检查，需要一个一个去搜索各个依赖，不仅费时费力，而且还低效。最近，Maven 有一个插件可以胜任这个工作，它就是： &lt;a href="https://www.mojohaus.org/versions/versions-maven-plugin/index.html" target="_blank" rel="noopener">Versions Maven Plugin&lt;/a>。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_依赖检查">依赖检查&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>Versions Maven Plugin 支持两种配置方式：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>外置配置文件 &lt;code>maven-version-rules.xml&lt;/code>；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>内置在 POM 文件中，直接写在插件的 &lt;code>&amp;lt;configuration&amp;gt;&lt;/code> 标签中。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>第一种方案不方便迁移。还要额外管理一个配置文件。推荐使用第二种方式。另外，直接将这些配置放在 Maven BOM 中，使用继承的方式使用 Maven BOM，那么子项目就自动继承了这些配置。后续也只需要一个地方的配置即可。示例配置如下：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="xml">&lt;span class="c">&amp;lt;!-- @author: D瓜哥 · &lt;a href="https://www.diguage.com" target="_blank">https://www.diguage.com&lt;/a> --&amp;gt;&lt;/span>
+&lt;span class="nt">&amp;lt;plugin&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;groupId&amp;gt;&lt;/span>org.codehaus.mojo&lt;span class="nt">&amp;lt;/groupId&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;artifactId&amp;gt;&lt;/span>versions-maven-plugin&lt;span class="nt">&amp;lt;/artifactId&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;version&amp;gt;&lt;/span>2.15.0&lt;span class="nt">&amp;lt;/version&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;configuration&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;ruleSet&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;ignoreVersions&amp;gt;&lt;/span>
+ &lt;span class="c">&amp;lt;!-- 可以使用 ignoreVersion 配置忽略 SNAPSHOT、alpha、beta 版等 --&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;ignoreVersion&amp;gt;&lt;/span>
+ &lt;span class="c">&amp;lt;!-- &amp;#39;exact&amp;#39; (默认) 或 &amp;#39;regex&amp;#39; --&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;type&amp;gt;&lt;/span>regex&lt;span class="nt">&amp;lt;/type&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;version&amp;gt;&lt;/span>(.+-SNAPSHOT|.+-M\d)&lt;span class="nt">&amp;lt;/version&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;/ignoreVersion&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;ignoreVersion&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;type&amp;gt;&lt;/span>regex&lt;span class="nt">&amp;lt;/type&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;version&amp;gt;&lt;/span>.+-(alpha|beta)&lt;span class="nt">&amp;lt;/version&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;/ignoreVersion&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;/ignoreVersions&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;/ruleSet&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;/configuration&amp;gt;&lt;/span>
+&lt;span class="nt">&amp;lt;/plugin&amp;gt;&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>升级 Maven 插件</title><link>https://www.diguage.com/post/upgrade-maven-plugins/</link><pubDate>Tue, 21 Mar 2023 17:36:48 +0800</pubDate><guid>https://www.diguage.com/post/upgrade-maven-plugins/</guid><description>&lt;div class="paragraph">
+&lt;p>D瓜哥在 &lt;a href="https://www.diguage.com/post/experience-about-upgrading-java-dependencies/" target="_blank" rel="noopener">关于升级 Spring 等依赖的一些经验&lt;/a> 中，介绍了一些升级 Spring 等依赖的一些经验。在 &lt;a href="https://www.diguage.com/post/upgrade-ibatis-mybatis-about-duplicate-key-exception/" target="_blank" rel="noopener">升级 iBATIS/MyBATIS 对处理 DuplicateKeyException 的影响&lt;/a> 中，分析了升级 iBATIS/MyBATIS 对处理 DuplicateKeyException 异常的影响。在升级中，还遇到一些 Maven 插件相关的问题。这里也分享出来，希望对大家有所帮助。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_properties_文件编码错误">Properties 文件编码错误&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>在升级过程中，遇到过 Properties 文件编码错误的问题。可以通过配置对应的编码来解决这个问题。配置如下：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="xml">&lt;span class="c">&amp;lt;!-- D瓜哥 · &lt;a href="https://www.diguage.com" target="_blank">https://www.diguage.com&lt;/a> --&amp;gt;&lt;/span>
+&lt;span class="nt">&amp;lt;plugin&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;groupId&amp;gt;&lt;/span>org.apache.maven.plugins&lt;span class="nt">&amp;lt;/groupId&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;artifactId&amp;gt;&lt;/span>maven-resources-plugin&lt;span class="nt">&amp;lt;/artifactId&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;version&amp;gt;&lt;/span>3.3.0&lt;span class="nt">&amp;lt;/version&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;configuration&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;propertiesEncoding&amp;gt;&lt;/span>ISO-8859-1&lt;span class="nt">&amp;lt;/propertiesEncoding&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;/configuration&amp;gt;&lt;/span>
+&lt;span class="nt">&amp;lt;/plugin&amp;gt;&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_参考资料">参考资料&lt;/h3>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;a href="https://maven.apache.org/plugins/maven-resources-plugin/examples/filtering-properties-files.html" target="_blank" rel="noopener">Apache Maven Resources Plugin – Filtering Properties Files&lt;/a>。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_使用_maven_enforcer_插件检查依赖">使用 Maven Enforcer 插件检查依赖&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>私以为“机器可以干的事情，就应该交给机器干”。对于依赖管理，Maven Enforcer 插件就可以对依赖做必要的检查。所以，推荐使用 Maven Enforcer 插件来检查低版本及有安全漏洞的依赖。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>详细介绍请参考： &lt;a href="https://www.diguage.com/post/use-maven-enforcer-plugin-to-check-dependencies/" target="_blank" rel="noopener">使用 Maven Enforcer 插件检查依赖&lt;/a>&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="compile-with-parameters">字节码文件包含原始参数名称&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>一些对外发布的依赖，建议将原始参数名称编译到构建结果里。可以通过指定构建参数来完成。&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="xml">&lt;span class="c">&amp;lt;!-- D瓜哥 · &lt;a href="https://www.diguage.com" target="_blank">https://www.diguage.com&lt;/a> --&amp;gt;&lt;/span>
+&lt;span class="nt">&amp;lt;plugin&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;groupId&amp;gt;&lt;/span>org.apache.maven.plugins&lt;span class="nt">&amp;lt;/groupId&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;artifactId&amp;gt;&lt;/span>maven-compiler-plugin&lt;span class="nt">&amp;lt;/artifactId&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;version&amp;gt;&lt;/span>3.11.0&lt;span class="nt">&amp;lt;/version&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;configuration&amp;gt;&lt;/span>
+ &lt;span class="c">&amp;lt;!-- &lt;a href="https://docs.oracle.com/javase/8/docs/technotes/tools/windows/javac.html" target="_blank">https://docs.oracle.com/javase/8/docs/technotes/tools/windows/javac.html&lt;/a> --&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;compilerArgs&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;arg&amp;gt;&lt;/span>-parameters&lt;span class="nt">&amp;lt;/arg&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;/compilerArgs&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;parameters&amp;gt;&lt;/span>true&lt;span class="nt">&amp;lt;/parameters&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;/configuration&amp;gt;&lt;/span>
+&lt;span class="nt">&amp;lt;/plugin&amp;gt;&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_参考资料_2">参考资料&lt;/h3>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;a href="https://maven.apache.org/plugins/maven-compiler-plugin/examples/pass-compiler-arguments.html" target="_blank" rel="noopener">Apache Maven Compiler Plugin – Pass Compiler Arguments&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_解决测试依赖问题">解决测试依赖问题&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>部分项目可能已经使用了 JUnit 5，但是执行测试代码时，可能报错。可以使用如下配置来解决这个问题：&lt;/p>
+&lt;/div></description></item><item><title>升级 iBATIS/MyBATIS 对处理 DuplicateKeyException 的影响</title><link>https://www.diguage.com/post/upgrade-ibatis-mybatis-about-duplicate-key-exception/</link><pubDate>Thu, 23 Feb 2023 11:21:23 +0800</pubDate><guid>https://www.diguage.com/post/upgrade-ibatis-mybatis-about-duplicate-key-exception/</guid><description>&lt;div class="paragraph">
+&lt;p>在 &lt;a href="https://www.diguage.com/post/experience-about-upgrading-java-dependencies/" target="_blank" rel="noopener">关于升级 Spring 等依赖的一些经验&lt;/a> 中，分享了一些开源依赖的升级经验。部分小伙伴质疑升级 iBATIS/MyBATIS 会影响对 &lt;code>DuplicateKeyException&lt;/code> 异常的处理。这篇文章就从源码分析/代码更新的就角度来分析一下升级相关依赖是否会对 &lt;code>DuplicateKeyException&lt;/code> 异常的处理带来实质性的影响。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>由于主要的技术栈涉及 MySQL 驱动、iBATIS、MyBATIS、Spring 周边等。所以，本文仅分析涉及的这些依赖。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥使用 &lt;a href="https://dev.mysql.com/doc/employee/en/" target="_blank" rel="noopener">MySQL: Employees Sample Database&lt;/a> 搭建了一个 Spring + MyBATIS + MySQL Connector/J 的测试环境。连续插入两条一样的数据，单步调试，在 &lt;code>com.mysql.jdbc.MysqlIO#sendCommand&lt;/code> 方法中，就可以观察到如下异常：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/upgrade-spring/mysql-error1062.png" alt="MySQL Error 1062" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. MySQL Error 1062&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>从这里可以明显看出，MySQL 驱动返回的异常中， &lt;code>venderCode&lt;/code> 编码是 &lt;code>1062&lt;/code>。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>顺着这个线，往上走，到 &lt;code>org.apache.ibatis.session.defaults.DefaultSqlSession#update(java.lang.String, java.lang.Object)&lt;/code> 方法中，可以看到，&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/upgrade-spring/mybatis-wrap-exception.png" alt="MyBATIS wrap Exception" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 2. MyBATIS wrap Exception&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在这里，会将 &lt;code>SQLException&lt;/code> 包装成 &lt;code>PersistenceException&lt;/code>，这也是 MyBATIS 对外暴露的统一的异常类。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>继续往上走，就到了 &lt;code>org.mybatis.spring.SqlSessionTemplate.SqlSessionInterceptor#invoke&lt;/code> 方法：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/upgrade-spring/mybatis-translateException.png" alt="MyBATIS translateException" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 3. MyBATIS translateException&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在 &lt;code>SqlSessionInterceptor#invoke&lt;/code> 方法的异常处理中，将 &lt;code>PersistenceException&lt;/code> 异常通过 &lt;code>org.springframework.dao.support.PersistenceExceptionTranslator#translateExceptionIfPossible&lt;/code> 方法，将异常转换成 &lt;code>DataAccessException&lt;/code> 对象。 &lt;code>DataAccessException&lt;/code> 类是 Spring 数据访问的异常类基类。&lt;/p>
+&lt;/div></description></item><item><title>关于升级 Spring 等依赖的一些经验</title><link>https://www.diguage.com/post/experience-about-upgrading-java-dependencies/</link><pubDate>Sun, 28 Aug 2022 09:19:59 +0800</pubDate><guid>https://www.diguage.com/post/experience-about-upgrading-java-dependencies/</guid><description>&lt;div class="paragraph">
+&lt;p>到公司后，熟悉了一些项目后，发现大部分项目的依赖都比较陈旧，比如某些项目还在使用 Spring 3.x 的版本。所以，在进行需求开发时，也顺手把一些项目的依赖给升级了一下。周五，一个小伙伴问我关于升级 Spring 的经验。正好趁此机会，把一些经验总结一下。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>下面的描述以 Java 8 为准，没有在其他版本 Java 上试验过。参考时，请慎重。描述的原则如下：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>尽量选择还在维护中的版本，而不是已经 End of Life 的过时版。这样有问题可以及时反馈并得到修复。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Java 8 是目标版本，所以，一定要兼容 Java 8。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_spring_framework_升级">Spring Framework 升级&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>Spring Framework 从 3.2.6.RELEASE 开始提供 BOM。可以利用 BOM 简化 Spring 依赖声明：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="xml">&lt;span class="c">&amp;lt;!-- D瓜哥 · &lt;a href="https://www.diguage.com" target="_blank">https://www.diguage.com&lt;/a> --&amp;gt;&lt;/span>
+&lt;span class="nt">&amp;lt;dependencyManagement&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;dependencies&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;dependency&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;groupId&amp;gt;&lt;/span>org.springframework&lt;span class="nt">&amp;lt;/groupId&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;artifactId&amp;gt;&lt;/span>spring-framework-bom&lt;span class="nt">&amp;lt;/artifactId&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;version&amp;gt;&lt;/span>5.3.25&lt;span class="nt">&amp;lt;/version&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;type&amp;gt;&lt;/span>pom&lt;span class="nt">&amp;lt;/type&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;scope&amp;gt;&lt;/span>import&lt;span class="nt">&amp;lt;/scope&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;/dependency&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;/dependencies&amp;gt;&lt;/span>
+&lt;span class="nt">&amp;lt;/dependencyManagement&amp;gt;&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这样，就不需要重复声明 Spring 依赖的版本，直接使用即可。 Spring Framework Bom 保证了 Spring 自身依赖的版本统一。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这里，关于 Spring 的升级，还有几点需要说明：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>从 Spring 3.X 升级到 Spring 4.X+ 后，原来的 &lt;code>MappingJacksonHttpMessageConverter&lt;/code> 已经被删除了；直接使用 &lt;code>MappingJackson2HttpMessageConverter&lt;/code> 即可。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>从 Spring 3.0.0.RELEASE 到 Spring 3.1.4.RELEASE，Spring 有一个 &lt;code>spring-asm&lt;/code>，如果不再使用这个区间的 Spring，请把这个依赖删掉。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>如果使用了 Apache Velocity 1.X 作为前端模板，由于 Spring 5+ 将相关集成代码删除，所以，只能将 Spring 升级到 4.3.30.RELEASE。相关 BOM 如下：&lt;/p>
+&lt;div class="openblock">
+&lt;div class="content">
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="xml">&lt;span class="c">&amp;lt;!-- D瓜哥 · &lt;a href="https://www.diguage.com" target="_blank">https://www.diguage.com&lt;/a> --&amp;gt;&lt;/span>
+&lt;span class="nt">&amp;lt;dependency&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;groupId&amp;gt;&lt;/span>org.springframework&lt;span class="nt">&amp;lt;/groupId&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;artifactId&amp;gt;&lt;/span>spring-framework-bom&lt;span class="nt">&amp;lt;/artifactId&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;version&amp;gt;&lt;/span>4.3.30.RELEASE&lt;span class="nt">&amp;lt;/version&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;type&amp;gt;&lt;/span>pom&lt;span class="nt">&amp;lt;/type&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;scope&amp;gt;&lt;/span>import&lt;span class="nt">&amp;lt;/scope&amp;gt;&lt;/span>
+&lt;span class="nt">&amp;lt;/dependency&amp;gt;&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>使用 Maven Enforcer 插件检查依赖</title><link>https://www.diguage.com/post/use-maven-enforcer-plugin-to-check-dependencies/</link><pubDate>Tue, 29 Mar 2022 20:04:08 +0800</pubDate><guid>https://www.diguage.com/post/use-maven-enforcer-plugin-to-check-dependencies/</guid><description>&lt;div class="paragraph">
+&lt;p>最近公司项目要对一些内部依赖做集中升级。为此，D瓜哥发布了一个 BOM（BOM stands for Bill Of Materials），用于规范项目依赖及版本。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>但是升级后，效果不理想，检查发现还是有不少依赖的版本依然不符合要求。经同事提醒，可以使用 &lt;a href="https://maven.apache.org/enforcer/index.html#" target="_blank" rel="noopener">Apache Maven Enforcer&lt;/a> 来做规范检查，测试一下效果确实不错。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>将 Apache Maven Enforcer 和 &lt;a href="https://www.mojohaus.org/extra-enforcer-rules/" target="_blank" rel="noopener">Extra Enforcer Rules&lt;/a> 的文档大致巴拉了一遍之后，根据项目的实际情况，挑选出来可用规则如下：&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_比较有用的几个规则">比较有用的几个规则&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;a href="https://maven.apache.org/enforcer/enforcer-rules/bannedDependencies.html" target="_blank" rel="noopener">bannedDependencies&lt;/a> – 排除不需要的依赖，引入需要的依赖。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://maven.apache.org/enforcer/enforcer-rules/banDuplicatePomDependencyVersions.html" target="_blank" rel="noopener">banDuplicatePomDependencyVersions&lt;/a> – 防止依赖重复声明。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://maven.apache.org/enforcer/enforcer-rules/dependencyConvergence.html" target="_blank" rel="noopener">dependencyConvergence&lt;/a> – 确保所有依赖收敛到相同的版本。也可以考虑加入。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://maven.apache.org/enforcer/enforcer-rules/reactorModuleConvergence.html" target="_blank" rel="noopener">reactorModuleConvergence&lt;/a> – 多模块开发时，确保父子模块的版本是一致的。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://maven.apache.org/enforcer/enforcer-rules/requireJavaVersion.html" target="_blank" rel="noopener">requireJavaVersion&lt;/a> – 检查 JDK 的版本&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://maven.apache.org/enforcer/enforcer-rules/requireMavenVersion.html" target="_blank" rel="noopener">requireMavenVersion&lt;/a> – 检查 Maven 的版本&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://maven.apache.org/enforcer/enforcer-rules/requireReleaseVersion.html" target="_blank" rel="noopener">requireReleaseVersion&lt;/a> – 这个可以通过激活生产环境的 profile 来启用该规则，保证发布的不是快照版。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://maven.apache.org/enforcer/enforcer-rules/requireUpperBoundDeps.html" target="_blank" rel="noopener">requireUpperBoundDeps&lt;/a> – 确保直接引用的依赖不比间接解析出来的依赖版本低。感觉这个也挺有用，但是使用方式还没搞清楚。实例有些模糊。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.mojohaus.org/extra-enforcer-rules/banDuplicateClasses.html" target="_blank" rel="noopener">banDuplicateClasses&lt;/a> – 检查重复类定义。可以避免一些特殊情况。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.mojohaus.org/extra-enforcer-rules/requirePropertyDiverges.html" target="_blank" rel="noopener">requirePropertyDiverges&lt;/a> – 确保项目定义的属性与依赖中包含的属性不重复。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.mojohaus.org/extra-enforcer-rules/enforceBytecodeVersion.html" target="_blank" rel="noopener">enforceBytecodeVersion&lt;/a> – 确保使用的字节码版本不高于指定版本。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.mojohaus.org/extra-enforcer-rules/banCircularDependencies.html" target="_blank" rel="noopener">banCircularDependencies&lt;/a> – 确保没有循环依赖。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.mojohaus.org/extra-enforcer-rules/requireEncoding.html" target="_blank" rel="noopener">requireEncoding&lt;/a> – 指定项目字符集。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_实践总结">实践总结&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>D瓜哥把上面的规则几乎全部试用了一遍，把发现的一些需要特别注意的地方标注记录一下吧：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;code>banDuplicateClasses&lt;/code> — 这个插件还是很棒的。使用的时候，成功检查出废弃不用的依赖（废弃依赖被收入到另外一个依赖中了。）。不过，也发现一些问题，项目中使用了 &lt;code>netty-all&lt;/code> 及 Netty 的其他模块依赖。但是，并没有检查出来，感觉是项目代码有直接依赖的重复类才会被检测出来。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>requireUpperBoundDeps&lt;/code> — 开启这个检查时，发现间接引用了 &lt;code>commons-lang:commons-lang:2.6&lt;/code>，但是项目直接声明的依赖是 &lt;code>commons-lang:commons-lang:2.5&lt;/code>，就直接报错了。私以为这个检查规则还是很赞的。但是，因为我们的项目中有有依赖 Gson 1.X，也有 Gson 2.X 的，而且这两个版本在处理父子类有相同字段时的存在抛异常的差异，所以无法启用，实在可惜。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>reactorModuleConvergence&lt;/code> –- 多模块开发时，确保父子模块的版本是一致的。这个规则还是很赞的。但是，因为我测试的模块不存在这个问题，所以，没有触发报警。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>requirePropertyDiverges&lt;/code> — 本想启用这个规则，看了一下配置，着实麻烦，而且不是全局检查，似乎是检查指定配置项，感觉不是很满意。没有启用。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>enforceBytecodeVersion&lt;/code> — 检查字节码版本。这个是不超过上限，我是想检查下限，所以没有启用。反思：在写这个文章时，又思考了一下，检查下限是有问题的，一些陈旧的依赖就不能使用了。但是这些依赖是没有问题的。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>banCircularDependencies&lt;/code> — 这个规则似乎 Maven 已经内置了，以前遇到过这样的场景，Maven 直接报错了。所以，就没有启用这个规则。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>requireEncoding&lt;/code> — 这个规则非常棒。在试用过程中发现，它会把存 ASCII 字符的 &lt;code>UTF-8&lt;/code> 文件判定为 &lt;code>US-ASCII&lt;/code> 编码。没有找到好的办法来解决这个问题。所以，可惜没有启用。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div></description></item><item><title>文档技术方案选型：AsciiDoc vs Markdown</title><link>https://www.diguage.com/post/asciidoc-vs-markdown/</link><pubDate>Sun, 13 Feb 2022 19:56:09 +0800</pubDate><guid>https://www.diguage.com/post/asciidoc-vs-markdown/</guid><description>&lt;div class="paragraph">
+&lt;p>D瓜哥在前面的文章 &lt;a href="https://www.diguage.com/post/building-blog-with-hugo/" target="_blank" rel="noopener">使用 Hugo 搭建博客&lt;/a> 中介绍了如何用 Hugo 搭建个人博客。部门准备系统地整理一下各个小组的文档。恰好 D瓜哥 对写文档非常感兴趣，正好写个材料分享一下血泪经验。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_编辑进化之路">编辑进化之路&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="sect2">
+&lt;h3 id="_第一代wordpress">第一代：WordPress&lt;/h3>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/website/wordpress.png" alt="wordpress" width="95%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>缺点：写作和排版割裂，排版耗时且繁琐&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_第二代markdown">第二代：MarkDown&lt;/h3>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/website/markdown.png" alt="markdown" width="95%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>缺点：方言众多，工具链不够完整。&lt;/p>
+&lt;/div>
+&lt;div class="quoteblock">
+&lt;blockquote>
+&lt;div class="paragraph">
+&lt;p>现在已经改观很多。&lt;/p>
+&lt;/div>
+&lt;/blockquote>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_第三代asciidoc">第三代：AsciiDoc&lt;/h3>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/website/asciidoc.png" alt="asciidoc" width="95%"/>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_轻量级标记语言的优点">轻量级标记语言的优点&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="sect2">
+&lt;h3 id="_思路与格式融为一体">思路与格式融为一体&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>在整理文档时，随手加入格式管理，不需要为格式分心，也无须浪费时间调整排版。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_代码高亮">代码高亮&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>AsciiDoc 与 MarkDown 都支持&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="cm">/**
+ * @author D瓜哥 · &lt;a href="https://www.diguage.com/" target="_blank">https://www.diguage.com/&lt;/a>
+ */&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">Main&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="kd">public&lt;/span> &lt;span class="kd">static&lt;/span> &lt;span class="kt">void&lt;/span> &lt;span class="nf">main&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">String&lt;/span>&lt;span class="o">[]&lt;/span> &lt;span class="n">args&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="nc">System&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">out&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">println&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;Hello, D瓜哥！&amp;#34;&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="o">}&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_文本格式">文本格式&lt;/h3>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>文本格式，天然跨平台，支持性好，方便编辑与管理。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>结合 Git，支持版本管理。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_生态完善">生态完善&lt;/h3>
+&lt;div class="sect3">
+&lt;h4 id="_markdown">Markdown&lt;/h4>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo: The world’s fastest framework for building websites&lt;/a> — Hugo 使用 &lt;a href="https://github.com/yuin/goldmark" target="_blank" rel="noopener">yuin/goldmark: A markdown parser written in Go.&lt;/a> 来做转换工作。也支持 AsciiDoc，不过需要挑选比较合适的主题： &lt;a href="https://themes.gohugo.io/" target="_blank" rel="noopener">Hugo Themes&lt;/a>。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect3">
+&lt;h4 id="_asciidoc">AsciiDoc&lt;/h4>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;a href="https://antora.org/" target="_blank" rel="noopener">Antora&lt;/a> — The multi-repository documentation site generator for tech writers who writing in AsciiDoc.&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://docs.asciidoctor.org/diagram-extension/latest/" target="_blank" rel="noopener">Asciidoctor Diagram&lt;/a> — 支持多种文本画图工具。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://docs.asciidoctor.org/epub3-converter/latest/" target="_blank" rel="noopener">Asciidoctor EPUB3 Documentation&lt;/a> — 可以直接将 AsciiDoc 文档转化成 EPUB 电子书。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://asciidoctor.org/docs/asciidoctor-pdf/" target="_blank" rel="noopener">Asciidoctor PDF&lt;/a> — 可以直接将 AsciiDoc 文档转化成 PDF 文档。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>常见插件的支持：Maven、IntelliJ IDEA、VS Code 等。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div></description></item><item><title>优化网站</title><link>https://www.diguage.com/post/optimize-websites/</link><pubDate>Mon, 07 Feb 2022 11:44:17 +0800</pubDate><guid>https://www.diguage.com/post/optimize-websites/</guid><description>&lt;div class="paragraph">
+&lt;p>前几年应大势所趋，使用 Let’s Encrypt 给所有网站都上了 HTTPS。因为去年年中把博客托管到 GitHub 上了，导致一起申请 HTTPS 证书的站点无法按时更新证书。所以，所有证书都过期了。前几天有朋友发消息问我，Byte Buddy 的中文文档是不是我搞的？正好借机把证书更新了一下。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>此后不久，无意间查看了一下网站服务器的操作系统和 Nginx 版本，发现竟然是 Ubuntu 16.04 + Nginx 1.12。Ubuntu 16.04 都”过期“了，正好得空升级一下。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_升级操作系统">升级操作系统&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>以前没有升级过操作系统大版本，正好借此机会练手：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="bash">&lt;span class="c"># 升级操作系统版本执行，先做一下常规升级&lt;/span>
+&lt;span class="nb">sudo &lt;/span>apt-get update
+&lt;span class="nb">sudo &lt;/span>apt-get upgrade
+&lt;span class="nb">sudo &lt;/span>reboot
+
+&lt;span class="c"># 检查可以升级的版本&lt;/span>
+&lt;span class="nb">sudo &lt;/span>&lt;span class="k">do&lt;/span>&lt;span class="nt">-release-upgrade&lt;/span> &lt;span class="nt">-c&lt;/span>
+
+&lt;span class="c"># 开始升级&lt;/span>
+&lt;span class="nb">sudo &lt;/span>&lt;span class="k">do&lt;/span>&lt;span class="nt">-release-upgrade&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>升级完成后，检查操作系统版本：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="bash">&lt;span class="nv">$ &lt;/span>&lt;span class="nb">cat&lt;/span> /etc/os-release
+&lt;span class="nv">NAME&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;Ubuntu&amp;#34;&lt;/span>
+&lt;span class="nv">VERSION&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;20.04.3 LTS (Focal Fossa)&amp;#34;&lt;/span>
+&lt;span class="nv">ID&lt;/span>&lt;span class="o">=&lt;/span>ubuntu
+&lt;span class="nv">ID_LIKE&lt;/span>&lt;span class="o">=&lt;/span>debian
+&lt;span class="nv">PRETTY_NAME&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;Ubuntu 20.04.3 LTS&amp;#34;&lt;/span>
+&lt;span class="nv">VERSION_ID&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;20.04&amp;#34;&lt;/span>
+&lt;span class="nv">HOME_URL&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;https://www.ubuntu.com/&amp;#34;&lt;/span>
+&lt;span class="nv">SUPPORT_URL&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;https://help.ubuntu.com/&amp;#34;&lt;/span>
+&lt;span class="nv">BUG_REPORT_URL&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;https://bugs.launchpad.net/ubuntu/&amp;#34;&lt;/span>
+&lt;span class="nv">PRIVACY_POLICY_URL&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;https://www.ubuntu.com/legal/terms-and-policies/privacy-policy&amp;#34;&lt;/span>
+&lt;span class="nv">VERSION_CODENAME&lt;/span>&lt;span class="o">=&lt;/span>focal
+&lt;span class="nv">UBUNTU_CODENAME&lt;/span>&lt;span class="o">=&lt;/span>focal&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>有几点需要注意：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>LTS 版本升级，只能一步一步升级，从 16.04 升级到 18.04，再从 18.04 升级到 20.04。不能跳级。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>升级过程不能中断，需要逐步确认。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>如果升级中断，系统就会处在一个中间阶段，不能升级，不能重启（我遇到的情况）。需要人工介入处理，继续升级完成才行：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="bash">&lt;span class="nb">sudo &lt;/span>dpkg &lt;span class="nt">--configure&lt;/span> &lt;span class="nt">-a&lt;/span>
+
+&lt;span class="c"># 执行上述命令失败是，删除两个锁文件，再次执行即可&lt;/span>
+&lt;span class="nb">sudo rm&lt;/span> &lt;span class="nt">-rf&lt;/span> /var/lib/dpkg/lock
+&lt;span class="nb">sudo rm&lt;/span> /var/lib/dpkg/lock-frontend
+
+&lt;span class="nb">sudo &lt;/span>dpkg &lt;span class="nt">--configure&lt;/span> &lt;span class="nt">-a&lt;/span>
+
+&lt;span class="nb">sudo &lt;/span>apt-get update
+&lt;span class="nb">sudo &lt;/span>apt-get dist-upgrade
+
+&lt;span class="nb">sudo &lt;/span>&lt;span class="k">do&lt;/span>&lt;span class="nt">-release-upgrade&lt;/span>
+
+&lt;span class="nb">sudo &lt;/span>reboot&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>日志最佳实践探究</title><link>https://www.diguage.com/post/logging-best-practices/</link><pubDate>Wed, 14 Jul 2021 10:52:58 +0800</pubDate><guid>https://www.diguage.com/post/logging-best-practices/</guid><description>&lt;div class="paragraph">
+&lt;p>加入公司以来，参与了很多个项目的开发维护；也排查处理过很多线上问题；为了写 Mock 测试，也专门去日志系统上扒拉过不少日志等等。在整个过程中，对日志的认识有了不少更深刻的认识和体会。也发现不少问题。这里先从存在的问题展开论述。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_日志存在的问题">日志存在的问题&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>从个人的眼光上来看，当前的系统存在如下问题：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>必要日志没有打印出来，导致在追踪问题或测试代码时，带来不必要的麻烦。比如查看一个接口的返回值用于 Mock 测试；再比如 RPC 调用报错，返回值以及错误信息没有打印到日志中，不知道具体错误原因是什么。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>日志抽取中日志路径配置错误，导致日志重复收集，带来不必要的处理和存储成本。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>日志代码不规范，导致不必要的性能消耗；或者大促时，日志降级不生效。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>日志框架繁多，造成造成冲突，遗漏部分日志。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>日志配置不规范，不利于日志的采集和清洗。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>日志和调用链路物理隔离，查看一个请求的整个调用链路上的日志非常不方便，不利于问题的快速排查和定位。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;em>大家的系统中，存在什么样的日志问题？欢迎留言交流讨论。&lt;/em>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>针对这些问题，我觉得有些地方值得发力一下。然后，做了一些探索，总结一下，以备后续使用。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_日志最佳实践探索">日志最佳实践探索&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>对于日志的使用，相信所有的开发人员都比较清楚，网上也有大量资料，相关日志框架的官方文档，也写的非常详尽，这里就不再赘述。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>本文从一个角度对日志规范进行探究：&lt;strong>在排查问题时，能否通过日志来尽快地了解系统运行状态，定位问题原因？&lt;/strong>另外，由于 Java 的日志框架特别多，有一些比较容易迷惑的问题，尝试做出一点总结。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>系统运行后，不严格地说，再去观察系统运行状态，就类似于在黑夜中行走。此时，向你扔过来一块板砖🧱，那么，事后如何追责呢？&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/logging/throw-bug.jpg" alt="throw bug" width="95%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>请问：你能否成功躲开这块叫做 Bug 的板砖🧱？&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>日志用来记录用户操作、系统运行状态等，是一个系统的重要组成部分。然而，由于日志通常不属于系统的核心功能，但是在日志对于排查问题，有无可替代的作用，理应得到所有开发人员的重视（不重视，怎么甩锅？！）！&lt;/p>
+&lt;/div>
+&lt;div class="quoteblock">
+&lt;blockquote>
+&lt;div class="paragraph">
+&lt;p>If dog is a man’s best friend, &lt;br/>
+logs are software engineer’s best friend.&lt;/p>
+&lt;/div>
+&lt;/blockquote>
+&lt;div class="attribution">
+— Geshan Manandhar&lt;br/>
+&lt;cite>Logging best practices&lt;/cite>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>好的日志可以帮助系统的开发和运维人员：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>了解线上系统的运行状态&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>快速准确定位线上问题&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>发现系统瓶颈&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>预警系统潜在风险&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>挖掘产品最大价值&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>可以将一个流程完整串起来（比如orderId）&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>……&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/logging/bug-goto-land.jpg" alt="bug goto land" width="95%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>不好的日志导致：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>对系统的运行状态一知半解，甚至一无所知&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>系统出现问题无法定位，或者需要花费巨大的时间和精力&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>无法发现系统瓶颈，不知优化从何做起&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>无法基于日志对系统运行过程中的错误和潜在风险进行监控和报警&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>对挖掘用户行为和提升产品价值毫无帮助&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>……&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div></description></item><item><title>AWK 简介</title><link>https://www.diguage.com/post/introducing-awk/</link><pubDate>Sat, 10 Jul 2021 10:14:47 +0800</pubDate><guid>https://www.diguage.com/post/introducing-awk/</guid><description>&lt;div class="paragraph">
+&lt;p>这周需要处理一个日志文件，有一次体会到 AWK 强大和方便，但也认识到自己对 AWK 了解的粗浅。所以，写篇文章再深入学习一下。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>根据维基百科显示，AWK 于二十世纪七十年代在 Bell Labs 创建；其名字来源于三位创始人： Alfred Aho、Peter Weinberger and Brian Kernighan。AWK 是一个现在几乎每台 Linux 机器上都会有这个命令。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>AWK 是一种领域专用语言，专用设计用于文本处理，常用于提取文本或者生成报告。 AWK 也像 Shell 一样，方言和实现众多。D瓜哥这里选择最常用的 GNU AWK 实现。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>AWK 是以行为单位来处理文本的。它不仅仅是一个命令行，而且是一门语言。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>先展示一下我们的实例程序：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="bash">&lt;span class="nv">$ &lt;/span>&lt;span class="nb">cat &lt;/span>employee.txt
+ajay manager account 45000
+sunil clerk account 25000
+varun manager sales 50000
+amit manager account 47000
+tarun peon sales 15000
+deepak clerk sales 23000
+sunil peon sales 13000
+satvik director purchase 80000&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>AWK 的基本用法如下：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="bash">&lt;span class="c"># ① 基本格式&lt;/span>
+&lt;span class="nv">$ &lt;/span>&lt;span class="nb">awk &lt;/span>动作 文件名
+
+&lt;span class="c"># ② 标准 I/O 格式&lt;/span>
+&lt;span class="nv">$ &lt;/span>&lt;span class="nb">cat &lt;/span>文件名 | &lt;span class="nb">awk &lt;/span>动作&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>使用 Hugo 搭建博客</title><link>https://www.diguage.com/post/building-blog-with-hugo/</link><pubDate>Sat, 01 Aug 2020 16:09:43 +0800</pubDate><guid>https://www.diguage.com/post/building-blog-with-hugo/</guid><description>&lt;div class="paragraph">
+&lt;p>一个朋友对D瓜哥的博客感兴趣，觉得很好玩。问我怎么玩，D瓜哥也懒得手把手教了，干脆写篇文章来做个说明吧。也许对其他朋友也有所帮助。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_潮起潮落">潮起潮落&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>D瓜哥早在 2012年就使用 WordPress 搭建了一个博客： &lt;a href="https://wordpress.diguage.com/" target="_blank" rel="noopener">&amp;#34;地瓜哥&amp;#34;博客网—分享技术带来的喜悦&lt;/a>，WordPress 不亏是全世界最流行的开源 CMS 系统，各种插件可以满足非常对的需求。当年D瓜哥还想研究一下它的源代码，可惜对 PHP（对，就是那个拍黄片的）无感，没有坚持下去。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>但是，在熟悉了 MarkDown、 &lt;a href="https://asciidoctor.org/" target="_blank" rel="noopener">Asciidoctor&lt;/a>（D瓜哥是 AsciiDoctor 的死忠粉，坚决支持它的发展） 等轻量级标记语言后，愈发觉得 WordPress 太繁琐：写作一个小时，排版发布一小时。实在是太浪费时间了。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>先尝试了一下 &lt;a href="https://antora.org/" target="_blank" rel="noopener">Antora&lt;/a>，之所以选它，是因为它是 AsciiDoctor 的作者发起的项目，对 AsciiDoctor 的支持性非常好。尝试了一段时间后，发现它更适合写产品说明书，更适合像阿里云等这种对外提供产品，需要提供在线产品说明书的情况。不适合做个人博客。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>去年，经过多次测试后（主要测试对 AsciiDoctor 的支持性），发现现在D瓜哥用的这个主题对 AsciiDoctor 支持得不错，随后下定决心切换到了 &lt;a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo&lt;/a>。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_hugo_简介">Hugo 简介&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>关于 Hugo 的介绍，直接转摘维基百科的介绍了：&lt;/p>
+&lt;/div>
+&lt;div class="quoteblock">
+&lt;blockquote>
+&lt;div class="paragraph">
+&lt;p>Hugo 是一个用 Go 编写的静态网站生成器，2013由 Steve Francia 原创，自 v0.14 (2015年) 由 Bjørn Erik Pedersen 主力开发，并由全球各地的开发者和用户提交贡献。Hugo 以 Apache License 2.0 许可的开放源代码项目。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>Hugo 一般只需几秒钟就能生成一个网站（每页少于 1 毫秒），被称为“世界上最快的网站构建框架”，也使 Hugo 大受欢迎，成为最热门的静态网站生成器之一，被广泛采用。例如，2015年7月，Netlify 推出专为 Hugo 而设的网站托管服务，而2017年，Smashing Magazine 推出重新设计的官方网站，从原来的 WordPress 迁移到基于 Hugo 的 JAMstack 解决方案。&lt;/p>
+&lt;/div>
+&lt;/blockquote>
+&lt;div class="attribution">
+— https://zh.wikipedia.org/wiki/Hugo_(軟件)
+&lt;/div></description></item></channel></rss>

@@ -1,0 +1,1107 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>数组 on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/%E6%95%B0%E7%BB%84/</link><description>Recent content in 数组 on "地瓜哥"博客网</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Mon, 08 Sep 2025 22:04:47 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/%E6%95%B0%E7%BB%84/index.xml" rel="self" type="application/rss+xml"/><item><title>算法模式：回溯</title><link>https://www.diguage.com/post/algorithm-pattern-backtracking/</link><pubDate>Wed, 09 Apr 2025 17:30:51 +0800</pubDate><guid>https://www.diguage.com/post/algorithm-pattern-backtracking/</guid><description>&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/algorithm-pattern-transform-and-conquer/" target="_blank" rel="noopener">算法模式：变治法&lt;/a> 介绍一种有魔力的，可以将复杂问题化繁为简，化腐朽为神奇的算法模式：变治法。本篇文章，介绍一种“一步三回头”、“落棋有悔”的算法模式：回溯。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_回溯">回溯&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>“回溯”算法也叫“回溯搜索”算法，主要用于在一个庞大的空间里搜索我们所需要的问题的解。我们每天使用的“搜索引擎”就是帮助我们在庞大的互联网上搜索我们需要的信息。“搜索”引擎的“搜索”和“回溯搜索”算法的“搜索”意思是一样的。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>“回溯”指的是“状态重置”，可以理解为“回到过去”、“恢复现场”，是在编码的过程中，是为了节约空间而使用的一种技巧。而回溯其实是“深度优先遍历”特有的一种现象。之所以是“深度优先遍历”，是因为我们要解决的问题通常是在一棵树上完成的，在这棵树上搜索需要的答案，一般使用深度优先遍历。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>“全排列”就是一个非常经典的“回溯”算法的应用。我们知道，&lt;code>N&lt;/code> 个数字的全排列一共有 \$N!\$ 这么多个。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>使用编程的方法得到全排列，就是在这样的一个树形结构中进行编程，具体来说，就是&lt;strong>执行一次深度优先遍历，从树的根结点到叶子结点形成的路径就是一个全排列。&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/data-structure/0046-01.png" alt="0046 01" width="95%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>说明：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>每一个结点表示了“全排列”问题求解的不同阶段，这些阶段通过变量的“不同的值”体现；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>这些变量的不同的值，也称之为“状态”；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>使用深度优先遍历有“回头”的过程，在“回头”以后，状态变量需要设置成为和先前一样；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>因此在回到上一层结点的过程中，需要撤销上一次选择，这个操作也称之为“状态重置”；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>深度优先遍历，可以直接借助系统栈空间，为我们保存所需要的状态变量，在编码中只需要注意遍历到相应的结点的时候，状态变量的值是正确的，具体的做法是：往下走一层的时候，&lt;code>path&lt;/code> 变量在尾部追加，而往回走的时候，需要撤销上一次的选择，也是在尾部操作，因此 &lt;code>path&lt;/code> 变量是一个栈。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>深度优先遍历通过“回溯”操作，实现了全局使用一份状态变量的效果。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>解决一个回溯问题，实际上就是一个决策树的遍历过程。&lt;/strong>只需要思考 3 个问题：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>路径：也就是已经做出的选择。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>选择列表：也就是你当前可以做的选择。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>结束条件：也就是到达决策树底层，无法再做选择的条件。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这三个问题也就对应回溯三部曲：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>定义递归函数以及参数&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>确定递归终止条件&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>思考递归单层搜索逻辑&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>代码方面，回溯算法的框架：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code>result = []
+def backtrack(路径, 选择列表):
+ if 满足结束条件:
+ result.add(路径)
+ return
+
+ for 选择 in 选择列表:
+ 做选择
+ backtrack(路径, 选择列表)
+ 撤销选择&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>其核心就是 &lt;code>for&lt;/code> 循环里面的递归，在递归调用之前「做选择」，在递归调用之后「撤销选择」&lt;/strong>，特别简单。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>必须说明的是，不管怎么优化，都符合回溯框架，而且时间复杂度都不可能低于 \$O(N!)\$，因为穷举整棵决策树是无法避免的。&lt;strong>这也是回溯算法的一个特点，不像动态规划存在重叠子问题可以优化，回溯算法就是纯暴力穷举，复杂度一般都很高。&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>玩回溯，一定要画出递归调用树。这样可以帮助我们更深入地理解整个回溯的过程，方便进一步剪枝优化。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>回溯优化，重要的是，要学会剪枝！&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_leetcode_46_全排列">LeetCode 46. 全排列&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>&lt;a href="https://leetcode.cn/problems/permutations/" target="_blank" rel="noopener">LeetCode - 46. 全排列 &lt;/a>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>给定一个不含重复数字的数组 &lt;code>nums&lt;/code> ，返回其 &lt;em>所有可能的全排列&lt;/em> 。你可以 &lt;strong>按任意顺序&lt;/strong> 返回答案。&lt;/p>
+&lt;/div></description></item><item><title>算法模式：变治法</title><link>https://www.diguage.com/post/algorithm-pattern-transform-and-conquer/</link><pubDate>Tue, 08 Apr 2025 16:50:33 +0800</pubDate><guid>https://www.diguage.com/post/algorithm-pattern-transform-and-conquer/</guid><description>&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/algorithm-pattern-divide-and-conquer/" target="_blank" rel="noopener">算法模式：分治法&lt;/a> 介绍一种可用于处理节点前后顺序的算法模式：拓扑排序。本篇文章，介绍一种有魔力的，可以将复杂问题化繁为简，化腐朽为神奇的算法模式：变治法。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_变治法">变治法&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>D瓜哥最早知道变治法也是在 &lt;a href="https://book.douban.com/subject/26337727/" target="_blank" rel="noopener">《算法设计与分析基础》&lt;/a> 中。这里也直接引用该书的介绍。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>变治法，就是基于变换的一种思想方法，首先把问题的实例变得容易求解，然后进行求解。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>变治法的工作可以分成两个阶段：首先把问题变得更容易求解，然后对实例进行求解。根据我们对问题实例的变换方式，变治思想有3种主要的类型：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>实例化简(Instance simplification) — 指将原问题变换为同样问题的一个更简单或者更方便的实例。一个典型的案例是：去重时，先排序，&lt;/p>
+&lt;div class="olist loweralpha">
+&lt;ol class="loweralpha" type="a">
+&lt;li>
+&lt;p>列表预排序&lt;/p>
+&lt;div class="olist lowerroman">
+&lt;ol class="lowerroman" type="i">
+&lt;li>
+&lt;p>检验数组中元素的唯一性&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>模式计算&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>查找问题&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>高斯消元法&lt;/p>
+&lt;div class="olist lowerroman">
+&lt;ol class="lowerroman" type="i">
+&lt;li>
+&lt;p>系数矩阵的LU分解(LU decomposition)&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>计算矩阵的逆&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>计算矩阵的行列式&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>AVL 树&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>改变表现(Representation Change) — 指将原问题变换为同样实例的不同表现。经典的栗子：霍纳法则。&lt;/p>
+&lt;div class="olist loweralpha">
+&lt;ol class="loweralpha" type="a">
+&lt;li>
+&lt;p>多路平衡查找树（最简单的情况：2-3树）&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>求多项式的霍纳法则&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>两种二进制幂算法&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>堆排序&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>问题化简(Problem reduction) — 指把一个给定的问题变换为另一个可以用已知算法求解的问题。（归化思想）转换的难题在于如何找到一个变换的目标算法。典型案例是背包问题，背包问题的本质是线性规划。了解了线性规划的本质后，才能更好地解决高维的背包问题。&lt;/p>
+&lt;div class="olist loweralpha">
+&lt;ol class="loweralpha" type="a">
+&lt;li>
+&lt;p>求最小公倍数&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>计算图中的路径数量&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>最优化问题（最大化问题(maximization problem)、最小化问题(minimization problem)）&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>线性规划（单纯形法、0/1背包问题）&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>简化为图问题&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_leetcode_474_一和零">LeetCode 474. 一和零&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>&lt;a href="https://leetcode.cn/problems/ones-and-zeroes/" target="_blank" rel="noopener">LeetCode - 474. 一和零&lt;/a>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>给你一个二进制字符串数组 &lt;code>strs&lt;/code> 和两个整数 &lt;code>m&lt;/code> 和 &lt;code>n&lt;/code> 。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>请你找出并返回 &lt;code>strs&lt;/code> 的最大子集的长度，该子集中 &lt;strong>最多&lt;/strong> 有 &lt;code>m&lt;/code> 个 &lt;code>0&lt;/code> 和 &lt;code>n&lt;/code> 个 &lt;code>1&lt;/code> 。&lt;/p>
+&lt;/div></description></item><item><title>算法模式：分治法</title><link>https://www.diguage.com/post/algorithm-pattern-divide-and-conquer/</link><pubDate>Mon, 07 Apr 2025 15:59:27 +0800</pubDate><guid>https://www.diguage.com/post/algorithm-pattern-divide-and-conquer/</guid><description>&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/algorithm-pattern-decrease-and-conquer/" target="_blank" rel="noopener">算法模式：减治法&lt;/a> 介绍一种有魔力的，可以将复杂问题化繁为简，化腐朽为神奇的算法模式：减治法。本篇文章，继续介绍一种有魔力的，可以将复杂问题化繁为简，化腐朽为神奇的算法模式：分治法。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_分治法">分治法&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>关于分治法的内容，这里继续参考 &lt;a href="https://book.douban.com/subject/26337727/" target="_blank" rel="noopener">《算法设计与分析基础》&lt;/a> 中的内容。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>分治法是按照以下方案工作的。&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>将一个问题划分为同一类型的若干子问题，子问题最好规模相同。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>对这些子问题求解（一般使用递归方法，但在问题规模足够小时，有时也会利用另一个算法）。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>有必要的话，合并这些子问题的解，以得到原始问题的答案。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/data-structure/divide-and-conquer-1.png" alt="分治法" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. 分治法&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>从字面上分析就可以看到有哪些步骤：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>分-分解-将问题分解为规模更小的子问题，子问题最好相同或相似；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>治-求解-将这些规模更小的子问题逐个击破；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>合-合并-将已解决的子问题合并，最终得出原问题的解；&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>从上述步骤中我们可以看出，分治算法一般适用满足以下条件的场景：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>问题规模缩小到一定的程度就可以很容易解决；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>问题&lt;strong>可以分解&lt;/strong>为若干个规模较小的相同问题；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>问题分解出的若干子问题的解可以合并为该问题的解；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>每个子问题都是&lt;strong>独立&lt;/strong>的，相互之间没有交集。（这是区别分治法与减）&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在“分”的过程中，我们尽可能让分解出的子问题与原始问题相似，而规模更小。这刚好符合递归的特性。因此，分治法往往与递归联系在一起。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在分治法最典型的运用中，问题规模为 &lt;code>n&lt;/code> 的实例被划分为两个规模为 &lt;code>n/2&lt;/code> 的实例。更一般的情况下，一个规模为 &lt;code>n&lt;/code> 的实例可以划分为 &lt;code>b&lt;/code> 个规模为 &lt;code>n/b&lt;/code> 的实例，其中 &lt;code>a&lt;/code> 个实例需要求解（这里，&lt;code>a&lt;/code> 和 &lt;code>b&lt;/code> 是常量，&lt;code>a≥1&lt;/code>，&lt;code>b&amp;gt;1&lt;/code>）。&lt;/p>
+&lt;/div>
+&lt;div class="stemblock text-center">
+&lt;div class="content">
+\$T(n) = aT(n/b) + f(n)\$
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>其中，\$f(n)\$ 是一个函数，表示将问题分解为小问题和将结果合并起来所消耗的时间&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>分治法的典型案例如下：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>归并排序&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>快速排序&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>二叉树的经典遍历算法和其他类似的算法都需要递归处理左右两棵子树&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Strassen 算法&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>最近对问题&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>凸包问题&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>分治法对&lt;strong>分治出的部分需要分别处理&lt;/strong>，进行分开的单独计算，而减治法则利用了&amp;#34;一个问题给定实例的解和同样问题较小实例的解之间的关系&amp;#34;，只针对部分子问题求解，&lt;strong>减治掉的那部分就不需要了&lt;/strong>。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>减常因子的减治法也可以看做是分治的变种。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_leetcode_148_排序链表">LeetCode 148. 排序链表&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>&lt;a href="https://leetcode.cn/problems/sort-list/" target="_blank" rel="noopener">LeetCode - 148. 排序链表 &lt;/a>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>给你链表的头结点 &lt;code>head&lt;/code> ，请将其按 &lt;strong>升序&lt;/strong> 排列并返回 &lt;strong>排序后的链表&lt;/strong> 。&lt;/p>
+&lt;/div></description></item><item><title>算法模式：减治法</title><link>https://www.diguage.com/post/algorithm-pattern-decrease-and-conquer/</link><pubDate>Sun, 06 Apr 2025 23:32:03 +0800</pubDate><guid>https://www.diguage.com/post/algorithm-pattern-decrease-and-conquer/</guid><description>&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/algorithm-pattern-topological-sort/" target="_blank" rel="noopener">算法模式：拓扑排序&lt;/a> 介绍一种可用于处理节点前后顺序的算法模式：拓扑排序。本篇文章，介绍一种有魔力的，可以将复杂问题化繁为简，化腐朽为神奇的算法模式：减治法。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_减治法">减治法&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>D瓜哥最早知道减治法是在 &lt;a href="https://book.douban.com/subject/26337727/" target="_blank" rel="noopener">《算法设计与分析基础》&lt;/a> 中。这里也直接引用该书的介绍。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>减治(decrease-and-conquer)技术利用了一个问题给定实例的解和同样问题较小实例的解之间的某种关系。自底向上版本往往是迭代实现的，从求解问题的一个较小实例开始，该方法有时也称为增量法(Incremental Approach)。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>减治法有3种主要的变化形式：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;strong>减去一个常量。&lt;/strong>在减常量(decrease-by-a-constant)变化形式中，每次算法迭代总是从实例中减去一个相同的常量。&lt;/p>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>插入排序&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>减去一个常量因子。&lt;/strong>减常因子(decrease-by-a-constant-factor)技术意味着在算法的每次迭代中，总是从实例的规模中减去一个相同的常数因子。在大多数应用中，这样的常数因子等于2，其实就是减半。&lt;/p>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>二分查找&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>减去的规模是可变的。&lt;/strong>在减治法的减可变规模(variable-size-decrease)变化形式中，算法在每次迭代时，规模减小的模式都是不同的。&lt;/p>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>计算最大公约数的欧几里得算法是这种情况的一个很好的例子。 \$gcd(m, n)=gcd(n,m mod n)\$&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_leetcode_50_powx_n">LeetCode 50. Pow(x, n)&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>&lt;a href="https://leetcode.cn/problems/powx-n/" target="_blank" rel="noopener">LeetCode - 50. Pow(x, n) &lt;/a>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>实现 &lt;a href="https://www.cplusplus.com/reference/valarray/pow/">pow(x, n)&lt;/a> ，即计算 &lt;code>x&lt;/code> 的整数 &lt;code>n&lt;/code> 次幂函数（即，&lt;code>x&lt;sup>n&lt;/sup>&lt;/code>）。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>示例 1：&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="literalblock">
+&lt;div class="content">
+&lt;pre>输入：x = 2.00000, n = 10
+输出：1024.00000&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>示例 2：&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="literalblock">
+&lt;div class="content">
+&lt;pre>输入：x = 2.10000, n = 3
+输出：9.26100&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>示例 3：&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="literalblock">
+&lt;div class="content">
+&lt;pre>输入：x = 2.00000, n = -2
+输出：0.25000
+解释：2-2 = 1/22 = 1/4 = 0.25&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>提示：&lt;/strong>&lt;/p>
+&lt;/div></description></item><item><title>算法模式：循环排序</title><link>https://www.diguage.com/post/algorithm-pattern-cyclic-sort/</link><pubDate>Thu, 27 Mar 2025 22:16:54 +0800</pubDate><guid>https://www.diguage.com/post/algorithm-pattern-cyclic-sort/</guid><description>&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/algorithm-pattern-quickselect/" target="_blank" rel="noopener">算法模式：快速选择&lt;/a> 介绍了如何利用快排思想快速选出第 K 个 最 X 的元素。本篇文章，介绍一种只需 \$O(1)\$ 时间就可以完成排序的算法模式：循环排序。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_循环排序">循环排序&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>循环排序讲述的是一种很好玩的模式：可以用来处理数组中的数值限定在一定的区间的问题。这种模式一个个遍历数组中的元素，如果当前这个数它不在其应该在的位置的话，咱们就把它和它应该在的那个位置上的数交换一下。你可以尝试将该数放到其正确的位置上，但这复杂度就会是 \$O(n^2)\$。这样的话，可能就不是最优解了。因此循环排序的优势就体现出来了。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/data-structure/cyclic-sort.png" alt="循环排序" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. 循环排序&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>循环排序适用的场景：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>包含连续数字的数组（如 1 到 n 或 0 到 n-1）&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>需要找出缺失/重复数字的问题&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>需要原地排序且时间复杂度要求高的情况&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_leetcode_41_缺失的第一个正数">LeetCode 41. 缺失的第一个正数&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>&lt;a href="https://leetcode.cn/problems/first-missing-positive/" target="_blank" rel="noopener">LeetCode - 41. 缺失的第一个正数&lt;/a>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>给你一个未排序的整数数组 &lt;code>nums&lt;/code> ，请你找出其中没有出现的最小的正整数。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>请你实现时间复杂度为 \$O(n)\$ 并且只使用常数级别额外空间的解决方案。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>示例 1：&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="literalblock">
+&lt;div class="content">
+&lt;pre>输入：nums = [1,2,0]
+输出：3
+解释：范围 [1,2] 中的数字都在数组中。&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>示例 2：&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="literalblock">
+&lt;div class="content">
+&lt;pre>输入：nums = [3,4,-1,1]
+
+输出：2
+
+解释：1 在数组中，但 2 没有。&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>示例 3：&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="literalblock">
+&lt;div class="content">
+&lt;pre>输入：nums = [7,8,9,11,12]
+输出：1
+解释：最小的正数 1 没有出现。&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>提示：&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;code>1 &amp;lt;= nums.length &amp;lt;= 10&lt;sup>5&lt;/sup>&lt;/code>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>-2&lt;sup>31&lt;/sup> &amp;lt;= nums[i] &amp;lt;= 2&lt;sup>31&lt;/sup> - 1&lt;/code>&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div></description></item><item><title>算法模式：快速选择</title><link>https://www.diguage.com/post/algorithm-pattern-quickselect/</link><pubDate>Wed, 26 Mar 2025 16:24:19 +0800</pubDate><guid>https://www.diguage.com/post/algorithm-pattern-quickselect/</guid><description>&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/algorithm-pattern-top-k-elements/" target="_blank" rel="noopener">算法模式：Top K 问题&lt;/a> 介绍了如何利用堆快速选出最 X 的 K 个元素。本篇文章，介绍一种可以快速选择第 K 个 最 X 元素的算法模式：快速选择。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_快速选择">快速选择&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>快速选择起源于快排算法。在快排算法中，把元素根据基准元素分成左右两部分，一边的元素小于基准元素，另外一个的元素大于等于基准元素，再对两边的元素递归处理，最终得到有序结果。受此启发，在将元素根据基准元素分成左右两部分后，这里假设，左边小于基准元素，右边大于等于基准元素，那么会有如下三种情况：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>当前基准元素所在位置正好是 K，正好是所求结果，直接返回；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>当前基准元素所在位置小于 K，那么 K 位置在当前基准元素的右边；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>当前基准元素所在位置大于 K，那么 K 位置在当前基准元素的左边；&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>所以，该模式不仅适用于求第 K 个之最元素，也适用于求“Top K 问题”。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_leetcode_215_数组中的第k个最大元素">LeetCode 215. 数组中的第K个最大元素&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>&lt;a href="https://leetcode.cn/problems/kth-largest-element-in-an-array/" target="_blank" rel="noopener">LeetCode - 215. 数组中的第K个最大元素 &lt;/a>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>给定整数数组 &lt;code>nums&lt;/code> 和整数 &lt;code>k&lt;/code>，请返回数组中第 &lt;strong>&lt;code>k&lt;/code>&lt;/strong> 个最大的元素。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>请注意，你需要找的是数组排序后的第 &lt;code>k&lt;/code> 个最大的元素，而不是第 &lt;code>k&lt;/code> 个不同的元素。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>你必须设计并实现时间复杂度为 \$O(n)\$ 的算法解决此问题。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>示例 1:&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="literalblock">
+&lt;div class="content">
+&lt;pre>输入: [3,2,1,5,6,4], k = 2
+输出: 5&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>示例 2:&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="literalblock">
+&lt;div class="content">
+&lt;pre>输入: [3,2,3,1,2,4,5,5,6], k = 4
+输出: 4&lt;/pre>
+&lt;/div></description></item><item><title>算法模式：滑动窗口</title><link>https://www.diguage.com/post/algorithm-pattern-sliding-window/</link><pubDate>Fri, 21 Mar 2025 11:49:41 +0800</pubDate><guid>https://www.diguage.com/post/algorithm-pattern-sliding-window/</guid><description>&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/algorithm-pattern-two-pointer/" target="_blank" rel="noopener">算法模式：双指针&lt;/a> 介绍了双指针的算法模式。本篇文章，介绍一种类似双指针的算法模式：滑动窗口。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_滑动窗口">滑动窗口&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>滑动窗口类型的题目经常是用来执行数组或是链表上某个区间（窗口）上的操作。比如找最长的全为1的子数组长度。滑动窗口一般从第一个元素开始，一直往右边一个一个元素挪动。当然了，根据题目要求，我们可能有固定窗口大小的情况，也有窗口的大小变化的情况。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/data-structure/sliding-window.png" alt="滑动窗口" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. 滑动窗口&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>滑动窗口大概思路如下：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="java">&lt;span class="c1">// 向前滑动窗口&lt;/span>
+&lt;span class="k">while&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">right&lt;/span> &lt;span class="o">&amp;lt;&lt;/span> &lt;span class="n">array&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">lenght&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="c1">// 扩大窗口，将元素放入窗口&lt;/span>
+ &lt;span class="n">right&lt;/span>&lt;span class="o">++;&lt;/span>
+ &lt;span class="k">while&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">缩小窗口条件&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="c1">// 处理窗口内的元素&lt;/span>
+ &lt;span class="c1">// 缩小窗口，将元素丢出窗口&lt;/span>
+ &lt;span class="n">left&lt;/span>&lt;span class="o">++;&lt;/span>
+ &lt;span class="o">}&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>下面是一些我们用来判断我们可能需要上滑动窗口策略的方法：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>问题的输入是一些线性结构：比如链表，数组，字符串之类的&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>让你去求最长/最短子字符串或是某些特定的长度要求&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_leetcode_3_无重复字符的最长子串">LeetCode 3. 无重复字符的最长子串&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>&lt;a href="https://leetcode.cn/problems/longest-substring-without-repeating-characters/" target="_blank" rel="noopener">LeetCode - 3. 无重复字符的最长子串 &lt;/a>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>给定一个字符串 &lt;code>s&lt;/code> ，请你找出其中不含有重复字符的 &lt;strong>最长子串&lt;/strong> 的长度。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>示例 1:&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="literalblock">
+&lt;div class="content">
+&lt;pre>输入: s = &amp;#34;abcabcbb&amp;#34;
+输出: 3
+解释: 因为无重复字符的最长子串是 &amp;#34;abc&amp;#34;，所以其长度为 3。&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>示例 2:&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="literalblock">
+&lt;div class="content">
+&lt;pre>输入: s = &amp;#34;bbbbb&amp;#34;
+输出: 1
+解释: 因为无重复字符的最长子串是 &amp;#34;b&amp;#34;，所以其长度为 1。&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>示例 3:&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="literalblock">
+&lt;div class="content">
+&lt;pre>输入: s = &amp;#34;pwwkew&amp;#34;
+输出: 3
+解释: 因为无重复字符的最长子串是 &amp;#34;wke&amp;#34;，所以其长度为 3。
+ 请注意，你的答案必须是 子串 的长度，&amp;#34;pwke&amp;#34; 是一个子序列，不是子串。&lt;/pre>
+&lt;/div></description></item><item><title>算法模式：双指针</title><link>https://www.diguage.com/post/algorithm-pattern-two-pointer/</link><pubDate>Thu, 06 Mar 2025 17:32:45 +0800</pubDate><guid>https://www.diguage.com/post/algorithm-pattern-two-pointer/</guid><description>&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/algorithm-pattern-merge-intervals/" target="_blank" rel="noopener">算法模式：区间合并&lt;/a> 介绍了合并区间所用的算法模式。本篇文章，介绍一种即可以用在数组，又可以用在链表中的算法模式：双指针。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_双指针">双指针&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>双指针是这样的模式：两个指针朝着左右方向移动（双指针分为同向双指针和异向双指针），直到他们有一个或是两个都满足某种条件。双指针通常用在排好序的数组或是链表中寻找对子。比如，你需要去比较数组中每个元素和其他元素的关系时，你就需要用到双指针了。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>需要双指针的原因是：如果你只用一个指针的话，你得来回跑才能在数组中找到你需要的答案。这一个指针来来回回的过程就很耗时和浪费空间了 — 这是考虑算法的复杂度分析的时候的重要概念。虽然 Brute F orce 一个指针的解法可能会奏效，但时间复杂度一般会是 \$O(n^2)\$。在很多情况下，双指针能帮助我们找到空间或是时间复杂度更低的解。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>识别使用双指针的招数：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>一般来说，数组或是链表是排好序的，你得在里头找一些组合满足某种限制条件&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>这种组合可能是一对数，三个数，或是一个子数组&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_leetcode_15_三数之和">LeetCode 15. 三数之和&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>&lt;a href="https://leetcode.cn/problems/3sum/" target="_blank" rel="noopener">LeetCode - 15. 三数之和 &lt;/a>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>给你一个整数数组 &lt;code>nums&lt;/code> ，判断是否存在三元组 &lt;code>[nums[i], nums[j], nums[k]]&lt;/code> 满足 &lt;code>i != j&lt;/code>、&lt;code>i != k&lt;/code> 且 &lt;code>j != k&lt;/code> ，同时还满足 &lt;code>nums[i] + nums[j] + nums[k] == 0&lt;/code>。请你返回所有和为 &lt;code>0&lt;/code> 且不重复的三元组。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>注意：&lt;/strong>答案中不可以包含重复的三元组。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>示例 1：&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="literalblock">
+&lt;div class="content">
+&lt;pre>输入：nums = [-1,0,1,2,-1,-4]
+输出：[[-1,-1,2],[-1,0,1]]
+解释：
+nums[0] + nums[1] + nums[2] = (-1) + 0 + 1 = 0 。
+nums[1] + nums[2] + nums[4] = 0 + 1 + (-1) = 0 。
+nums[0] + nums[3] + nums[4] = (-1) + 2 + (-1) = 0 。
+不同的三元组是 [-1,0,1] 和 [-1,-1,2] 。
+注意，输出的顺序和三元组的顺序并不重要。&lt;/pre>
+&lt;/div></description></item><item><title>算法模式：快慢指针</title><link>https://www.diguage.com/post/algorithm-pattern-fast-slow-pointers/</link><pubDate>Wed, 05 Mar 2025 19:50:11 +0800</pubDate><guid>https://www.diguage.com/post/algorithm-pattern-fast-slow-pointers/</guid><description>&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/algorithm-pattern-two-pointer/" target="_blank" rel="noopener">算法模式：双指针&lt;/a> 介绍了双指针模式。本篇文章，再介绍一种即可以用在数组，又可以用在链表中的算法模式：快慢指针。快慢指针，其实是双指针模式的一个变种。所以，两者在很多地方有相通之处。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_快慢指针">快慢指针&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>快慢指针模式，有一个非常出名的名字，叫龟兔赛跑。大家肯定都知道龟兔赛跑啦。但还是再解释一下快慢指针：这种算法的两个指针的在数组上（或是链表上，序列上）的移动速度不一样。还别说，这种方法在解决有环的链表和数组时特别有用。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>通过控制指针不同的移动速度（比如在环形链表上），这种算法证明了他们肯定会相遇的。快的一个指针肯定会追上慢的一个（可以想象成跑道上面跑得快的人套圈跑得慢的人）。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>咋知道需要用快慢指针模式勒？&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>问题需要处理环上的问题，比如环形链表和环形数组&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>当你需要知道链表的长度或是某个特别位置的信息的时候&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>那啥时候用快慢指针而不是上面的双指针呢？&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>有些情形下，咱们不应该用双指针，比如我们在单链表上不能往回移动的时候。一个典型的需要用到快慢指针的模式的是当你需要去判断一个链表是否是回文的时候。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_leetcode_141_环形链表">LeetCode 141. 环形链表&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>&lt;a href="https://leetcode.cn/problems/linked-list-cycle/" target="_blank" rel="noopener">LeetCode - 141. 环形链表 &lt;/a>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>给你一个链表的头节点 &lt;code>head&lt;/code> ，判断链表中是否有环。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>如果链表中有某个节点，可以通过连续跟踪 &lt;code>next&lt;/code> 指针再次到达，则链表中存在环。为了表示给定链表中的环，评测系统内部使用整数 &lt;code>pos&lt;/code> 来表示链表尾连接到链表中的位置（索引从 0 开始）。&lt;strong>注意：&lt;code>pos&lt;/code> 不作为参数进行传递&lt;/strong>。仅仅是为了标识链表的实际情况。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;em>如果链表中存在环&lt;/em> ，则返回 &lt;code>true&lt;/code> 。 否则，返回 &lt;code>false&lt;/code> 。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>示例 1：&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/data-structure/0141-00.png" alt="0141 00" width="95%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="literalblock">
+&lt;div class="content">
+&lt;pre>输入：head = [3,2,0,-4], pos = 1
+输出：true
+解释：链表中有一个环，其尾部连接到第二个节点。&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>示例 2：&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/data-structure/0141-01.png" alt="0141 01" width="95%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="literalblock">
+&lt;div class="content">
+&lt;pre>输入：head = [1,2], pos = 0
+输出：true
+解释：链表中有一个环，其尾部连接到第一个节点。&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>示例 3：&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/data-structure/0141-03.png" alt="0141 03" width="95%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="literalblock">
+&lt;div class="content">
+&lt;pre>输入：head = [1], pos = -1
+输出：false
+解释：链表中没有环。&lt;/pre>
+&lt;/div></description></item><item><title>算法模式：区间合并</title><link>https://www.diguage.com/post/algorithm-pattern-merge-intervals/</link><pubDate>Wed, 05 Mar 2025 19:50:11 +0800</pubDate><guid>https://www.diguage.com/post/algorithm-pattern-merge-intervals/</guid><description>&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/algorithm-pattern-modified-binary-search/" target="_blank" rel="noopener">算法模式：改进的二分查找&lt;/a> 介绍了二分查找以及相关变种。本篇文章，继续介绍数组相关的算法模式：区间合并。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_区间合并">区间合并&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>区间合并模式是一个用来处理有区间重叠的很高效的技术。在涉及到区间的很多问题中，通常咱们需要要么判断是否有重叠，要么合并区间，如果他们重叠的话。这个模式是这么起作用的。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>给两个区间，一个是 a，另外一个是 b。别小看就两个区间，他们之间的关系能跑出来6种情况。详细的就看图啦。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/data-structure/0056-merge-intervals.png" alt="区间关系" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. 区间关系&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>观察这六种排序，明显后三种排序是前三种排序的一个“变种”：对区间根据起点和终点进行排序，就是剩下前三种排序了。再对其进行合并就很简单了：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>没有重叠，则直接开启新区间。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>有重叠，起点和终点分别取最大值和最小值即可：由于区间已经排序，则相邻两个区间的起点是前面区间的起点，重点则是两个区间终点的最大值。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_leetcode_56_合并区间">LeetCode 56. 合并区间&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>&lt;a href="https://leetcode.cn/problems/merge-intervals/" target="_blank" rel="noopener">LeetCode - 56. 合并区间 &lt;/a>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>以数组 &lt;code>intervals&lt;/code> 表示若干个区间的集合，其中单个区间为 &lt;code>intervals[i] = [start&lt;sub>i&lt;/sub>, end&lt;sub>i&lt;/sub>]&lt;/code>。请你合并所有重叠的区间，并返回 &lt;em>一个不重叠的区间数组，该数组需恰好覆盖输入中的所有区间&lt;/em> 。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>示例 1：&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="literalblock">
+&lt;div class="content">
+&lt;pre>输入：intervals = [[1,3],[2,6],[8,10],[15,18]]
+输出：[[1,6],[8,10],[15,18]]
+解释：区间 [1,3] 和 [2,6] 重叠, 将它们合并为 [1,6].&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>示例 2：&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="literalblock">
+&lt;div class="content">
+&lt;pre>输入：intervals = [[1,4],[4,5]]
+输出：[[1,5]]
+解释：区间 [1,4] 和 [4,5] 可被视为重叠区间。&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>提示：&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;code>1 &amp;lt;= intervals.length &amp;lt;= 10&lt;sup>4&lt;/sup>&lt;/code>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>intervals[i].length == 2&lt;/code>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>0 &amp;lt;= start&lt;sub>i&lt;/sub> &amp;lt;= end&lt;sub>i&lt;/sub> &amp;lt;= 10&lt;sup>4&lt;/sup>&lt;/code>&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div></description></item><item><title>算法模式：改进的二分查找</title><link>https://www.diguage.com/post/algorithm-pattern-modified-binary-search/</link><pubDate>Tue, 04 Mar 2025 19:47:34 +0800</pubDate><guid>https://www.diguage.com/post/algorithm-pattern-modified-binary-search/</guid><description>&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/algorithm-pattern-prefix-sum/" target="_blank" rel="noopener">算法模式：前缀和&lt;/a> 介绍了前缀和的算法模式。本篇文章，继续介绍数组相关的算法模式：改进的二分查找。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_二分查找">二分查找&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>二分查找相比每一个学过计算机算法的小伙伴都了解，时间复杂度是： \$\log_2N\$，是一个非常高效的数组查找算法。当然，前提是数组必须有序。过程如下：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/data-structure/binary-search.jpg" alt="二分查找" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. 二分查找&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;a href="https://leetcode.cn/problems/binary-search/description/" target="_blank" rel="noopener">LeetCode 704. 二分查找&lt;/a> 就是一个标准的二分查找的算法题。代码如下：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="java">&lt;span class="cm">/**
+ * @author D瓜哥 · &lt;a href="https://www.diguage.com" target="_blank">https://www.diguage.com&lt;/a>
+ * @since 2024-09-14 19:52:26
+ */&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="nf">search&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="kt">int&lt;/span>&lt;span class="o">[]&lt;/span> &lt;span class="n">nums&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="n">target&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="kt">int&lt;/span> &lt;span class="n">left&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">right&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">nums&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">length&lt;/span> &lt;span class="o">-&lt;/span> &lt;span class="mi">1&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="k">while&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">left&lt;/span> &lt;span class="o">&amp;lt;=&lt;/span> &lt;span class="n">right&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="kt">int&lt;/span> &lt;span class="n">mid&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">left&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">right&lt;/span> &lt;span class="o">-&lt;/span> &lt;span class="n">left&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">/&lt;/span> &lt;span class="mi">2&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">nums&lt;/span>&lt;span class="o">[&lt;/span>&lt;span class="n">mid&lt;/span>&lt;span class="o">]&lt;/span> &lt;span class="o">==&lt;/span> &lt;span class="n">target&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="k">return&lt;/span> &lt;span class="n">mid&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span> &lt;span class="k">else&lt;/span> &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">nums&lt;/span>&lt;span class="o">[&lt;/span>&lt;span class="n">mid&lt;/span>&lt;span class="o">]&lt;/span> &lt;span class="o">&amp;lt;&lt;/span> &lt;span class="n">target&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="n">left&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">mid&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="mi">1&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span> &lt;span class="k">else&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="n">right&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">mid&lt;/span> &lt;span class="o">-&lt;/span> &lt;span class="mi">1&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="k">return&lt;/span> &lt;span class="o">-&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>除了在排序数组中查找特定的值，二分查找还可以用于找边界和在旋转数组中查值。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_找边界leetcode_34_在排序数组中查找元素的第一个和最后一个位置">找边界：LeetCode 34. 在排序数组中查找元素的第一个和最后一个位置&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>&lt;a href="https://leetcode.cn/problems/find-first-and-last-position-of-element-in-sorted-array/" target="_blank" rel="noopener">LeetCode - 34. 在排序数组中查找元素的第一个和最后一个位置&lt;/a>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>给你一个按照非递减顺序排列的整数数组 &lt;code>nums&lt;/code>，和一个目标值 &lt;code>target&lt;/code>。请你找出给定目标值在数组中的开始位置和结束位置。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>如果数组中不存在目标值 &lt;code>target&lt;/code>，返回 &lt;code>[-1, -1]&lt;/code>。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>你必须设计并实现时间复杂度为 \$log_2n\$ 的算法解决此问题。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>示例 1：&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="literalblock">
+&lt;div class="content">
+&lt;pre>输入：nums = [5,7,7,8,8,10], target = 8
+输出：[3,4]&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>示例 2：&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="literalblock">
+&lt;div class="content">
+&lt;pre>输入：nums = [5,7,7,8,8,10], target = 6
+输出：[-1,-1]&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>示例 3：&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="literalblock">
+&lt;div class="content">
+&lt;pre>输入：nums = [], target = 0
+输出：[-1,-1]&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>提示：&lt;/strong>&lt;/p>
+&lt;/div></description></item><item><title>算法模式：前缀和</title><link>https://www.diguage.com/post/algorithm-pattern-prefix-sum/</link><pubDate>Thu, 27 Feb 2025 19:47:34 +0800</pubDate><guid>https://www.diguage.com/post/algorithm-pattern-prefix-sum/</guid><description>&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/algorithm-pattern-difference-array/" target="_blank" rel="noopener">算法模式：差分数组&lt;/a>，本篇文章，继续介绍数组相关的算法模式：前缀和。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_前缀和">前缀和&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>前缀和可以简单理解为「数列的前 n 项的和」。具体过程如图所示：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/data-structure/prefix-sum.svg" alt="前缀和" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. 前缀和&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这是一种重要的预处理方式，也就是需要额外的空间并且提前计算好这些值。如果使用得当，能大大降低查询的时间复杂度。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_leetcode_303_区域和检索_数组不可变">LeetCode 303. 区域和检索 - 数组不可变&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>&lt;a href="https://leetcode.cn/problems/range-sum-query-immutable/" target="_blank" rel="noopener">LeetCode - 303. 区域和检索 - 数组不可变 &lt;/a>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>给定一个整数数组 &lt;code>nums&lt;/code>，处理以下类型的多个查询:&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>计算索引 &lt;code>left&lt;/code> 和 &lt;code>right&lt;/code> （包含 &lt;code>left&lt;/code> 和 &lt;code>right&lt;/code>）之间的
+&lt;code>nums&lt;/code> 元素的 &lt;strong>和&lt;/strong> ，其中 &lt;code>left &amp;lt;= right&lt;/code>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>实现 &lt;code>NumArray&lt;/code> 类：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;code>NumArray(int[] nums)&lt;/code> 使用数组 &lt;code>nums&lt;/code> 初始化对象&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>int sumRange(int left, int right)&lt;/code> 返回数组 &lt;code>nums&lt;/code> 中索引 &lt;code>left&lt;/code> 和 &lt;code>right&lt;/code> 之间的元素的 &lt;strong>总和&lt;/strong>，包含 &lt;code>left&lt;/code> 和 &lt;code>right&lt;/code> 两点（也就是 &lt;code>nums[left] + nums[left + 1] + …​ + nums[right]&lt;/code> )&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div></description></item><item><title>算法模式：差分数组</title><link>https://www.diguage.com/post/algorithm-pattern-difference-array/</link><pubDate>Wed, 26 Feb 2025 17:01:52 +0800</pubDate><guid>https://www.diguage.com/post/algorithm-pattern-difference-array/</guid><description>&lt;div class="paragraph">
+&lt;p>Christopher Alexander 在 &lt;a href="https://book.douban.com/subject/1177968/" target="_blank" rel="noopener">《建筑的永恒之道》&lt;/a> 中说：“每一个模式描述了一个在我们周围不断重复发生的问题，以及该问题的解决方案的核心。这样，你就能一次又一次地使用该方案而不必做重复劳动。”受此影响，GoF 总结经验，写出了著名的 &lt;a href="https://book.douban.com/subject/34262305/" target="_blank" rel="noopener">《设计模式》&lt;/a>。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在算法中，也有很多类似设计模式这样的解决方案。D瓜哥称其为“算法模式”。后面，慢慢写文章一一介绍一下。由浅及深，今天先来介绍最简单的一个模式：差分数组。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_差分数组">差分数组&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>差分数组：差分数组就是原始数组相邻元素之间的差。举例如下：&lt;/p>
+&lt;/div>
+&lt;table class="tableblock frame-all grid-all stretch">
+&lt;colgroup>
+&lt;col style="width: 14.2857%;"/>
+&lt;col style="width: 14.2857%;"/>
+&lt;col style="width: 14.2857%;"/>
+&lt;col style="width: 14.2857%;"/>
+&lt;col style="width: 14.2857%;"/>
+&lt;col style="width: 14.2857%;"/>
+&lt;col style="width: 14.2858%;"/>
+&lt;/colgroup>
+&lt;thead>
+&lt;tr>
+&lt;th class="tableblock halign-left valign-top">下标&lt;/th>
+&lt;th class="tableblock halign-left valign-top">0&lt;/th>
+&lt;th class="tableblock halign-left valign-top">1&lt;/th>
+&lt;th class="tableblock halign-left valign-top">2&lt;/th>
+&lt;th class="tableblock halign-left valign-top">3&lt;/th>
+&lt;th class="tableblock halign-left valign-top">4&lt;/th>
+&lt;th class="tableblock halign-left valign-top">5&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">原始数组&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">5&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">9&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">2&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">6&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">5&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">3&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">差分数组&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">5&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">4&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">-7&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">4&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">-1&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">-2&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;div class="paragraph">
+&lt;p>差分数组是从原始数组构造出来的一个辅助数组，表示相邻元素直接的差值。可用于解决需要对数组一个区间内同时做加减的操作。比如：随着公交站各个站台上下车，判断公交车是否超载。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_leetcode_370_区间加法">LeetCode 370. 区间加法&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>&lt;a href="https://leetcode.cn/problems/range-addition/" target="_blank" rel="noopener">LeetCode - 370. 区间加法 &lt;/a>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>假设你有一个长度为 &lt;code>n&lt;/code> 的数组，初始情况下所有的数字均为 &lt;code>0&lt;/code>，你将会被给出 &lt;code>k&lt;/code> 个更新的操作。&lt;/p>
+&lt;/div></description></item></channel></rss>

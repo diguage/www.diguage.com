@@ -1,0 +1,444 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>职业发展 on "地瓜哥"博客网</title><link>https://www.diguage.com/categories/%E8%81%8C%E4%B8%9A%E5%8F%91%E5%B1%95/</link><description>Recent content in 职业发展 on "地瓜哥"博客网</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Sat, 02 Jul 2022 20:24:55 +0800</lastBuildDate><atom:link href="https://www.diguage.com/categories/%E8%81%8C%E4%B8%9A%E5%8F%91%E5%B1%95/index.xml" rel="self" type="application/rss+xml"/><item><title>使用 Hugo 搭建博客</title><link>https://www.diguage.com/post/building-blog-with-hugo/</link><pubDate>Sat, 01 Aug 2020 16:09:43 +0800</pubDate><guid>https://www.diguage.com/post/building-blog-with-hugo/</guid><description>&lt;div class="paragraph">
+&lt;p>一个朋友对D瓜哥的博客感兴趣，觉得很好玩。问我怎么玩，D瓜哥也懒得手把手教了，干脆写篇文章来做个说明吧。也许对其他朋友也有所帮助。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_潮起潮落">潮起潮落&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>D瓜哥早在 2012年就使用 WordPress 搭建了一个博客： &lt;a href="https://wordpress.diguage.com/" target="_blank" rel="noopener">&amp;#34;地瓜哥&amp;#34;博客网—分享技术带来的喜悦&lt;/a>，WordPress 不亏是全世界最流行的开源 CMS 系统，各种插件可以满足非常对的需求。当年D瓜哥还想研究一下它的源代码，可惜对 PHP（对，就是那个拍黄片的）无感，没有坚持下去。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>但是，在熟悉了 MarkDown、 &lt;a href="https://asciidoctor.org/" target="_blank" rel="noopener">Asciidoctor&lt;/a>（D瓜哥是 AsciiDoctor 的死忠粉，坚决支持它的发展） 等轻量级标记语言后，愈发觉得 WordPress 太繁琐：写作一个小时，排版发布一小时。实在是太浪费时间了。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>先尝试了一下 &lt;a href="https://antora.org/" target="_blank" rel="noopener">Antora&lt;/a>，之所以选它，是因为它是 AsciiDoctor 的作者发起的项目，对 AsciiDoctor 的支持性非常好。尝试了一段时间后，发现它更适合写产品说明书，更适合像阿里云等这种对外提供产品，需要提供在线产品说明书的情况。不适合做个人博客。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>去年，经过多次测试后（主要测试对 AsciiDoctor 的支持性），发现现在D瓜哥用的这个主题对 AsciiDoctor 支持得不错，随后下定决心切换到了 &lt;a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo&lt;/a>。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_hugo_简介">Hugo 简介&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>关于 Hugo 的介绍，直接转摘维基百科的介绍了：&lt;/p>
+&lt;/div>
+&lt;div class="quoteblock">
+&lt;blockquote>
+&lt;div class="paragraph">
+&lt;p>Hugo 是一个用 Go 编写的静态网站生成器，2013由 Steve Francia 原创，自 v0.14 (2015年) 由 Bjørn Erik Pedersen 主力开发，并由全球各地的开发者和用户提交贡献。Hugo 以 Apache License 2.0 许可的开放源代码项目。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>Hugo 一般只需几秒钟就能生成一个网站（每页少于 1 毫秒），被称为“世界上最快的网站构建框架”，也使 Hugo 大受欢迎，成为最热门的静态网站生成器之一，被广泛采用。例如，2015年7月，Netlify 推出专为 Hugo 而设的网站托管服务，而2017年，Smashing Magazine 推出重新设计的官方网站，从原来的 WordPress 迁移到基于 Hugo 的 JAMstack 解决方案。&lt;/p>
+&lt;/div>
+&lt;/blockquote>
+&lt;div class="attribution">
+— https://zh.wikipedia.org/wiki/Hugo_(軟件)
+&lt;/div></description></item><item><title>在世界读书日，推荐书单</title><link>https://www.diguage.com/post/books-on-book-day/</link><pubDate>Thu, 23 Apr 2020 20:15:14 +0800</pubDate><guid>https://www.diguage.com/post/books-on-book-day/</guid><description>&lt;div class="paragraph">
+&lt;p>今天是世界读书日，各种人都在推荐书单。D瓜哥也凑个热闹，水一篇文章，推荐一些书籍。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在前一段时间，D瓜哥已经写了一个书单： &lt;a href="https://www.diguage.com/post/java-concurrent-books/">推荐几本 Java 并发编程的书&lt;/a>。为了避免重复，上一个书单中推荐过的书籍，这次就不再重复推荐了。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>每年十二个月，D瓜哥就推荐 12 本书，每个月读一本想必压力也不算大。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_如何阅读一本书">&lt;a href="https://book.douban.com/subject/1013208/" target="_blank" rel="noopener">如何阅读一本书？&lt;/a>&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/books/how-to-read-a-book.jpg" alt="how to read a book" width="60%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥在年初的时候，刚刚再次重读了这本书。而且，还写了一篇读书笔记： &lt;a href="https://www.diguage.com/post/how-to-read-a-book/">《如何阅读一本书？》之读书笔记&lt;/a>。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>如果喜欢读书，那么这本书绝对应该是首先阅读的第一本书。一句话总结一下：&lt;strong>用检视阅读的方法来快速筛选出你关注主题的书籍；用分析阅读的方法来吸收一本书的精华；用主题阅读的办法来对多本同一主题的书去伪存真，加工再输出。&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_远见">&lt;a href="https://book.douban.com/subject/27609489/" target="_blank" rel="noopener">远见&lt;/a>&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/books/the-long-view.jpg" alt="the long view" width="60%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥在去年年末写的年终总结 &lt;a href="https://www.diguage.com/post/goodbye-2019-hello-2020/">“告别 2019，迎接 2020”&lt;/a> 中提到了这本书。考虑这本书的实用性和对自身发展的指导意义，所以决定再次推荐这本书。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在这本书中，作者将职业生涯分为：强势开局、聚焦长板和实现持续的影响力三个阶段。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在强势开局阶段，就像要开始一个汽车拉力赛，要努力加添燃料。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在聚焦长板阶段，要努力提高自己的核心竞争力，创造自己的制高点。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在实现持续的影响力阶段，则要优化长尾效应，让自己持续保持领先。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>对于职业生涯有追求的小伙伴，尤其是在读大学生，一定要去尽早认真读一读这本书。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_思考快与慢">&lt;a href="https://book.douban.com/subject/10785583/" target="_blank" rel="noopener">思考，快与慢&lt;/a>&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/books/thinking-fast-and-slow.jpg" alt="thinking fast and slow" width="60%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这是一本有关心理学方面的书籍。作者丹尼尔•卡尼曼因其与阿莫斯•特沃斯基在决策制定上的研究而荣获了 2002 年度的诺贝尔经济学奖。所以，这本书质量上肯定是有保证的。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这本书主要是介绍认知心理学的。作者在书中，把人的认知分为系统一和系统二。系统一是那种不需要思考的，已经固化在我们基因中的反应，比如看见危险会跑路等；而系统二，则是需要深入思考才能有所收获的事情，比如在新税法下，计算个人应该缴纳的个人所得税。两个系统相辅相成，时刻影响着我们的生活，但我们却有些熟视无睹。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_穷查理宝典">&lt;a href="https://book.douban.com/subject/26831789/" target="_blank" rel="noopener">穷查理宝典&lt;/a>&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/books/poor-charlies-almanack.jpg" alt="poor charlies almanack" width="60%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>提起查理·芒格，也许有些人不知道是谁。（看这篇文章的读者估计都了解）但是，他的搭档估计是人尽皆知，那就是世界股神沃伦·巴菲特。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>虽然这本书不是查理·芒格书写的，里面的精华部分，却都是查理的演讲稿。通过这些演讲，你可以看到一个睿智的老人，如何在循循善诱地向你传授他的思维方法。查理给我们介绍了他的思维模型：逆向思维，多元思维模型，打造自己的核心圈，避免嫉妒效应，内部积分卡（用我们古人的话说就是反求诸己）等等。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_社会性动物">&lt;a href="https://book.douban.com/subject/2328458/" target="_blank" rel="noopener">社会性动物&lt;/a>&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/books/the-social-animal.jpg" alt="the social animal" width="60%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥是去年开始读这本书的，非常抱歉目前还没有读完。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这本书是讲述社会心理学的，讲述在这个社会中，人与人之间是如何相互影响的。举一个典型的例子：你思考过吗，什么样的广告最能打动你吗？&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_事实">&lt;a href="https://book.douban.com/subject/33385402/" target="_blank" rel="noopener">事实&lt;/a>&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/books/factfulness.jpg" alt="factfulness" width="60%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>比尔·盖茨也推荐了这本书。我也是最近刚刚开始读这本书。还没有读完。就不做过多评价了。用一个问题，勾引一下你的兴趣：&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>问题：在全世界所有的低收入国家里面，有多少百分比的女孩能够上完小学？&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>选项：A. 20% B. 40% C. 60%&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>想知道答案，就快点去读这本书吧。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>最近更新：D瓜哥终于把这本书读完了：https://www.diguage.com/post/factfulness/[《事实》之读书笔记^]。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_人类简史">&lt;a href="https://book.douban.com/subject/26953606/" target="_blank" rel="noopener">人类简史&lt;/a>&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/books/a-brief-history-of-humankind.jpg" alt="a brief history of humankind" width="60%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>坦白讲，这本书D瓜哥才读了一半。但是，作者最近发表的一篇文章： &lt;a href="http://www.ruanyifeng.com/blog/2020/03/the-world-after-coronavirus.html">尤瓦尔·赫拉利《冠状病毒之后的世界》&lt;/a>，一个史学家站在历史发展的角度去看待疫情对世界发展的影响。由此可对赫拉利的思想窥得一斑。那么，如果感兴趣，他的成名大作《人类简史》就不得不读了。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>最近因为疫情影响，在网上看到各种五毛的无脑言论，怼天怼地，仿佛中国要征服世界，征服宇宙一样，真是让人呵呵…&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>未来几十年时间里，中国未来寻求自身发展，还需要融入到整个世界经济中，在全世界产业链中，力争上游，占领高附加值的产业，比如芯片，5G，大飞机等等。怼这个，怼那个，只能让自己像二战时期的纳粹德国和日本，让自己四面树敌，最后被全世界群殴。&lt;/p>
+&lt;/div></description></item><item><title>告别 2019，迎接 2020</title><link>https://www.diguage.com/post/goodbye-2019-hello-2020/</link><pubDate>Tue, 31 Dec 2019 19:20:00 +0800</pubDate><guid>https://www.diguage.com/post/goodbye-2019-hello-2020/</guid><description>&lt;div class="sect1">
+&lt;h2 id="_我的_2019">我的 2019&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>在 2018 年底，我写了 &lt;a href="https://www.diguage.com/post/2019-plan/" target="_blank" rel="noopener">“2019 年度计划”&lt;/a> 对 2019 年做了一个简单的规划。2019 年如白驹过隙，稍纵即逝。又到一年年底，现在对这一年做一个总结。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>虽然这一年，我一直在意有这么一个计划，但是从来没有认真总结反思过。为了回顾一下，刚刚又打开计划去看，生活才发现过得如此苍白无力。抛开计划，按时间顺序，从头到尾，随意来说吧。&lt;/p>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_读书">读书&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>今年读了几本书：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>《小岛经济学》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《小王子（英文版）》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《未来世界的幸存者》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《白夜行》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《教父》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《远见》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《如何阅读一本书？》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《文明之光（第一册）》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《基督山伯爵》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《Kubernetes in Action》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《富爸爸穷爸爸》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《巴菲特与索罗斯的投资习惯》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《幸福的方法》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《魔鬼聊天术》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《拆掉思维里的墙》&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>挑选几本来简单说说吧。&lt;/p>
+&lt;/div>
+&lt;div class="sect3">
+&lt;h4 id="_小岛经济学">《小岛经济学》&lt;/h4>
+&lt;div class="paragraph">
+&lt;p>《小岛经济学》是今年读完的第一本书，也算是去年留下的一个尾巴。奥地利经济学派主张政府不干预的观点。这本书简单描述了经济发展的过程，从莽荒时代，手工作业开始，逐步引入工具，提高生产力；随着生产力的提升，人口的增多，经济活动增多，开始物物交换；从物物交换过渡到货币交易，然后银行业兴起；生产力再次提高，以及货币的增加，投资也成为必要，资本市场应运而生；随着地区优势的凸显，资源整合也势在必行，接着发展起了跨国贸易，换汇成为必要，汇率也就被引入进来；随着资本市场的繁荣，埋藏的地雷被引爆，通货膨胀，货币贬值，资本市场崩溃，社会进入大萧条，然后重置继续发展……&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>整个过程完整而清晰，犹如亲历过去发展的波澜壮阔。作为一本经济学入门教程还是很赞的。最近开始看曼昆的《经济学原理》，再来看这本书，真的只能是入门。也许智商不够用，也许对经济学的知识了解得过于浅薄，当经济发展到引入汇率之后，后面的发展过程理解的就不是很透彻了。等看一下金融的书，结合起来，希望能更好地理解。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect3">
+&lt;h4 id="_未来世界的幸存者">《未来世界的幸存者》&lt;/h4>
+&lt;div class="paragraph">
+&lt;p>在年初看完的这本书，看完后震撼很大。把当时的读后感直接贴到这里作为总结吧。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>作者站在一个技术人员的角度，去思考技术如何改变世界？未来会是什么样子？&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>作者的思考和我的思考结果是一样的：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>技术的快速发展，机器必定完成大部分重复性劳动，使得大部分劳动者被取代。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>大部分人必定只能找到低端工作，工资仅够温饱。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>贫富分化将越来越严重，而且会世袭，穷人毫无翻身的可能。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>科技发展的结果，我自己感觉是喜忧参半：&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>作为一名IT从业者，真正在用技术改变这个世界，带给大家更多的便利，这是百年难得一遇的机遇，生在这个伟大的时代，能参与这个伟大的浪潮之中，可以用自己的双手去推动世界的改变，何其幸哉！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>同时，技术带给人们的便利真是难以想象，足不出户点餐、购物、约车、娱乐…&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>但是，也有很多人是不幸的，他们没有一技之长，或者人到中年，却惨遭失业；还有一部分人，或者说大部分生活在底层的人们，因为没有一技之长（仅指不容易被技术取代的技能），也许永无翻身之日，无所事事，惶惶终日。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>技术的发展，造成人类事业，伴随而来的可能会是“黑镜第一季第二集”的样子：每人一张床，四周都是显示器，想看什么看什么，什么活也不用干，平时运动挣积分，拿积分再消费…&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>进一步发展，也许就是《西部世界》，尤其是娱乐业。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>人类本身很可能会再进化一步：进化成碳基+硅基的组合体。碳基就是目前的人（也许仅仅只需要保留大脑），硅基就是各种芯片+维持大脑活动的必要设备和机械躯体…&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>基因改造将带来彻底的不平衡：人类被分为被改造人和原始人。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect3">
+&lt;h4 id="the-long-view">《远见》&lt;/h4>
+&lt;div class="paragraph">
+&lt;p>这本书是在刷知乎时，别人推荐的书。就找来看了看。真是相见恨晚！如果在大学毕业时就看到这本书，也许……&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>简单做个摘录作为总结吧。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>本书讲人生的职业生涯分为三个阶段：&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>第一阶段是强势开局的时候。你在职业上的努力必须着重于为前方的漫长道路挖掘和装备自己。你的学习曲线要比职位、职称更加重要。在这一阶段，要为职业生涯打好基础并建立起良好的早期习惯。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>第二阶段是聚焦长板的时候。该阶段的首要目标是寻找自己的甜蜜区，即你所擅长的、所热爱的和这个世界所需要的这三者之间的交集。这个时候你要展现自我，让自己鹤立鸡群，想方设法平稳地走在那条收获最大的职场路径上。你要专注于自己的长板，且大可忽略自己的短板。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>第三阶段致力于实现持续的影响力，以及寻找一条可以稳定延续到60多岁甚至70多岁的新的可持续职业道路。你要在第三阶段完成三个关键任务：完成继任计划、保持关联性，以及为自己点燃一团新的职业之火。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>用一句话来总结：第一阶段：加添燃料，强势开局； 第二阶段：聚焦长板，达到高点； 第三阶段：优化长尾，持续发挥影响力。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>三大职场燃料来源：可迁移技能、有意义的经验和持久的关系。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>5个数字，树立正确的职场思维&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>职业生涯的长度：用62减去你目前的年龄。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>精通一项技能所需的时间：要花多少小时才能在某一方面达到“精通”？&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>40岁之后能赚到的个人财富百分比：在40岁之后，你赚到的钱会占你一生个人财富的百分之多少？大部分人的估计是60%。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>社交货币：你有多少社交网络好友？&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>职场支持者的人数：你认为能在“职业生涯的天堂”里遇到多少人，也就是说有多少人能对你的职业生涯和人生带来真正的变化？&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这本书的摘要已经发布出来，感兴趣的小伙伴请移步： &lt;a href="https://www.diguage.com/post/the-long-view/">《远见》之读书笔记&lt;/a>。&lt;/p>
+&lt;/div></description></item><item><title>只要一部计算机，就可以创造出无限的世界</title><link>https://www.diguage.com/post/computer-create-world/</link><pubDate>Tue, 21 Apr 2009 00:00:00 +0800</pubDate><guid>https://www.diguage.com/post/computer-create-world/</guid><description>&lt;div class="paragraph">
+&lt;p>曾经写给学弟学妹的一封信。我觉得还行，发出来，希望对刚学计算机专业的朋友有所帮助。当然，如果哪位朋友有更好的想法，也请留言，大家讨论讨论。原文如下：&lt;/p>
+&lt;/div>
+&lt;div class="sidebarblock">
+&lt;div class="content">
+&lt;div class="title">致师弟师妹的一封信&lt;/div>
+&lt;div class="paragraph">
+&lt;p>各位朋友：&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>大家好！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>从本周开始，我必须专心为我的前程奋斗了。很可惜不能和大家一起学习了。这封信就算是我和大家的一个告别吧。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>首先，感谢史老师给我提供这个和大家一起学习和交流的机会，让我和大家一起度过了一段特殊而愉快的时光。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>其次，我应该感谢大家。由于本人水平有限，也许我没能让大家从我这里学到太多知识，但是大家却让我学会了很多东西，锻炼了我很多方面的能力。单凭这一点，我就应该感谢大家。同时，很多人把我当朋友，更使我感激不尽。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>再次，在这短暂而又宝贵的大学时光里，大家走的路应该和我的基本一样。我以一个过来人的身份，和大家分享一下我的学习经验吧，希望可以让大家少走甚至不走弯路。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>先说一点我们所学科目的情况吧。&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>Linux：一定要动手敲指令。在我们一年半的学习时光里，我认为Linux是我们所学的所有实践性学科里面最简单的一科了！只要把指令记好用熟就行了！另外，指令不需要背，用多了自然就记住了。（相信95%的同学都知道cd是什么意思吧！为什么呢？因为用它的次数多！）多提一点，一定要多尝试！&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Java或者C#或者PHP（由于个人比较喜欢Java，所以，一下描述Java的地方，你可以同样换成C#或在PHP等）：这是我们大家必须要下苦功夫学好的课！而且一定一定要学精！它们在我们的课程体系结构中的作用，就像是地基对于这个房子的作用！根基不好，房子很难建高的！即使建好也是豆腐渣工程。毕竟“空中楼阁”只存在于我们的想象中。它们是学习JSP、ASP.NET、J2EE、“游戏开发”、网页开发等等的基础，Java或者C#或者PHP学不会，这些课很难学好！（我这里有Java的教学视频，感兴趣的同学可以来我寝室拷贝。也可以上网下载：http://www.verycd.com/topics/93279/（请下载J2SE的））&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>数据库：重点是关系模型、 SQL语句以及后面的数据库设计。做动态网站的技术、做桌面程序，甚至做手机应用等，都会用到数据库！以后工作中数据模型设计、数据查询等都要求有比较扎实的数据库基础才行。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>数据结构：我个人认为学习数据结构就是学习一种解决问题的思想。其实，类库已经实现了我们所学的所有的数据结构，到时会用就行了！&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>现在NBA正在进行季后赛，就用乔丹的一句话，作为所有学科的一个共同的建议送给大家：&lt;/p>
+&lt;/div>
+&lt;div class="quoteblock">
+&lt;blockquote>
+&lt;div class="paragraph">
+&lt;p>I can accept failure, but I can’t accept not trying.&lt;/p>
+&lt;/div>
+&lt;/blockquote>
+&lt;div class="attribution">
+— Michael Jordan
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>其实学习就是不断尝试，不断总结，不断进取的一个过程。我可以用我的尝试告你一个正确的结果，但是自己尝试出来的结果印象更加深刻！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>再说一点我的个人的学习感触吧。我个人认为，这些比我们大家在学校学到知识更为重要！知识马上就会过时，但是学习的方法却可以带领我们走的更远。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>一、享受学习。&lt;/strong>如果我们把学习当成像玩游戏、听音乐一样的娱乐活动时，我想这会给我们一种全新的感觉。Study hard，have fun，make history！ By Jeff Bezos &amp;amp; Joy Lee （努力学习，乐在其中，并创造历史！—Jeff Bezos（Amazon.com的创办者兼CEO，Joy Lee就是我。(*&lt;sup>__&lt;/sup>*) 嘻嘻…… 这句话是我从他的一句话里改编过来的！））&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>其实，学计算机学科非常有趣！Linux里面，几行指令，我们就可以顺利的让鼠标在两个操作系统自由转换！Java里面几行，几十行代码就有一个漂亮的窗口！C#里面随便一个拖拽，也是一个不错的窗口！“只要一部计算机，就可以创造出无限的世界。”（出自蔡学镛《写程序，好好玩》，《Java夜未眠》里面的一篇，本书是本很搞笑的编程感触散文集，推荐看看。）加油吧！相信你行！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>二、坚持不懈。&lt;/strong>任何事情都不是可以一蹴而就的，都需要我们坚持！再送给大家一句话：失败只有一种，那就是半途而废！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>三、舍我其谁的豪迈和霸气。&lt;/strong>“Horse’s，Gosling能创造出来Java，我就不信我学不会！一个破Java，我还不放到眼里呢！！”，“别人能创造出来，我就不相信我学不会？！”不过，也要给大家提醒一句：“战略上，藐视敌人；战术上，重视敌人”！一定要下功夫学习才行！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>四、信心。&lt;/strong>一定要相信自己的能力！你是独一无二，无可替代的！信心能让你从一个更高的角度看待你的学习！能给你一种驾驭知识的成就感！这种感觉能让你从学习中找到乐趣！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>五、行动！&lt;/strong>上面的大道理，我们大家都懂！但是，谁实际做到呢？伟大与平凡的区别也许就在于这一点吧。我以我自己的高中、大学对比来看，行动与否结果绝对是不一样的！只想不做，最多是个空想家！所以，大家一定要“坚持不懈的行动”！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>最后，送给大家一句话：&lt;strong>你充满了潜能，但你的努力还远远不够！&lt;/strong>再次怀念我们共同的学习时光！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>祝大家学有所成！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div></description></item></channel></rss>

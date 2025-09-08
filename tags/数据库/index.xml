@@ -1,0 +1,856 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>数据库 on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/</link><description>Recent content in 数据库 on "地瓜哥"博客网</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Wed, 26 Feb 2025 12:05:34 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/index.xml" rel="self" type="application/rss+xml"/><item><title>理解数据库分片</title><link>https://www.diguage.com/post/understanding-database-sharding/</link><pubDate>Sun, 01 Dec 2024 15:42:01 +0800</pubDate><guid>https://www.diguage.com/post/understanding-database-sharding/</guid><description>&lt;div class="sidebarblock">
+&lt;div class="content">
+&lt;div class="paragraph">
+&lt;p>最近在 DigitalOcean 社区看到一篇文章，讲解数据库分片架构的，感觉非常不错，图文并茂，翻译过来，分享给需要的朋友。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_介绍">介绍&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>任何应用程序或网站，如果出现大幅增长，最终都需要进行扩展，以适应流量的增加。对于数据驱动型应用程序和网站来说，在进行扩展时必须确保数据的安全性和完整性。很难预测一个网站或应用程序会变得多受欢迎，或者它的受欢迎程度会维持多久，这就是为什么一些组织会选择一种允许他们动态扩展数据库的数据库架构。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在这篇概念性文章中，我们将讨论这样一种数据库架构：分片数据库。近年来，分片数据库受到了广泛关注，但很多人并不清楚什么是分片数据库，也不知道在哪些情况下分片数据库才有意义。我们将介绍什么是分片、分片的一些主要优点和缺点，以及几种常见的分片方法。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_什么是分片">什么是分片？&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>分片是一种与水平分区相关的数据库架构模式，即把一个表的行分成多个不同的表，称为分区。每个分区都有相同的模式和列，但也有完全不同的行。同样，每个分区中的数据都是唯一的，与其他分区中的数据无关。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>从水平分区与垂直分区的关系角度来思考水平分区可能会有所帮助。在垂直分区表中，整个列都被分离出来并放入新的、不同的表中。一个垂直分区中的数据独立于所有其他分区中的数据，每个分区都有不同的行和列。下图说明了如何对表格进行水平和垂直分区：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/databases/sharding-1.png" alt="水平分区与垂直分区" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. 水平分区与垂直分区&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>分片是指将数据分割成两个或多个较小的块，称为逻辑分片。然后，逻辑分片分布在不同的数据库节点上，称为物理分片，物理分片可容纳多个逻辑分片。尽管如此，所有分片中保存的数据共同代表了一个完整的逻辑数据集。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>数据库分片是无共享架构的典范。这意味着分片是独立的，它们不共享任何相同的数据或计算资源。不过，在某些情况下，将某些表复制到每个分片中作为参考表是有意义的。例如，假设有一个应用程序的数据库依赖于重量测量的固定转换率。通过将包含必要转换率数据的表复制到每个分片中，有助于确保每个分片中都包含查询所需的所有数据。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>通常，分片是在应用程序级实现的，这意味着应用程序包含定义向哪个分片传输读写的代码。不过，有些数据库管理系统内置了分片功能，允许你直接在数据库级实施分片。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>鉴于以上对分片的概述，让我们来看看这种数据库架构的一些优点和缺点。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_分片的优点">分片的优点&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>对数据库进行分片的主要吸引力在于，它有助于促进水平扩展，也称为向外扩展，横向扩展。水平扩展是指在现有堆栈中添加更多机器，以分散负载，允许更多流量和更快处理。这通常与垂直扩展（也称向上扩展）形成对比，后者涉及升级现有服务器的硬件，通常是增加更多内存或 CPU。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在一台机器上运行一个关系数据库，并根据需要通过升级其计算资源来扩大其规模相对简单。但归根结底，任何非分布式数据库在存储和计算能力方面都是有限的，因此可以自由横向扩展，会让你的设置更加灵活。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>一些人选择分片数据库架构的另一个原因是为了加快查询响应速度。在未分片的数据库上提交查询时，数据库可能需要搜索查询表中的每一行，然后才能找到所需的结果集。对于使用大型单体数据库的应用程序来说，查询速度会慢得令人望而却步。不过，通过将一个表分片成多个表后，查询需要处理的行数就会减少，返回结果集的速度也会快得多。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>分片还可以减轻中断造成的影响，从而提高应用程序的可靠性。如果您的应用程序或网站依赖的是未分片的数据库，中断有可能导致整个应用程序不可用。 而使用分片数据库时，故障可能只影响单个分片。尽管这可能会导致部分用户无法使用应用程序或网站的某些部分，但总体影响仍小于整个数据库崩溃的影响。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_分片的缺点">分片的缺点&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>虽然分片可以使数据库的扩展更容易并提高性能，但它也会带来一些限制。在此，我们将讨论其中的一些限制，以及为什么要避免使用分片。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>人们在使用分片时遇到的第一个困难是正确实施分片数据库架构的复杂性。如果操作不当，分片过程很有可能导致数据丢失或表损坏。即使操作正确，分片也可能对团队的工作流程产生重大影响。用户必须跨多个分片位置管理数据，而不是从一个入口点访问和管理数据，这可能会对某些团队造成干扰。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>用户在对数据库进行分片后有时会遇到一个问题，那就是分片最终会变得不平衡。举例来说，假设你的数据库有两个独立的分片，一个用于存储姓氏以字母 A 至 M 开头的客户，另一个用于存储姓氏以字母 N 至 Z 开头的客户。然而，你的应用程序为大量姓氏以字母 G 开头的人提供服务。 A-M 分区已成为所谓的数据库热点。在这种情况下，分片给数据库带来的任何好处都会被速度变慢和崩溃所抵消。数据库很可能需要修复和重新分片，以使数据分布更均匀。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>另一个主要缺点是，一旦数据库被分片，就很难将其恢复到未分片的架构。数据库分片前的任何备份都不包括分片后写入的数据。 因此，要重建未分片的原始架构，就需要将新的分片数据与旧的备份合并，或者将分片后的数据库变回单一数据库，这两种方法都会耗费大量成本和时间。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>最后一个需要考虑的缺点是，并非每个数据库引擎都支持分片。例如，PostgreSQL 不包括自动分片功能，但可以手动分片 PostgreSQL 数据库。 有一些 Postgres 变种确实包含自动分片功能，但它们往往落后于最新的 PostgreSQL 版本，而且缺乏某些其他功能。一些专门的数据库技术（如 MySQL Cluster 或某些数据库即服务产品（如 MongoDB Atlas））确实包含自动分片功能，但这些数据库管理系统的普通版本并不包含。因此，分片通常需要“自己开发”。这意味着通常很难找到分片文档或故障排除技巧。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>当然，这些只是分片前需要考虑的一些一般性问题。根据其用例，对数据库进行分片可能会有更多潜在的缺点。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>现在，我们已经介绍了分片的一些缺点和优点，下面将介绍几种不同的分片数据库架构。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_分片架构">分片架构&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>一旦决定对数据库进行分片，接下来需要考虑的就是如何分片。在运行查询或将输入数据分发到分片表或数据库时，将数据分发到正确的分片至关重要。否则，可能会导致数据丢失或查询缓慢。在本节中，我们将介绍几种常见的分片架构，每种架构都使用略有不同的流程在分片间分发数据。&lt;/p>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_基于键的分片">基于键的分片&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>基于密钥的分片，也称为基于散列的分片，涉及使用从新写入的数据中提取的值，例如客户的 ID 编号、客户端应用程序的 IP 地址、邮政编码等并将其输入散列函数，以确定数据应进入哪个分片。散列函数是一种输入数据（如客户电子邮件）并输出离散值（即散列值）的函数。在分片的情况下，散列值是一个分片 ID，用于确定输入的数据将存储在哪个分片上。整个过程如下：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/databases/sharding-2.png" alt="基于键的分片" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 2. 基于键的分片&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>为确保条目以一致的方式放置于正确的分片，输入散列函数的值都应来自同一列。此列被称为分片键。简单来说，分片键与主键类似，都是用于为单个行建立唯一标识符的列。从广义上讲，分片键应该是静态的，也就是说，它不应该包含可能会随时间变化的值。否则，会增加更新操作的工作量，并可能降低性能。&lt;/p>
+&lt;/div></description></item><item><title>基于 Docker 搭建开发环境（一）：数据库+监控</title><link>https://www.diguage.com/post/building-a-develop-environment-based-on-docker-1/</link><pubDate>Wed, 16 Oct 2024 21:48:11 +0800</pubDate><guid>https://www.diguage.com/post/building-a-develop-environment-based-on-docker-1/</guid><description>&lt;div class="paragraph">
+&lt;p>&lt;strong>基于 Docker 搭建开发环境系列&lt;/strong>:&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/building-a-develop-environment-based-on-docker-1/" target="_blank" rel="noopener">基于 Docker 搭建开发环境（一）：数据库+监控&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/building-a-develop-environment-based-on-docker-2/" target="_blank" rel="noopener">基于 Docker 搭建开发环境（二）：EFK 日志套件&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/building-a-develop-environment-based-on-docker-3/" target="_blank" rel="noopener">基于 Docker 搭建开发环境（三）：链路追踪&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>去年，很多同事要换 Mac 本，所以，写了 &lt;a href="https://www.diguage.com/post/install-software-for-new-mac/" target="_blank" rel="noopener">新 Mac 安装软件脚本&lt;/a>，方便大家一键换机。最近想玩一下 Spring Cloud 以及相关周边的部署、监控等开源解决方案。由于组件众多及为了便于迁移和共享，计划基于 Docker 及 Docker Compose 搭建一套相关的开发环境。记录一下，方便有相同需求的朋友借鉴。&lt;/p>
+&lt;/div>
+&lt;div class="admonitionblock tip">
+&lt;table>
+&lt;tbody>&lt;tr>
+&lt;td class="icon">
+&lt;i class="fa icon-tip" title="Tip">&lt;/i>
+&lt;/td>
+&lt;td class="content">
+最新版的 Docker 在下载镜像时，会先访问一下 Docker 的官方站点。由于国内众所周知的网络情况，访问 Docker 官方站点总失败。所以，即使配置了国内 Docker 镜像站点也会失败。只需要将 Docker 软件回滚到 4.30.0 即可。（Mac 下验证有效，其他操作系统待进一步验证。）
+&lt;/td>
+&lt;/tr>
+&lt;/tbody>&lt;/table>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_mysql">MySQL&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>开发中，最常用的应该就是数据库了。所以，先来搞 MySQL 数据库。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>创建如下目录结构，并添加相关相关文件：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="nv">$ &lt;/span>tree
+&lt;span class="nb">.&lt;/span>
+├── README.adoc
+├── clean.sh
+├── data
+│ └── mysql
+│ └── .gitkeep
+├── docker
+│ ├── config
+│ │ └── mysql
+│ │ └── init.sql
+│ ├── &lt;span class="nb">env&lt;/span>
+│ │ └── mysql.env
+│ └── images
+│ └── mysql.dockerfile
+└── docker-compose.yml&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>升级 iBATIS/MyBATIS 对处理 DuplicateKeyException 的影响</title><link>https://www.diguage.com/post/upgrade-ibatis-mybatis-about-duplicate-key-exception/</link><pubDate>Thu, 23 Feb 2023 11:21:23 +0800</pubDate><guid>https://www.diguage.com/post/upgrade-ibatis-mybatis-about-duplicate-key-exception/</guid><description>&lt;div class="paragraph">
+&lt;p>在 &lt;a href="https://www.diguage.com/post/experience-about-upgrading-java-dependencies/" target="_blank" rel="noopener">关于升级 Spring 等依赖的一些经验&lt;/a> 中，分享了一些开源依赖的升级经验。部分小伙伴质疑升级 iBATIS/MyBATIS 会影响对 &lt;code>DuplicateKeyException&lt;/code> 异常的处理。这篇文章就从源码分析/代码更新的就角度来分析一下升级相关依赖是否会对 &lt;code>DuplicateKeyException&lt;/code> 异常的处理带来实质性的影响。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>由于主要的技术栈涉及 MySQL 驱动、iBATIS、MyBATIS、Spring 周边等。所以，本文仅分析涉及的这些依赖。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥使用 &lt;a href="https://dev.mysql.com/doc/employee/en/" target="_blank" rel="noopener">MySQL: Employees Sample Database&lt;/a> 搭建了一个 Spring + MyBATIS + MySQL Connector/J 的测试环境。连续插入两条一样的数据，单步调试，在 &lt;code>com.mysql.jdbc.MysqlIO#sendCommand&lt;/code> 方法中，就可以观察到如下异常：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/upgrade-spring/mysql-error1062.png" alt="MySQL Error 1062" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. MySQL Error 1062&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>从这里可以明显看出，MySQL 驱动返回的异常中， &lt;code>venderCode&lt;/code> 编码是 &lt;code>1062&lt;/code>。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>顺着这个线，往上走，到 &lt;code>org.apache.ibatis.session.defaults.DefaultSqlSession#update(java.lang.String, java.lang.Object)&lt;/code> 方法中，可以看到，&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/upgrade-spring/mybatis-wrap-exception.png" alt="MyBATIS wrap Exception" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 2. MyBATIS wrap Exception&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在这里，会将 &lt;code>SQLException&lt;/code> 包装成 &lt;code>PersistenceException&lt;/code>，这也是 MyBATIS 对外暴露的统一的异常类。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>继续往上走，就到了 &lt;code>org.mybatis.spring.SqlSessionTemplate.SqlSessionInterceptor#invoke&lt;/code> 方法：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/upgrade-spring/mybatis-translateException.png" alt="MyBATIS translateException" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 3. MyBATIS translateException&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在 &lt;code>SqlSessionInterceptor#invoke&lt;/code> 方法的异常处理中，将 &lt;code>PersistenceException&lt;/code> 异常通过 &lt;code>org.springframework.dao.support.PersistenceExceptionTranslator#translateExceptionIfPossible&lt;/code> 方法，将异常转换成 &lt;code>DataAccessException&lt;/code> 对象。 &lt;code>DataAccessException&lt;/code> 类是 Spring 数据访问的异常类基类。&lt;/p>
+&lt;/div></description></item><item><title>关于升级 Spring 等依赖的一些经验</title><link>https://www.diguage.com/post/experience-about-upgrading-java-dependencies/</link><pubDate>Sun, 28 Aug 2022 09:19:59 +0800</pubDate><guid>https://www.diguage.com/post/experience-about-upgrading-java-dependencies/</guid><description>&lt;div class="paragraph">
+&lt;p>到公司后，熟悉了一些项目后，发现大部分项目的依赖都比较陈旧，比如某些项目还在使用 Spring 3.x 的版本。所以，在进行需求开发时，也顺手把一些项目的依赖给升级了一下。周五，一个小伙伴问我关于升级 Spring 的经验。正好趁此机会，把一些经验总结一下。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>下面的描述以 Java 8 为准，没有在其他版本 Java 上试验过。参考时，请慎重。描述的原则如下：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>尽量选择还在维护中的版本，而不是已经 End of Life 的过时版。这样有问题可以及时反馈并得到修复。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Java 8 是目标版本，所以，一定要兼容 Java 8。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_spring_framework_升级">Spring Framework 升级&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>Spring Framework 从 3.2.6.RELEASE 开始提供 BOM。可以利用 BOM 简化 Spring 依赖声明：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="xml">&lt;span class="c">&amp;lt;!-- D瓜哥 · &lt;a href="https://www.diguage.com" target="_blank">https://www.diguage.com&lt;/a> --&amp;gt;&lt;/span>
+&lt;span class="nt">&amp;lt;dependencyManagement&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;dependencies&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;dependency&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;groupId&amp;gt;&lt;/span>org.springframework&lt;span class="nt">&amp;lt;/groupId&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;artifactId&amp;gt;&lt;/span>spring-framework-bom&lt;span class="nt">&amp;lt;/artifactId&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;version&amp;gt;&lt;/span>5.3.25&lt;span class="nt">&amp;lt;/version&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;type&amp;gt;&lt;/span>pom&lt;span class="nt">&amp;lt;/type&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;scope&amp;gt;&lt;/span>import&lt;span class="nt">&amp;lt;/scope&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;/dependency&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;/dependencies&amp;gt;&lt;/span>
+&lt;span class="nt">&amp;lt;/dependencyManagement&amp;gt;&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这样，就不需要重复声明 Spring 依赖的版本，直接使用即可。 Spring Framework Bom 保证了 Spring 自身依赖的版本统一。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这里，关于 Spring 的升级，还有几点需要说明：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>从 Spring 3.X 升级到 Spring 4.X+ 后，原来的 &lt;code>MappingJacksonHttpMessageConverter&lt;/code> 已经被删除了；直接使用 &lt;code>MappingJackson2HttpMessageConverter&lt;/code> 即可。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>从 Spring 3.0.0.RELEASE 到 Spring 3.1.4.RELEASE，Spring 有一个 &lt;code>spring-asm&lt;/code>，如果不再使用这个区间的 Spring，请把这个依赖删掉。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>如果使用了 Apache Velocity 1.X 作为前端模板，由于 Spring 5+ 将相关集成代码删除，所以，只能将 Spring 升级到 4.3.30.RELEASE。相关 BOM 如下：&lt;/p>
+&lt;div class="openblock">
+&lt;div class="content">
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="xml">&lt;span class="c">&amp;lt;!-- D瓜哥 · &lt;a href="https://www.diguage.com" target="_blank">https://www.diguage.com&lt;/a> --&amp;gt;&lt;/span>
+&lt;span class="nt">&amp;lt;dependency&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;groupId&amp;gt;&lt;/span>org.springframework&lt;span class="nt">&amp;lt;/groupId&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;artifactId&amp;gt;&lt;/span>spring-framework-bom&lt;span class="nt">&amp;lt;/artifactId&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;version&amp;gt;&lt;/span>4.3.30.RELEASE&lt;span class="nt">&amp;lt;/version&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;type&amp;gt;&lt;/span>pom&lt;span class="nt">&amp;lt;/type&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;scope&amp;gt;&lt;/span>import&lt;span class="nt">&amp;lt;/scope&amp;gt;&lt;/span>
+&lt;span class="nt">&amp;lt;/dependency&amp;gt;&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>关于 MySQL 新版连接驱动时区对齐问题的研究</title><link>https://www.diguage.com/post/research-on-timezone-of-mysql-new-connection-driver/</link><pubDate>Wed, 07 Jul 2021 10:23:41 +0800</pubDate><guid>https://www.diguage.com/post/research-on-timezone-of-mysql-new-connection-driver/</guid><description>&lt;div class="paragraph">
+&lt;p>在一个项目开量验证过程中，发现 createDate 字段不正确，比正确时间晚了十四个小时。调研发现，这是一个非常典型的问题。现在把定位问题的思路和解决办法给大家做个分享。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>首先，检查数据库配置，查询线上生产环境配置，结果如下：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/mysql/mysql-variable.png" alt="MySQL 变量" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. MySQL 变量&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>同时，检查线上生产环境 MySQL 版本，为问题复现做准备：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/mysql/mysql-version.png" alt="MySQL 版本" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 2. MySQL 版本&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>从数据库配置上来说，基本正常，没有发现什么问题。（持续运行了这么长时间，有问题应该早就发现了。）&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>其次，检查数据库连接配置，正式环境的链接配置如下：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code>jdbc:mysql://&amp;lt;host&amp;gt;:3306/&amp;lt;schema&amp;gt;?createDatabaseIfNotExist=true
+ &amp;amp;characterEncoding=utf-8&amp;amp;useUnicode=true&amp;amp;connectTimeout=2000
+ &amp;amp;socketTimeout=2000&amp;amp;autoReconnect=true&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>数据库连接也没有问题。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>第三，询问 SA 线上服务器时区配置，回复上是 CST，这个和数据库对应，没有问题。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/mysql/talk-to-sa.png" alt="与 SA 沟通" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 3. 与 SA 沟通&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>配置检查正常，那么只好在本地搭建环境，重现问题，再寻求解决方案。由于项目是基于 Spring Boot 2.3.7.RELEASE 开发的，相关依赖也尽量使用 Spring Boot 指定版本的，所以，很快把开发环境搭好了。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在配置服务器环境时，遇到一点小小的问题：我一直以为有个时区名称叫 CST，就在网上去查怎么设置，结果徒劳半天也没有找到。后来上开发机检查开发机时区配置，发现是 &lt;code>Asia/Shanghai&lt;/code>。将测试服务器设置为该时区，数据库内部查询时区，显示和服务器一直。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>调试代码中，发现 MySQL 连接驱动的代码中，有配置时区的相关代码，如下：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="title">&lt;code>com.mysql.cj.protocol.a.NativeProtocol#configureTimezone&lt;/code>&lt;/div>
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="java">&lt;span class="cm">/**
+ * Configures the client&amp;#39;s timezone if required.
+ *
+ * @throws CJException
+ * if the timezone the server is configured to use can&amp;#39;t be
+ * mapped to a Java timezone.
+ */&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="kt">void&lt;/span> &lt;span class="nf">configureTimezone&lt;/span>&lt;span class="o">()&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="c1">// 获取服务器时区&lt;/span>
+ &lt;span class="nc">String&lt;/span> &lt;span class="n">configuredTimeZoneOnServer&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">serverSession&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getServerVariable&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;time_zone&amp;#34;&lt;/span>&lt;span class="o">);&lt;/span>
+
+ &lt;span class="c1">// 如果服务器时区是 SYSTEM，则使用服务器的 system_time_zone 时区设置&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;SYSTEM&amp;#34;&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">equalsIgnoreCase&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">configuredTimeZoneOnServer&lt;/span>&lt;span class="o">))&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="n">configuredTimeZoneOnServer&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">serverSession&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getServerVariable&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;system_time_zone&amp;#34;&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="o">}&lt;/span>
+
+ &lt;span class="c1">// 获取客户端时区配置&lt;/span>
+ &lt;span class="nc">String&lt;/span> &lt;span class="n">canonicalTimezone&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">getPropertySet&lt;/span>&lt;span class="o">().&lt;/span>&lt;span class="na">getStringProperty&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">PropertyKey&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">serverTimezone&lt;/span>&lt;span class="o">).&lt;/span>&lt;span class="na">getValue&lt;/span>&lt;span class="o">();&lt;/span>
+
+ &lt;span class="c1">// 如果服务器时区不为空，切客户端时区配置不可用，则使用服务器的时区配置&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">configuredTimeZoneOnServer&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="kc">null&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="c1">// user can override this with driver properties, so don&amp;#39;t detect if that&amp;#39;s the case&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">canonicalTimezone&lt;/span> &lt;span class="o">==&lt;/span> &lt;span class="kc">null&lt;/span> &lt;span class="o">||&lt;/span> &lt;span class="nc">StringUtils&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">isEmptyOrWhitespaceOnly&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">canonicalTimezone&lt;/span>&lt;span class="o">))&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="k">try&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="n">canonicalTimezone&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nc">TimeUtil&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getCanonicalTimezone&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">configuredTimeZoneOnServer&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">getExceptionInterceptor&lt;/span>&lt;span class="o">());&lt;/span>
+ &lt;span class="o">}&lt;/span> &lt;span class="k">catch&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="nc">IllegalArgumentException&lt;/span> &lt;span class="n">iae&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="k">throw&lt;/span> &lt;span class="nc">ExceptionFactory&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">createException&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">WrongArgumentException&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">class&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">iae&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getMessage&lt;/span>&lt;span class="o">(),&lt;/span> &lt;span class="n">getExceptionInterceptor&lt;/span>&lt;span class="o">());&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="o">}&lt;/span>
+
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">canonicalTimezone&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="kc">null&lt;/span> &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> &lt;span class="n">canonicalTimezone&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">length&lt;/span>&lt;span class="o">()&lt;/span> &lt;span class="o">&amp;gt;&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="c1">// 为该会话设置时区&lt;/span>
+ &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">serverSession&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">setServerTimeZone&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">TimeZone&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getTimeZone&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">canonicalTimezone&lt;/span>&lt;span class="o">));&lt;/span>
+
+ &lt;span class="c1">//&lt;/span>
+ &lt;span class="c1">// The Calendar class has the behavior of mapping unknown timezones to &amp;#39;GMT&amp;#39; instead of throwing an exception, so we must check for this...&lt;/span>
+ &lt;span class="c1">//&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(!&lt;/span>&lt;span class="n">canonicalTimezone&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">equalsIgnoreCase&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;GMT&amp;#34;&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">serverSession&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getServerTimeZone&lt;/span>&lt;span class="o">().&lt;/span>&lt;span class="na">getID&lt;/span>&lt;span class="o">().&lt;/span>&lt;span class="na">equals&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;GMT&amp;#34;&lt;/span>&lt;span class="o">))&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="k">throw&lt;/span> &lt;span class="nc">ExceptionFactory&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">createException&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">WrongArgumentException&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">class&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="nc">Messages&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getString&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;Connection.9&amp;#34;&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="k">new&lt;/span> &lt;span class="nc">Object&lt;/span>&lt;span class="o">[]&lt;/span> &lt;span class="o">{&lt;/span> &lt;span class="n">canonicalTimezone&lt;/span> &lt;span class="o">}),&lt;/span>
+ &lt;span class="n">getExceptionInterceptor&lt;/span>&lt;span class="o">());&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="o">}&lt;/span>
+
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>HikariCP 源码分析 -- FastList</title><link>https://www.diguage.com/post/hikari-cp-source-analysis-fast-list/</link><pubDate>Sun, 02 Aug 2020 15:06:02 +0800</pubDate><guid>https://www.diguage.com/post/hikari-cp-source-analysis-fast-list/</guid><description>&lt;div class="paragraph">
+&lt;p>在前面的文章 &lt;a href="https://www.diguage.com/post/hikari-cp-source-analysis-concurrent-bag/">HikariCP 源码分析 — ConcurrentBag&lt;/a> 中，D瓜哥分析了一下 HikariCP 中一个非常重要的数据结构 &lt;code>ConcurrentBag&lt;/code>。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>今天，继续再介绍 HikariCP 中另一个很关键的数据结构： &lt;code>FastList&lt;/code>。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;code>FastList&lt;/code> 本身的实现非常简单，要理解它的奥秘，就需要结合 Java 原生集合类的 &lt;code>ArrayList&lt;/code> 来比较性地看。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_构造函数">构造函数&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>先来对比一下两者的构造函数。先来看看 &lt;code>FastList&lt;/code>：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="title">&lt;code>FastList&lt;/code>&lt;/div>
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="kd">public&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">FastList&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="kd">implements&lt;/span> &lt;span class="nc">List&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">&amp;gt;,&lt;/span> &lt;span class="nc">RandomAccess&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="nc">Serializable&lt;/span>
+&lt;span class="o">{&lt;/span>
+ &lt;span class="kd">private&lt;/span> &lt;span class="kd">static&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="kt">long&lt;/span> &lt;span class="n">serialVersionUID&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="o">-&lt;/span>&lt;span class="mi">4598088075242913858L&lt;/span>&lt;span class="o">;&lt;/span>
+
+ &lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="nc">Class&lt;/span>&lt;span class="o">&amp;lt;?&amp;gt;&lt;/span> &lt;span class="n">clazz&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="kd">private&lt;/span> &lt;span class="no">T&lt;/span>&lt;span class="o">[]&lt;/span> &lt;span class="n">elementData&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="kd">private&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="n">size&lt;/span>&lt;span class="o">;&lt;/span>
+
+ &lt;span class="cm">/**
+ * Construct a FastList with a default size of 32.
+ * @param clazz the Class stored in the collection
+ */&lt;/span>
+ &lt;span class="nd">@SuppressWarnings&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;unchecked&amp;#34;&lt;/span>&lt;span class="o">)&lt;/span>
+ &lt;span class="kd">public&lt;/span> &lt;span class="nf">FastList&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">Class&lt;/span>&lt;span class="o">&amp;lt;?&amp;gt;&lt;/span> &lt;span class="n">clazz&lt;/span>&lt;span class="o">)&lt;/span>
+ &lt;span class="o">{&lt;/span>
+ &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">elementData&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">[])&lt;/span> &lt;span class="nc">Array&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">newInstance&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">clazz&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="mi">32&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">clazz&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">clazz&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>
+
+ &lt;span class="cm">/**
+ * Construct a FastList with a specified size.
+ * @param clazz the Class stored in the collection
+ * @param capacity the initial size of the FastList
+ */&lt;/span>
+ &lt;span class="nd">@SuppressWarnings&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;unchecked&amp;#34;&lt;/span>&lt;span class="o">)&lt;/span>
+ &lt;span class="kd">public&lt;/span> &lt;span class="nf">FastList&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">Class&lt;/span>&lt;span class="o">&amp;lt;?&amp;gt;&lt;/span> &lt;span class="n">clazz&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="n">capacity&lt;/span>&lt;span class="o">)&lt;/span>
+ &lt;span class="o">{&lt;/span>
+ &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">elementData&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">[])&lt;/span> &lt;span class="nc">Array&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">newInstance&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">clazz&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">capacity&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">clazz&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">clazz&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>Spring 扩展点实践：整合 MyBATIS</title><link>https://www.diguage.com/post/spring-extensions-and-mybatis/</link><pubDate>Thu, 28 May 2020 20:06:46 +0800</pubDate><guid>https://www.diguage.com/post/spring-extensions-and-mybatis/</guid><description>&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/spring-extensions-overview/" target="_blank" rel="noopener">Spring 扩展点概览及实践&lt;/a> 中介绍了 Spring 内部存在的扩展点。学以致用，现在来分析一下 Spring 与 MyBATIS 的整合流程。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_示例程序">示例程序&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>为了方便分析源码，先根据官方文档 &lt;a href="https://mybatis.org/spring/getting-started.html" target="_blank" rel="noopener">mybatis-spring – MyBatis-Spring | Getting Started&lt;/a> 搭建起一个简单实例。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>数据库方面，直接使用功能了 MySQL 示例数据库： &lt;a href="https://dev.mysql.com/doc/employee/en/" target="_blank" rel="noopener">MySQL : Employees Sample Database&lt;/a>，需要的话，自行下载。&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="kn">package&lt;/span> &lt;span class="nn">com.diguage.truman.mybatis&lt;/span>&lt;span class="o">;&lt;/span>
+
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">com.mysql.cj.jdbc.Driver&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">com.zaxxer.hikari.HikariDataSource&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">org.apache.ibatis.session.Configuration&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">org.junit.jupiter.api.Test&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">org.mybatis.spring.SqlSessionFactoryBean&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">org.mybatis.spring.annotation.MapperScan&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">org.springframework.beans.factory.annotation.Autowired&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">org.springframework.context.annotation.AnnotationConfigApplicationContext&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">org.springframework.context.annotation.Bean&lt;/span>&lt;span class="o">;&lt;/span>
+
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">javax.sql.DataSource&lt;/span>&lt;span class="o">;&lt;/span>
+
+&lt;span class="cm">/**
+ * @author D瓜哥, &lt;a href="https://www.diguage.com/" target="_blank">https://www.diguage.com/&lt;/a>
+ * @since 2020-05-29 17:11
+ */&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">MybatisTest&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="nd">@Test&lt;/span>
+ &lt;span class="kd">public&lt;/span> &lt;span class="kt">void&lt;/span> &lt;span class="nf">test&lt;/span>&lt;span class="o">()&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="nc">AnnotationConfigApplicationContext&lt;/span> &lt;span class="n">context&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="k">new&lt;/span> &lt;span class="nc">AnnotationConfigApplicationContext&lt;/span>&lt;span class="o">();&lt;/span>
+ &lt;span class="n">context&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">register&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">Config&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">class&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="n">context&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">refresh&lt;/span>&lt;span class="o">();&lt;/span>
+ &lt;span class="nc">EmployeesMapper&lt;/span> &lt;span class="n">employeesMapper&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">context&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getBean&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">EmployeesMapper&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">class&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="nc">Employees&lt;/span> &lt;span class="n">employees&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">employeesMapper&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getById&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="mi">10001&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="nc">System&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">out&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">println&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">employees&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="o">}&lt;/span>
+
+ &lt;span class="nd">@org&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">springframework&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">context&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">annotation&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">Configuration&lt;/span>
+ &lt;span class="nd">@MapperScan&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">basePackages&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s">&amp;#34;com.diguage.truman.mybatis&amp;#34;&lt;/span>&lt;span class="o">)&lt;/span>
+ &lt;span class="kd">public&lt;/span> &lt;span class="kd">static&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">Config&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="nd">@Bean&lt;/span>
+ &lt;span class="kd">public&lt;/span> &lt;span class="nc">DataSource&lt;/span> &lt;span class="nf">dataSource&lt;/span>&lt;span class="o">()&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="nc">HikariDataSource&lt;/span> &lt;span class="n">dataSource&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="k">new&lt;/span> &lt;span class="nc">HikariDataSource&lt;/span>&lt;span class="o">();&lt;/span>
+ &lt;span class="n">dataSource&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">setUsername&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;root&amp;#34;&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="n">dataSource&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">setPassword&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;123456&amp;#34;&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="n">dataSource&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">setDriverClassName&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">Driver&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">class&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getName&lt;/span>&lt;span class="o">());&lt;/span>
+ &lt;span class="n">dataSource&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">setJdbcUrl&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;jdbc:mysql://localhost:3306/employees?useUnicode=true&amp;amp;characterEncoding=utf-8&amp;amp;autoReconnectForPools=true&amp;amp;autoReconnect=true&amp;#34;&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="k">return&lt;/span> &lt;span class="n">dataSource&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>
+
+ &lt;span class="nd">@Bean&lt;/span>
+ &lt;span class="kd">public&lt;/span> &lt;span class="nc">SqlSessionFactoryBean&lt;/span> &lt;span class="nf">sqlSessionFactory&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nd">@Autowired&lt;/span> &lt;span class="nc">DataSource&lt;/span> &lt;span class="n">dataSource&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="nc">SqlSessionFactoryBean&lt;/span> &lt;span class="n">factoryBean&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="k">new&lt;/span> &lt;span class="nc">SqlSessionFactoryBean&lt;/span>&lt;span class="o">();&lt;/span>
+ &lt;span class="n">factoryBean&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">setDataSource&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">dataSource&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="nc">Configuration&lt;/span> &lt;span class="n">configuration&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="k">new&lt;/span> &lt;span class="nc">Configuration&lt;/span>&lt;span class="o">();&lt;/span>
+ &lt;span class="n">configuration&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">setMapUnderscoreToCamelCase&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="kc">true&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="n">factoryBean&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">setConfiguration&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">configuration&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="k">return&lt;/span> &lt;span class="n">factoryBean&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="o">}&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="title">EmployeesMapper&lt;/div>
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="kn">package&lt;/span> &lt;span class="nn">com.diguage.truman.mybatis&lt;/span>&lt;span class="o">;&lt;/span>
+
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">org.apache.ibatis.annotations.Param&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">org.apache.ibatis.annotations.Select&lt;/span>&lt;span class="o">;&lt;/span>
+
+&lt;span class="cm">/**
+ * @author D瓜哥, &lt;a href="https://www.diguage.com/" target="_blank">https://www.diguage.com/&lt;/a>
+ * @since 2020-05-29 17:23
+ */&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="kd">interface&lt;/span> &lt;span class="nc">EmployeesMapper&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="nd">@Select&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;SELECT * FROM employees WHERE emp_no = #{id}&amp;#34;&lt;/span>&lt;span class="o">)&lt;/span>
+ &lt;span class="nc">Employees&lt;/span> &lt;span class="nf">getById&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nd">@Param&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;id&amp;#34;&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="nc">Integer&lt;/span> &lt;span class="n">id&lt;/span>&lt;span class="o">);&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="title">Employees&lt;/div>
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="kn">package&lt;/span> &lt;span class="nn">com.diguage.truman.mybatis&lt;/span>&lt;span class="o">;&lt;/span>
+
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">java.util.Date&lt;/span>&lt;span class="o">;&lt;/span>
+
+&lt;span class="cm">/**
+ * @author D瓜哥, &lt;a href="https://www.diguage.com/" target="_blank">https://www.diguage.com/&lt;/a>
+ * @since 2020-05-29 17:24
+ */&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">Employees&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="nc">Integer&lt;/span> &lt;span class="n">empNo&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="nc">Date&lt;/span> &lt;span class="n">birthDate&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="nc">String&lt;/span> &lt;span class="n">firstName&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="nc">String&lt;/span> &lt;span class="n">lastName&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="nc">String&lt;/span> &lt;span class="n">gender&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="nc">Date&lt;/span> &lt;span class="n">hireDate&lt;/span>&lt;span class="o">;&lt;/span>
+
+ &lt;span class="nd">@Override&lt;/span>
+ &lt;span class="kd">public&lt;/span> &lt;span class="nc">String&lt;/span> &lt;span class="nf">toString&lt;/span>&lt;span class="o">()&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="k">return&lt;/span> &lt;span class="s">&amp;#34;Employees{&amp;#34;&lt;/span> &lt;span class="o">+&lt;/span>
+ &lt;span class="s">&amp;#34;empNo=&amp;#34;&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="n">empNo&lt;/span> &lt;span class="o">+&lt;/span>
+ &lt;span class="s">&amp;#34;, birthDate=&amp;#34;&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="n">birthDate&lt;/span> &lt;span class="o">+&lt;/span>
+ &lt;span class="s">&amp;#34;, firstName=&amp;#39;&amp;#34;&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="n">firstName&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="sc">&amp;#39;\&amp;#39;&amp;#39;&lt;/span> &lt;span class="o">+&lt;/span>
+ &lt;span class="s">&amp;#34;, lastName=&amp;#39;&amp;#34;&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="n">lastName&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="sc">&amp;#39;\&amp;#39;&amp;#39;&lt;/span> &lt;span class="o">+&lt;/span>
+ &lt;span class="s">&amp;#34;, gender=&amp;#39;&amp;#34;&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="n">gender&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="sc">&amp;#39;\&amp;#39;&amp;#39;&lt;/span> &lt;span class="o">+&lt;/span>
+ &lt;span class="s">&amp;#34;, hireDate=&amp;#34;&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="n">hireDate&lt;/span> &lt;span class="o">+&lt;/span>
+ &lt;span class="sc">&amp;#39;}&amp;#39;&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>整个实例代码中，只有 &lt;code>@MapperScan(basePackages = &amp;#34;com.diguage.truman.mybatis&amp;#34;)&lt;/code> 这个注解和 MyBATIS 的配置相关，我们就从这里开始吧。&lt;/p>
+&lt;/div></description></item><item><title>HikariCP 源码分析 -- ConcurrentBag</title><link>https://www.diguage.com/post/hikari-cp-source-analysis-concurrent-bag/</link><pubDate>Wed, 06 May 2020 17:12:55 +0800</pubDate><guid>https://www.diguage.com/post/hikari-cp-source-analysis-concurrent-bag/</guid><description>&lt;div class="paragraph">
+&lt;p>以前无意间搜资料了解到 HikariCP，一下子就被它的简洁代码和卓越性能吸引住了。以前也有翻过它的代码，但是不是很系统，最近再次翻阅，正好做些笔记，方便以后学习。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥最近在学习 Java 并发知识。那就从 HikariCP 自定义的并发集合 &lt;code>ConcurrentBag&lt;/code> 开始学习。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在 HikariCP 的 Wiki 中，有 &lt;a href="https://github.com/brettwooldridge/HikariCP/wiki/Down-the-Rabbit-Hole#concurrentbag" target="_blank" rel="noopener">Down the Rabbit Hole · ConcurrentBag&lt;/a> 的章节来专门介绍 &lt;code>ConcurrentBag&lt;/code>：&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;code>ConcurrentBag&lt;/code> 的灵感借鉴自 C# .NET 的 &lt;code>ConcurrentBag&lt;/code> 类。但是实现却是完全不同的。这里的 &lt;code>ConcurrentBag&lt;/code> 有如下特性：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>A lock-free design&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>ThreadLocal caching&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Queue-stealing&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Direct hand-off optimizations&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>下面，通过代码来对此做个说明。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在 &lt;code>ConcurrentBag&lt;/code> 类的定义中，声明了集合元素必须是 &lt;code>IConcurrentBagEntry&lt;/code> 的子类。先来看看这个接口的定义：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="kd">public&lt;/span> &lt;span class="kd">interface&lt;/span> &lt;span class="nc">IConcurrentBagEntry&lt;/span>
+&lt;span class="o">{&lt;/span>
+ &lt;span class="kt">int&lt;/span> &lt;span class="no">STATE_NOT_IN_USE&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="kt">int&lt;/span> &lt;span class="no">STATE_IN_USE&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">1&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="kt">int&lt;/span> &lt;span class="no">STATE_REMOVED&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="o">-&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="kt">int&lt;/span> &lt;span class="no">STATE_RESERVED&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="o">-&lt;/span>&lt;span class="mi">2&lt;/span>&lt;span class="o">;&lt;/span>
+
+ &lt;span class="kt">boolean&lt;/span> &lt;span class="nf">compareAndSet&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="kt">int&lt;/span> &lt;span class="n">expectState&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="n">newState&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="kt">void&lt;/span> &lt;span class="nf">setState&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="kt">int&lt;/span> &lt;span class="n">newState&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="kt">int&lt;/span> &lt;span class="nf">getState&lt;/span>&lt;span class="o">();&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>接下来，看一下成员变量：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="c1">// 存放共享元素&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="nc">CopyOnWriteArrayList&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="n">sharedList&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="kt">boolean&lt;/span> &lt;span class="n">weakThreadLocals&lt;/span>&lt;span class="o">;&lt;/span>
+
+&lt;span class="c1">// 在 ThreadLocal 缓存线程本地元素，避免线程争用&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="nc">ThreadLocal&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="nc">List&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="nc">Object&lt;/span>&lt;span class="o">&amp;gt;&amp;gt;&lt;/span> &lt;span class="n">threadList&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="nc">IBagStateListener&lt;/span> &lt;span class="n">listener&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="c1">//&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="nc">AtomicInteger&lt;/span> &lt;span class="n">waiters&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">volatile&lt;/span> &lt;span class="kt">boolean&lt;/span> &lt;span class="n">closed&lt;/span>&lt;span class="o">;&lt;/span>
+
+&lt;span class="c1">// 接力队列&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="nc">SynchronousQueue&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="n">handoffQueue&lt;/span>&lt;span class="o">;&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在 &lt;code>ConcurrentBag&lt;/code> 开头的 JavaDoc 中就做了明确说明：&lt;/p>
+&lt;/div>
+&lt;div class="sidebarblock">
+&lt;div class="content">
+&lt;div class="paragraph">
+&lt;p>Note that items that are &amp;#34;borrowed&amp;#34; from the bag are not actually removed from any collection, so garbage collection will not occur even if the reference is abandoned. Thus care must be taken to &amp;#34;requite&amp;#34; borrowed objects otherwise a memory leak will result. Only the &amp;#34;remove&amp;#34; method can completely remove an object from the bag.&lt;/p>
+&lt;/div></description></item><item><title>在世界读书日，推荐书单</title><link>https://www.diguage.com/post/books-on-book-day/</link><pubDate>Thu, 23 Apr 2020 20:15:14 +0800</pubDate><guid>https://www.diguage.com/post/books-on-book-day/</guid><description>&lt;div class="paragraph">
+&lt;p>今天是世界读书日，各种人都在推荐书单。D瓜哥也凑个热闹，水一篇文章，推荐一些书籍。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在前一段时间，D瓜哥已经写了一个书单： &lt;a href="https://www.diguage.com/post/java-concurrent-books/">推荐几本 Java 并发编程的书&lt;/a>。为了避免重复，上一个书单中推荐过的书籍，这次就不再重复推荐了。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>每年十二个月，D瓜哥就推荐 12 本书，每个月读一本想必压力也不算大。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_如何阅读一本书">&lt;a href="https://book.douban.com/subject/1013208/" target="_blank" rel="noopener">如何阅读一本书？&lt;/a>&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/books/how-to-read-a-book.jpg" alt="how to read a book" width="60%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥在年初的时候，刚刚再次重读了这本书。而且，还写了一篇读书笔记： &lt;a href="https://www.diguage.com/post/how-to-read-a-book/">《如何阅读一本书？》之读书笔记&lt;/a>。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>如果喜欢读书，那么这本书绝对应该是首先阅读的第一本书。一句话总结一下：&lt;strong>用检视阅读的方法来快速筛选出你关注主题的书籍；用分析阅读的方法来吸收一本书的精华；用主题阅读的办法来对多本同一主题的书去伪存真，加工再输出。&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_远见">&lt;a href="https://book.douban.com/subject/27609489/" target="_blank" rel="noopener">远见&lt;/a>&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/books/the-long-view.jpg" alt="the long view" width="60%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥在去年年末写的年终总结 &lt;a href="https://www.diguage.com/post/goodbye-2019-hello-2020/">“告别 2019，迎接 2020”&lt;/a> 中提到了这本书。考虑这本书的实用性和对自身发展的指导意义，所以决定再次推荐这本书。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在这本书中，作者将职业生涯分为：强势开局、聚焦长板和实现持续的影响力三个阶段。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在强势开局阶段，就像要开始一个汽车拉力赛，要努力加添燃料。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在聚焦长板阶段，要努力提高自己的核心竞争力，创造自己的制高点。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在实现持续的影响力阶段，则要优化长尾效应，让自己持续保持领先。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>对于职业生涯有追求的小伙伴，尤其是在读大学生，一定要去尽早认真读一读这本书。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_思考快与慢">&lt;a href="https://book.douban.com/subject/10785583/" target="_blank" rel="noopener">思考，快与慢&lt;/a>&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/books/thinking-fast-and-slow.jpg" alt="thinking fast and slow" width="60%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这是一本有关心理学方面的书籍。作者丹尼尔•卡尼曼因其与阿莫斯•特沃斯基在决策制定上的研究而荣获了 2002 年度的诺贝尔经济学奖。所以，这本书质量上肯定是有保证的。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这本书主要是介绍认知心理学的。作者在书中，把人的认知分为系统一和系统二。系统一是那种不需要思考的，已经固化在我们基因中的反应，比如看见危险会跑路等；而系统二，则是需要深入思考才能有所收获的事情，比如在新税法下，计算个人应该缴纳的个人所得税。两个系统相辅相成，时刻影响着我们的生活，但我们却有些熟视无睹。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_穷查理宝典">&lt;a href="https://book.douban.com/subject/26831789/" target="_blank" rel="noopener">穷查理宝典&lt;/a>&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/books/poor-charlies-almanack.jpg" alt="poor charlies almanack" width="60%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>提起查理·芒格，也许有些人不知道是谁。（看这篇文章的读者估计都了解）但是，他的搭档估计是人尽皆知，那就是世界股神沃伦·巴菲特。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>虽然这本书不是查理·芒格书写的，里面的精华部分，却都是查理的演讲稿。通过这些演讲，你可以看到一个睿智的老人，如何在循循善诱地向你传授他的思维方法。查理给我们介绍了他的思维模型：逆向思维，多元思维模型，打造自己的核心圈，避免嫉妒效应，内部积分卡（用我们古人的话说就是反求诸己）等等。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_社会性动物">&lt;a href="https://book.douban.com/subject/2328458/" target="_blank" rel="noopener">社会性动物&lt;/a>&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/books/the-social-animal.jpg" alt="the social animal" width="60%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥是去年开始读这本书的，非常抱歉目前还没有读完。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这本书是讲述社会心理学的，讲述在这个社会中，人与人之间是如何相互影响的。举一个典型的例子：你思考过吗，什么样的广告最能打动你吗？&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_事实">&lt;a href="https://book.douban.com/subject/33385402/" target="_blank" rel="noopener">事实&lt;/a>&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/books/factfulness.jpg" alt="factfulness" width="60%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>比尔·盖茨也推荐了这本书。我也是最近刚刚开始读这本书。还没有读完。就不做过多评价了。用一个问题，勾引一下你的兴趣：&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>问题：在全世界所有的低收入国家里面，有多少百分比的女孩能够上完小学？&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>选项：A. 20% B. 40% C. 60%&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>想知道答案，就快点去读这本书吧。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>最近更新：D瓜哥终于把这本书读完了：https://www.diguage.com/post/factfulness/[《事实》之读书笔记^]。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_人类简史">&lt;a href="https://book.douban.com/subject/26953606/" target="_blank" rel="noopener">人类简史&lt;/a>&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/books/a-brief-history-of-humankind.jpg" alt="a brief history of humankind" width="60%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>坦白讲，这本书D瓜哥才读了一半。但是，作者最近发表的一篇文章： &lt;a href="http://www.ruanyifeng.com/blog/2020/03/the-world-after-coronavirus.html">尤瓦尔·赫拉利《冠状病毒之后的世界》&lt;/a>，一个史学家站在历史发展的角度去看待疫情对世界发展的影响。由此可对赫拉利的思想窥得一斑。那么，如果感兴趣，他的成名大作《人类简史》就不得不读了。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>最近因为疫情影响，在网上看到各种五毛的无脑言论，怼天怼地，仿佛中国要征服世界，征服宇宙一样，真是让人呵呵…&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>未来几十年时间里，中国未来寻求自身发展，还需要融入到整个世界经济中，在全世界产业链中，力争上游，占领高附加值的产业，比如芯片，5G，大飞机等等。怼这个，怼那个，只能让自己像二战时期的纳粹德国和日本，让自己四面树敌，最后被全世界群殴。&lt;/p>
+&lt;/div></description></item><item><title>只要一部计算机，就可以创造出无限的世界</title><link>https://www.diguage.com/post/computer-create-world/</link><pubDate>Tue, 21 Apr 2009 00:00:00 +0800</pubDate><guid>https://www.diguage.com/post/computer-create-world/</guid><description>&lt;div class="paragraph">
+&lt;p>曾经写给学弟学妹的一封信。我觉得还行，发出来，希望对刚学计算机专业的朋友有所帮助。当然，如果哪位朋友有更好的想法，也请留言，大家讨论讨论。原文如下：&lt;/p>
+&lt;/div>
+&lt;div class="sidebarblock">
+&lt;div class="content">
+&lt;div class="title">致师弟师妹的一封信&lt;/div>
+&lt;div class="paragraph">
+&lt;p>各位朋友：&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>大家好！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>从本周开始，我必须专心为我的前程奋斗了。很可惜不能和大家一起学习了。这封信就算是我和大家的一个告别吧。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>首先，感谢史老师给我提供这个和大家一起学习和交流的机会，让我和大家一起度过了一段特殊而愉快的时光。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>其次，我应该感谢大家。由于本人水平有限，也许我没能让大家从我这里学到太多知识，但是大家却让我学会了很多东西，锻炼了我很多方面的能力。单凭这一点，我就应该感谢大家。同时，很多人把我当朋友，更使我感激不尽。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>再次，在这短暂而又宝贵的大学时光里，大家走的路应该和我的基本一样。我以一个过来人的身份，和大家分享一下我的学习经验吧，希望可以让大家少走甚至不走弯路。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>先说一点我们所学科目的情况吧。&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>Linux：一定要动手敲指令。在我们一年半的学习时光里，我认为Linux是我们所学的所有实践性学科里面最简单的一科了！只要把指令记好用熟就行了！另外，指令不需要背，用多了自然就记住了。（相信95%的同学都知道cd是什么意思吧！为什么呢？因为用它的次数多！）多提一点，一定要多尝试！&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Java或者C#或者PHP（由于个人比较喜欢Java，所以，一下描述Java的地方，你可以同样换成C#或在PHP等）：这是我们大家必须要下苦功夫学好的课！而且一定一定要学精！它们在我们的课程体系结构中的作用，就像是地基对于这个房子的作用！根基不好，房子很难建高的！即使建好也是豆腐渣工程。毕竟“空中楼阁”只存在于我们的想象中。它们是学习JSP、ASP.NET、J2EE、“游戏开发”、网页开发等等的基础，Java或者C#或者PHP学不会，这些课很难学好！（我这里有Java的教学视频，感兴趣的同学可以来我寝室拷贝。也可以上网下载：http://www.verycd.com/topics/93279/（请下载J2SE的））&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>数据库：重点是关系模型、 SQL语句以及后面的数据库设计。做动态网站的技术、做桌面程序，甚至做手机应用等，都会用到数据库！以后工作中数据模型设计、数据查询等都要求有比较扎实的数据库基础才行。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>数据结构：我个人认为学习数据结构就是学习一种解决问题的思想。其实，类库已经实现了我们所学的所有的数据结构，到时会用就行了！&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>现在NBA正在进行季后赛，就用乔丹的一句话，作为所有学科的一个共同的建议送给大家：&lt;/p>
+&lt;/div>
+&lt;div class="quoteblock">
+&lt;blockquote>
+&lt;div class="paragraph">
+&lt;p>I can accept failure, but I can’t accept not trying.&lt;/p>
+&lt;/div>
+&lt;/blockquote>
+&lt;div class="attribution">
+— Michael Jordan
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>其实学习就是不断尝试，不断总结，不断进取的一个过程。我可以用我的尝试告你一个正确的结果，但是自己尝试出来的结果印象更加深刻！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>再说一点我的个人的学习感触吧。我个人认为，这些比我们大家在学校学到知识更为重要！知识马上就会过时，但是学习的方法却可以带领我们走的更远。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>一、享受学习。&lt;/strong>如果我们把学习当成像玩游戏、听音乐一样的娱乐活动时，我想这会给我们一种全新的感觉。Study hard，have fun，make history！ By Jeff Bezos &amp;amp; Joy Lee （努力学习，乐在其中，并创造历史！—Jeff Bezos（Amazon.com的创办者兼CEO，Joy Lee就是我。(*&lt;sup>__&lt;/sup>*) 嘻嘻…… 这句话是我从他的一句话里改编过来的！））&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>其实，学计算机学科非常有趣！Linux里面，几行指令，我们就可以顺利的让鼠标在两个操作系统自由转换！Java里面几行，几十行代码就有一个漂亮的窗口！C#里面随便一个拖拽，也是一个不错的窗口！“只要一部计算机，就可以创造出无限的世界。”（出自蔡学镛《写程序，好好玩》，《Java夜未眠》里面的一篇，本书是本很搞笑的编程感触散文集，推荐看看。）加油吧！相信你行！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>二、坚持不懈。&lt;/strong>任何事情都不是可以一蹴而就的，都需要我们坚持！再送给大家一句话：失败只有一种，那就是半途而废！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>三、舍我其谁的豪迈和霸气。&lt;/strong>“Horse’s，Gosling能创造出来Java，我就不信我学不会！一个破Java，我还不放到眼里呢！！”，“别人能创造出来，我就不相信我学不会？！”不过，也要给大家提醒一句：“战略上，藐视敌人；战术上，重视敌人”！一定要下功夫学习才行！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>四、信心。&lt;/strong>一定要相信自己的能力！你是独一无二，无可替代的！信心能让你从一个更高的角度看待你的学习！能给你一种驾驭知识的成就感！这种感觉能让你从学习中找到乐趣！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>五、行动！&lt;/strong>上面的大道理，我们大家都懂！但是，谁实际做到呢？伟大与平凡的区别也许就在于这一点吧。我以我自己的高中、大学对比来看，行动与否结果绝对是不一样的！只想不做，最多是个空想家！所以，大家一定要“坚持不懈的行动”！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>最后，送给大家一句话：&lt;strong>你充满了潜能，但你的努力还远远不够！&lt;/strong>再次怀念我们共同的学习时光！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>祝大家学有所成！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div></description></item></channel></rss>

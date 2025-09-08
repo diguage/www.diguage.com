@@ -1,0 +1,1013 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Kubernetes on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/kubernetes/</link><description>Recent content in Kubernetes on "地瓜哥"博客网</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Wed, 23 Jul 2025 21:36:25 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/kubernetes/index.xml" rel="self" type="application/rss+xml"/><item><title>玩转 Kubernetes（一）：离线安装 Kubernetes 2</title><link>https://www.diguage.com/post/play-with-kubernetes-01-install-kubernetes-offline-2/</link><pubDate>Mon, 10 Feb 2025 21:46:32 +0800</pubDate><guid>https://www.diguage.com/post/play-with-kubernetes-01-install-kubernetes-offline-2/</guid><description>&lt;div class="paragraph">
+&lt;p>在 &lt;a href="https://www.diguage.com/post/play-with-kubernetes-01-install-kubernetes-offline/" target="_blank" rel="noopener">玩转 Kubernetes（一）：离线安装 Kubernetes 1&lt;/a> 中，D瓜哥基于 Kubespray 进行魔改的脚本搭建起来容器镜像仓库。但是，每次都魔改着实麻烦，所以，探索 Kubespray 原生支持才是更为委托的长久之计。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>经过多次探索，终于，可以几乎无需魔改就可以利用 Kubespray 原生支持进行 Kubernetes 的离线安装。&lt;/p>
+&lt;/div>
+&lt;div class="admonitionblock tip">
+&lt;table>
+&lt;tbody>&lt;tr>
+&lt;td class="icon">
+&lt;i class="fa icon-tip" title="Tip">&lt;/i>
+&lt;/td>
+&lt;td class="content">
+以下是在 Mac 上的操作，在 Linux 等系统上操作类似。
+&lt;/td>
+&lt;/tr>
+&lt;/tbody>&lt;/table>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_按照_python_依赖">按照 Python 依赖&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>在 Mac 的虚拟机离线安装 Kubernetes，使用 Mac 当做容器镜像服务器和二进制安装文件下载服务器是一个非常好的选择。为此，需要在完成一些基本的操作。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>由于运行 Kubespray，需要一个 Python 环境以及相关依赖，所以，就需要先安装相关依赖。&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="c"># 配置 Python 镜像&lt;/span>
+pip config &lt;span class="nb">set &lt;/span>global.index-url https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
+
+&lt;span class="c"># 进入 Kubespray 的上层目录&lt;/span>
+&lt;span class="nb">cd&lt;/span> /PATH/TO/kubespray/..
+
+&lt;span class="c"># 按照 Python 相关依赖&lt;/span>
+&lt;span class="nv">VENVDIR&lt;/span>&lt;span class="o">=&lt;/span>kubespray-venv
+&lt;span class="nv">KUBESPRAYDIR&lt;/span>&lt;span class="o">=&lt;/span>kubespray
+python3 &lt;span class="nt">-m&lt;/span> venv &lt;span class="nv">$VENVDIR&lt;/span>
+&lt;span class="nb">source&lt;/span> &lt;span class="nv">$VENVDIR&lt;/span>/bin/activate
+&lt;span class="nb">cd&lt;/span> &lt;span class="nv">$KUBESPRAYDIR&lt;/span>
+pip &lt;span class="nb">install&lt;/span> &lt;span class="nt">-U&lt;/span> &lt;span class="nt">-r&lt;/span> requirements.txt&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_生成镜像列表及二进制文件列表">生成镜像列表及二进制文件列表&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>安装完相关依赖，就需要生成相关文件列表：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="c"># 生成镜像列表以及相关二进制文件列表&lt;/span>
+&lt;span class="nb">cd&lt;/span> /PATH/TO/kubespray/contrib/offline
+
+./generate_list.sh&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="admonitionblock tip">
+&lt;table>
+&lt;tbody>&lt;tr>
+&lt;td class="icon">
+&lt;i class="fa icon-tip" title="Tip">&lt;/i>
+&lt;/td>
+&lt;td class="content">
+注意：大多数情况下，我们的安装目标是 Linux。所以，建议这步操作在 Linux 上完成，这样得到的下载文件列表是 Linux 格式的。在 Mac 上完成，那么部分文件的格式就是 Mac 的，不能用于 Linux 的安装。
+&lt;/td>
+&lt;/tr>
+&lt;/tbody>&lt;/table>
+&lt;/div></description></item><item><title>玩转 Kubernetes（一）：离线安装 Kubernetes 1</title><link>https://www.diguage.com/post/play-with-kubernetes-01-install-kubernetes-offline/</link><pubDate>Tue, 14 Jan 2025 16:13:19 +0800</pubDate><guid>https://www.diguage.com/post/play-with-kubernetes-01-install-kubernetes-offline/</guid><description>&lt;div class="paragraph">
+&lt;p>在 &lt;a href="https://www.diguage.com/post/building-a-develop-environment-based-on-docker-3/" target="_blank" rel="noopener">基于 Docker 搭建开发环境（三）：链路追踪&lt;/a> 等几篇文章中，D瓜哥分享了如何使用 Docker Compose 在本地搭建起来一套应用可观测性环境。感觉还不够好玩，毕竟正在在企业中，Kubernetes 已经是绝对的主流。要玩就玩最具挑战性的东西，玩最符合企业所需的技能和工具。所以，打算将上面那套简易玩具，按照企业级的要求，搬到 Kubernetes 上去。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>如果想玩 Kubernetes，首先面临的一个问题就是 Kubernetes 集群的搭建。本来是一个非常简单的事情，但是由于众所周知的原因，变得非常具有挑战性。经过各种探索和多次试验，发现一种“离线”安装方式，感觉是一个不错的方式。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>本方法是基于 &lt;a href="https://kubespray.io/#/" target="_blank" rel="noopener">Kubespray&lt;/a> 的一种安装办法，Kubespray 是由 Kubernetes SIG 小组来负责维护的一整套安装方式。既可以支持在裸机环境上安装，也支持云上环境安装。而且，只需要简单几行可以复制粘贴的命令，即可完成安装工作。非常适合入门玩耍使用。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>本安装方法所需的软件，D瓜哥都已经上传到 GitHub，如果需要下载，请移步： &lt;a href="https://github.com/diguage/k8s-packages/releases/tag/2.26.0" target="_blank" rel="noopener">Kubespray-2.26.0 安装包大全&lt;/a>。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_搭建服务器集群">搭建服务器集群&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>这里推荐使用 &lt;a href="https://www.vagrantup.com/" target="_blank" rel="noopener">Vagrant&lt;/a> 搭建集群。搭配 &lt;a href="https://www.virtualbox.org/" target="_blank" rel="noopener">VirtualBox&lt;/a>，只需要一个配置文件，就可以轻轻松松搭建一个 Linux 服务器集群。搭建集群的配置文件 &lt;code>Vagrantfile&lt;/code> 如下：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="ruby">&lt;span class="c1"># -*- mode: ruby -*-&lt;/span>
+&lt;span class="c1"># vi: set ft=ruby :&lt;/span>
+&lt;span class="c1"># @author D瓜哥 · &lt;a href="https://www.diguage.com/" target="_blank">https://www.diguage.com/&lt;/a>&lt;/span>
+
+&lt;span class="c1"># All Vagrant configuration is done below. The &amp;#34;2&amp;#34; in Vagrant.configure&lt;/span>
+&lt;span class="c1"># configures the configuration version (we support older styles for&lt;/span>
+&lt;span class="c1"># backwards compatibility). Please don&amp;#39;t change it unless you know what&lt;/span>
+&lt;span class="c1"># you&amp;#39;re doing.&lt;/span>
+
+&lt;span class="no">Vagrant&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">configure&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s2">&amp;#34;2&amp;#34;&lt;/span>&lt;span class="p">)&lt;/span> &lt;span class="k">do&lt;/span> &lt;span class="o">|&lt;/span>&lt;span class="n">config&lt;/span>&lt;span class="o">|&lt;/span>
+ &lt;span class="c1"># The most common configuration options are documented and commented below.&lt;/span>
+ &lt;span class="c1"># For a complete reference, please see the online documentation at&lt;/span>
+ &lt;span class="c1"># &lt;a href="https://docs.vagrantup.com" target="_blank">https://docs.vagrantup.com&lt;/a>&lt;/span>
+
+ &lt;span class="c1"># 三节点集群&lt;/span>
+ &lt;span class="p">(&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="o">..&lt;/span>&lt;span class="mi">3&lt;/span>&lt;span class="p">).&lt;/span>&lt;span class="nf">each&lt;/span> &lt;span class="k">do&lt;/span> &lt;span class="o">|&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="o">|&lt;/span>
+ &lt;span class="n">config&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">vm&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">define&lt;/span> &lt;span class="s2">&amp;#34;node&lt;/span>&lt;span class="si">#{&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="si">}&lt;/span>&lt;span class="s2">&amp;#34;&lt;/span> &lt;span class="k">do&lt;/span> &lt;span class="o">|&lt;/span>&lt;span class="n">node&lt;/span>&lt;span class="o">|&lt;/span>
+
+ &lt;span class="c1"># Every Vagrant development environment requires a box. You can search for&lt;/span>
+ &lt;span class="c1"># boxes at &lt;a href="https://vagrantcloud.com/search" target="_blank">https://vagrantcloud.com/search&lt;/a>&lt;/span>
+ &lt;span class="c1"># &lt;a href="https://portal.cloud.hashicorp.com/vagrant/discover/bento/ubuntu-24.04" target="_blank">https://portal.cloud.hashicorp.com/vagrant/discover/bento/ubuntu-24.04&lt;/a>&lt;/span>
+ &lt;span class="c1"># &lt;a href="https://portal.cloud.hashicorp.com/vagrant/discover/alvistack/ubuntu-24.04" target="_blank">https://portal.cloud.hashicorp.com/vagrant/discover/alvistack/ubuntu-24.04&lt;/a>&lt;/span>
+ &lt;span class="n">node&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">vm&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">box&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s2">&amp;#34;alvistack/ubuntu-24.04&amp;#34;&lt;/span>
+ &lt;span class="n">node&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">vm&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">box_version&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s2">&amp;#34;20250210.0.0&amp;#34;&lt;/span>
+
+ &lt;span class="c1"># 设置虚拟机的主机名&lt;/span>
+ &lt;span class="n">node&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">vm&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">hostname&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s2">&amp;#34;node&lt;/span>&lt;span class="si">#{&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="si">}&lt;/span>&lt;span class="s2">&amp;#34;&lt;/span>
+
+ &lt;span class="n">config&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">vm&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">boot_timeout&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">600&lt;/span>
+
+ &lt;span class="c1"># Disable automatic box update checking. If you disable this, then&lt;/span>
+ &lt;span class="c1"># boxes will only be checked for updates when the user runs&lt;/span>
+ &lt;span class="c1"># `vagrant box outdated`. This is not recommended.&lt;/span>
+ &lt;span class="c1"># config.vm.box_check_update = false&lt;/span>
+
+ &lt;span class="c1"># Create a forwarded port mapping which allows access to a specific port&lt;/span>
+ &lt;span class="c1"># within the machine from a port on the host machine. In the example below,&lt;/span>
+ &lt;span class="c1"># accessing &amp;#34;localhost:8080&amp;#34; will access port 80 on the guest machine.&lt;/span>
+ &lt;span class="c1"># NOTE: This will enable public access to the opened port&lt;/span>
+ &lt;span class="c1"># config.vm.network &amp;#34;forwarded_port&amp;#34;, guest: 80, host: 8080&lt;/span>
+
+ &lt;span class="c1"># Create a forwarded port mapping which allows access to a specific port&lt;/span>
+ &lt;span class="c1"># within the machine from a port on the host machine and only allow access&lt;/span>
+ &lt;span class="c1"># via 127.0.0.1 to disable public access&lt;/span>
+ &lt;span class="c1"># config.vm.network &amp;#34;forwarded_port&amp;#34;, guest: 80, host: 8080, host_ip: &amp;#34;127.0.0.1&amp;#34;&lt;/span>
+
+ &lt;span class="c1"># Create a private network, which allows host-only access to the machine&lt;/span>
+ &lt;span class="c1"># using a specific IP.&lt;/span>
+ &lt;span class="c1"># 设置虚拟机的IP&lt;/span>
+ &lt;span class="n">node&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">vm&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">network&lt;/span> &lt;span class="s2">&amp;#34;private_network&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="ss">ip: &lt;/span>&lt;span class="s2">&amp;#34;10.0.2.&lt;/span>&lt;span class="si">#{&lt;/span>&lt;span class="mi">20&lt;/span>&lt;span class="o">+&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="si">}&lt;/span>&lt;span class="s2">&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="ss">auto_config: &lt;/span>&lt;span class="kp">true&lt;/span>
+
+ &lt;span class="c1"># Create a public network, which generally matched to bridged network.&lt;/span>
+ &lt;span class="c1"># Bridged networks make the machine appear as another physical device on&lt;/span>
+ &lt;span class="c1"># your network.&lt;/span>
+ &lt;span class="c1"># config.vm.network &amp;#34;public_network&amp;#34;&lt;/span>
+
+ &lt;span class="c1"># Share an additional folder to the guest VM. The first argument is&lt;/span>
+ &lt;span class="c1"># the path on the host to the actual folder. The second argument is&lt;/span>
+ &lt;span class="c1"># the path on the guest to mount the folder. And the optional third&lt;/span>
+ &lt;span class="c1"># argument is a set of non-required options.&lt;/span>
+ &lt;span class="c1"># 设置主机与虚拟机的共享目录，根据需要开启&lt;/span>
+ &lt;span class="n">node&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">vm&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">synced_folder&lt;/span> &lt;span class="s2">&amp;#34;/path/to/&lt;/span>&lt;span class="si">#{&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="si">}&lt;/span>&lt;span class="s2">&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="s2">&amp;#34;/data&amp;#34;&lt;/span>
+
+
+ &lt;span class="c1"># Disable the default share of the current code directory. Doing this&lt;/span>
+ &lt;span class="c1"># provides improved isolation between the vagrant box and your host&lt;/span>
+ &lt;span class="c1"># by making sure your Vagrantfile isn&amp;#39;t accessible to the vagrant box.&lt;/span>
+ &lt;span class="c1"># If you use this you may want to enable additional shared subfolders as&lt;/span>
+ &lt;span class="c1"># shown above.&lt;/span>
+ &lt;span class="c1"># config.vm.synced_folder &amp;#34;.&amp;#34;, &amp;#34;/vagrant&amp;#34;, disabled: true&lt;/span>
+
+ &lt;span class="c1"># Provider-specific configuration so you can fine-tune various&lt;/span>
+ &lt;span class="c1"># backing providers for Vagrant. These expose provider-specific options.&lt;/span>
+ &lt;span class="c1"># Example for VirtualBox:&lt;/span>
+
+ &lt;span class="n">node&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">vm&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">provider&lt;/span> &lt;span class="s2">&amp;#34;virtualbox&amp;#34;&lt;/span> &lt;span class="k">do&lt;/span> &lt;span class="o">|&lt;/span>&lt;span class="n">vb&lt;/span>&lt;span class="o">|&lt;/span>
+ &lt;span class="c1"># 设置虚拟机的名称&lt;/span>
+ &lt;span class="c1"># vb.name = &amp;#34;node#{i}&amp;#34;&lt;/span>
+
+ &lt;span class="c1"># if node.vm.hostname == &amp;#34;node1&amp;#34;&lt;/span>
+ &lt;span class="c1"># # Display the VirtualBox GUI when booting the machine&lt;/span>
+ &lt;span class="c1"># vb.gui = true&lt;/span>
+ &lt;span class="c1"># end&lt;/span>
+
+ &lt;span class="c1"># Customize the amount of memory on the VM:&lt;/span>
+ &lt;span class="n">vb&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">memory&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s2">&amp;#34;6144&amp;#34;&lt;/span>
+
+ &lt;span class="c1"># 设置虚拟机的CPU个数&lt;/span>
+ &lt;span class="n">vb&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="nf">cpus&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">2&lt;/span>
+ &lt;span class="k">end&lt;/span>
+
+ &lt;span class="c1"># View the documentation for the provider you are using for more&lt;/span>
+ &lt;span class="c1"># information on available options.&lt;/span>
+
+ &lt;span class="c1"># Enable provisioning with a shell script. Additional provisioners such as&lt;/span>
+ &lt;span class="c1"># Ansible, Chef, Docker, Puppet and Salt are also available. Please see the&lt;/span>
+ &lt;span class="c1"># documentation for more information about their specific syntax and use.&lt;/span>
+ &lt;span class="c1"># config.vm.provision &amp;#34;shell&amp;#34;, inline: &amp;lt;&amp;lt;-SHELL&lt;/span>
+ &lt;span class="c1"># sudo yum makecache --refresh&lt;/span>
+ &lt;span class="c1"># sudo yum install -y tcpdump&lt;/span>
+ &lt;span class="c1"># sudo yum install -y nc&lt;/span>
+ &lt;span class="c1"># sudo yum install -y net-tools&lt;/span>
+ &lt;span class="c1"># SHELL&lt;/span>
+ &lt;span class="k">end&lt;/span>
+ &lt;span class="k">end&lt;/span>
+&lt;span class="k">end&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>killercoda CKA：Troubleshooting - 3</title><link>https://www.diguage.com/post/killercoda-cka-troubleshooting-3/</link><pubDate>Thu, 26 Dec 2024 19:54:28 +0800</pubDate><guid>https://www.diguage.com/post/killercoda-cka-troubleshooting-3/</guid><description>&lt;div class="sect1">
+&lt;h2 id="_troubleshooting_service_account_role_role_binding_issue">1. Troubleshooting - Service account, role, role binding Issue&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>&lt;a href="https://killercoda.com/sachin/course/CKA/sa-cr-crb-issue" target="_blank" rel="noopener">Troubleshooting - Service account, role, role binding Issue&lt;/a>&lt;/p>
+&lt;/div>
+&lt;div class="sidebarblock">
+&lt;div class="content">
+&lt;div class="paragraph">
+&lt;p>You have a service account named &lt;code>dev-sa&lt;/code>, a Role named &lt;code>dev-role-cka&lt;/code>, and a RoleBinding named &lt;code>dev-role-binding-cka&lt;/code>. we are trying to &lt;code>create&lt;/code> &lt;code>list&lt;/code> and &lt;code>get&lt;/code> the &lt;code>pods&lt;/code> and &lt;code>services&lt;/code>. However, using &lt;code>dev-sa&lt;/code> service account is not able to perform these operations. fix this issue.&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="c"># @author D瓜哥 · &lt;a href="https://www.diguage.com" target="_blank">https://www.diguage.com&lt;/a>&lt;/span>
+
+&lt;span class="nv">$ &lt;/span>kubectl get serviceaccounts dev-sa &lt;span class="nt">-o&lt;/span> yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+ creationTimestamp: &lt;span class="s2">&amp;#34;2025-01-22T09:48:06Z&amp;#34;&lt;/span>
+ name: dev-sa
+ namespace: default
+ resourceVersion: &lt;span class="s2">&amp;#34;2270&amp;#34;&lt;/span>
+ uid: 48b68f34-8c19-4477-9631-4f368f6ecc66
+
+&lt;span class="nv">$ &lt;/span>kubectl get role dev-role-cka
+NAME CREATED AT
+dev-role-cka 2025-01-22T09:48:06Z
+
+&lt;span class="nv">$ &lt;/span>kubectl get role dev-role-cka &lt;span class="nt">-o&lt;/span> yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+ creationTimestamp: &lt;span class="s2">&amp;#34;2025-01-22T09:48:06Z&amp;#34;&lt;/span>
+ name: dev-role-cka
+ namespace: default
+ resourceVersion: &lt;span class="s2">&amp;#34;2271&amp;#34;&lt;/span>
+ uid: 7a011481-8edd-4417-a1b8-8d15290d3e9f
+rules:
+- apiGroups:
+ - &lt;span class="s2">&amp;#34;&amp;#34;&lt;/span>
+ resources:
+ - secrets
+ verbs:
+ - get
+
+&lt;span class="nv">$ &lt;/span>kubectl get rolebindings dev-role-binding-cka &lt;span class="nt">-o&lt;/span> yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+ creationTimestamp: &lt;span class="s2">&amp;#34;2025-01-22T09:48:07Z&amp;#34;&lt;/span>
+ name: dev-role-binding-cka
+ namespace: default
+ resourceVersion: &lt;span class="s2">&amp;#34;2272&amp;#34;&lt;/span>
+ uid: 888af489-86b6-4d38-a723-a8ff13656d2b
+roleRef:
+ apiGroup: rbac.authorization.k8s.io
+ kind: Role
+ name: dev-role-cka
+subjects:
+- kind: ServiceAccount
+ name: dev-sa
+ namespace: default
+
+&lt;span class="c"># 将 Role 删掉，重建即可&lt;/span>
+&lt;span class="nv">$ &lt;/span>kubectl delete role dev-role-cka &lt;span class="nt">--force&lt;/span> &lt;span class="nt">--grace-period&lt;/span> 0
+Warning: Immediate deletion does not &lt;span class="nb">wait &lt;/span>&lt;span class="k">for &lt;/span>confirmation that the running resource has been terminated. The resource may &lt;span class="k">continue &lt;/span>to run on the cluster indefinitely.
+role.rbac.authorization.k8s.io &lt;span class="s2">&amp;#34;dev-role-cka&amp;#34;&lt;/span> force deleted
+
+&lt;span class="nv">$ &lt;/span>kubectl create role dev-role-cka &lt;span class="nt">--resource&lt;/span>&lt;span class="o">=&lt;/span>pods,services &lt;span class="nt">--verb&lt;/span>&lt;span class="o">=&lt;/span>create,list,get
+role.rbac.authorization.k8s.io/dev-role-cka created
+
+&lt;span class="nv">$ &lt;/span>kubectl get role dev-role-cka &lt;span class="nt">-o&lt;/span> yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+ creationTimestamp: &lt;span class="s2">&amp;#34;2025-01-22T09:49:46Z&amp;#34;&lt;/span>
+ name: dev-role-cka
+ namespace: default
+ resourceVersion: &lt;span class="s2">&amp;#34;2414&amp;#34;&lt;/span>
+ uid: b3d7fc62-f029-4f4b-88a5-99ee9840af05
+rules:
+- apiGroups:
+ - &lt;span class="s2">&amp;#34;&amp;#34;&lt;/span>
+ resources:
+ - pods
+ - services
+ verbs:
+ - create
+ - list
+ - get&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>killercoda CKA：Troubleshooting - 2</title><link>https://www.diguage.com/post/killercoda-cka-troubleshooting-2/</link><pubDate>Tue, 24 Dec 2024 19:54:28 +0800</pubDate><guid>https://www.diguage.com/post/killercoda-cka-troubleshooting-2/</guid><description>&lt;div class="sect1">
+&lt;h2 id="_troubleshooting_persistent_volume_persistent_volume_claim_issue">1. Troubleshooting - Persistent Volume, Persistent Volume Claim - Issue&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>&lt;a href="https://killercoda.com/sachin/course/CKA/pv-pvc-issue" target="_blank" rel="noopener">Troubleshooting - Persistent Volume, Persistent Volume Claim - Issue&lt;/a>&lt;/p>
+&lt;/div>
+&lt;div class="sidebarblock">
+&lt;div class="content">
+&lt;div class="paragraph">
+&lt;p>&lt;code>my-pvc&lt;/code> Persistent Volume Claim is stuck in a Pending state, fix this issue, make sure it is in Bound state&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="c"># @author D瓜哥 · &lt;a href="https://www.diguage.com" target="_blank">https://www.diguage.com&lt;/a>&lt;/span>
+
+&lt;span class="nv">$ &lt;/span>kubectl get pvc my-pvc &lt;span class="nt">-o&lt;/span> wide
+NAME STATUS VOLUME CAPACITY ACCESS MODES STORAGECLASS VOLUMEATTRIBUTESCLASS AGE VOLUMEMODE
+my-pvc Pending standard &amp;lt;&lt;span class="nb">unset&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> 38s Filesystem
+
+&lt;span class="nv">$ &lt;/span>kubectl get pv my-pv &lt;span class="nt">-o&lt;/span> wide
+NAME CAPACITY ACCESS MODES RECLAIM POLICY STATUS CLAIM STORAGECLASS VOLUMEATTRIBUTESCLASS REASON AGE VOLUMEMODE
+my-pv 100Mi RWO Retain Available standard &amp;lt;&lt;span class="nb">unset&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> 51s Filesystem
+
+&lt;span class="nv">$ &lt;/span>kubectl get pvc my-pvc &lt;span class="nt">-o&lt;/span> yaml | &lt;span class="nb">tee &lt;/span>pv.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+ annotations:
+ kubectl.kubernetes.io/last-applied-configuration: |
+ &lt;span class="o">{&lt;/span>&lt;span class="s2">&amp;#34;apiVersion&amp;#34;&lt;/span>:&lt;span class="s2">&amp;#34;v1&amp;#34;&lt;/span>,&lt;span class="s2">&amp;#34;kind&amp;#34;&lt;/span>:&lt;span class="s2">&amp;#34;PersistentVolumeClaim&amp;#34;&lt;/span>,&lt;span class="s2">&amp;#34;metadata&amp;#34;&lt;/span>:&lt;span class="o">{&lt;/span>&lt;span class="s2">&amp;#34;annotations&amp;#34;&lt;/span>:&lt;span class="o">{}&lt;/span>,&lt;span class="s2">&amp;#34;name&amp;#34;&lt;/span>:&lt;span class="s2">&amp;#34;my-pvc&amp;#34;&lt;/span>,&lt;span class="s2">&amp;#34;namespace&amp;#34;&lt;/span>:&lt;span class="s2">&amp;#34;default&amp;#34;&lt;/span>&lt;span class="o">}&lt;/span>,&lt;span class="s2">&amp;#34;spec&amp;#34;&lt;/span>:&lt;span class="o">{&lt;/span>&lt;span class="s2">&amp;#34;accessModes&amp;#34;&lt;/span>:[&lt;span class="s2">&amp;#34;ReadWriteMany&amp;#34;&lt;/span>&lt;span class="o">]&lt;/span>,&lt;span class="s2">&amp;#34;resources&amp;#34;&lt;/span>:&lt;span class="o">{&lt;/span>&lt;span class="s2">&amp;#34;requests&amp;#34;&lt;/span>:&lt;span class="o">{&lt;/span>&lt;span class="s2">&amp;#34;storage&amp;#34;&lt;/span>:&lt;span class="s2">&amp;#34;150Mi&amp;#34;&lt;/span>&lt;span class="o">}}&lt;/span>,&lt;span class="s2">&amp;#34;storageClassName&amp;#34;&lt;/span>:&lt;span class="s2">&amp;#34;standard&amp;#34;&lt;/span>&lt;span class="o">}}&lt;/span>
+ creationTimestamp: &lt;span class="s2">&amp;#34;2025-01-20T13:08:41Z&amp;#34;&lt;/span>
+ finalizers:
+ - kubernetes.io/pvc-protection
+ name: my-pvc
+ namespace: default
+ resourceVersion: &lt;span class="s2">&amp;#34;2002&amp;#34;&lt;/span>
+ uid: a4c6c044-4118-47a4-97b9-ceb69fac3bc2
+spec:
+ accessModes:
+ - ReadWriteMany
+ resources:
+ requests:
+ storage: 150Mi
+ storageClassName: standard
+ volumeMode: Filesystem
+status:
+ phase: Pending
+
+&lt;span class="nv">$ &lt;/span>kubectl get pv my-pv &lt;span class="nt">-o&lt;/span> yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+ annotations:
+ kubectl.kubernetes.io/last-applied-configuration: |
+ &lt;span class="o">{&lt;/span>&lt;span class="s2">&amp;#34;apiVersion&amp;#34;&lt;/span>:&lt;span class="s2">&amp;#34;v1&amp;#34;&lt;/span>,&lt;span class="s2">&amp;#34;kind&amp;#34;&lt;/span>:&lt;span class="s2">&amp;#34;PersistentVolume&amp;#34;&lt;/span>,&lt;span class="s2">&amp;#34;metadata&amp;#34;&lt;/span>:&lt;span class="o">{&lt;/span>&lt;span class="s2">&amp;#34;annotations&amp;#34;&lt;/span>:&lt;span class="o">{}&lt;/span>,&lt;span class="s2">&amp;#34;name&amp;#34;&lt;/span>:&lt;span class="s2">&amp;#34;my-pv&amp;#34;&lt;/span>&lt;span class="o">}&lt;/span>,&lt;span class="s2">&amp;#34;spec&amp;#34;&lt;/span>:&lt;span class="o">{&lt;/span>&lt;span class="s2">&amp;#34;accessModes&amp;#34;&lt;/span>:[&lt;span class="s2">&amp;#34;ReadWriteOnce&amp;#34;&lt;/span>&lt;span class="o">]&lt;/span>,&lt;span class="s2">&amp;#34;capacity&amp;#34;&lt;/span>:&lt;span class="o">{&lt;/span>&lt;span class="s2">&amp;#34;storage&amp;#34;&lt;/span>:&lt;span class="s2">&amp;#34;100Mi&amp;#34;&lt;/span>&lt;span class="o">}&lt;/span>,&lt;span class="s2">&amp;#34;hostPath&amp;#34;&lt;/span>:&lt;span class="o">{&lt;/span>&lt;span class="s2">&amp;#34;path&amp;#34;&lt;/span>:&lt;span class="s2">&amp;#34;/mnt/data&amp;#34;&lt;/span>&lt;span class="o">}&lt;/span>,&lt;span class="s2">&amp;#34;persistentVolumeReclaimPolicy&amp;#34;&lt;/span>:&lt;span class="s2">&amp;#34;Retain&amp;#34;&lt;/span>,&lt;span class="s2">&amp;#34;storageClassName&amp;#34;&lt;/span>:&lt;span class="s2">&amp;#34;standard&amp;#34;&lt;/span>&lt;span class="o">}}&lt;/span>
+ creationTimestamp: &lt;span class="s2">&amp;#34;2025-01-20T13:08:41Z&amp;#34;&lt;/span>
+ finalizers:
+ - kubernetes.io/pv-protection
+ name: my-pv
+ resourceVersion: &lt;span class="s2">&amp;#34;2003&amp;#34;&lt;/span>
+ uid: 85a371c4-0931-4b57-87ea-fc1fceb674c1
+spec:
+ accessModes:
+ - ReadWriteOnce
+ capacity:
+ storage: 100Mi
+ hostPath:
+ path: /mnt/data
+ &lt;span class="nb">type&lt;/span>: &lt;span class="s2">&amp;#34;&amp;#34;&lt;/span>
+ persistentVolumeReclaimPolicy: Retain
+ storageClassName: standard
+ volumeMode: Filesystem
+
+&lt;span class="nv">$ &lt;/span>vim pv.yaml
+&lt;span class="c"># 两个问题：&lt;/span>
+&lt;span class="c"># 1、 PVC 和 PV 的 accessModes 不一致，改为 ReadWriteOnce即可&lt;/span>
+&lt;span class="c"># 2、 PVC 的存储是 150Mi，而 PV 只有 100Mi，也改为 100Mi 即可。&lt;/span>
+
+&lt;span class="nv">$ &lt;/span>kubectl delete &lt;span class="nt">-f&lt;/span> pv.yaml &lt;span class="nt">--force&lt;/span> &lt;span class="nt">--grace-period&lt;/span> 0
+Warning: Immediate deletion does not &lt;span class="nb">wait &lt;/span>&lt;span class="k">for &lt;/span>confirmation that the running resource has been terminated. The resource may &lt;span class="k">continue &lt;/span>to run on the cluster indefinitely.
+persistentvolumeclaim &lt;span class="s2">&amp;#34;my-pvc&amp;#34;&lt;/span> force deleted
+
+&lt;span class="nv">$ &lt;/span>kubectl apply &lt;span class="nt">-f&lt;/span> pv.yaml
+persistentvolumeclaim/my-pvc created
+
+&lt;span class="nv">$ &lt;/span>kubectl get pvc my-pvc &lt;span class="nt">-o&lt;/span> wide
+NAME STATUS VOLUME CAPACITY ACCESS MODES STORAGECLASS VOLUMEATTRIBUTESCLASS AGE VOLUMEMODE
+my-pvc Bound my-pv 100Mi RWO standard &amp;lt;&lt;span class="nb">unset&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> 10s Filesystem&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>killercoda CKA：Troubleshooting - 1</title><link>https://www.diguage.com/post/killercoda-cka-troubleshooting-1/</link><pubDate>Sun, 22 Dec 2024 19:54:28 +0800</pubDate><guid>https://www.diguage.com/post/killercoda-cka-troubleshooting-1/</guid><description>&lt;div class="sect1">
+&lt;h2 id="_troubleshooting_pod_issue">1. Troubleshooting - Pod Issue&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>&lt;a href="https://killercoda.com/sachin/course/CKA/pod-issue" target="_blank" rel="noopener">Troubleshooting - Pod Issue&lt;/a>&lt;/p>
+&lt;/div>
+&lt;div class="sidebarblock">
+&lt;div class="content">
+&lt;div class="paragraph">
+&lt;p>&lt;code>hello-kubernetes&lt;/code> pod not running, fix that issue&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="c"># @author D瓜哥 · &lt;a href="https://www.diguage.com" target="_blank">https://www.diguage.com&lt;/a>&lt;/span>
+
+&lt;span class="nv">$ &lt;/span>kubectl get pod
+NAME READY STATUS RESTARTS AGE
+hello-kubernetes 0/1 RunContainerError 2 &lt;span class="o">(&lt;/span>6s ago&lt;span class="o">)&lt;/span> 29s
+
+&lt;span class="nv">$ &lt;/span>kubectl describe pod hello-kubernetes
+Name: hello-kubernetes
+Namespace: default
+Priority: 0
+Service Account: default
+Node: node01/172.30.2.2
+Start Time: Mon, 20 Jan 2025 07:21:57 +0000
+Labels: &amp;lt;none&amp;gt;
+Annotations: cni.projectcalico.org/containerID: 2e010161283b56bfd70d604c31ece3dc3189882f1e24c2ea57647dbaec3b2bdb
+ cni.projectcalico.org/podIP: 192.168.1.4/32
+ cni.projectcalico.org/podIPs: 192.168.1.4/32
+Status: Running
+IP: 192.168.1.4
+IPs:
+ IP: 192.168.1.4
+Containers:
+ echo-container:
+ Container ID: containerd://4f01851fcb908cd7bd1031a1726b8b75873d69fb246a5eebdd5c3dc003be7c19
+ Image: redis
+ Image ID: docker.io/library/redis@sha256:ca65ea36ae16e709b0f1c7534bc7e5b5ac2e5bb3c97236e4fec00e3625eb678d
+ Port: &amp;lt;none&amp;gt;
+ Host Port: &amp;lt;none&amp;gt;
+ Command:
+ shell
+ &lt;span class="nt">-c&lt;/span>
+ &lt;span class="k">while &lt;/span>&lt;span class="nb">true&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="k">do &lt;/span>&lt;span class="nb">echo&lt;/span> &lt;span class="s1">&amp;#39;Hello Kubernetes&amp;#39;&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="nb">sleep &lt;/span>5&lt;span class="p">;&lt;/span> &lt;span class="k">done
+ &lt;/span>State: Waiting
+ Reason: CrashLoopBackOff
+ Last State: Terminated
+ Reason: StartError
+ Message: failed to create containerd task: failed to create shim task: OCI runtime create failed: runc create failed: unable to start container process: &lt;span class="nb">exec&lt;/span>: &lt;span class="s2">&amp;#34;shell&amp;#34;&lt;/span>: executable file not found &lt;span class="k">in&lt;/span> &lt;span class="nv">$PATH&lt;/span>: unknown
+ Exit Code: 128
+ Started: Thu, 01 Jan 1970 00:00:00 +0000
+ Finished: Mon, 20 Jan 2025 07:22:20 +0000
+ Ready: False
+ Restart Count: 2
+ Environment: &amp;lt;none&amp;gt;
+ Mounts:
+ /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-xk5qj &lt;span class="o">(&lt;/span>ro&lt;span class="o">)&lt;/span>
+Conditions:
+ Type Status
+ PodReadyToStartContainers True
+ Initialized True
+ Ready False
+ ContainersReady False
+ PodScheduled True
+Volumes:
+ kube-api-access-xk5qj:
+ Type: Projected &lt;span class="o">(&lt;/span>a volume that contains injected data from multiple sources&lt;span class="o">)&lt;/span>
+ TokenExpirationSeconds: 3607
+ ConfigMapName: kube-root-ca.crt
+ ConfigMapOptional: &amp;lt;nil&amp;gt;
+ DownwardAPI: &lt;span class="nb">true
+&lt;/span>QoS Class: BestEffort
+Node-Selectors: &amp;lt;none&amp;gt;
+Tolerations: node.kubernetes.io/not-ready:NoExecute &lt;span class="nv">op&lt;/span>&lt;span class="o">=&lt;/span>Exists &lt;span class="k">for &lt;/span>300s
+ node.kubernetes.io/unreachable:NoExecute &lt;span class="nv">op&lt;/span>&lt;span class="o">=&lt;/span>Exists &lt;span class="k">for &lt;/span>300s
+Events:
+ Type Reason Age From Message
+ &lt;span class="nt">----&lt;/span> &lt;span class="nt">------&lt;/span> &lt;span class="nt">----&lt;/span> &lt;span class="nt">----&lt;/span> &lt;span class="nt">-------&lt;/span>
+ Normal Scheduled 41s default-scheduler Successfully assigned default/hello-kubernetes to node01
+ Normal Pulled 35s kubelet Successfully pulled image &lt;span class="s2">&amp;#34;redis&amp;#34;&lt;/span> &lt;span class="k">in &lt;/span>5.57s &lt;span class="o">(&lt;/span>5.57s including waiting&lt;span class="o">)&lt;/span>&lt;span class="nb">.&lt;/span> Image size: 45006722 bytes.
+ Normal Pulled 33s kubelet Successfully pulled image &lt;span class="s2">&amp;#34;redis&amp;#34;&lt;/span> &lt;span class="k">in &lt;/span>422ms &lt;span class="o">(&lt;/span>422ms including waiting&lt;span class="o">)&lt;/span>&lt;span class="nb">.&lt;/span> Image size: 45006722 bytes.
+ Normal Pulling 19s &lt;span class="o">(&lt;/span>x3 over 40s&lt;span class="o">)&lt;/span> kubelet Pulling image &lt;span class="s2">&amp;#34;redis&amp;#34;&lt;/span>
+ Normal Created 18s &lt;span class="o">(&lt;/span>x3 over 35s&lt;span class="o">)&lt;/span> kubelet Created container echo-container
+ Warning Failed 18s &lt;span class="o">(&lt;/span>x3 over 34s&lt;span class="o">)&lt;/span> kubelet Error: failed to create containerd task: failed to create shim task: OCI runtime create failed: runc create failed: unable to start container process: &lt;span class="nb">exec&lt;/span>: &lt;span class="s2">&amp;#34;shell&amp;#34;&lt;/span>: executable file not found &lt;span class="k">in&lt;/span> &lt;span class="nv">$PATH&lt;/span>: unknown
+ Normal Pulled 18s kubelet Successfully pulled image &lt;span class="s2">&amp;#34;redis&amp;#34;&lt;/span> &lt;span class="k">in &lt;/span>467ms &lt;span class="o">(&lt;/span>467ms including waiting&lt;span class="o">)&lt;/span>&lt;span class="nb">.&lt;/span> Image size: 45006722 bytes.
+ Warning BackOff 6s &lt;span class="o">(&lt;/span>x4 over 32s&lt;span class="o">)&lt;/span> kubelet Back-off restarting failed container echo-container &lt;span class="k">in &lt;/span>pod hello-kubernetes_default&lt;span class="o">(&lt;/span>5a459cd4-866a-4e57-8d44-ae83156e1e0b&lt;span class="o">)&lt;/span>
+
+&lt;span class="nv">$ &lt;/span>kubectl get pod hello-kubernetes &lt;span class="nt">-o&lt;/span> yaml | &lt;span class="nb">tee &lt;/span>pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+ annotations:
+ cni.projectcalico.org/containerID: 2e010161283b56bfd70d604c31ece3dc3189882f1e24c2ea57647dbaec3b2bdb
+ cni.projectcalico.org/podIP: 192.168.1.4/32
+ cni.projectcalico.org/podIPs: 192.168.1.4/32
+ kubectl.kubernetes.io/last-applied-configuration: |
+ &lt;span class="o">{&lt;/span>&lt;span class="s2">&amp;#34;apiVersion&amp;#34;&lt;/span>:&lt;span class="s2">&amp;#34;v1&amp;#34;&lt;/span>,&lt;span class="s2">&amp;#34;kind&amp;#34;&lt;/span>:&lt;span class="s2">&amp;#34;Pod&amp;#34;&lt;/span>,&lt;span class="s2">&amp;#34;metadata&amp;#34;&lt;/span>:&lt;span class="o">{&lt;/span>&lt;span class="s2">&amp;#34;annotations&amp;#34;&lt;/span>:&lt;span class="o">{}&lt;/span>,&lt;span class="s2">&amp;#34;name&amp;#34;&lt;/span>:&lt;span class="s2">&amp;#34;hello-kubernetes&amp;#34;&lt;/span>,&lt;span class="s2">&amp;#34;namespace&amp;#34;&lt;/span>:&lt;span class="s2">&amp;#34;default&amp;#34;&lt;/span>&lt;span class="o">}&lt;/span>,&lt;span class="s2">&amp;#34;spec&amp;#34;&lt;/span>:&lt;span class="o">{&lt;/span>&lt;span class="s2">&amp;#34;containers&amp;#34;&lt;/span>:[&lt;span class="o">{&lt;/span>&lt;span class="s2">&amp;#34;command&amp;#34;&lt;/span>:[&lt;span class="s2">&amp;#34;shell&amp;#34;&lt;/span>,&lt;span class="s2">&amp;#34;-c&amp;#34;&lt;/span>,&lt;span class="s2">&amp;#34;while true; do echo &amp;#39;Hello Kubernetes&amp;#39;; sleep 5; done&amp;#34;&lt;/span>&lt;span class="o">]&lt;/span>,&lt;span class="s2">&amp;#34;image&amp;#34;&lt;/span>:&lt;span class="s2">&amp;#34;redis&amp;#34;&lt;/span>,&lt;span class="s2">&amp;#34;name&amp;#34;&lt;/span>:&lt;span class="s2">&amp;#34;echo-container&amp;#34;&lt;/span>&lt;span class="o">}]}}&lt;/span>
+ creationTimestamp: &lt;span class="s2">&amp;#34;2025-01-20T07:21:57Z&amp;#34;&lt;/span>
+ name: hello-kubernetes
+ namespace: default
+ resourceVersion: &lt;span class="s2">&amp;#34;2157&amp;#34;&lt;/span>
+ uid: 5a459cd4-866a-4e57-8d44-ae83156e1e0b
+spec:
+ containers:
+ - &lt;span class="nb">command&lt;/span>:
+ - shell
+ - &lt;span class="nt">-c&lt;/span>
+ - &lt;span class="k">while &lt;/span>&lt;span class="nb">true&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="k">do &lt;/span>&lt;span class="nb">echo&lt;/span> &lt;span class="s1">&amp;#39;Hello Kubernetes&amp;#39;&lt;/span>&lt;span class="p">;&lt;/span> &lt;span class="nb">sleep &lt;/span>5&lt;span class="p">;&lt;/span> &lt;span class="k">done
+ &lt;/span>image: redis
+ imagePullPolicy: Always
+ name: echo-container
+ resources: &lt;span class="o">{}&lt;/span>
+ terminationMessagePath: /dev/termination-log
+ terminationMessagePolicy: File
+ volumeMounts:
+ - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+ name: kube-api-access-xk5qj
+ readOnly: &lt;span class="nb">true
+ &lt;/span>dnsPolicy: ClusterFirst
+ enableServiceLinks: &lt;span class="nb">true
+ &lt;/span>nodeName: node01
+ preemptionPolicy: PreemptLowerPriority
+ priority: 0
+ restartPolicy: Always
+ schedulerName: default-scheduler
+ securityContext: &lt;span class="o">{}&lt;/span>
+ serviceAccount: default
+ serviceAccountName: default
+ terminationGracePeriodSeconds: 30
+ tolerations:
+ - effect: NoExecute
+ key: node.kubernetes.io/not-ready
+ operator: Exists
+ tolerationSeconds: 300
+ - effect: NoExecute
+ key: node.kubernetes.io/unreachable
+ operator: Exists
+ tolerationSeconds: 300
+ volumes:
+ - name: kube-api-access-xk5qj
+ projected:
+ defaultMode: 420
+ sources:
+ - serviceAccountToken:
+ expirationSeconds: 3607
+ path: token
+ - configMap:
+ items:
+ - key: ca.crt
+ path: ca.crt
+ name: kube-root-ca.crt
+ - downwardAPI:
+ items:
+ - fieldRef:
+ apiVersion: v1
+ fieldPath: metadata.namespace
+ path: namespace
+&lt;span class="c"># 省略了 status 字段&lt;/span>
+
+&lt;span class="nv">$ &lt;/span>vim pod.yaml
+&lt;span class="c"># 根据提示，没有 shell，将 shell 修改为 sh 即可。&lt;/span>
+
+&lt;span class="nv">$ &lt;/span>kubectl replace &lt;span class="nt">-f&lt;/span> pod.yaml
+Error from server &lt;span class="o">(&lt;/span>Conflict&lt;span class="o">)&lt;/span>: error when replacing &lt;span class="s2">&amp;#34;pod.yaml&amp;#34;&lt;/span>: Operation cannot be fulfilled on pods &lt;span class="s2">&amp;#34;hello-kubernetes&amp;#34;&lt;/span>: the object has been modified&lt;span class="p">;&lt;/span> please apply your changes to the latest version and try again
+
+&lt;span class="c"># 不能替换，就直接删除，再重建&lt;/span>
+
+&lt;span class="nv">$ &lt;/span>kubectl delete &lt;span class="nt">-f&lt;/span> pod.yaml &lt;span class="nt">--force&lt;/span> &lt;span class="nt">--grace-period&lt;/span> 0
+Warning: Immediate deletion does not &lt;span class="nb">wait &lt;/span>&lt;span class="k">for &lt;/span>confirmation that the running resource has been terminated. The resource may &lt;span class="k">continue &lt;/span>to run on the cluster indefinitely.
+pod &lt;span class="s2">&amp;#34;hello-kubernetes&amp;#34;&lt;/span> force deleted
+
+&lt;span class="nv">$ &lt;/span>kubectl apply &lt;span class="nt">-f&lt;/span> pod.yaml
+pod/hello-kubernetes created
+
+&lt;span class="nv">$ &lt;/span>kubectl get pod
+NAME READY STATUS RESTARTS AGE
+hello-kubernetes 1/1 Running 0 5s&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>killercoda CKA：Workloads &amp; Scheduling</title><link>https://www.diguage.com/post/killercoda-cka-workloads-scheduling/</link><pubDate>Fri, 20 Dec 2024 19:54:28 +0800</pubDate><guid>https://www.diguage.com/post/killercoda-cka-workloads-scheduling/</guid><description>&lt;div class="sect1">
+&lt;h2 id="_workloads_scheduling_pod">1. Workloads &amp;amp; Scheduling - Pod&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>&lt;a href="https://killercoda.com/sachin/course/CKA/pod" target="_blank" rel="noopener">Workloads &amp;amp; Scheduling - Pod&lt;/a>&lt;/p>
+&lt;/div>
+&lt;div class="sidebarblock">
+&lt;div class="content">
+&lt;div class="paragraph">
+&lt;p>Fresher deployed a pod named &lt;code>my-pod&lt;/code>. However, while specifying the resource limits, they mistakenly given &lt;code>100Mi&lt;/code> storage limit instead of &lt;code>50Mi&lt;/code>&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>node doesn’t have sufficient resources, So change it to &lt;code>50Mi&lt;/code> only.&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="c"># @author D瓜哥 · &lt;a href="https://www.diguage.com" target="_blank">https://www.diguage.com&lt;/a>&lt;/span>
+
+&lt;span class="nv">$ &lt;/span>kubectl get pod my-pod &lt;span class="nt">-o&lt;/span> yaml | &lt;span class="nb">tee &lt;/span>pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+ annotations:
+ cni.projectcalico.org/containerID: 8414bfefda21fa6ca74ef8d499c92a22ae6cc0dbb6d0bc4d82eb0129a795d75d
+ cni.projectcalico.org/podIP: 192.168.1.4/32
+ cni.projectcalico.org/podIPs: 192.168.1.4/32
+ kubectl.kubernetes.io/last-applied-configuration: |
+ &lt;span class="o">{&lt;/span>&lt;span class="s2">&amp;#34;apiVersion&amp;#34;&lt;/span>:&lt;span class="s2">&amp;#34;v1&amp;#34;&lt;/span>,&lt;span class="s2">&amp;#34;kind&amp;#34;&lt;/span>:&lt;span class="s2">&amp;#34;Pod&amp;#34;&lt;/span>,&lt;span class="s2">&amp;#34;metadata&amp;#34;&lt;/span>:&lt;span class="o">{&lt;/span>&lt;span class="s2">&amp;#34;annotations&amp;#34;&lt;/span>:&lt;span class="o">{}&lt;/span>,&lt;span class="s2">&amp;#34;name&amp;#34;&lt;/span>:&lt;span class="s2">&amp;#34;my-pod&amp;#34;&lt;/span>,&lt;span class="s2">&amp;#34;namespace&amp;#34;&lt;/span>:&lt;span class="s2">&amp;#34;default&amp;#34;&lt;/span>&lt;span class="o">}&lt;/span>,&lt;span class="s2">&amp;#34;spec&amp;#34;&lt;/span>:&lt;span class="o">{&lt;/span>&lt;span class="s2">&amp;#34;containers&amp;#34;&lt;/span>:[&lt;span class="o">{&lt;/span>&lt;span class="s2">&amp;#34;image&amp;#34;&lt;/span>:&lt;span class="s2">&amp;#34;nginx:latest&amp;#34;&lt;/span>,&lt;span class="s2">&amp;#34;name&amp;#34;&lt;/span>:&lt;span class="s2">&amp;#34;my-container&amp;#34;&lt;/span>,&lt;span class="s2">&amp;#34;resources&amp;#34;&lt;/span>:&lt;span class="o">{&lt;/span>&lt;span class="s2">&amp;#34;limits&amp;#34;&lt;/span>:&lt;span class="o">{&lt;/span>&lt;span class="s2">&amp;#34;memory&amp;#34;&lt;/span>:&lt;span class="s2">&amp;#34;100Mi&amp;#34;&lt;/span>&lt;span class="o">}&lt;/span>,&lt;span class="s2">&amp;#34;requests&amp;#34;&lt;/span>:&lt;span class="o">{&lt;/span>&lt;span class="s2">&amp;#34;memory&amp;#34;&lt;/span>:&lt;span class="s2">&amp;#34;50Mi&amp;#34;&lt;/span>&lt;span class="o">}}}]}}&lt;/span>
+ creationTimestamp: &lt;span class="s2">&amp;#34;2025-01-14T07:53:50Z&amp;#34;&lt;/span>
+ name: my-pod
+ namespace: default
+ resourceVersion: &lt;span class="s2">&amp;#34;2026&amp;#34;&lt;/span>
+ uid: fcf1e97e-cec0-45b0-b82d-766ad0c51823
+spec:
+ containers:
+ - image: nginx:latest
+ imagePullPolicy: Always
+ name: my-container
+ resources:
+ limits:
+ memory: 100Mi
+ requests:
+ memory: 50Mi
+ terminationMessagePath: /dev/termination-log
+ terminationMessagePolicy: File
+ volumeMounts:
+ - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+ name: kube-api-access-thchj
+ readOnly: &lt;span class="nb">true
+ &lt;/span>dnsPolicy: ClusterFirst
+ enableServiceLinks: &lt;span class="nb">true
+ &lt;/span>nodeName: node01
+ preemptionPolicy: PreemptLowerPriority
+ priority: 0
+ restartPolicy: Always
+ schedulerName: default-scheduler
+ securityContext: &lt;span class="o">{}&lt;/span>
+ serviceAccount: default
+ serviceAccountName: default
+ terminationGracePeriodSeconds: 30
+ tolerations:
+ - effect: NoExecute
+ key: node.kubernetes.io/not-ready
+ operator: Exists
+ tolerationSeconds: 300
+ - effect: NoExecute
+ key: node.kubernetes.io/unreachable
+ operator: Exists
+ tolerationSeconds: 300
+ volumes:
+ - name: kube-api-access-thchj
+ projected:
+ defaultMode: 420
+ sources:
+ - serviceAccountToken:
+ expirationSeconds: 3607
+ path: token
+ - configMap:
+ items:
+ - key: ca.crt
+ path: ca.crt
+ name: kube-root-ca.crt
+ - downwardAPI:
+ items:
+ - fieldRef:
+ apiVersion: v1
+ fieldPath: metadata.namespace
+ path: namespace
+&lt;span class="c"># 省略没用的 status 字段&lt;/span>
+
+&lt;span class="nv">$ &lt;/span>vim pod.yaml
+&lt;span class="c"># 将 limit 中，100Mi 改为 50Mi&lt;/span>
+
+&lt;span class="nv">$ &lt;/span>kubectl delete &lt;span class="nt">-f&lt;/span> pod.yaml &lt;span class="nt">--force&lt;/span> &lt;span class="nt">--grace-period&lt;/span> 0
+Warning: Immediate deletion does not &lt;span class="nb">wait &lt;/span>&lt;span class="k">for &lt;/span>confirmation that the running resource has been terminated. The resource may &lt;span class="k">continue &lt;/span>to run on the cluster indefinitely.
+pod &lt;span class="s2">&amp;#34;my-pod&amp;#34;&lt;/span> force deleted
+
+&lt;span class="nv">$ &lt;/span>kubectl apply &lt;span class="nt">-f&lt;/span> pod.yaml
+pod/my-pod created&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>killercoda CKA：Storage</title><link>https://www.diguage.com/post/killercoda-cka-storage/</link><pubDate>Thu, 19 Dec 2024 19:54:28 +0800</pubDate><guid>https://www.diguage.com/post/killercoda-cka-storage/</guid><description>&lt;div class="sect1">
+&lt;h2 id="_storage_persistent_volume">1. Storage - Persistent Volume&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>&lt;a href="https://killercoda.com/sachin/course/CKA/pv" target="_blank" rel="noopener">Storage - Persistent Volume&lt;/a>&lt;/p>
+&lt;/div>
+&lt;div class="sidebarblock">
+&lt;div class="content">
+&lt;div class="paragraph">
+&lt;p>Create a PersistentVolume (PV) named &lt;code>black-pv-cka&lt;/code> with the following specifications:&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>Volume Type: &lt;code>hostPath&lt;/code>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Path: &lt;code>/opt/black-pv-cka&lt;/code>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Capacity: &lt;code>50Mi&lt;/code>&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="c"># @author D瓜哥 · &lt;a href="https://www.diguage.com" target="_blank">https://www.diguage.com&lt;/a>&lt;/span>
+
+&lt;span class="nv">$ &lt;/span>vim pv.yaml
+&lt;span class="c"># 编写 YAML 文件&lt;/span>
+
+&lt;span class="nv">$ &lt;/span>&lt;span class="nb">cat &lt;/span>pv.yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+ name: black-pv-cka
+spec:
+ capacity:
+ storage: 50Mi
+ accessModes:
+ - ReadWriteOnce
+ persistentVolumeReclaimPolicy: Retain
+ hostPath:
+ path: /opt/black-pv-cka
+
+&lt;span class="nv">$ &lt;/span>kubectl apply &lt;span class="nt">-f&lt;/span> pv.yaml
+persistentvolume/black-pv-cka created&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_storage_persistent_volume_claim">2. Storage - Persistent Volume Claim&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>&lt;a href="https://killercoda.com/sachin/course/CKA/pvc" target="_blank" rel="noopener">Storage - Persistent Volume Claim&lt;/a>&lt;/p>
+&lt;/div></description></item><item><title>killercoda CKA：Services &amp; Networking</title><link>https://www.diguage.com/post/killercoda-cka-services-networking/</link><pubDate>Wed, 18 Dec 2024 19:54:28 +0800</pubDate><guid>https://www.diguage.com/post/killercoda-cka-services-networking/</guid><description>&lt;div class="sect1">
+&lt;h2 id="_services_networking_services">1. Services &amp;amp; Networking - Services&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>&lt;a href="https://killercoda.com/sachin/course/CKA/svc" target="_blank" rel="noopener">Services &amp;amp; Networking - Services&lt;/a>&lt;/p>
+&lt;/div>
+&lt;div class="sidebarblock">
+&lt;div class="content">
+&lt;div class="paragraph">
+&lt;p>You have an existing Nginx pod named &lt;code>nginx-pod&lt;/code>. Perform the following steps:&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>Expose the &lt;code>nginx-pod&lt;/code> internally within the cluster using a Service named &lt;code>nginx-service&lt;/code> .&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Use &lt;code>port forwarding&lt;/code> to service to access the Welcome content of &lt;code>nginx-pod&lt;/code> using the &lt;code>curl&lt;/code> command.&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="c"># @author D瓜哥 · &lt;a href="https://www.diguage.com" target="_blank">https://www.diguage.com&lt;/a>&lt;/span>
+
+&lt;span class="nv">$ &lt;/span>kubectl get pod &lt;span class="nt">--show-labels&lt;/span>
+NAME READY STATUS RESTARTS AGE LABELS
+nginx-pod 1/1 Running 0 8m48s &lt;span class="nv">app&lt;/span>&lt;span class="o">=&lt;/span>nginx
+
+&lt;span class="nv">$ &lt;/span>&lt;span class="nb">cat &lt;/span>svc.yaml
+apiVersion: v1
+kind: Service
+metadata:
+ name: nginx-service
+spec:
+ selector:
+ app: nginx
+ ports:
+ - name: http
+ protocol: TCP
+ port: 80
+ targetPort: 80
+
+&lt;span class="nv">$ &lt;/span>kubectl apply &lt;span class="nt">-f&lt;/span> svc.yaml
+service/nginx-service created
+
+&lt;span class="nv">$ &lt;/span>kubectl port-forward service/nginx-service 8081:80
+Forwarding from 127.0.0.1:8081 -&amp;gt; 80
+Forwarding from &lt;span class="o">[&lt;/span>::1]:8081 -&amp;gt; 80
+Handling connection &lt;span class="k">for &lt;/span>8081
+
+
+&lt;span class="c"># 打开另外一个终端&lt;/span>
+&lt;span class="nv">$ &lt;/span>curl localhost:8081
+&amp;lt;&lt;span class="o">!&lt;/span>DOCTYPE html&amp;gt;
+&amp;lt;html&amp;gt;
+&amp;lt;&lt;span class="nb">head&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>
+&amp;lt;title&amp;gt;Welcome to nginx!&amp;lt;/title&amp;gt;
+&amp;lt;style&amp;gt;
+html &lt;span class="o">{&lt;/span> color-scheme: light dark&lt;span class="p">;&lt;/span> &lt;span class="o">}&lt;/span>
+body &lt;span class="o">{&lt;/span> width: 35em&lt;span class="p">;&lt;/span> margin: 0 auto&lt;span class="p">;&lt;/span>
+font-family: Tahoma, Verdana, Arial, sans-serif&lt;span class="p">;&lt;/span> &lt;span class="o">}&lt;/span>
+&amp;lt;/style&amp;gt;
+&amp;lt;/head&amp;gt;
+&amp;lt;body&amp;gt;
+&amp;lt;h1&amp;gt;Welcome to nginx!&amp;lt;/h1&amp;gt;
+&amp;lt;p&amp;gt;If you see this page, the nginx web server is successfully installed and
+working. Further configuration is required.&amp;lt;/p&amp;gt;
+
+&amp;lt;p&amp;gt;For online documentation and support please refer to
+&amp;lt;a &lt;span class="nv">href&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;http://nginx.org/&amp;#34;&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>nginx.org&amp;lt;/a&amp;gt;.&amp;lt;br/&amp;gt;
+Commercial support is available at
+&amp;lt;a &lt;span class="nv">href&lt;/span>&lt;span class="o">=&lt;/span>&lt;span class="s2">&amp;#34;http://nginx.com/&amp;#34;&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>nginx.com&amp;lt;/a&amp;gt;.&amp;lt;/p&amp;gt;
+
+&amp;lt;p&amp;gt;&amp;lt;em&amp;gt;Thank you &lt;span class="k">for &lt;/span>using nginx.&amp;lt;/em&amp;gt;&amp;lt;/p&amp;gt;
+&amp;lt;/body&amp;gt;
+&amp;lt;/html&amp;gt;&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>killercoda CKA：Architecture, Installation &amp; Maintenance</title><link>https://www.diguage.com/post/killercoda-cka-architecture-installation-maintenance/</link><pubDate>Mon, 16 Dec 2024 19:54:28 +0800</pubDate><guid>https://www.diguage.com/post/killercoda-cka-architecture-installation-maintenance/</guid><description>&lt;div class="sect1">
+&lt;h2 id="_architecture_installation_maintenance_create_pod">1. Architecture, Installation &amp;amp; Maintenance - Create Pod&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>&lt;a href="https://killercoda.com/sachin/course/CKA/pod-create" target="_blank" rel="noopener">Architecture, Installation &amp;amp; Maintenance - Create Pod&lt;/a>&lt;/p>
+&lt;/div>
+&lt;div class="sidebarblock">
+&lt;div class="content">
+&lt;div class="paragraph">
+&lt;p>Create a pod called &lt;code>sleep-pod&lt;/code> using the &lt;code>nginx&lt;/code> image and also &lt;code>sleep&lt;/code> (using &lt;code>command&lt;/code> ) for give any value for seconds.&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="c"># @author D瓜哥 · &lt;a href="https://www.diguage.com" target="_blank">https://www.diguage.com&lt;/a>&lt;/span>
+
+&lt;span class="nv">$ &lt;/span>&lt;span class="nb">cat &lt;/span>nginx.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+ name: sleep-pod
+spec:
+ containers:
+ - name: nginx
+ image: nginx
+ &lt;span class="nb">command&lt;/span>:
+ - &lt;span class="nb">sleep&lt;/span>
+ - &lt;span class="s2">&amp;#34;3600&amp;#34;&lt;/span>
+
+&lt;span class="nv">$ &lt;/span>kubectl apply &lt;span class="nt">-f&lt;/span> nginx.yaml
+pod/sleep-pod created
+
+&lt;span class="nv">$ &lt;/span>kubectl get pod
+NAME READY STATUS RESTARTS AGE
+sleep-pod 1/1 Running 0 5s&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>告别 2019，迎接 2020</title><link>https://www.diguage.com/post/goodbye-2019-hello-2020/</link><pubDate>Tue, 31 Dec 2019 19:20:00 +0800</pubDate><guid>https://www.diguage.com/post/goodbye-2019-hello-2020/</guid><description>&lt;div class="sect1">
+&lt;h2 id="_我的_2019">我的 2019&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>在 2018 年底，我写了 &lt;a href="https://www.diguage.com/post/2019-plan/" target="_blank" rel="noopener">“2019 年度计划”&lt;/a> 对 2019 年做了一个简单的规划。2019 年如白驹过隙，稍纵即逝。又到一年年底，现在对这一年做一个总结。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>虽然这一年，我一直在意有这么一个计划，但是从来没有认真总结反思过。为了回顾一下，刚刚又打开计划去看，生活才发现过得如此苍白无力。抛开计划，按时间顺序，从头到尾，随意来说吧。&lt;/p>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_读书">读书&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>今年读了几本书：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>《小岛经济学》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《小王子（英文版）》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《未来世界的幸存者》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《白夜行》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《教父》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《远见》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《如何阅读一本书？》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《文明之光（第一册）》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《基督山伯爵》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《Kubernetes in Action》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《富爸爸穷爸爸》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《巴菲特与索罗斯的投资习惯》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《幸福的方法》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《魔鬼聊天术》&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>《拆掉思维里的墙》&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>挑选几本来简单说说吧。&lt;/p>
+&lt;/div>
+&lt;div class="sect3">
+&lt;h4 id="_小岛经济学">《小岛经济学》&lt;/h4>
+&lt;div class="paragraph">
+&lt;p>《小岛经济学》是今年读完的第一本书，也算是去年留下的一个尾巴。奥地利经济学派主张政府不干预的观点。这本书简单描述了经济发展的过程，从莽荒时代，手工作业开始，逐步引入工具，提高生产力；随着生产力的提升，人口的增多，经济活动增多，开始物物交换；从物物交换过渡到货币交易，然后银行业兴起；生产力再次提高，以及货币的增加，投资也成为必要，资本市场应运而生；随着地区优势的凸显，资源整合也势在必行，接着发展起了跨国贸易，换汇成为必要，汇率也就被引入进来；随着资本市场的繁荣，埋藏的地雷被引爆，通货膨胀，货币贬值，资本市场崩溃，社会进入大萧条，然后重置继续发展……&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>整个过程完整而清晰，犹如亲历过去发展的波澜壮阔。作为一本经济学入门教程还是很赞的。最近开始看曼昆的《经济学原理》，再来看这本书，真的只能是入门。也许智商不够用，也许对经济学的知识了解得过于浅薄，当经济发展到引入汇率之后，后面的发展过程理解的就不是很透彻了。等看一下金融的书，结合起来，希望能更好地理解。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect3">
+&lt;h4 id="_未来世界的幸存者">《未来世界的幸存者》&lt;/h4>
+&lt;div class="paragraph">
+&lt;p>在年初看完的这本书，看完后震撼很大。把当时的读后感直接贴到这里作为总结吧。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>作者站在一个技术人员的角度，去思考技术如何改变世界？未来会是什么样子？&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>作者的思考和我的思考结果是一样的：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>技术的快速发展，机器必定完成大部分重复性劳动，使得大部分劳动者被取代。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>大部分人必定只能找到低端工作，工资仅够温饱。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>贫富分化将越来越严重，而且会世袭，穷人毫无翻身的可能。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>科技发展的结果，我自己感觉是喜忧参半：&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>作为一名IT从业者，真正在用技术改变这个世界，带给大家更多的便利，这是百年难得一遇的机遇，生在这个伟大的时代，能参与这个伟大的浪潮之中，可以用自己的双手去推动世界的改变，何其幸哉！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>同时，技术带给人们的便利真是难以想象，足不出户点餐、购物、约车、娱乐…&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>但是，也有很多人是不幸的，他们没有一技之长，或者人到中年，却惨遭失业；还有一部分人，或者说大部分生活在底层的人们，因为没有一技之长（仅指不容易被技术取代的技能），也许永无翻身之日，无所事事，惶惶终日。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>技术的发展，造成人类事业，伴随而来的可能会是“黑镜第一季第二集”的样子：每人一张床，四周都是显示器，想看什么看什么，什么活也不用干，平时运动挣积分，拿积分再消费…&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>进一步发展，也许就是《西部世界》，尤其是娱乐业。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>人类本身很可能会再进化一步：进化成碳基+硅基的组合体。碳基就是目前的人（也许仅仅只需要保留大脑），硅基就是各种芯片+维持大脑活动的必要设备和机械躯体…&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>基因改造将带来彻底的不平衡：人类被分为被改造人和原始人。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect3">
+&lt;h4 id="the-long-view">《远见》&lt;/h4>
+&lt;div class="paragraph">
+&lt;p>这本书是在刷知乎时，别人推荐的书。就找来看了看。真是相见恨晚！如果在大学毕业时就看到这本书，也许……&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>简单做个摘录作为总结吧。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>本书讲人生的职业生涯分为三个阶段：&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>第一阶段是强势开局的时候。你在职业上的努力必须着重于为前方的漫长道路挖掘和装备自己。你的学习曲线要比职位、职称更加重要。在这一阶段，要为职业生涯打好基础并建立起良好的早期习惯。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>第二阶段是聚焦长板的时候。该阶段的首要目标是寻找自己的甜蜜区，即你所擅长的、所热爱的和这个世界所需要的这三者之间的交集。这个时候你要展现自我，让自己鹤立鸡群，想方设法平稳地走在那条收获最大的职场路径上。你要专注于自己的长板，且大可忽略自己的短板。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>第三阶段致力于实现持续的影响力，以及寻找一条可以稳定延续到60多岁甚至70多岁的新的可持续职业道路。你要在第三阶段完成三个关键任务：完成继任计划、保持关联性，以及为自己点燃一团新的职业之火。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>用一句话来总结：第一阶段：加添燃料，强势开局； 第二阶段：聚焦长板，达到高点； 第三阶段：优化长尾，持续发挥影响力。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>三大职场燃料来源：可迁移技能、有意义的经验和持久的关系。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>5个数字，树立正确的职场思维&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>职业生涯的长度：用62减去你目前的年龄。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>精通一项技能所需的时间：要花多少小时才能在某一方面达到“精通”？&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>40岁之后能赚到的个人财富百分比：在40岁之后，你赚到的钱会占你一生个人财富的百分之多少？大部分人的估计是60%。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>社交货币：你有多少社交网络好友？&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>职场支持者的人数：你认为能在“职业生涯的天堂”里遇到多少人，也就是说有多少人能对你的职业生涯和人生带来真正的变化？&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这本书的摘要已经发布出来，感兴趣的小伙伴请移步： &lt;a href="https://www.diguage.com/post/the-long-view/">《远见》之读书笔记&lt;/a>。&lt;/p>
+&lt;/div></description></item></channel></rss>

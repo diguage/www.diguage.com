@@ -1,0 +1,241 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<svg viewBox="0 0 1306 2618" xmlns="http://www.w3.org/2000/svg" xmlns:inkspace="http://www.inkscape.org/namespaces/inkscape" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <defs id="defs_block">
+    <filter height="1.504" id="filter_blur" inkspace:collect="always" width="1.1575" x="-0.07875" y="-0.252">
+      <feGaussianBlur id="feGaussianBlur3780" inkspace:collect="always" stdDeviation="4.2" />
+    </filter>
+  </defs>
+  <title>blockdiag</title>
+  <desc>seqdiag {
+  edge_length = 150;
+
+  Acter =&gt; Hessian2Output[label="writeObject\n(Object object)"] {
+    Hessian2Output =&gt; AbstractHessianOutput[label="findSerializerFactory()", note=" \n查找 SerializerFactory\n_"] {
+      AbstractHessianOutput =&gt; SerializerFactory[label="createDefault()"];
+    }
+
+    Hessian2Output =&gt; SerializerFactory[label="getObjectSerializer(Class&lt;?&gt; cl)", note=" \n根据 Class 获得 Serializer\n_"] {
+      SerializerFactory =&gt; SerializerFactory[label="getSerializer\n(Class c)"] {
+        SerializerFactory =&gt; SerializerFactory[label="loadSerializer\n(Class cl)", note=" \n扩展点\n可以扫描出提前添加的 SerializerFactory\n_"] {
+          SerializerFactory =&gt; AbstractSerializerFactory[label="getSerializer(Class cl)"];
+
+          SerializerFactory =&gt; ContextSerializerFactory[label="getSerializer(String className)"];
+
+          SerializerFactory =&gt; ContextSerializerFactory[label="create(ClassLoader loader)"];
+
+          SerializerFactory =&gt; ContextSerializerFactory[label="getCustomSerializer(Class cl)", note=" \n扩展点\n根据 Class 获得自定义的 Serializer\n_"];
+
+          SerializerFactory =&gt; JavaSerializer[label="create(Class&lt;?&gt; cl)", note=" \n这里通过 new 或者 create() 方法，\n创建了很多不同类型 Serializer 实现\n类，列表如下：\n01. RemoteSerializer\n02. InetAddressSerializer\n03. WriteReplaceSerializer\n04. MapSerializer\n05. CollectionSerializer\n06. ArraySerializer\n07. ThrowableSerializer\n08. InputStreamSerializer\n09. IteratorSerializer\n10. CalendarSerializer\n11. EnumerationSerializer\n12. EnumSerializer\n13. AnnotationSerializer\n_"];
+        }
+      }
+    }
+
+    Hessian2Output =&gt; Serializer[label="writeObject(Object obj, AbstractHessianOutput out)", leftnote=" \n将对象序列化\n\n有一点特别说明一下：\n在针对“对象”序列化时，\n对于每个字段会递归调用\nwriteObject(Object object)\n来完成对字段的序列化\n_"];
+  }
+
+=== D瓜哥 · https://www.diguage.com · 出品 ===
+}</desc>
+  <rect fill="rgb(0,0,0)" height="2432" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="8" x="127" y="164" />
+  <rect fill="rgb(0,0,0)" height="2276" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="8" x="277" y="164" />
+  <rect fill="rgb(0,0,0)" height="226" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="8" x="427" y="239" />
+  <rect fill="rgb(0,0,0)" height="60" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="8" x="577" y="325" />
+  <rect fill="rgb(0,0,0)" height="1518" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="8" x="577" y="570" />
+  <rect fill="rgb(0,0,0)" height="1335" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="8" x="581" y="673" />
+  <rect fill="rgb(0,0,0)" height="1155" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="8" x="585" y="773" />
+  <rect fill="rgb(0,0,0)" height="60" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="8" x="727" y="867" />
+  <rect fill="rgb(0,0,0)" height="60" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="8" x="877" y="1027" />
+  <rect fill="rgb(0,0,0)" height="60" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="8" x="877" y="1187" />
+  <rect fill="rgb(0,0,0)" height="74" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="8" x="877" y="1360" />
+  <rect fill="rgb(0,0,0)" height="187" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="8" x="1027" y="1661" />
+  <rect fill="rgb(0,0,0)" height="116" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="8" x="1177" y="2244" />
+  <polygon fill="rgb(0,0,0)" points="447,214 580,214 588,222 588,265 447,265 447,214" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" />
+  <polygon fill="rgb(0,0,0)" points="597,545 745,545 753,553 753,595 597,595 597,545" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" />
+  <polygon fill="rgb(0,0,0)" points="672,739 893,739 901,747 901,807 672,807 672,739" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" />
+  <polygon fill="rgb(0,0,0)" points="897,1327 1089,1327 1097,1335 1097,1394 897,1394 897,1327" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" />
+  <polygon fill="rgb(0,0,0)" points="1047,1514 1241,1514 1249,1522 1249,1808 1047,1808 1047,1514" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" />
+  <polygon fill="rgb(0,0,0)" points="99,2168 257,2168 265,2176 265,2320 99,2320 99,2168" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" />
+  <rect fill="rgb(0,0,0)" height="40" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="128" x="67" y="46" />
+  <rect fill="rgb(0,0,0)" height="40" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="128" x="217" y="46" />
+  <rect fill="rgb(0,0,0)" height="40" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="128" x="367" y="46" />
+  <rect fill="rgb(0,0,0)" height="40" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="128" x="517" y="46" />
+  <rect fill="rgb(0,0,0)" height="40" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="128" x="667" y="46" />
+  <rect fill="rgb(0,0,0)" height="40" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="128" x="817" y="46" />
+  <rect fill="rgb(0,0,0)" height="40" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="128" x="967" y="46" />
+  <rect fill="rgb(0,0,0)" height="40" stroke="rgb(0,0,0)" style="filter:url(#filter_blur);opacity:0.7;fill-opacity:1" width="128" x="1117" y="46" />
+  <path d="M 128 80 L 128 2606" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="8 4" />
+  <rect fill="moccasin" height="2432" stroke="rgb(0,0,0)" width="8" x="124" y="158" />
+  <path d="M 278 80 L 278 2606" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="8 4" />
+  <rect fill="moccasin" height="2276" stroke="rgb(0,0,0)" width="8" x="274" y="158" />
+  <path d="M 428 80 L 428 2606" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="8 4" />
+  <rect fill="moccasin" height="226" stroke="rgb(0,0,0)" width="8" x="424" y="233" />
+  <path d="M 578 80 L 578 2606" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="8 4" />
+  <rect fill="moccasin" height="60" stroke="rgb(0,0,0)" width="8" x="574" y="319" />
+  <rect fill="moccasin" height="1518" stroke="rgb(0,0,0)" width="8" x="574" y="564" />
+  <rect fill="moccasin" height="1335" stroke="rgb(0,0,0)" width="8" x="578" y="667" />
+  <rect fill="moccasin" height="1155" stroke="rgb(0,0,0)" width="8" x="582" y="767" />
+  <path d="M 728 80 L 728 2606" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="8 4" />
+  <rect fill="moccasin" height="60" stroke="rgb(0,0,0)" width="8" x="724" y="861" />
+  <path d="M 878 80 L 878 2606" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="8 4" />
+  <rect fill="moccasin" height="60" stroke="rgb(0,0,0)" width="8" x="874" y="1021" />
+  <rect fill="moccasin" height="60" stroke="rgb(0,0,0)" width="8" x="874" y="1181" />
+  <rect fill="moccasin" height="74" stroke="rgb(0,0,0)" width="8" x="874" y="1354" />
+  <path d="M 1028 80 L 1028 2606" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="8 4" />
+  <rect fill="moccasin" height="187" stroke="rgb(0,0,0)" width="8" x="1024" y="1655" />
+  <path d="M 1178 80 L 1178 2606" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="8 4" />
+  <rect fill="moccasin" height="116" stroke="rgb(0,0,0)" width="8" x="1174" y="2238" />
+  <rect fill="rgb(255,255,255)" height="40" stroke="rgb(0,0,0)" width="128" x="64" y="40" />
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="30" x="128.0" y="67">Acter</text>
+  <rect fill="rgb(255,255,255)" height="40" stroke="rgb(0,0,0)" width="128" x="214" y="40" />
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="86" x="278.0" y="68">Hessian2Output</text>
+  <rect fill="rgb(255,255,255)" height="40" stroke="rgb(0,0,0)" width="128" x="364" y="40" />
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="125" x="428.5" y="68">AbstractHessianOutput</text>
+  <rect fill="rgb(255,255,255)" height="40" stroke="rgb(0,0,0)" width="128" x="514" y="40" />
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="92" x="578.0" y="68">SerializerFactory</text>
+  <rect fill="rgb(255,255,255)" height="40" stroke="rgb(0,0,0)" width="128" x="664" y="40" />
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="125" x="728.5" y="58">AbstractSerializerFacto</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="12" x="728.0" y="76">ry</text>
+  <rect fill="rgb(255,255,255)" height="40" stroke="rgb(0,0,0)" width="128" x="814" y="40" />
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="127" x="878.5" y="58">ContextSerializerFactor</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="8" x="878.0" y="76">y</text>
+  <rect fill="rgb(255,255,255)" height="40" stroke="rgb(0,0,0)" width="128" x="964" y="40" />
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="75" x="1028.5" y="68">JavaSerializer</text>
+  <rect fill="rgb(255,255,255)" height="40" stroke="rgb(0,0,0)" width="128" x="1114" y="40" />
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="52" x="1178.0" y="67">Serializer</text>
+  <path d="M 136 158 L 270 158" fill="none" stroke="rgb(0,0,0)" />
+  <polygon fill="rgb(0,0,0)" points="262,154 270,158 262,162" stroke="rgb(0,0,0)" />
+  <path d="M 286 233 L 420 233" fill="none" stroke="rgb(0,0,0)" />
+  <polygon fill="rgb(0,0,0)" points="412,229 420,233 412,237" stroke="rgb(0,0,0)" />
+  <polygon fill="rgb(255,182,193)" points="444,208 577,208 585,216 585,259 444,259 444,208" stroke="rgb(0,0,0)" />
+  <path d="M 577 208 L 577 216" fill="none" stroke="rgb(0,0,0)" />
+  <path d="M 577 216 L 585 216" fill="none" stroke="rgb(0,0,0)" />
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="3" x="453.5" y="223"> </text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="117" x="510.5" y="241">查找 SerializerFactory</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="8" x="456.0" y="257">_</text>
+  <path d="M 436 319 L 570 319" fill="none" stroke="rgb(0,0,0)" />
+  <polygon fill="rgb(0,0,0)" points="562,315 570,319 562,323" stroke="rgb(0,0,0)" />
+  <path d="M 436 379 L 570 379" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
+  <polygon fill="rgb(0,0,0)" points="444,375 436,379 444,383" stroke="rgb(0,0,0)" />
+  <path d="M 286 459 L 420 459" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
+  <polygon fill="rgb(0,0,0)" points="294,455 286,459 294,463" stroke="rgb(0,0,0)" />
+  <path d="M 286 564 L 570 564" fill="none" stroke="rgb(0,0,0)" />
+  <polygon fill="rgb(0,0,0)" points="562,560 570,564 562,568" stroke="rgb(0,0,0)" />
+  <polygon fill="rgb(255,182,193)" points="594,539 742,539 750,547 750,589 594,589 594,539" stroke="rgb(0,0,0)" />
+  <path d="M 742 539 L 742 547" fill="none" stroke="rgb(0,0,0)" />
+  <path d="M 742 547 L 750 547" fill="none" stroke="rgb(0,0,0)" />
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="3" x="603.5" y="554"> </text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="132" x="668.0" y="571">根据 Class 获得 Serializer</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="8" x="606.0" y="587">_</text>
+  <path d="M 590 667 L 653 667" fill="none" stroke="rgb(0,0,0)" />
+  <path d="M 653 667 L 653 683" fill="none" stroke="rgb(0,0,0)" />
+  <path d="M 653 683 L 590 683" fill="none" stroke="rgb(0,0,0)" />
+  <polygon fill="rgb(0,0,0)" points="598,679 590,683 598,687" stroke="rgb(0,0,0)" />
+  <path d="M 594 767 L 653 767" fill="none" stroke="rgb(0,0,0)" />
+  <path d="M 653 767 L 653 783" fill="none" stroke="rgb(0,0,0)" />
+  <path d="M 653 783 L 594 783" fill="none" stroke="rgb(0,0,0)" />
+  <polygon fill="rgb(0,0,0)" points="602,779 594,783 602,787" stroke="rgb(0,0,0)" />
+  <polygon fill="rgb(255,182,193)" points="669,733 890,733 898,741 898,801 669,801 669,733" stroke="rgb(0,0,0)" />
+  <path d="M 890 733 L 890 741" fill="none" stroke="rgb(0,0,0)" />
+  <path d="M 890 741 L 898 741" fill="none" stroke="rgb(0,0,0)" />
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="3" x="678.5" y="748"> </text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="34" x="694.0" y="765">扩展点</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="205" x="779.5" y="783">可以扫描出提前添加的 SerializerFactory</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="8" x="681.0" y="799">_</text>
+  <path d="M 594 861 L 720 861" fill="none" stroke="rgb(0,0,0)" />
+  <polygon fill="rgb(0,0,0)" points="712,857 720,861 712,865" stroke="rgb(0,0,0)" />
+  <path d="M 594 921 L 720 921" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
+  <polygon fill="rgb(0,0,0)" points="602,917 594,921 602,925" stroke="rgb(0,0,0)" />
+  <path d="M 594 1021 L 870 1021" fill="none" stroke="rgb(0,0,0)" />
+  <polygon fill="rgb(0,0,0)" points="862,1017 870,1021 862,1025" stroke="rgb(0,0,0)" />
+  <path d="M 594 1081 L 870 1081" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
+  <polygon fill="rgb(0,0,0)" points="602,1077 594,1081 602,1085" stroke="rgb(0,0,0)" />
+  <path d="M 594 1181 L 870 1181" fill="none" stroke="rgb(0,0,0)" />
+  <polygon fill="rgb(0,0,0)" points="862,1177 870,1181 862,1185" stroke="rgb(0,0,0)" />
+  <path d="M 594 1241 L 870 1241" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
+  <polygon fill="rgb(0,0,0)" points="602,1237 594,1241 602,1245" stroke="rgb(0,0,0)" />
+  <path d="M 594 1354 L 870 1354" fill="none" stroke="rgb(0,0,0)" />
+  <polygon fill="rgb(0,0,0)" points="862,1350 870,1354 862,1358" stroke="rgb(0,0,0)" />
+  <polygon fill="rgb(255,182,193)" points="894,1321 1086,1321 1094,1329 1094,1388 894,1388 894,1321" stroke="rgb(0,0,0)" />
+  <path d="M 1086 1321 L 1086 1329" fill="none" stroke="rgb(0,0,0)" />
+  <path d="M 1086 1329 L 1094 1329" fill="none" stroke="rgb(0,0,0)" />
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="3" x="903.5" y="1336"> </text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="34" x="919.0" y="1353">扩展点</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="176" x="990.0" y="1370">根据 Class 获得自定义的 Serializer</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="8" x="906.0" y="1386">_</text>
+  <path d="M 594 1428 L 870 1428" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
+  <polygon fill="rgb(0,0,0)" points="602,1424 594,1428 602,1432" stroke="rgb(0,0,0)" />
+  <path d="M 594 1655 L 1020 1655" fill="none" stroke="rgb(0,0,0)" />
+  <polygon fill="rgb(0,0,0)" points="1012,1651 1020,1655 1012,1659" stroke="rgb(0,0,0)" />
+  <polygon fill="rgb(255,182,193)" points="1044,1508 1238,1508 1246,1516 1246,1802 1044,1802 1044,1508" stroke="rgb(0,0,0)" />
+  <path d="M 1238 1508 L 1238 1516" fill="none" stroke="rgb(0,0,0)" />
+  <path d="M 1238 1516 L 1246 1516" fill="none" stroke="rgb(0,0,0)" />
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="3" x="1053.5" y="1523"> </text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="174" x="1139.0" y="1541">这里通过 new 或者 create() 方法，</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="178" x="1141.0" y="1558">创建了很多不同类型 Serializer 实现</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="77" x="1090.5" y="1576">类，列表如下：</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="111" x="1107.5" y="1591">01. RemoteSerializer</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="135" x="1119.5" y="1606">02. InetAddressSerializer</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="142" x="1123.0" y="1624">03. WriteReplaceSerializer</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="94" x="1099.0" y="1642">04. MapSerializer</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="125" x="1114.5" y="1657">05. CollectionSerializer</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="100" x="1102.0" y="1675">06. ArraySerializer</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="128" x="1116.0" y="1690">07. ThrowableSerializer</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="138" x="1121.0" y="1708">08. InputStreamSerializer</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="111" x="1107.5" y="1724">09. IteratorSerializer</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="119" x="1111.5" y="1739">10. CalendarSerializer</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="141" x="1122.5" y="1754">11. EnumerationSerializer</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="103" x="1103.5" y="1769">12. EnumSerializer</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="131" x="1117.5" y="1784">13. AnnotationSerializer</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="8" x="1056.0" y="1800">_</text>
+  <path d="M 594 1842 L 1020 1842" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
+  <polygon fill="rgb(0,0,0)" points="602,1838 594,1842 602,1846" stroke="rgb(0,0,0)" />
+  <path d="M 590 1922 L 653 1922" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
+  <path d="M 653 1922 L 653 1938" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
+  <path d="M 653 1938 L 590 1938" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
+  <polygon fill="rgb(0,0,0)" points="598,1934 590,1938 598,1942" stroke="rgb(0,0,0)" />
+  <path d="M 586 2002 L 653 2002" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
+  <path d="M 653 2002 L 653 2018" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
+  <path d="M 653 2018 L 586 2018" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
+  <polygon fill="rgb(0,0,0)" points="594,2014 586,2018 594,2022" stroke="rgb(0,0,0)" />
+  <path d="M 286 2082 L 570 2082" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
+  <polygon fill="rgb(0,0,0)" points="294,2078 286,2082 294,2086" stroke="rgb(0,0,0)" />
+  <path d="M 286 2238 L 1170 2238" fill="none" stroke="rgb(0,0,0)" />
+  <polygon fill="rgb(0,0,0)" points="1162,2234 1170,2238 1162,2242" stroke="rgb(0,0,0)" />
+  <polygon fill="rgb(255,182,193)" points="96,2162 254,2162 262,2170 262,2314 96,2314 96,2162" stroke="rgb(0,0,0)" />
+  <path d="M 254 2162 L 254 2170" fill="none" stroke="rgb(0,0,0)" />
+  <path d="M 254 2170 L 262 2170" fill="none" stroke="rgb(0,0,0)" />
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="3" x="105.5" y="2177"> </text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="66" x="137.0" y="2194">将对象序列化</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="3" x="105.5" y="2209"> </text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="110" x="159.0" y="2226">有一点特别说明一下：</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="132" x="170.0" y="2244">在针对“对象”序列化时，</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="121" x="164.5" y="2261">对于每个字段会递归调用</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="142" x="175.0" y="2279">writeObject(Object object)</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="110" x="159.0" y="2296">来完成对字段的序列化</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="8" x="108.0" y="2312">_</text>
+  <path d="M 286 2354 L 1170 2354" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
+  <polygon fill="rgb(0,0,0)" points="294,2350 286,2354 294,2358" stroke="rgb(0,0,0)" />
+  <path d="M 136 2434 L 270 2434" fill="none" stroke="rgb(0,0,0)" stroke-dasharray="4" />
+  <polygon fill="rgb(0,0,0)" points="144,2430 136,2434 144,2438" stroke="rgb(0,0,0)" />
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="64" x="172.0" y="138">writeObject</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="78" x="179.0" y="156">(Object object)</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="121" x="350.5" y="222">findSerializerFactory()</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="81" x="480.5" y="317">createDefault()</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="167" x="373.5" y="562">getObjectSerializer(Class&lt;?&gt; cl)</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="68" x="624.0" y="647">getSerializer</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="44" x="612.0" y="665">(Class c)</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="75" x="631.5" y="747">loadSerializer</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="48" x="618.0" y="765">(Class cl)</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="115" x="655.5" y="859">getSerializer(Class cl)</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="167" x="681.5" y="1019">getSerializer(String className)</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="143" x="669.5" y="1179">create(ClassLoader loader)</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="156" x="676.0" y="1352">getCustomSerializer(Class cl)</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="98" x="647.0" y="1653">create(Class&lt;?&gt; cl)</text>
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="278" x="429.0" y="2236">writeObject(Object obj, AbstractHessianOutput out)</text>
+  <path d="M 40 2532 L 539 2532" fill="none" stroke="rgb(0,0,0)" />
+  <path d="M 40 2536 L 539 2536" fill="none" stroke="rgb(0,0,0)" />
+  <path d="M 766 2532 L 1266 2532" fill="none" stroke="rgb(0,0,0)" />
+  <path d="M 766 2536 L 1266 2536" fill="none" stroke="rgb(0,0,0)" />
+  <rect fill="rgb(208,208,208)" height="24" stroke="rgb(0,0,0)" width="227" x="539" y="2522" />
+  <text fill="rgb(0,0,0)" font-family="sans-serif" font-size="11" font-style="normal" font-weight="normal" text-anchor="middle" textLength="207" x="652.5" y="2542">D瓜哥 · https://www.diguage.com · 出品</text>
+</svg>

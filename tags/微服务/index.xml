@@ -1,0 +1,1051 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>微服务 on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/</link><description>Recent content in 微服务 on "地瓜哥"博客网</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Tue, 17 Jun 2025 14:22:38 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/index.xml" rel="self" type="application/rss+xml"/><item><title>基于 Docker 搭建开发环境（三）：链路追踪</title><link>https://www.diguage.com/post/building-a-develop-environment-based-on-docker-3/</link><pubDate>Sun, 20 Oct 2024 16:50:11 +0800</pubDate><guid>https://www.diguage.com/post/building-a-develop-environment-based-on-docker-3/</guid><description>&lt;div class="paragraph">
+&lt;p>&lt;strong>基于 Docker 搭建开发环境系列&lt;/strong>:&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/building-a-develop-environment-based-on-docker-1/" target="_blank" rel="noopener">基于 Docker 搭建开发环境（一）：数据库+监控&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/building-a-develop-environment-based-on-docker-2/" target="_blank" rel="noopener">基于 Docker 搭建开发环境（二）：EFK 日志套件&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/building-a-develop-environment-based-on-docker-3/" target="_blank" rel="noopener">基于 Docker 搭建开发环境（三）：链路追踪&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/building-a-develop-environment-based-on-docker-1/" target="_blank" rel="noopener">基于 Docker 搭建开发环境（一）：数据库+监控&lt;/a> 和 &lt;a href="https://www.diguage.com/post/building-a-develop-environment-based-on-docker-2/" target="_blank" rel="noopener">基于 Docker 搭建开发环境（二）：EFK 日志套件&lt;/a> 两篇文章中，分别介绍了“数据库+监控”和“EFK 日志套件”。这篇文章给大家分享一下如何在本地搭建起一套简单的分布式链路追踪。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在 AI 的帮助下，如同砍瓜切菜一样，非常迅速地就完成了 &lt;a href="https://www.diguage.com/post/building-a-develop-environment-based-on-docker-2/" target="_blank" rel="noopener">基于 Docker 搭建开发环境（二）：EFK 日志套件&lt;/a> 的搭建。原以为搞这个也会分分钟的问题，结果应用的追踪数据一致无法正常发送到 Jaeger 中，各种改端口号都不行。后来，无意间看了 OpenTelemetry 的配置文档，增加了一个协议配置，全部流程竟然通了，非常神奇！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>站在更高的视角去看，链路追踪其实是可观测性的一部分，包括上篇文章的日志，也是可观测性的一部分。日志、追踪、度量，三者是相辅相成的。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/it/observability.png" alt="可观测性" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. 可观测性&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在 OpenTelemetry 出现之前，日志、追踪、度量是分离的，三者各各自为战。而 OpenTelemetry 的出现，则是试图将三者统一。目前 OpenTelemetry 是云原生架构中，最炙手可热的分布式链路追踪解决方案，它提供了一套相关标准，各个厂商可以在这套标准之上进行各种各样的组件开发，大家可以根据自己的需要，选择不同的组件，进行可插拔式的安装。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/it/opentelemetry-collection.webp" alt="OpenTelemetry 的野心" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 2. OpenTelemetry 的野心&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在这篇文章中，链路追踪的解决方案选择的是 OpenTelemetry + OpenTelemetry Collector + Jaeger。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_opentelemetry">OpenTelemetry&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>OpenTelemetry 并不需要在 Docker 中启动或者配置什么。在目前的架构中，Jaeger 是作为 OpenTelemetry 的一个实现来出现的。 OpenTelemetry 需要做的就是下载一个 Java Agent，执行 &lt;code>docker/config/opentelemetry/download-opentelemetry-agent.sh&lt;/code> 脚本即可下载最新版的 Java Agent。在业务应用启动时，增加如下 JVM 参数：&lt;/p>
+&lt;/div></description></item><item><title>Spring 应用合并之路</title><link>https://www.diguage.com/post/the-merging-spring-applications-road/</link><pubDate>Sat, 23 Dec 2023 20:38:47 +0800</pubDate><guid>https://www.diguage.com/post/the-merging-spring-applications-road/</guid><description>&lt;div class="paragraph">
+&lt;p>公司最近一年在推进降本增效，在用尽各种手段之后，发现应用太多，每个应用都做跨机房容灾部署，则最少需要 4 台机器（称为容器更合适）。那么，将相近应用做一个合并，减少维护项目，提高机器利用率就是一个可选方案。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>经过前后三次不同的折腾，最后探索出来一个可行方案。记录一下，分享出来，希望对有相关需求的研发童鞋有所帮助。下面按照四种可能的方案，分别做介绍。另外，为了方便做演示，专门整了两个演示项目：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;a href="https://github.com/diguage/merge-demo-boot" target="_blank" rel="noopener">diguage/merge-demo-boot&lt;/a> — 合并项目，下面简称为 &lt;code>boot&lt;/code>。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://github.com/diguage/merge-demo-web" target="_blank" rel="noopener">diguage/merge-demo-web&lt;/a> — 被合并项目，下面简称为 &lt;code>web&lt;/code>。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_jar_包引用">Jar 包引用&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>这个方式，可能是给人印象最容易的方式。仔细思考一下，从维护性的角度来看，这个方式反而是最麻烦的方式，理由如下：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;code>web&lt;/code> 项目每次更新，都需要重新打包发布新版； &lt;code>boot&lt;/code> 项目也需要跟着更新发布。拉一次屎，脱两次裤子。属实麻烦。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>还需要考虑 &lt;code>web&lt;/code> 项目的加载问题，类似下面要描述的，是否共用容器：&lt;/p>
+&lt;div class="olist loweralpha">
+&lt;ol class="loweralpha" type="a">
+&lt;li>
+&lt;p>共用容器 — 这是最容器想到的方式。但是这种方式，需要解决 Bean 冲突的问题。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>不共用容器 — 这种方式需要处理 &lt;code>web&lt;/code> 容器如何加载的问题。默认应该是无法识别。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>基于这些考虑，这种方式直接被抛弃了。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_仓库合并公用一套容器">仓库合并，公用一套容器&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>这是第一次尝试使用的方案。也是遇到问题最多的方案。&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>将两个仓库做合并。&lt;/p>
+&lt;div class="olist loweralpha">
+&lt;ol class="loweralpha" type="a">
+&lt;li>
+&lt;p>将 &lt;code>web&lt;/code> 仓库的地址配置到 &lt;code>boot&lt;/code> 项目里： &lt;code>git remote add web &lt;a href="mailto:git@github.com">git@github.com&lt;/a>:diguage/merge-demo-web.git&lt;/code>；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>在 &lt;code>boot&lt;/code> 项目里，切出来一个分支： &lt;code>git switch -c web&lt;/code>；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>将 &lt;code>web&lt;/code> 分支的提交清空： &lt;code>git update-ref -d HEAD&lt;/code>，然后做一次提交；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>将 &lt;code>web&lt;/code> 项目的代码克隆到 &lt;code>web&lt;/code> 分支上： &lt;code>git pull --rebase --allow-unrelated-histories web master&lt;/code>；注意，这里需要加 &lt;code>--allow-unrelated-histories&lt;/code> 参数，以允许不相干的仓库进行合并。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>从 &lt;code>boot&lt;/code> 项目的 &lt;code>master&lt;/code> 分支上，切出来一个合并分支： &lt;code>git switch -c merge&lt;/code>；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>将 &lt;code>web&lt;/code> 项目向 &lt;code>boot&lt;/code> 项目合并： &lt;code>git merge --allow-unrelated-histories web&lt;/code>；注意，这里需要加 &lt;code>--allow-unrelated-histories&lt;/code> 参数，以允许不相干的仓库进行合并。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>处理代码冲突，完成合并即可。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div></description></item><item><title>关于接口可维护性的一些建议</title><link>https://www.diguage.com/post/tips-for-interface-maintainability/</link><pubDate>Fri, 28 Apr 2023 17:16:24 +0800</pubDate><guid>https://www.diguage.com/post/tips-for-interface-maintainability/</guid><description>&lt;div class="paragraph">
+&lt;p>在做新需求开发或者相关系统的维护更新时，尤其是涉及到不同系统的接口调用时，在可维护性方面，总感觉有很多地方差强人意。一些零星思考，抛砖引玉，希望引发更多的思考和讨论。总结了大概有如下几条建议：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>在接口注释中加入接口文档链接&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>将调用接口处写上被调用接口文档链接&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>将接口源代码发布到私服仓库&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>对于状态值常量，优先在接口参数类或者返回值类中定义&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>如果使用 &lt;code>Map&lt;/code> 对象作为传输载体，要提供 Key 值定义常量&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>针对 &lt;code>Map&lt;/code> 返回值，可以考虑使用将 &lt;code>Map&lt;/code> 转化成对象&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>尽可能简化接口依赖&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>只传递必要字段，尽量避免大而全的接口&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>将接口的参数和返回值原始数据打印到日志中&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>将 RPC 接口的类名及方法打印到日志中&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>核心思想：以人为本，就近原则，触手可及&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>下面，D瓜哥对每一条建议做一个详细说明。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_在接口注释中加入接口文档链接">1. 在接口注释中加入接口文档链接&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>在做接口开发时，无论是对自有接口的升级改造，还是针对外部接口的从头接入，都涉及到接口文档。不同之处是，前者的工作重点是书写或者更新接口文档；而后者是根据接口文档开发合适的接入代码。但是，经常遇到的一个麻烦是，找不到接口文档。在组内需要找老同事询问；如果是跨部门，还需要两层甚至三层的进行转接，非常麻烦。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥认为，在这种情况下，为了方便大家维护，最好的办法就是将接口文档链接直接放在代码注释中，这样后续维护的人员，直接就可以点击链接直达接口文档，简单方便高效。如果是新建的接口，就可以先创建一个空文档，把链接放在注释中，后续再书写文档内容。如果是维护已有接口，可以在维护时，将缺失的链接加入到注释中，自己方便，也方便其他人进行后续的维护更新。这样，在循序渐进的过程中，逐步就可以把文档链接补充到代码中，方便维护代码，也同步更新文档。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_将调用接口处写上被调用接口文档链接">2. 将调用接口处写上被调用接口文档链接&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>在调用其他系统的接口时，没有接口文档，几乎寸步难行。在第一次接入接口时，绝大多数情况下，都是参考着接口文档做接入工作。但是，目前的情况时，接入时参考文档，参考完就随手把文档给“扔了”。后续如果还需要做进一步升级维护，还需要到处找接口文档；另外，交互的系统难免有一些 Bug，在和其他系统维护人员对接处理 Bug 时，只有接口没有文档，对方可能也需要去找文档链接。无形中，很多时间都浪费在了找文档的过程中。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥最近尝试了一个实践，就是在接口调用的地方，把接口文档链接当做注释加入到代码中。这样，无论是后续维护升级，还是沟通协调处理问题，都非常方便。别人问接口是什么，连接口+文档都可以一把复制就搞定。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>经过最近一段时间的实践情况来看，这个处理非常方便，是一个非常值得推广的实践。再插一句，也可以像一条建议一样，可以在维护代码时，不断把已接入的接口文档加入到调用接口的地方，循序渐进，方便后续人维护升级。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_将接口源代码发布到私服仓库">3. 将接口源代码发布到私服仓库&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>接口文档链接在注释中，在构建结果中就不复存在了。所以，为了方便接口使用方可以在接口中查询到对应的接口文档，就需要把源码也发布到私服仓库中。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这里只说明一下 Java 的相关处理办法。如果使用 Maven 作为构建工具的话，默认是不会将源代码发布到私服仓库中的。关于如何将源代码发布到，在 &lt;a href="https://www.diguage.com/post/upgrade-maven-plugins/#src-to-repo" target="_blank" rel="noopener">升级 Maven 插件：将源码发布到私服仓库&lt;/a> 中已经做过相关介绍，这里就不再赘述。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>除了将源码发布到私服仓库，另外，还建议编译构建时，保持方法的原始参数命名。这个也可以通过配置 Maven 插件来完成，具体配置见： &lt;a href="https://www.diguage.com/post/upgrade-maven-plugins/#compile-with-parameters" target="_blank" rel="noopener">升级 Maven 插件：字节码文件包含原始参数名称&lt;/a>。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="constant-definition">4. 对于状态值常量，优先在接口参数类或者返回值类中定义&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>在做接口开发时，很多数据都有一个状态值，比如订单状态，再比如接口状态等等。目前的一个情况时，这些状态值大部分书写在文档中，在接入接口时，需要接入方自定义这些状态值。这就有些繁琐了，而且状态定义也不明确，甚至有可能遗漏一些重要的状态值。有些懒省事，直接在代码中硬编码一个魔法值，后续维护的跟还需要根据上下文反推这个值的含义，非常不利于维护。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥个人觉得，有两个处理办法：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>如果状态值不是很多，优先在接口参数类或者返回值类中定义。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>如果状态值很多，可以考虑单独抽取成一个常量类或者枚举类。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这样使用的时候，触手可及。不需要到处去找。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="key-for-map">5. 如果使用 &lt;code>Map&lt;/code> 对象作为传输载体，要提供 Key 值定义常量&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>有些系统可能考虑方便增加字段，选择使用 &lt;code>Map&lt;/code> 作为数据载体。自己开发的时候很爽，但是给接口接入却非常不友好。接入方从 &lt;code>Map&lt;/code> 中获取数据时，要么自己定义 Key 值；要么直接使用魔法值硬编码在代码中。使用前者方案，就需要在各个接入方都需要自定义一套；使用后者，初期是省事了，后来维护的人员就懵逼了。这都无形中增加了很多维护成本。&lt;/p>
+&lt;/div></description></item><item><title>Avro、ProtoBuf、Thrift 的模式演进之法【翻译】</title><link>https://www.diguage.com/post/schema-evolution-in-avro-protobuf-thrift/</link><pubDate>Sat, 27 Aug 2022 08:30:43 +0800</pubDate><guid>https://www.diguage.com/post/schema-evolution-in-avro-protobuf-thrift/</guid><description>&lt;div class="sidebarblock">
+&lt;div class="content">
+&lt;div class="paragraph">
+&lt;p>前面系统研究了 Hessian 序列化协议。并以此为契机，顺带实例对比了 Hessian、MessagePack 和 JSON 的序列化。早在 2012 年，Martin Kleppmann 就写了一篇文章 &lt;a href="https://martin.kleppmann.com/2012/12/05/schema-evolution-in-avro-protocol-buffers-thrift.html" target="_blank" rel="noopener">《Schema evolution in Avro, Protocol Buffers and Thrift》&lt;/a>，也是基于实例，对比了 Avro、ProtoBuf、Thrift 的差别。现在翻译出来，方便做系列研究。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>整个“序列化系列”目录如下：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-serialization-protocol/" target="_blank" rel="noopener">Hessian 2.0 序列化协议（中文版）&lt;/a> — Hessian 序列化协议的中文翻译版。根据后面的“协议解释与实战”系列文章，增加了协议内容错误提示。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/" target="_blank" rel="noopener">Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数&lt;/a> — 介绍布尔型数据、日期类型、浮点类型数据和整数类型数据等四种类型的数据的处理。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-2/" target="_blank" rel="noopener">Hessian 协议解释与实战（二）：长整型、二进制数据与 Null&lt;/a> — 介绍长整数类型数据、二进制数据和 &lt;code>null&lt;/code> 等三种类型的数据的处理。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-3/" target="_blank" rel="noopener">Hessian 协议解释与实战（三）：字符串&lt;/a> — 专门介绍了关于字符串的处理。由于字符串需要铺垫的基础知识比较多，处理细节也有繁琐，所以单独成篇来介绍。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-source-analysis-for-java/" target="_blank" rel="noopener">Hessian 源码分析（Java）&lt;/a> — 开始第四篇分析之前，先来介绍一下 Hessian 的源码实现。方便后续展开说明。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-4/" target="_blank" rel="noopener">Hessian 协议解释与实战（四）：数组与集合&lt;/a> — 铺垫了一些关于实例对象的处理，重点介绍关于数组和集合的相关处理。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-5/" target="_blank" rel="noopener">Hessian 协议解释与实战（五）：对象与映射&lt;/a> — 重点介绍关于对象与映射的相关处理。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-vs-msgpack-vs-json/" target="_blank" rel="noopener">Hessian、Msgpack 和 JSON 实例对比&lt;/a> — 用实例对比 JSON、Hessian 和 MessagePack 的区别。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/schema-evolution-in-avro-protobuf-thrift" target="_blank" rel="noopener">Avro、ProtoBuf、Thrift 的模式演进之路&lt;/a> — 翻译的 Martin Kleppmann 的文章，重点对比了 Avro、ProtoBuf、Thrift 的序列化处理思路。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div></description></item><item><title>Hessian、Msgpack 和 JSON 实例对比</title><link>https://www.diguage.com/post/hessian-vs-msgpack-vs-json/</link><pubDate>Fri, 05 Aug 2022 11:28:03 +0800</pubDate><guid>https://www.diguage.com/post/hessian-vs-msgpack-vs-json/</guid><description>&lt;div class="paragraph">
+&lt;p>前段时间，翻译了 Hessian 2.0 的序列化协议，发布在了 &lt;a href="https://www.diguage.com/post/hessian-serialization-protocol/" target="_blank" rel="noopener">Hessian 2.0 序列化协议（中文版）&lt;/a>。但是，其中有很多言语不详之处。所以，接下来会用几篇文章来详细解释并实践一下 Hessian 序列化协议，以求做到知其然知其所以然。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>目录如下：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-serialization-protocol/" target="_blank" rel="noopener">Hessian 2.0 序列化协议（中文版）&lt;/a> — Hessian 序列化协议的中文翻译版。根据后面的“协议解释与实战”系列文章，增加了协议内容错误提示。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/" target="_blank" rel="noopener">Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数&lt;/a> — 介绍布尔型数据、日期类型、浮点类型数据和整数类型数据等四种类型的数据的处理。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-2/" target="_blank" rel="noopener">Hessian 协议解释与实战（二）：长整型、二进制数据与 Null&lt;/a> — 介绍长整数类型数据、二进制数据和 &lt;code>null&lt;/code> 等三种类型的数据的处理。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-3/" target="_blank" rel="noopener">Hessian 协议解释与实战（三）：字符串&lt;/a> — 专门介绍了关于字符串的处理。由于字符串需要铺垫的基础知识比较多，处理细节也有繁琐，所以单独成篇来介绍。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-source-analysis-for-java/" target="_blank" rel="noopener">Hessian 源码分析（Java）&lt;/a> — 开始第四篇分析之前，先来介绍一下 Hessian 的源码实现。方便后续展开说明。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-4/" target="_blank" rel="noopener">Hessian 协议解释与实战（四）：数组与集合&lt;/a> — 铺垫了一些关于实例对象的处理，重点介绍关于数组和集合的相关处理。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-5/" target="_blank" rel="noopener">Hessian 协议解释与实战（五）：对象与映射&lt;/a> — 重点介绍关于对象与映射的相关处理。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-vs-msgpack-vs-json/" target="_blank" rel="noopener">Hessian、Msgpack 和 JSON 实例对比&lt;/a> — 用实例对比 JSON、Hessian 和 MessagePack 的区别。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/schema-evolution-in-avro-protobuf-thrift" target="_blank" rel="noopener">Avro、ProtoBuf、Thrift 的模式演进之路&lt;/a> — 翻译的 Martin Kleppmann 的文章，重点对比了 Avro、ProtoBuf、Thrift 的序列化处理思路。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;hr/>
+&lt;div class="paragraph">
+&lt;p>本文用实际来对比一下 JSON、Hessian 和 MessagePack 的区别。&lt;/p>
+&lt;/div></description></item><item><title>Hessian 协议解释与实战（五）：对象与映射</title><link>https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-5/</link><pubDate>Tue, 31 May 2022 16:02:13 +0800</pubDate><guid>https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-5/</guid><description>&lt;div class="paragraph">
+&lt;p>前段时间，翻译了 Hessian 2.0 的序列化协议，发布在了 &lt;a href="https://www.diguage.com/post/hessian-serialization-protocol/" target="_blank" rel="noopener">Hessian 2.0 序列化协议（中文版）&lt;/a>。但是，其中有很多言语不详之处。所以，接下来会用几篇文章来详细解释并实践一下 Hessian 序列化协议，以求做到知其然知其所以然。目录如下：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-serialization-protocol/" target="_blank" rel="noopener">Hessian 2.0 序列化协议（中文版）&lt;/a> — Hessian 序列化协议的中文翻译版。根据后面的“协议解释与实战”系列文章，增加了协议内容错误提示。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/" target="_blank" rel="noopener">Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数&lt;/a> — 介绍布尔型数据、日期类型、浮点类型数据和整数类型数据等四种类型的数据的处理。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-2/" target="_blank" rel="noopener">Hessian 协议解释与实战（二）：长整型、二进制数据与 Null&lt;/a> — 介绍长整数类型数据、二进制数据和 &lt;code>null&lt;/code> 等三种类型的数据的处理。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-3/" target="_blank" rel="noopener">Hessian 协议解释与实战（三）：字符串&lt;/a> — 专门介绍了关于字符串的处理。由于字符串需要铺垫的基础知识比较多，处理细节也有繁琐，所以单独成篇来介绍。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-source-analysis-for-java/" target="_blank" rel="noopener">Hessian 源码分析（Java）&lt;/a> — 开始第四篇分析之前，先来介绍一下 Hessian 的源码实现。方便后续展开说明。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-4/" target="_blank" rel="noopener">Hessian 协议解释与实战（四）：数组与集合&lt;/a> — 铺垫了一些关于实例对象的处理，重点介绍关于数组和集合的相关处理。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-5/" target="_blank" rel="noopener">Hessian 协议解释与实战（五）：对象与映射&lt;/a> — 重点介绍关于对象与映射的相关处理。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-vs-msgpack-vs-json/" target="_blank" rel="noopener">Hessian、Msgpack 和 JSON 实例对比&lt;/a> — 用实例对比 JSON、Hessian 和 MessagePack 的区别。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/schema-evolution-in-avro-protobuf-thrift" target="_blank" rel="noopener">Avro、ProtoBuf、Thrift 的模式演进之路&lt;/a> — 翻译的 Martin Kleppmann 的文章，重点对比了 Avro、ProtoBuf、Thrift 的序列化处理思路。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;hr/>
+&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-4/" target="_blank" rel="noopener">Hessian 协议解释与实战（四）：数组与集合&lt;/a> 中研究了数组和集合的处理方式。接下来介绍对象和映射的处理。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_基础工具方法">基础工具方法&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>基础工具方法就不再赘述，请直接参考 &lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/#helper-methods" target="_blank" rel="noopener">Hessian 协议解释与实战（一）：基础工具方法&lt;/a> 中提到的几个方法。&lt;/p>
+&lt;/div></description></item><item><title>Hessian 协议解释与实战（四）：数组与集合</title><link>https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-4/</link><pubDate>Thu, 26 May 2022 18:01:43 +0800</pubDate><guid>https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-4/</guid><description>&lt;div class="paragraph">
+&lt;p>前段时间，翻译了 Hessian 2.0 的序列化协议，发布在了 &lt;a href="https://www.diguage.com/post/hessian-serialization-protocol/" target="_blank" rel="noopener">Hessian 2.0 序列化协议（中文版）&lt;/a>。但是，其中有很多言语不详之处。所以，接下来会用几篇文章来详细解释并实践一下 Hessian 序列化协议，以求做到知其然知其所以然。目录如下：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-serialization-protocol/" target="_blank" rel="noopener">Hessian 2.0 序列化协议（中文版）&lt;/a> — Hessian 序列化协议的中文翻译版。根据后面的“协议解释与实战”系列文章，增加了协议内容错误提示。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/" target="_blank" rel="noopener">Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数&lt;/a> — 介绍布尔型数据、日期类型、浮点类型数据和整数类型数据等四种类型的数据的处理。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-2/" target="_blank" rel="noopener">Hessian 协议解释与实战（二）：长整型、二进制数据与 Null&lt;/a> — 介绍长整数类型数据、二进制数据和 &lt;code>null&lt;/code> 等三种类型的数据的处理。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-3/" target="_blank" rel="noopener">Hessian 协议解释与实战（三）：字符串&lt;/a> — 专门介绍了关于字符串的处理。由于字符串需要铺垫的基础知识比较多，处理细节也有繁琐，所以单独成篇来介绍。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-source-analysis-for-java/" target="_blank" rel="noopener">Hessian 源码分析（Java）&lt;/a> — 开始第四篇分析之前，先来介绍一下 Hessian 的源码实现。方便后续展开说明。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-4/" target="_blank" rel="noopener">Hessian 协议解释与实战（四）：数组与集合&lt;/a> — 铺垫了一些关于实例对象的处理，重点介绍关于数组和集合的相关处理。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-5/" target="_blank" rel="noopener">Hessian 协议解释与实战（五）：对象与映射&lt;/a> — 重点介绍关于对象与映射的相关处理。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-vs-msgpack-vs-json/" target="_blank" rel="noopener">Hessian、Msgpack 和 JSON 实例对比&lt;/a> — 用实例对比 JSON、Hessian 和 MessagePack 的区别。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/schema-evolution-in-avro-protobuf-thrift" target="_blank" rel="noopener">Avro、ProtoBuf、Thrift 的模式演进之路&lt;/a> — 翻译的 Martin Kleppmann 的文章，重点对比了 Avro、ProtoBuf、Thrift 的序列化处理思路。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;hr/>
+&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/hessian-source-analysis-for-java/" target="_blank" rel="noopener">Hessian 源码分析（Java）&lt;/a> 对 Hessian 的 Java 实现做了一个概要的分析，对处理流程以及整体架构做了一个简单的分析。接下来，回到主题，继续来解释 Hessian 序列化协议。这篇文章，我们来重点分析一下数组与集合相关的操作。&lt;/p>
+&lt;/div></description></item><item><title>Hessian 源码分析（Java）</title><link>https://www.diguage.com/post/hessian-source-analysis-for-java/</link><pubDate>Sat, 21 May 2022 09:39:44 +0800</pubDate><guid>https://www.diguage.com/post/hessian-source-analysis-for-java/</guid><description>&lt;div class="paragraph">
+&lt;p>前面通过几篇文章，解释并实践了一下 Hessian 的序列化协议。文章目录如下：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-serialization-protocol/" target="_blank" rel="noopener">Hessian 2.0 序列化协议（中文版）&lt;/a> — Hessian 序列化协议的中文翻译版。根据后面的“协议解释与实战”系列文章，增加了协议内容错误提示。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/" target="_blank" rel="noopener">Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数&lt;/a> — 介绍布尔型数据、日期类型、浮点类型数据和整数类型数据等四种类型的数据的处理。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-2/" target="_blank" rel="noopener">Hessian 协议解释与实战（二）：长整型、二进制数据与 Null&lt;/a> — 介绍长整数类型数据、二进制数据和 &lt;code>null&lt;/code> 等三种类型的数据的处理。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-3/" target="_blank" rel="noopener">Hessian 协议解释与实战（三）：字符串&lt;/a> — 专门介绍了关于字符串的处理。由于字符串需要铺垫的基础知识比较多，处理细节也有繁琐，所以单独成篇来介绍。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-source-analysis-for-java/" target="_blank" rel="noopener">Hessian 源码分析（Java）&lt;/a> — 开始第四篇分析之前，先来介绍一下 Hessian 的源码实现。方便后续展开说明。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-4/" target="_blank" rel="noopener">Hessian 协议解释与实战（四）：数组与集合&lt;/a> — 铺垫了一些关于实例对象的处理，重点介绍关于数组和集合的相关处理。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-5/" target="_blank" rel="noopener">Hessian 协议解释与实战（五）：对象与映射&lt;/a> — 重点介绍关于对象与映射的相关处理。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-vs-msgpack-vs-json/" target="_blank" rel="noopener">Hessian、Msgpack 和 JSON 实例对比&lt;/a> — 用实例对比 JSON、Hessian 和 MessagePack 的区别。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/schema-evolution-in-avro-protobuf-thrift" target="_blank" rel="noopener">Avro、ProtoBuf、Thrift 的模式演进之路&lt;/a> — 翻译的 Martin Kleppmann 的文章，重点对比了 Avro、ProtoBuf、Thrift 的序列化处理思路。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;hr/>
+&lt;div class="paragraph">
+&lt;p>该系列第四篇文章准备详细介绍一下 Hessian 对对象、链表以及 &lt;code>Map&lt;/code> 等处理。但是，越调试代码，越发觉得应该先对 Hessian 的实现做一个源码分析。于是，就有了本文。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这里有几点需要声明一下：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>在上面“解释与实战”系列文章中提到的代码就不再重复说明。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>通过“解释与实战”系列文章，大家应该可以领略到，处理序列化有大量的细节。但是，本文并不打算涉及。本文重点是介绍 Hessian 的 Java 实现的架构蓝图。相当于给指明一条路，沿着这条路，大家就可以探索 Hessian 的各种细节。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>本文的介绍，全部基于 Hessian 4.0.60 的源码。由于没有找到 Hessian 的仓库，D瓜哥从 Hessian 的网站下，下载了源码包，解压后发布在了 GitHub 上： &lt;a href="https://github.com/diguage/hessian" target="_blank" rel="noopener">Hessian — The source code of Hessian Library.&lt;/a>。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div></description></item><item><title>Hessian 协议解释与实战（三）：字符串</title><link>https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-3/</link><pubDate>Wed, 04 May 2022 16:09:05 +0000</pubDate><guid>https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-3/</guid><description>&lt;div class="paragraph">
+&lt;p>前段时间，翻译了 Hessian 2.0 的序列化协议，发布在了 &lt;a href="https://www.diguage.com/post/hessian-serialization-protocol/" target="_blank" rel="noopener">Hessian 2.0 序列化协议（中文版）&lt;/a>。但是，其中有很多言语不详之处。所以，接下来会用几篇文章来详细解释并实践一下 Hessian 序列化协议，以求做到知其然知其所以然。目录如下：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-serialization-protocol/" target="_blank" rel="noopener">Hessian 2.0 序列化协议（中文版）&lt;/a> — Hessian 序列化协议的中文翻译版。根据后面的“协议解释与实战”系列文章，增加了协议内容错误提示。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/" target="_blank" rel="noopener">Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数&lt;/a> — 介绍布尔型数据、日期类型、浮点类型数据和整数类型数据等四种类型的数据的处理。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-2/" target="_blank" rel="noopener">Hessian 协议解释与实战（二）：长整型、二进制数据与 Null&lt;/a> — 介绍长整数类型数据、二进制数据和 &lt;code>null&lt;/code> 等三种类型的数据的处理。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-3/" target="_blank" rel="noopener">Hessian 协议解释与实战（三）：字符串&lt;/a> — 专门介绍了关于字符串的处理。由于字符串需要铺垫的基础知识比较多，处理细节也有繁琐，所以单独成篇来介绍。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-source-analysis-for-java/" target="_blank" rel="noopener">Hessian 源码分析（Java）&lt;/a> — 开始第四篇分析之前，先来介绍一下 Hessian 的源码实现。方便后续展开说明。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-4/" target="_blank" rel="noopener">Hessian 协议解释与实战（四）：数组与集合&lt;/a> — 铺垫了一些关于实例对象的处理，重点介绍关于数组和集合的相关处理。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-5/" target="_blank" rel="noopener">Hessian 协议解释与实战（五）：对象与映射&lt;/a> — 重点介绍关于对象与映射的相关处理。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-vs-msgpack-vs-json/" target="_blank" rel="noopener">Hessian、Msgpack 和 JSON 实例对比&lt;/a> — 用实例对比 JSON、Hessian 和 MessagePack 的区别。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/schema-evolution-in-avro-protobuf-thrift" target="_blank" rel="noopener">Avro、ProtoBuf、Thrift 的模式演进之路&lt;/a> — 翻译的 Martin Kleppmann 的文章，重点对比了 Avro、ProtoBuf、Thrift 的序列化处理思路。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;hr/>
+&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-2/" target="_blank" rel="noopener">Hessian 协议解释与实战（二）：长整型、二进制数据与 Null&lt;/a> 中研究了长整型、二进制数据与 &lt;code>null&lt;/code> 等三种数据类型的处理方式。接下来，我们再来介绍字符串的处理情况。&lt;/p>
+&lt;/div></description></item><item><title>Hessian 协议解释与实战（二）：长整型、二进制数据与 Null</title><link>https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-2/</link><pubDate>Tue, 03 May 2022 16:09:15 +0800</pubDate><guid>https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-2/</guid><description>&lt;div class="paragraph">
+&lt;p>前段时间，翻译了 Hessian 2.0 的序列化协议，发布在了 &lt;a href="https://www.diguage.com/post/hessian-serialization-protocol/" target="_blank" rel="noopener">Hessian 2.0 序列化协议（中文版）&lt;/a>。但是，其中有很多言语不详之处。所以，接下来会用几篇文章来详细解释并实践一下 Hessian 序列化协议，以求做到知其然知其所以然。目录如下：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-serialization-protocol/" target="_blank" rel="noopener">Hessian 2.0 序列化协议（中文版）&lt;/a> — Hessian 序列化协议的中文翻译版。根据后面的“协议解释与实战”系列文章，增加了协议内容错误提示。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/" target="_blank" rel="noopener">Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数&lt;/a> — 介绍布尔型数据、日期类型、浮点类型数据和整数类型数据等四种类型的数据的处理。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-2/" target="_blank" rel="noopener">Hessian 协议解释与实战（二）：长整型、二进制数据与 Null&lt;/a> — 介绍长整数类型数据、二进制数据和 &lt;code>null&lt;/code> 等三种类型的数据的处理。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-3/" target="_blank" rel="noopener">Hessian 协议解释与实战（三）：字符串&lt;/a> — 专门介绍了关于字符串的处理。由于字符串需要铺垫的基础知识比较多，处理细节也有繁琐，所以单独成篇来介绍。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-source-analysis-for-java/" target="_blank" rel="noopener">Hessian 源码分析（Java）&lt;/a> — 开始第四篇分析之前，先来介绍一下 Hessian 的源码实现。方便后续展开说明。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-4/" target="_blank" rel="noopener">Hessian 协议解释与实战（四）：数组与集合&lt;/a> — 铺垫了一些关于实例对象的处理，重点介绍关于数组和集合的相关处理。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-5/" target="_blank" rel="noopener">Hessian 协议解释与实战（五）：对象与映射&lt;/a> — 重点介绍关于对象与映射的相关处理。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-vs-msgpack-vs-json/" target="_blank" rel="noopener">Hessian、Msgpack 和 JSON 实例对比&lt;/a> — 用实例对比 JSON、Hessian 和 MessagePack 的区别。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/schema-evolution-in-avro-protobuf-thrift" target="_blank" rel="noopener">Avro、ProtoBuf、Thrift 的模式演进之路&lt;/a> — 翻译的 Martin Kleppmann 的文章，重点对比了 Avro、ProtoBuf、Thrift 的序列化处理思路。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;hr/>
+&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/" target="_blank" rel="noopener">Hessian 协议解释与实战（一）&lt;/a> 中研究了布尔型数据、日期类型、浮点类型数据、整数类型数据等四种数据类型的处理方式。接下来，我们再来介绍长整数类型数据、二进制数据和 &lt;code>null&lt;/code> 的处理情况。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_基础工具方法">基础工具方法&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>基础工具方法就不再赘述，请直接参考 &lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/#helper-methods" target="_blank" rel="noopener">Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数：基础工具方法&lt;/a> 中提到的几个方法。&lt;/p>
+&lt;/div></description></item><item><title>Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数</title><link>https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/</link><pubDate>Mon, 02 May 2022 17:22:01 +0800</pubDate><guid>https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/</guid><description>&lt;div class="paragraph">
+&lt;p>前段时间，翻译了 Hessian 2.0 的序列化协议，发布在了 &lt;a href="https://www.diguage.com/post/hessian-serialization-protocol/" target="_blank" rel="noopener">Hessian 2.0 序列化协议（中文版）&lt;/a>。但是，其中有很多言语不详之处。所以，接下来会用几篇文章来详细解释并实践一下 Hessian 序列化协议，以求做到知其然知其所以然。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>目录如下：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-serialization-protocol/" target="_blank" rel="noopener">Hessian 2.0 序列化协议（中文版）&lt;/a> — Hessian 序列化协议的中文翻译版。根据后面的“协议解释与实战”系列文章，增加了协议内容错误提示。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/" target="_blank" rel="noopener">Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数&lt;/a> — 介绍布尔型数据、日期类型、浮点类型数据和整数类型数据等四种类型的数据的处理。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-2/" target="_blank" rel="noopener">Hessian 协议解释与实战（二）：长整型、二进制数据与 Null&lt;/a> — 介绍长整数类型数据、二进制数据和 &lt;code>null&lt;/code> 等三种类型的数据的处理。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-3/" target="_blank" rel="noopener">Hessian 协议解释与实战（三）：字符串&lt;/a> — 专门介绍了关于字符串的处理。由于字符串需要铺垫的基础知识比较多，处理细节也有繁琐，所以单独成篇来介绍。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-source-analysis-for-java/" target="_blank" rel="noopener">Hessian 源码分析（Java）&lt;/a> — 开始第四篇分析之前，先来介绍一下 Hessian 的源码实现。方便后续展开说明。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-4/" target="_blank" rel="noopener">Hessian 协议解释与实战（四）：数组与集合&lt;/a> — 铺垫了一些关于实例对象的处理，重点介绍关于数组和集合的相关处理。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-5/" target="_blank" rel="noopener">Hessian 协议解释与实战（五）：对象与映射&lt;/a> — 重点介绍关于对象与映射的相关处理。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-vs-msgpack-vs-json/" target="_blank" rel="noopener">Hessian、Msgpack 和 JSON 实例对比&lt;/a> — 用实例对比 JSON、Hessian 和 MessagePack 的区别。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/schema-evolution-in-avro-protobuf-thrift" target="_blank" rel="noopener">Avro、ProtoBuf、Thrift 的模式演进之路&lt;/a> — 翻译的 Martin Kleppmann 的文章，重点对比了 Avro、ProtoBuf、Thrift 的序列化处理思路。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;hr/>
+&lt;div class="sect1">
+&lt;h2 id="helper-methods">基础工具方法&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>Hessian 序列化之后的数据，都是字节数组，为了方便查看字节数组的二进制形式和十六进制形式，在正式开始之前，先介绍一下期间用到的辅助工具方法。闲言少叙，直接上代码：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="java">&lt;span class="cm">/**
+ * 创建 Hessian2Output 对象，以便用于序列化
+ *
+ * @author D瓜哥 · &lt;a href="https://www.diguage.com/" target="_blank">https://www.diguage.com/&lt;/a>
+ */&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="nc">Hessian2Output&lt;/span> &lt;span class="nf">getHessian2Output&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">OutputStream&lt;/span> &lt;span class="n">stream&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="nc">SerializerFactory&lt;/span> &lt;span class="n">serializerFactory&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="k">new&lt;/span> &lt;span class="nc">SerializerFactory&lt;/span>&lt;span class="o">();&lt;/span>
+ &lt;span class="n">serializerFactory&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">setAllowNonSerializable&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="kc">true&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="nc">Hessian2Output&lt;/span> &lt;span class="n">result&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="k">new&lt;/span> &lt;span class="nc">Hessian2Output&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">stream&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="n">result&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">setSerializerFactory&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">serializerFactory&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="k">return&lt;/span> &lt;span class="n">result&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="o">}&lt;/span>
+
+&lt;span class="cm">/**
+ * 打印字节数组
+ *
+ * @author D瓜哥 · &lt;a href="https://www.diguage.com/" target="_blank">https://www.diguage.com/&lt;/a>
+ */&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kt">void&lt;/span> &lt;span class="nf">printBytes&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="kt">byte&lt;/span>&lt;span class="o">[]&lt;/span> &lt;span class="n">result&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="k">for&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="kt">byte&lt;/span> &lt;span class="n">b&lt;/span> &lt;span class="o">:&lt;/span> &lt;span class="n">result&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="nc">String&lt;/span> &lt;span class="n">bitx&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nc">Integer&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">toBinaryString&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">Byte&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">toUnsignedInt&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">b&lt;/span>&lt;span class="o">));&lt;/span>
+ &lt;span class="nc">String&lt;/span> &lt;span class="n">zbits&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nc">String&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">format&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;%8s&amp;#34;&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">bitx&lt;/span>&lt;span class="o">).&lt;/span>&lt;span class="na">replace&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="sc">&amp;#39; &amp;#39;&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="sc">&amp;#39;0&amp;#39;&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="mi">0&lt;/span> &lt;span class="o">&amp;lt;=&lt;/span> &lt;span class="n">b&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="nc">System&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">out&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">printf&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;%4d 0x%02X %8s %c %n&amp;#34;&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">b&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">b&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">zbits&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">b&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="o">}&lt;/span> &lt;span class="k">else&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="nc">System&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">out&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">printf&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;%4d 0x%02X %8s %n&amp;#34;&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">b&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">b&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">zbits&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="o">}&lt;/span>
+&lt;span class="o">}&lt;/span>
+
+&lt;span class="cm">/**
+ * 将 long 转化成二进制字符串（前面补0）
+ *
+ * @author D瓜哥 · &lt;a href="https://www.diguage.com/" target="_blank">https://www.diguage.com/&lt;/a>
+ */&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="nc">String&lt;/span> &lt;span class="nf">getBinaryString&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="kt">long&lt;/span> &lt;span class="n">value&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="nc">String&lt;/span> &lt;span class="n">bits&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nc">Long&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">toBinaryString&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">value&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="kt">char&lt;/span>&lt;span class="o">[]&lt;/span> &lt;span class="n">chars&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nc">String&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">format&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;%64s&amp;#34;&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">bits&lt;/span>&lt;span class="o">)&lt;/span>
+ &lt;span class="o">.&lt;/span>&lt;span class="na">replace&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="sc">&amp;#39; &amp;#39;&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="sc">&amp;#39;0&amp;#39;&lt;/span>&lt;span class="o">).&lt;/span>&lt;span class="na">toCharArray&lt;/span>&lt;span class="o">();&lt;/span>
+ &lt;span class="nc">StringBuilder&lt;/span> &lt;span class="n">result&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="k">new&lt;/span> &lt;span class="nc">StringBuilder&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="mi">64&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="mi">7&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="k">for&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="kt">int&lt;/span> &lt;span class="n">i&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="o">;&lt;/span> &lt;span class="n">i&lt;/span> &lt;span class="o">&amp;lt;&lt;/span> &lt;span class="n">chars&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">length&lt;/span>&lt;span class="o">;&lt;/span> &lt;span class="n">i&lt;/span>&lt;span class="o">++)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="n">result&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">append&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">chars&lt;/span>&lt;span class="o">[&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="o">]);&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">i&lt;/span> &lt;span class="o">%&lt;/span> &lt;span class="mi">8&lt;/span> &lt;span class="o">==&lt;/span> &lt;span class="mi">7&lt;/span> &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> &lt;span class="n">i&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="n">chars&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">length&lt;/span> &lt;span class="o">-&lt;/span> &lt;span class="mi">1&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="n">result&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">append&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;,&amp;#34;&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="k">return&lt;/span> &lt;span class="n">result&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">toString&lt;/span>&lt;span class="o">();&lt;/span>
+&lt;span class="o">}&lt;/span>
+
+&lt;span class="cm">/**
+ * 将 int 转化成二进制字符串（前面补0）
+ *
+ * @author D瓜哥 · &lt;a href="https://www.diguage.com/" target="_blank">https://www.diguage.com/&lt;/a>
+ */&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="nc">String&lt;/span> &lt;span class="nf">getBinaryString&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="kt">int&lt;/span> &lt;span class="n">value&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="nc">String&lt;/span> &lt;span class="n">bits&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nc">Integer&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">toBinaryString&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">value&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="kt">char&lt;/span>&lt;span class="o">[]&lt;/span> &lt;span class="n">chars&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nc">String&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">format&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;%32s&amp;#34;&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">bits&lt;/span>&lt;span class="o">)&lt;/span>
+ &lt;span class="o">.&lt;/span>&lt;span class="na">replace&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="sc">&amp;#39; &amp;#39;&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="sc">&amp;#39;0&amp;#39;&lt;/span>&lt;span class="o">).&lt;/span>&lt;span class="na">toCharArray&lt;/span>&lt;span class="o">();&lt;/span>
+ &lt;span class="nc">StringBuilder&lt;/span> &lt;span class="n">result&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="k">new&lt;/span> &lt;span class="nc">StringBuilder&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="mi">64&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="mi">7&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="k">for&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="kt">int&lt;/span> &lt;span class="n">i&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="o">;&lt;/span> &lt;span class="n">i&lt;/span> &lt;span class="o">&amp;lt;&lt;/span> &lt;span class="n">chars&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">length&lt;/span>&lt;span class="o">;&lt;/span> &lt;span class="n">i&lt;/span>&lt;span class="o">++)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="n">result&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">append&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">chars&lt;/span>&lt;span class="o">[&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="o">]);&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">i&lt;/span> &lt;span class="o">%&lt;/span> &lt;span class="mi">8&lt;/span> &lt;span class="o">==&lt;/span> &lt;span class="mi">7&lt;/span> &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> &lt;span class="n">i&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="n">chars&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">length&lt;/span> &lt;span class="o">-&lt;/span> &lt;span class="mi">1&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="n">result&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">append&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;,&amp;#34;&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="k">return&lt;/span> &lt;span class="n">result&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">toString&lt;/span>&lt;span class="o">();&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>Hessian 2.0 序列化协议（中文版）</title><link>https://www.diguage.com/post/hessian-serialization-protocol/</link><pubDate>Wed, 20 Apr 2022 17:30:08 +0800</pubDate><guid>https://www.diguage.com/post/hessian-serialization-protocol/</guid><description>&lt;div class="paragraph">
+&lt;p>公司在微服务系统中，序列化协议大多数使用 &lt;a href="https://msgpack.org/" target="_blank" rel="noopener">MessagePack&lt;/a>。但是，由于 MessagePack 设计限制，导致微服务接口在增减参数时，只能在最后操作。但是，由于个人操作，难免失误，结果造成因为增减字段导致的事故层出不穷。最近，一些条件成熟，准备推动部门将序列化协议切换到 Hessian。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>原以为，切换到 Hessian 就可以万事大吉。但是，在和同事的沟通中发现，同事反馈，Hessian 本身也有一些限制。为了对 Hessian 有一个更深入的了解，干脆就把 Hessian 序列化协议读一遍。看协议，文字不多，干脆就把协议完整翻译一遍。闲言少叙，正文开始。&lt;/p>
+&lt;/div>
+&lt;hr/>
+&lt;div class="sect1 text-center">
+&lt;h2 id="_hessian_2_0_序列化协议">&lt;span class="big">&lt;strong>Hessian 2.0 序列化协议&lt;/strong>&lt;/span>&lt;/h2>
+&lt;div class="sectionbody">
+
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_协议解释">协议解释&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>针对该协议有很多言语不详，甚至模糊不清之处，专门做了一些解释和实践，叙述系列文章，用于辅助消化理解。目录如下：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-serialization-protocol/" target="_blank" rel="noopener">Hessian 2.0 序列化协议（中文版）&lt;/a> — Hessian 序列化协议的中文翻译版。根据后面的“协议解释与实战”系列文章，增加了协议内容错误提示。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/" target="_blank" rel="noopener">Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数&lt;/a> — 介绍布尔型数据、日期类型、浮点类型数据和整数类型数据等四种类型的数据的处理。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-2/" target="_blank" rel="noopener">Hessian 协议解释与实战（二）：长整型、二进制数据与 Null&lt;/a> — 介绍长整数类型数据、二进制数据和 &lt;code>null&lt;/code> 等三种类型的数据的处理。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-3/" target="_blank" rel="noopener">Hessian 协议解释与实战（三）：字符串&lt;/a> — 专门介绍了关于字符串的处理。由于字符串需要铺垫的基础知识比较多，处理细节也有繁琐，所以单独成篇来介绍。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-source-analysis-for-java/" target="_blank" rel="noopener">Hessian 源码分析（Java）&lt;/a> — 开始第四篇分析之前，先来介绍一下 Hessian 的源码实现。方便后续展开说明。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-4/" target="_blank" rel="noopener">Hessian 协议解释与实战（四）：数组与集合&lt;/a> — 铺垫了一些关于实例对象的处理，重点介绍关于数组和集合的相关处理。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-5/" target="_blank" rel="noopener">Hessian 协议解释与实战（五）：对象与映射&lt;/a> — 重点介绍关于对象与映射的相关处理。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/hessian-vs-msgpack-vs-json/" target="_blank" rel="noopener">Hessian、Msgpack 和 JSON 实例对比&lt;/a> — 用实例对比 JSON、Hessian 和 MessagePack 的区别。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/schema-evolution-in-avro-protobuf-thrift" target="_blank" rel="noopener">Avro、ProtoBuf、Thrift 的模式演进之路&lt;/a> — 翻译的 Martin Kleppmann 的文章，重点对比了 Avro、ProtoBuf、Thrift 的序列化处理思路。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div></description></item><item><title>分布式锁之 Apache Curator InterProcessReadWriteLock</title><link>https://www.diguage.com/post/distributed-lock-apache-curator-interprocessreadwritelock/</link><pubDate>Wed, 22 Jul 2020 10:45:44 +0800</pubDate><guid>https://www.diguage.com/post/distributed-lock-apache-curator-interprocessreadwritelock/</guid><description>&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/distributed-lock-apache-curator-interprocessmutex/">分布式锁之 Apache Curator InterProcessMutex&lt;/a> 中介绍了基于 ZooKeeper 实现的互斥锁。除此之外，还可以实现读写锁。这篇文章就来简要介绍一下 &lt;code>InterProcessReadWriteLock&lt;/code> 的实现原理。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>老规矩，先看看类的注释：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="cm">/**
+ * &amp;lt;p&amp;gt;
+ * A re-entrant read/write mutex that works across JVMs. Uses Zookeeper to hold the lock. All processes
+ * in all JVMs that use the same lock path will achieve an inter-process critical section. Further, this mutex is
+ * &amp;#34;fair&amp;#34; - each user will get the mutex in the order requested (from ZK&amp;#39;s point of view).
+ * &amp;lt;/p&amp;gt;
+ *
+ * &amp;lt;p&amp;gt;
+ * A read write lock maintains a pair of associated locks, one for read-only operations and one
+ * for writing. The read lock may be held simultaneously by multiple reader processes, so long as
+ * there are no writers. The write lock is exclusive.
+ * &amp;lt;/p&amp;gt;
+ *
+ * &amp;lt;p&amp;gt;
+ * &amp;lt;b&amp;gt;Reentrancy&amp;lt;/b&amp;gt;&amp;lt;br&amp;gt;
+ * This lock allows both readers and writers to reacquire read or write locks in the style of a
+ * re-entrant lock. Non-re-entrant readers are not allowed until all write locks held by the
+ * writing thread/process have been released. Additionally, a writer can acquire the read lock, but not
+ * vice-versa. If a reader tries to acquire the write lock it will never succeed.&amp;lt;br&amp;gt;&amp;lt;br&amp;gt;
+ *
+ * &amp;lt;b&amp;gt;Lock downgrading&amp;lt;/b&amp;gt;&amp;lt;br&amp;gt;
+ * Re-entrancy also allows downgrading from the write lock to a read lock, by acquiring the write
+ * lock, then the read lock and then releasing the write lock. However, upgrading from a read
+ * lock to the write lock is not possible.
+ * &amp;lt;/p&amp;gt;
+ */&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">InterProcessReadWriteLock&lt;/span>
+&lt;span class="o">{&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>分布式锁之 Apache Curator InterProcessMutex</title><link>https://www.diguage.com/post/distributed-lock-apache-curator-interprocessmutex/</link><pubDate>Tue, 21 Jul 2020 10:13:21 +0800</pubDate><guid>https://www.diguage.com/post/distributed-lock-apache-curator-interprocessmutex/</guid><description>&lt;div class="paragraph">
+&lt;p>对分布式锁耳熟能详。不过，一直关注的是基于 Redis 实现的分布式锁。知道 ZooKeeper 也可以实现分布式锁。但是，原来的想法是把 Redis 那个思路切换到 ZooKeeper 上来实现就好。今天了解到 Apache Curator 内置了分布式锁的实现： &lt;code>InterProcessMutex&lt;/code>。查看了一下源码实现，发现跟基于 Redis 实现的源码相比，在思路上还是有很大不同的。所以，特别作文记录一下。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>先来看一下，整体流程：&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;span class="image">&lt;img src="https://www.diguage.com/images/distributed-system/InterProcessMutex-process.png" alt="InterProcessMutex process" width="95%"/>&lt;/span>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>结合流程图和源码，加锁的过程是这样的：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>先判断本地是否有锁数据，如果有则对锁定次数自增一下，然后返回 &lt;code>true&lt;/code>；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>如果没有锁数据，则尝试获取锁：&lt;/p>
+&lt;div class="olist loweralpha">
+&lt;ol class="loweralpha" type="a">
+&lt;li>
+&lt;p>在指定路径下创建临时顺序节点&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>获取指定路径下，所有节点，检查自身是否是序号最小的节点：&lt;/p>
+&lt;div class="olist lowerroman">
+&lt;ol class="lowerroman" type="i">
+&lt;li>
+&lt;p>如果自身序号最小，则获得锁；否则&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>如果自身不是序号最小的节点，则通过 &lt;code>while&lt;/code> 自旋 + &lt;code>wait(times)&lt;/code> 不断尝试获取锁，直到成功。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>获得锁后，把锁信息缓存在本地 &lt;code>ConcurrentMap&amp;lt;Thread, LockData&amp;gt; threadData&lt;/code> 变量中，方便计算重入。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在 ZooKeeper 中的结构大致如下：&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;span class="image">&lt;img src="https://www.diguage.com/images/distributed-system/InterProcessMutex-structure.png" alt="InterProcessMutex structure" width="95%"/>&lt;/span>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>下面我们逐个方法进行分析说明。先来看一下 &lt;code>InterProcessMutex&lt;/code> 的注释：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="cm">/**
+ * A re-entrant mutex that works across JVMs. Uses Zookeeper to hold the lock. All processes in all JVMs that
+ * use the same lock path will achieve an inter-process critical section. Further, this mutex is
+ * &amp;#34;fair&amp;#34; - each user will get the mutex in the order requested (from ZK&amp;#39;s point of view)
+ */&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">InterProcessMutex&lt;/span> &lt;span class="kd">implements&lt;/span> &lt;span class="nc">InterProcessLock&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="nc">Revocable&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="nc">InterProcessMutex&lt;/span>&lt;span class="o">&amp;gt;&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>Spring 扩展点实践：整合 Apache Dubbo（二）</title><link>https://www.diguage.com/post/spring-extensions-and-dubbo-2/</link><pubDate>Sat, 11 Jul 2020 16:20:00 +0800</pubDate><guid>https://www.diguage.com/post/spring-extensions-and-dubbo-2/</guid><description>&lt;div class="paragraph">
+&lt;p>在 &lt;a href="https://www.diguage.com/post/spring-extensions-and-dubbo-1/" target="_blank" rel="noopener">Spring 扩展点实践：整合 Apache Dubbo（一）&lt;/a> 中，D瓜哥介绍了 Dubbo 如何使用 Spring 的插件机制与 Spring 整合。限于篇幅原因，上一篇文章只介绍到了服务提供者的注册。本篇文章继续上一篇文章的主题，继续介绍 Spring 与 Dubbo 的整合过程。先来讲解一下服务消费者的生成过程。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_dubbo_生成服务消费者的过程">Dubbo 生成服务消费者的过程&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>先来看看 XML 配置文件：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="title">&lt;code>dubbo-demo/dubbo-demo-xml/dubbo-demo-xml-consumer/src/main/resources/spring/dubbo-consumer.xml&lt;/code>&lt;/div>
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="xml">&lt;span class="cp">&amp;lt;?xml version=&amp;#34;1.0&amp;#34; encoding=&amp;#34;UTF-8&amp;#34;?&amp;gt;&lt;/span>
+&lt;span class="nt">&amp;lt;beans&lt;/span> &lt;span class="na">xmlns:xsi=&lt;/span>&lt;span class="s">&amp;#34;http://www.w3.org/2001/XMLSchema-instance&amp;#34;&lt;/span>
+ &lt;span class="na">xmlns:dubbo=&lt;/span>&lt;span class="s">&amp;#34;http://dubbo.apache.org/schema/dubbo&amp;#34;&lt;/span>
+ &lt;span class="na">xmlns=&lt;/span>&lt;span class="s">&amp;#34;http://www.springframework.org/schema/beans&amp;#34;&lt;/span>
+ &lt;span class="na">xsi:schemaLocation=&lt;/span>&lt;span class="s">&amp;#34;http://www.springframework.org/schema/beans
+ http://www.springframework.org/schema/beans/spring-beans.xsd
+ http://dubbo.apache.org/schema/dubbo
+ http://dubbo.apache.org/schema/dubbo/dubbo.xsd&amp;#34;&lt;/span>&lt;span class="nt">&amp;gt;&lt;/span>
+
+ &lt;span class="nt">&amp;lt;dubbo:application&lt;/span> &lt;span class="na">name=&lt;/span>&lt;span class="s">&amp;#34;demo-consumer&amp;#34;&lt;/span>&lt;span class="nt">/&amp;gt;&lt;/span>
+
+ &lt;span class="nt">&amp;lt;dubbo:registry&lt;/span> &lt;span class="na">address=&lt;/span>&lt;span class="s">&amp;#34;zookeeper://127.0.0.1:2181&amp;#34;&lt;/span>&lt;span class="nt">/&amp;gt;&lt;/span>
+
+ &lt;span class="nt">&amp;lt;dubbo:reference&lt;/span> &lt;span class="na">id=&lt;/span>&lt;span class="s">&amp;#34;demoService&amp;#34;&lt;/span> &lt;span class="na">check=&lt;/span>&lt;span class="s">&amp;#34;false&amp;#34;&lt;/span> &lt;span class="na">interface=&lt;/span>&lt;span class="s">&amp;#34;org.apache.dubbo.demo.DemoService&amp;#34;&lt;/span>&lt;span class="nt">/&amp;gt;&lt;/span>
+
+&lt;span class="nt">&amp;lt;/beans&amp;gt;&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>我们先看一下 &lt;code>ReferenceBean&lt;/code> 类的声明：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="title">&lt;code>org.apache.dubbo.config.spring.ReferenceBean&lt;/code>&lt;/div>
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="kd">public&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">ReferenceBean&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="kd">extends&lt;/span> &lt;span class="nc">ReferenceConfig&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="kd">implements&lt;/span> &lt;span class="nc">FactoryBean&lt;/span>&lt;span class="o">,&lt;/span>
+ &lt;span class="nc">ApplicationContextAware&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="nc">InitializingBean&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="nc">DisposableBean&lt;/span> &lt;span class="o">{&lt;/span>
+
+ &lt;span class="c1">// 此处省略 N 行代码&lt;/span>
+
+ &lt;span class="nd">@Override&lt;/span>
+ &lt;span class="kd">public&lt;/span> &lt;span class="nc">Object&lt;/span> &lt;span class="nf">getObject&lt;/span>&lt;span class="o">()&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="k">return&lt;/span> &lt;span class="nf">get&lt;/span>&lt;span class="o">();&lt;/span>
+ &lt;span class="o">}&lt;/span>
+
+ &lt;span class="c1">// 此处省略 N 行代码&lt;/span>
+
+ &lt;span class="nd">@Override&lt;/span>
+ &lt;span class="nd">@SuppressWarnings&lt;/span>&lt;span class="o">({&lt;/span>&lt;span class="s">&amp;#34;unchecked&amp;#34;&lt;/span>&lt;span class="o">})&lt;/span>
+ &lt;span class="kd">public&lt;/span> &lt;span class="kt">void&lt;/span> &lt;span class="nf">afterPropertiesSet&lt;/span>&lt;span class="o">()&lt;/span> &lt;span class="kd">throws&lt;/span> &lt;span class="nc">Exception&lt;/span> &lt;span class="o">{&lt;/span>
+
+ &lt;span class="c1">// Initializes Dubbo&amp;#39;s Config Beans before @Reference bean autowiring&lt;/span>
+ &lt;span class="n">prepareDubboConfigBeans&lt;/span>&lt;span class="o">();&lt;/span>
+
+ &lt;span class="c1">// lazy init by default.&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">init&lt;/span> &lt;span class="o">==&lt;/span> &lt;span class="kc">null&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="n">init&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="kc">false&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>
+
+ &lt;span class="c1">// eager init if necessary.&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">shouldInit&lt;/span>&lt;span class="o">())&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="n">getObject&lt;/span>&lt;span class="o">();&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="o">}&lt;/span>
+
+ &lt;span class="c1">// 此处省略 N 行代码&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这个类实现了 &lt;code>FactoryBean&lt;/code> 接口，D瓜哥在 &lt;a href="https://www.diguage.com/post/spring-extensions-overview/#factory-bean">Spring 扩展点概览及实践：FactoryBean&lt;/a> 中对 &lt;code>FactoryBean&lt;/code> 介绍。所以，请在上面的 &lt;code>getObject()&lt;/code> 打个断点。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>另外，这个类还实现了 &lt;code>InitializingBean&lt;/code>，D瓜哥在 &lt;a href="https://www.diguage.com/post/spring-bean-lifecycle-overview/">Spring Bean 生命周期概述&lt;/a> 中介绍了这个接口的用途。不了解的，请移步。&lt;/p>
+&lt;/div></description></item><item><title>Spring 扩展点实践：整合 Apache Dubbo（一）</title><link>https://www.diguage.com/post/spring-extensions-and-dubbo-1/</link><pubDate>Thu, 09 Jul 2020 16:28:35 +0800</pubDate><guid>https://www.diguage.com/post/spring-extensions-and-dubbo-1/</guid><description>&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/spring-extensions-overview/" target="_blank" rel="noopener">Spring 扩展点概览及实践&lt;/a> 中介绍了 Spring 内部存在的扩展点。 &lt;a href="https://www.diguage.com/post/spring-extensions-and-mybatis/" target="_blank" rel="noopener">Spring 扩展点实践：整合 MyBATIS&lt;/a> 中，D瓜哥带大家了解了一下 MyBATIS 如何利用 Spring 的扩展点实现了与 Spring 的完美整合。现在，学以致用，我们继续来分析一下 Spring 与 Apache Dubbo 的整合流程。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_示例程序">示例程序&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>Apache Dubbo 仓库中就有很完整的示例。D瓜哥直接拿来使用就不再搭建示例程序了。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>首先，需要启动一个 ZooKeeper 实例。查看 Dubbo 的依赖可以看出，最新版代码依赖的 ZooKeeper 是 3.4.13 版。所以，为了最好的兼容性，就要选用 3.4.X 版的 ZooKeeper 服务器。D瓜哥直接使用 Docker 启动 ZooKeeper 了。命令如下：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="bash">docker run &lt;span class="nt">--rm&lt;/span> &lt;span class="nt">--name&lt;/span> zookeeper &lt;span class="nt">-d&lt;/span> &lt;span class="nt">-p&lt;/span> 2181:2181 zookeeper:3.4.14&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这次我们使用 &lt;a href="https://github.com/apache/dubbo" target="_blank" rel="noopener">Apache Dubbo&lt;/a> 的 &lt;code>dubbo-demo/dubbo-demo-xml&lt;/code> 示例。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>第二步，启动服务提供者程序，找到 &lt;code>DUBBO/dubbo-demo/dubbo-demo-xml/dubbo-demo-xml-provider/src/main/java/org/apache/dubbo/demo/provider/Application.java&lt;/code>，运行该类。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>第三步，运行服务消费者程序，找到 &lt;code>DUBBO/dubbo-demo/dubbo-demo-xml/dubbo-demo-xml-consumer/src/main/java/org/apache/dubbo/demo/consumer/Application.java&lt;/code>，运行该类。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>如果没有任何错误，则在终端可以看到 &lt;code>result: async result&lt;/code> 输出。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在开始正餐之前，D瓜哥先给大家来个开胃菜。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="spring-plugin">Spring 插件机制简介&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>不知道大家有没有想过一个问题：Spring 框架是如何支持越来越多的功能的？&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在D瓜哥了解到 Spring 的插件机制后，非常叹服 Spring 精巧的设计和灵活的扩展性。闲言少叙，好戏上演。&lt;/p>
+&lt;/div></description></item><item><title>在世界读书日，推荐书单</title><link>https://www.diguage.com/post/books-on-book-day/</link><pubDate>Thu, 23 Apr 2020 20:15:14 +0800</pubDate><guid>https://www.diguage.com/post/books-on-book-day/</guid><description>&lt;div class="paragraph">
+&lt;p>今天是世界读书日，各种人都在推荐书单。D瓜哥也凑个热闹，水一篇文章，推荐一些书籍。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在前一段时间，D瓜哥已经写了一个书单： &lt;a href="https://www.diguage.com/post/java-concurrent-books/">推荐几本 Java 并发编程的书&lt;/a>。为了避免重复，上一个书单中推荐过的书籍，这次就不再重复推荐了。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>每年十二个月，D瓜哥就推荐 12 本书，每个月读一本想必压力也不算大。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_如何阅读一本书">&lt;a href="https://book.douban.com/subject/1013208/" target="_blank" rel="noopener">如何阅读一本书？&lt;/a>&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/books/how-to-read-a-book.jpg" alt="how to read a book" width="60%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥在年初的时候，刚刚再次重读了这本书。而且，还写了一篇读书笔记： &lt;a href="https://www.diguage.com/post/how-to-read-a-book/">《如何阅读一本书？》之读书笔记&lt;/a>。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>如果喜欢读书，那么这本书绝对应该是首先阅读的第一本书。一句话总结一下：&lt;strong>用检视阅读的方法来快速筛选出你关注主题的书籍；用分析阅读的方法来吸收一本书的精华；用主题阅读的办法来对多本同一主题的书去伪存真，加工再输出。&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_远见">&lt;a href="https://book.douban.com/subject/27609489/" target="_blank" rel="noopener">远见&lt;/a>&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/books/the-long-view.jpg" alt="the long view" width="60%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥在去年年末写的年终总结 &lt;a href="https://www.diguage.com/post/goodbye-2019-hello-2020/">“告别 2019，迎接 2020”&lt;/a> 中提到了这本书。考虑这本书的实用性和对自身发展的指导意义，所以决定再次推荐这本书。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在这本书中，作者将职业生涯分为：强势开局、聚焦长板和实现持续的影响力三个阶段。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在强势开局阶段，就像要开始一个汽车拉力赛，要努力加添燃料。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在聚焦长板阶段，要努力提高自己的核心竞争力，创造自己的制高点。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在实现持续的影响力阶段，则要优化长尾效应，让自己持续保持领先。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>对于职业生涯有追求的小伙伴，尤其是在读大学生，一定要去尽早认真读一读这本书。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_思考快与慢">&lt;a href="https://book.douban.com/subject/10785583/" target="_blank" rel="noopener">思考，快与慢&lt;/a>&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/books/thinking-fast-and-slow.jpg" alt="thinking fast and slow" width="60%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这是一本有关心理学方面的书籍。作者丹尼尔•卡尼曼因其与阿莫斯•特沃斯基在决策制定上的研究而荣获了 2002 年度的诺贝尔经济学奖。所以，这本书质量上肯定是有保证的。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这本书主要是介绍认知心理学的。作者在书中，把人的认知分为系统一和系统二。系统一是那种不需要思考的，已经固化在我们基因中的反应，比如看见危险会跑路等；而系统二，则是需要深入思考才能有所收获的事情，比如在新税法下，计算个人应该缴纳的个人所得税。两个系统相辅相成，时刻影响着我们的生活，但我们却有些熟视无睹。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_穷查理宝典">&lt;a href="https://book.douban.com/subject/26831789/" target="_blank" rel="noopener">穷查理宝典&lt;/a>&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/books/poor-charlies-almanack.jpg" alt="poor charlies almanack" width="60%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>提起查理·芒格，也许有些人不知道是谁。（看这篇文章的读者估计都了解）但是，他的搭档估计是人尽皆知，那就是世界股神沃伦·巴菲特。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>虽然这本书不是查理·芒格书写的，里面的精华部分，却都是查理的演讲稿。通过这些演讲，你可以看到一个睿智的老人，如何在循循善诱地向你传授他的思维方法。查理给我们介绍了他的思维模型：逆向思维，多元思维模型，打造自己的核心圈，避免嫉妒效应，内部积分卡（用我们古人的话说就是反求诸己）等等。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_社会性动物">&lt;a href="https://book.douban.com/subject/2328458/" target="_blank" rel="noopener">社会性动物&lt;/a>&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/books/the-social-animal.jpg" alt="the social animal" width="60%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥是去年开始读这本书的，非常抱歉目前还没有读完。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这本书是讲述社会心理学的，讲述在这个社会中，人与人之间是如何相互影响的。举一个典型的例子：你思考过吗，什么样的广告最能打动你吗？&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_事实">&lt;a href="https://book.douban.com/subject/33385402/" target="_blank" rel="noopener">事实&lt;/a>&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/books/factfulness.jpg" alt="factfulness" width="60%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>比尔·盖茨也推荐了这本书。我也是最近刚刚开始读这本书。还没有读完。就不做过多评价了。用一个问题，勾引一下你的兴趣：&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>问题：在全世界所有的低收入国家里面，有多少百分比的女孩能够上完小学？&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>选项：A. 20% B. 40% C. 60%&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>想知道答案，就快点去读这本书吧。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>最近更新：D瓜哥终于把这本书读完了：https://www.diguage.com/post/factfulness/[《事实》之读书笔记^]。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_人类简史">&lt;a href="https://book.douban.com/subject/26953606/" target="_blank" rel="noopener">人类简史&lt;/a>&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/books/a-brief-history-of-humankind.jpg" alt="a brief history of humankind" width="60%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>坦白讲，这本书D瓜哥才读了一半。但是，作者最近发表的一篇文章： &lt;a href="http://www.ruanyifeng.com/blog/2020/03/the-world-after-coronavirus.html">尤瓦尔·赫拉利《冠状病毒之后的世界》&lt;/a>，一个史学家站在历史发展的角度去看待疫情对世界发展的影响。由此可对赫拉利的思想窥得一斑。那么，如果感兴趣，他的成名大作《人类简史》就不得不读了。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>最近因为疫情影响，在网上看到各种五毛的无脑言论，怼天怼地，仿佛中国要征服世界，征服宇宙一样，真是让人呵呵…&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>未来几十年时间里，中国未来寻求自身发展，还需要融入到整个世界经济中，在全世界产业链中，力争上游，占领高附加值的产业，比如芯片，5G，大飞机等等。怼这个，怼那个，只能让自己像二战时期的纳粹德国和日本，让自己四面树敌，最后被全世界群殴。&lt;/p>
+&lt;/div></description></item></channel></rss>

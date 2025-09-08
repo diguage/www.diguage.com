@@ -1,0 +1,407 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>设计模式 on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/</link><description>Recent content in 设计模式 on "地瓜哥"博客网</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Sat, 02 Jul 2022 20:24:55 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/index.xml" rel="self" type="application/rss+xml"/><item><title>《领域驱动设计》读书笔记（三）：通过重构来加深理解</title><link>https://www.diguage.com/post/domain-driven-design-3/</link><pubDate>Wed, 18 Aug 2021 14:13:58 +0800</pubDate><guid>https://www.diguage.com/post/domain-driven-design-3/</guid><description>&lt;div class="paragraph">
+&lt;p>我们面临的真正挑战是找到深层次的模型，这个模型不但能够捕捉到领域专家的微妙的关注点，还可驱动切实可行的设计。我们的最终目的是开发出能够捕捉到领域深层含义的模型。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>要想成功地开发出实用的模型，需要注意以下 3 点：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>复杂巧妙的领域模型是可以实现的，也是值得我们去花费力气实现的。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>这样的模型离开不断的重构是很难开发出来的，重构需要领域专家和热爱学习领域知识的开发人员密切参与进来。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>要实现并有效地运用模型，需要精通设计技巧。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>重构就是在不改变软件功能的前提下重新设计它。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>自动化的单元测试套件能够保证对代码进行相对安全的试验。&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>设计模式重构 — 为实现更深层模型而进行的重构。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>代码细节重构&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>简称为“领域模型重构”。 学习以更高维度去看待问题。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>《重构》一书中所列出的重构分类涵盖了大部分常用的代码细节重构。这些重构主要是为了解决一些可以从代码中观察到的问题。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>领域模型会随着新认识的出现而不断变化，由于其变化如此多样，以至于根本无法整理出一个完整的目录。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>建模和设计都需要你发挥创造力。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>对象分析的传统方法是先在需求文档中确定名词和动词，并将其作为系统的初始对象和方法。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>事实上，初始模型通常都是基于对领域的浅显认知而构建的，既不够成熟也不够深入。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>深层模型能够穿过领域表象，清楚地表达出领域专家们的主要关注点以及最相关的知识。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>戴久了的手套在手指关节处会变得柔软；而其他部分则依然硬实，可起到保护的作用。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>柔性设计除了便于修改，还有助于改进模型本身。 Model-Driven Design 需要以下两个方面的支持：深层模型使设计更具表现力；同时，当设计的灵活性可以让开发人员进行试验，而设计又能清晰地表达出领域含义时，那么这个设计实际上就能够将开发人员的深层理解反馈到整个模型发现的过程中。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>由于模型和设计之间具有紧密的关系，因此如果代码难于重构，建模过程也会停滞不前。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>你需要富有创造力，不断地尝试，不断地发现问题才能找到合适的方法为你所发现的领域概念建模，但有时你也可以借用别人已建好的模式。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_第_8_章_突破">第 8 章 突破&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/domain-driver-design/refactor-breakthrough.png" alt="重构/突破" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. 重构/突破&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>小改进可防止系统退化，成为避免模型变得陈腐的第一道防线。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>重构的原则是始终小步前进，始终保持系统正常运转。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>过渡到真正的深层模型需要从根本上调整思路，并且对设计做大幅修改。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>不要试图去制造突破，那只会使项目陷入困境。通常，只有在实现了许多适度的重构后才有可能出现突破。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>要为突破做好准备，应专注于知识消化过程，同时也要逐渐建立健壮的 Ubiquitous Language 。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_第_9_章_将隐式概念转变为显式概念">第 9 章 将隐式概念转变为显式概念&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>深层建模的第一步就是要设法在模型中表达出领域的基本概念。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>若开发人员识别出设计中隐含的某个概念或是在讨论中受到启发而发现一个概念时，就会对领域模型和相应的代码进行许多转换，在模型中加入一个或多个对象或关系，从而将此概念显式地表达出来。&lt;/p>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_概念挖掘">概念挖掘&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>倾听领域专家使用的语言。有没有一些术语能够简洁地表达出复杂的概念？他们有没有纠正过你的用词（也许是很委婉的提醒）？当你使用某个特定词语时，他们脸上是否已经不再流露出迷惑的表情？这些都暗示了某个概念也许可以改进模型。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>有些概念可能需要你自己去挖掘和创造。要挖掘的地方就是设计中最不足的地方，也就是操作复杂且难于解释的地方。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>看书与咨询领域专家并不冲突。即便能够从领域专家那里得到充分的支持，花点时间从文献资料中大致了解领域理论也是值得的。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>开发人员还有另一个选择，就是阅读在此领域中有过开发经验的软件专业人员编写的资料。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>阅读书籍并不能提供现成的解决方案，但可以为她提供一些全新的实验起点，以及在这个领域中探索过的人总结出来的经验。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_如何为那些不太明显的概念建模">如何为那些不太明显的概念建模&lt;/h3>
+&lt;div class="sect3">
+&lt;h4 id="_显式的约束">显式的约束&lt;/h4>
+&lt;div class="paragraph">
+&lt;p>约束是模型概念中非常重要的类别。它们通常是隐含的，将它们显式地表现出来可以极大地提高设计质量。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>将约束条件提取到其自己的方法中，这样就可以通过方法名来表达约束的含义，从而在设计中显式地表现出这条约束。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>下面是一些警告信号，表明约束的存在正在扰乱其“宿主对象”（Host Object）的设计：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>计算约束所需的数据从定义上看并不属于这个对象。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>相关规则在多个对象中出现，造成了代码重复或导致不属于同一族的对象之间产生了继承关系。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>很多设计和需求讨论是围绕这些约束进行的，而在代码实现中，它们却隐藏在过程代码中。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>如果约束的存在掩盖了对象的基本职责，或者如果约束在领域中非常突出但在模型中却不明显，那么就可以将其提取到一个显式的对象中，甚至可以把它建模为一个对象和关系的集合。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect3">
+&lt;h4 id="_将过程建模为领域对象">将过程建模为领域对象&lt;/h4>
+&lt;div class="paragraph">
+&lt;p>对象是用来封装过程的，这样我们只需考虑对象的业务目的或意图就可以了。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>过程是应该被显式表达出来，还是应该被隐藏起来呢？区分的方法很简单：它是经常被领域专家提起呢，还是仅仅被当作计算机程序机制的一部分？&lt;/p>
+&lt;/div></description></item><item><title>《领域驱动设计》读书笔记（二）：模型驱动设计的构造块</title><link>https://www.diguage.com/post/domain-driven-design-2/</link><pubDate>Sun, 11 Jul 2021 23:44:22 +0800</pubDate><guid>https://www.diguage.com/post/domain-driven-design-2/</guid><description>&lt;div class="paragraph">
+&lt;p>遵循“职责驱动设计”的原则，&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>“契约式设计”思想。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>开发一个好的领域模型是一门艺术。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/domain-driver-design/model-driven-design-language.png" alt="模型驱动设计语言" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. 模型驱动设计语言&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_第_4_章_分离领域">第 4 章 分离领域&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="sect2">
+&lt;h3 id="_模式layered_architecture">模式：Layered Architecture&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>在面向对象的程序中，常常会在业务对象中直接写入用户界面、数据库访问等支持代码。而一些业务逻辑则会被嵌入到用户界面组件和数据库脚本中。这么做是为了以最简单的方式在短期内完成开发工作。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>如果与领域有关的代码分散在大量的其他代码之中，那么查看和分析领域代码就会变得异常困难。对用户界面的简单修改实际上很可能会改变业务逻辑，而要想调整业务规则也很可能需要对用户界面代码、数据库操作代码或者其他的程序元素进行仔细的筛查。这样就不太可能实现一致的、模型驱动的对象了，同时也会给自动化测试带来困难。考虑到程序中各个活动所涉及的大量逻辑和技术，程序本身必须简单明了，否则就会让人无法理解。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>要想创建出能够处理复杂任务的程序，需要做到关注点分离——使设计中的每个部分都得到单独的关注。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>Layered Architecture 的基本原则是层中的任何元素都仅依赖于本层的其他元素或其下层的元素。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/domain-driver-design/layer.png" alt="应用分层" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 2. 应用分层&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>给复杂的应用程序划分层次。在每一层内分别进行设计，使其具有内聚性并且只依赖于它的下层。采用标准的架构模式，只与上层进行松散的耦合。将所有与领域模型相关的代码放在一个层中，并把它与用户界面层、应用层以及基础设施层的代码分开。领域对象应该将重点放在如何表达领域模型上，而不需要考虑自己的显示和存储问题，也无需管理应用任务等内容。这使得模型的含义足够丰富，结构足够清晰，可以捕捉到基本的业务知识，并有效地使用这些知识。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>关注点的清晰分离可以使每一层的设计更易理解和维护。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在连接各层的同时不影响分离带来的好处，这是很多模式的目的所在。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>各层之间是松散连接的，层与层的依赖关系只能是单向的。上层可以直接使用或操作下层元素，方法是通过调用下层元素的公共接口，保持对下层元素的引用（至少是暂时的），以及采用常规的交互手段。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>如果下层元素需要与上层元素进行通信（不只是回应直接查询），则需要采用另一种通信机制，使用架构模式来连接上下层，如回调模式或 Observers 模式。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>最早将用户界面层与应用层和领域层相连的模式是 Model-View-Controller（MVC，模型—视图—控制器）框架。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>只要连接方式能够维持领域层的独立性，保证在设计领域对象时不需要同时考虑可能与其交互的用户界面，那么这些连接方式就都是可用的。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>最好的架构框架既能解决复杂技术问题，也能让领域开发人员集中精力去表达模型，而不考虑其他问题。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>不妄求万全之策，只要有选择性地运用框架来解决难点问题，就可以避开框架的很多不足之处。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_领域层是模型的精髓">领域层是模型的精髓&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>“领域层”则是领域模型以及所有与其直接相关的设计元素的表现，它由业务逻辑的设计和实现组成。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>如果领域逻辑与程序中的其他关注点混在一起，就不可能实现这种一致性。将领域实现独立出来是领域驱动设计的前提。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_模式the_smart_ui反模式">模式：The Smart UI“反模式”&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>Smart UI是另一种设计方法，与领域驱动设计方法迥然不同且互不兼容。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>如果一个经验并不丰富的项目团队要完成一个简单的项目，却决定使用 Model-Driven Design 以及 Layered Architecture，那么这个项目组将会经历一个艰难的学习过程。团队成员不得不去掌握复杂的新技术，艰难地学习对象建模。（即使有这本书的帮助，这也依然是一个具有挑战性的任务！）对基础设施和各层的管理工作使得原本简单的任务却要花费很长的时间来完成。简单项目的开发周期较短，期望值也不是很高。所以，早在项目团队完成任务之前，该项目就会被取消，更谈不上去论证有关这种方法的许多种令人激动的可行性了。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>即使项目有更充裕的时间，如果没有专家的帮助，团队成员也不太可能掌握这些技术。最后，假如他们确实能够克服这些困难，恐怕也只会开发出一套简单的系统。因为这个项目本来就不需要丰富的功能。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在用户界面中实现所有的业务逻辑。将应用程序分成小的功能模块，分别将它们实现成用户界面，并在其中嵌入业务规则。用关系数据库作为共享的数据存储库。使用自动化程度最高的用户界面创建工具和可用的可视化编程工具。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>如果一个架构能够把那些与领域相关的代码隔离出来，得到一个内聚的领域设计，同时又使领域与系统其他部分保持松散耦合，那么这种架构也许可以支持领域驱动设计。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>如何让一个有效的领域模型和一个富有表达力的实现同时演进。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_第_5_章_软件中所表示的模型">第 5 章 软件中所表示的模型&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>一个对象是用来表示某种具有连续性和标识的事物的呢（可以跟踪它所经历的不同状态，甚至可以跨不同的实现跟踪它），还是用于描述某种状态的属性呢？这是 Entity 与 Value Object 之间的根本区别。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>领域中还有一些方面适合用动作或操作来表示，这比用对象表示更加清楚。这些方面最好用 Service 来表示，而不应把操作的责任强加到 Entity 或 Value Object 上，尽管这样做稍微违背了面向对象的建模传统。 Service 是应客户端请求来完成某事。&lt;/p>
+&lt;/div></description></item><item><title>在世界读书日，推荐书单</title><link>https://www.diguage.com/post/books-on-book-day/</link><pubDate>Thu, 23 Apr 2020 20:15:14 +0800</pubDate><guid>https://www.diguage.com/post/books-on-book-day/</guid><description>&lt;div class="paragraph">
+&lt;p>今天是世界读书日，各种人都在推荐书单。D瓜哥也凑个热闹，水一篇文章，推荐一些书籍。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在前一段时间，D瓜哥已经写了一个书单： &lt;a href="https://www.diguage.com/post/java-concurrent-books/">推荐几本 Java 并发编程的书&lt;/a>。为了避免重复，上一个书单中推荐过的书籍，这次就不再重复推荐了。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>每年十二个月，D瓜哥就推荐 12 本书，每个月读一本想必压力也不算大。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_如何阅读一本书">&lt;a href="https://book.douban.com/subject/1013208/" target="_blank" rel="noopener">如何阅读一本书？&lt;/a>&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/books/how-to-read-a-book.jpg" alt="how to read a book" width="60%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥在年初的时候，刚刚再次重读了这本书。而且，还写了一篇读书笔记： &lt;a href="https://www.diguage.com/post/how-to-read-a-book/">《如何阅读一本书？》之读书笔记&lt;/a>。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>如果喜欢读书，那么这本书绝对应该是首先阅读的第一本书。一句话总结一下：&lt;strong>用检视阅读的方法来快速筛选出你关注主题的书籍；用分析阅读的方法来吸收一本书的精华；用主题阅读的办法来对多本同一主题的书去伪存真，加工再输出。&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_远见">&lt;a href="https://book.douban.com/subject/27609489/" target="_blank" rel="noopener">远见&lt;/a>&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/books/the-long-view.jpg" alt="the long view" width="60%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥在去年年末写的年终总结 &lt;a href="https://www.diguage.com/post/goodbye-2019-hello-2020/">“告别 2019，迎接 2020”&lt;/a> 中提到了这本书。考虑这本书的实用性和对自身发展的指导意义，所以决定再次推荐这本书。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在这本书中，作者将职业生涯分为：强势开局、聚焦长板和实现持续的影响力三个阶段。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在强势开局阶段，就像要开始一个汽车拉力赛，要努力加添燃料。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在聚焦长板阶段，要努力提高自己的核心竞争力，创造自己的制高点。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在实现持续的影响力阶段，则要优化长尾效应，让自己持续保持领先。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>对于职业生涯有追求的小伙伴，尤其是在读大学生，一定要去尽早认真读一读这本书。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_思考快与慢">&lt;a href="https://book.douban.com/subject/10785583/" target="_blank" rel="noopener">思考，快与慢&lt;/a>&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/books/thinking-fast-and-slow.jpg" alt="thinking fast and slow" width="60%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这是一本有关心理学方面的书籍。作者丹尼尔•卡尼曼因其与阿莫斯•特沃斯基在决策制定上的研究而荣获了 2002 年度的诺贝尔经济学奖。所以，这本书质量上肯定是有保证的。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这本书主要是介绍认知心理学的。作者在书中，把人的认知分为系统一和系统二。系统一是那种不需要思考的，已经固化在我们基因中的反应，比如看见危险会跑路等；而系统二，则是需要深入思考才能有所收获的事情，比如在新税法下，计算个人应该缴纳的个人所得税。两个系统相辅相成，时刻影响着我们的生活，但我们却有些熟视无睹。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_穷查理宝典">&lt;a href="https://book.douban.com/subject/26831789/" target="_blank" rel="noopener">穷查理宝典&lt;/a>&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/books/poor-charlies-almanack.jpg" alt="poor charlies almanack" width="60%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>提起查理·芒格，也许有些人不知道是谁。（看这篇文章的读者估计都了解）但是，他的搭档估计是人尽皆知，那就是世界股神沃伦·巴菲特。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>虽然这本书不是查理·芒格书写的，里面的精华部分，却都是查理的演讲稿。通过这些演讲，你可以看到一个睿智的老人，如何在循循善诱地向你传授他的思维方法。查理给我们介绍了他的思维模型：逆向思维，多元思维模型，打造自己的核心圈，避免嫉妒效应，内部积分卡（用我们古人的话说就是反求诸己）等等。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_社会性动物">&lt;a href="https://book.douban.com/subject/2328458/" target="_blank" rel="noopener">社会性动物&lt;/a>&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/books/the-social-animal.jpg" alt="the social animal" width="60%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥是去年开始读这本书的，非常抱歉目前还没有读完。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这本书是讲述社会心理学的，讲述在这个社会中，人与人之间是如何相互影响的。举一个典型的例子：你思考过吗，什么样的广告最能打动你吗？&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_事实">&lt;a href="https://book.douban.com/subject/33385402/" target="_blank" rel="noopener">事实&lt;/a>&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/books/factfulness.jpg" alt="factfulness" width="60%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>比尔·盖茨也推荐了这本书。我也是最近刚刚开始读这本书。还没有读完。就不做过多评价了。用一个问题，勾引一下你的兴趣：&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>问题：在全世界所有的低收入国家里面，有多少百分比的女孩能够上完小学？&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>选项：A. 20% B. 40% C. 60%&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>想知道答案，就快点去读这本书吧。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>最近更新：D瓜哥终于把这本书读完了：https://www.diguage.com/post/factfulness/[《事实》之读书笔记^]。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_人类简史">&lt;a href="https://book.douban.com/subject/26953606/" target="_blank" rel="noopener">人类简史&lt;/a>&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/books/a-brief-history-of-humankind.jpg" alt="a brief history of humankind" width="60%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>坦白讲，这本书D瓜哥才读了一半。但是，作者最近发表的一篇文章： &lt;a href="http://www.ruanyifeng.com/blog/2020/03/the-world-after-coronavirus.html">尤瓦尔·赫拉利《冠状病毒之后的世界》&lt;/a>，一个史学家站在历史发展的角度去看待疫情对世界发展的影响。由此可对赫拉利的思想窥得一斑。那么，如果感兴趣，他的成名大作《人类简史》就不得不读了。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>最近因为疫情影响，在网上看到各种五毛的无脑言论，怼天怼地，仿佛中国要征服世界，征服宇宙一样，真是让人呵呵…&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>未来几十年时间里，中国未来寻求自身发展，还需要融入到整个世界经济中，在全世界产业链中，力争上游，占领高附加值的产业，比如芯片，5G，大飞机等等。怼这个，怼那个，只能让自己像二战时期的纳粹德国和日本，让自己四面树敌，最后被全世界群殴。&lt;/p>
+&lt;/div></description></item></channel></rss>

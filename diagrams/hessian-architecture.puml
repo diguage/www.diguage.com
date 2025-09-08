@@ -1,0 +1,114 @@
+@startuml
+header D瓜哥 · ""https://www.diguage.com""
+
+title **Hessian 架构**
+
+abstract class AbstractHessianInput
+
+class Hessian2Input extends AbstractHessianInput implements Hessian2Constants {
+  #SerializerFactory _defaultSerializerFactory
+  #SerializerFactory _serializerFactory;
+  +setSerializerFactory(SerializerFactory factory)
+  +SerializerFactory getSerializerFactory()
+  #SerializerFactory findSerializerFactory()
+}
+
+Hessian2Input "1" o-- "1" SerializerFactory
+
+
+
+abstract class AbstractHessianOutput {
+  -SerializerFactory _defaultSerializerFactory
+  #SerializerFactory _serializerFactory
+  +setSerializerFactory(SerializerFactory factory)
+  +SerializerFactory getSerializerFactory()
+  #SerializerFactory findSerializerFactory()
+}
+
+AbstractHessianOutput "1" o-- "1" SerializerFactory
+
+class Hessian2Output extends AbstractHessianOutput implements Hessian2Constants
+
+abstract class AbstractSerializerFactory {
+  +{abstract} Serializer getSerializer(Class cl)
+  +{abstract} Deserializer getDeserializer(Class cl)
+}
+
+class SerializerFactory extends AbstractSerializerFactory {
+  -{static} WeakHashMap<ClassLoader, SoftReference<SerializerFactory>> _defaultFactoryRefMap
+  -ContextSerializerFactory _contextFactory
+  #Serializer _defaultSerializer
+  #ArrayList<SerializerFactory> _factories
+  #CollectionSerializer _collectionSerializer
+  #MapSerializer _mapSerializer
+  -Deserializer _hashMapDeserializer
+  -Deserializer _arrayListDeserializer
+  -ConcurrentHashMap<Class, Serializer> _cachedSerializerMap
+  -ConcurrentHashMap<Class, Deserializer> _cachedDeserializerMap
+  -HashMap<String, Deserializer> _cachedTypeDeserializerMap
+  +void addFactory(AbstractSerializerFactory factory)
+  +{static}SerializerFactory createDefault()
+}
+
+interface Serializer {
+  +void writeObject(Object obj, AbstractHessianOutput out)
+}
+abstract class AbstractSerializer implements Serializer
+
+interface Deserializer {
+  + Class<?> getType()
+  + boolean isReadResolve()
+  + Object readObject(AbstractHessianInput in)
+  + Object readList(AbstractHessianInput in, int length)
+  + Object readLengthList(AbstractHessianInput in, int length)
+  + Object readMap(AbstractHessianInput in)
+  + Object[] createFields(int len)
+  + Object createField(String name)
+  + Object readObject(AbstractHessianInput in, Object[] fields)
+  + Object readObject(AbstractHessianInput in, String[] fieldNames)
+}
+class AbstractDeserializer implements Deserializer
+
+Serializer "N" --o "1" ContextSerializerFactory
+
+SerializerFactory "1" o-- "N" SerializerFactory
+SerializerFactory "1" o-- "1" ContextSerializerFactory
+
+
+SerializerFactory "1" o-- "N" Serializer
+SerializerFactory "1" o-- "N" Deserializer
+
+Deserializer "N" --o "1" ContextSerializerFactory
+
+class ContextSerializerFactory {
+  -{static} WeakHashMap<ClassLoader, SoftReference<ContextSerializerFactory>> _contextRefMap
+  -{static} HashMap<String,Serializer> _staticSerializerMap
+  -{static} HashMap<String,Deserializer> _staticDeserializerMap
+  -ContextSerializerFactory _parent
+  -HashMap<String, Serializer> _serializerClassMap
+  -ConcurrentHashMap<String, Serializer> _customSerializerMap
+  -HashMap<Class<?>, Serializer> _serializerInterfaceMap
+  -HashMap<String, Deserializer> _deserializerClassMap
+  -HashMap<String, Deserializer> _deserializerClassNameMap
+  -ConcurrentHashMap<String, Deserializer> _customDeserializerMap
+  -HashMap<Class<?>, Deserializer> _deserializerInterfaceMap
+  +Serializer getSerializer(String className)
+  +Serializer getCustomSerializer(Class cl)
+  +Deserializer getDeserializer(String className)
+  +Deserializer getCustomDeserializer(Class cl)
+}
+note right of ContextSerializerFactory::_staticSerializerMap
+  启动时，会将基本类型、字符串和对象的
+  Serializer 实现类添加到该字段中。
+end note
+note right of ContextSerializerFactory::_serializerClassMap
+  创建对象时，将 _staticSerializerMap
+  的数据，完整添加到该字段，后续查找
+  Serializer，也是从该字段中查找。
+end note
+
+ContextSerializerFactory "1" o-- "N" ContextSerializerFactory
+
+
+footer D瓜哥 · ""https://www.diguage.com"" · 出品
+@enduml

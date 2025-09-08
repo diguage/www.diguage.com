@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>UDP on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/udp/</link><description>Recent content in UDP on "地瓜哥"博客网</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Sat, 02 Jul 2022 20:24:55 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/udp/index.xml" rel="self" type="application/rss+xml"/><item><title>HTTP 123</title><link>https://www.diguage.com/post/http-123/</link><pubDate>Thu, 05 Mar 2020 08:08:44 +0800</pubDate><guid>https://www.diguage.com/post/http-123/</guid><description>&lt;div class="sect1">
+&lt;h2 id="_http1_0">HTTP1.0&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>根据谷歌的调查， 现在请求一个网页，平均涉及到 80 个资源，30 多个域名。考虑最原始的情况，每请求一个资源都需要建立一次 TCP 请求，显然不可接受。HTTP 协议规定了一个字段 &lt;code>Connection&lt;/code>，不过默认的值是 &lt;code>close&lt;/code>，也就是不开启。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_http1_1">HTTP1.1&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>Pipeline 是为了减少不必要的 TCP 连接，但依然存在队头阻塞(HOC)的缺点，一种解决思路是利用并发连接减少某一个 HOC 的影响，另一个是共享(注意与复用的区别) TCP 连接，直接避免 HOC 问题的发生。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>HTTP1.1 的缺陷&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>高延迟 — 队头阻塞(Head-Of-Line Blocking)&lt;/p>
+&lt;div class="paragraph">
+&lt;p>当有多个串行请求执行时，如果第一个请求不执行完，后续的请求也无法执行。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>支持并发请求是解决解决 HOC 问题的一种方案，并发请求并非是直接解决了 HOC 的问题，而是尽可能减少 HOC 造成的影响。&lt;/p>
+&lt;/div>
+&lt;div class="olist loweralpha">
+&lt;ol class="loweralpha" type="a">
+&lt;li>
+&lt;p>将同一页面的资源分散到不同域名下，提升连接上限。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>减少请求数量&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>内联一些资源：css、base64 图片等&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>合并小文件减少资源数&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>无状态特性 — 阻碍交互&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>明文传输 — 不安全性&lt;/p>
+&lt;div class="paragraph">
+&lt;p>HTTP 1.x 也可以配合 TLS 进行安全传输，只是不是强制的。&lt;/p>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>不支持服务端推送&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_spdy">SPDY&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>SPDY 是由 Google 推行的改进版本的 HTTP1.1。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/http123/spdy.webp" alt="SPDY"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>针对 HTTP1.1 的缺陷，SPDY 提供了如下特性：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>多路复用 — 解决队头阻塞&lt;/p>
+&lt;div class="paragraph">
+&lt;p>SPDY 允许在一个连接上无限制并发流。因为请求在一个通道上，TCP 效率更高。&lt;/p>
+&lt;/div></description></item></channel></rss>

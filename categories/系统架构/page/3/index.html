@@ -1,0 +1,998 @@
+<!doctype html><html class=no-js lang=zh-cn><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><meta http-equiv=X-UA-Compatible content="IE=edge"><title>系统架构 - "地瓜哥"博客网</title>
+<script>(function(e,t){e[t]=e[t].replace("no-js","js")})(document.documentElement,"className")</script><meta name=keywords content=",,"><meta name=description content><meta property="og:url" content="https://www.diguage.com/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/"><meta property="og:site_name" content='"地瓜哥"博客网'><meta property="og:title" content="系统架构"><meta property="og:description" content='"地瓜哥"博客网是由 D瓜哥 维护的以分享技术文章的博客网站。'><meta property="og:locale" content="zh_cn"><meta property="og:type" content="website"><meta name=twitter:card content="summary"><meta name=twitter:title content="系统架构"><meta name=twitter:description content='"地瓜哥"博客网是由 D瓜哥 维护的以分享技术文章的博客网站。'><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link rel=dns-prefetch href=//fonts.googleapis.com><link rel=dns-prefetch href=//fonts.gstatic.com><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Open+Sans:400,400i,700"><link rel=alternate type=application/rss+xml href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/index.xml title 地瓜哥"博客网"><link rel=stylesheet href=/css/style.min.css><link rel=stylesheet href=/css/asciidoctor.css><link rel=stylesheet href=/css/rouge-monokai.css><link rel=alternate type=application/rss+xml href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/index.xml title 地瓜哥"博客网"><link rel="shortcut icon" href=/favicon.ico><script async src="https://www.googletagmanager.com/gtag/js?id=G-1MMT2NLEL4"></script><script>var dnt,doNotTrack=!1;if(!1&&(dnt=navigator.doNotTrack||window.doNotTrack||navigator.msDoNotTrack,doNotTrack=dnt=="1"||dnt=="yes"),!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-1MMT2NLEL4")}</script><script id=baidu_analytics>var _hmt=_hmt||[];(function(){var e,t=document.createElement("script");t.src="https://hm.baidu.com/hm.js?e56e7dd0a120b414f5741f4c5e5218ea",e=document.getElementsByTagName("script")[0],e.parentNode.insertBefore(t,e)})()</script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css></head><body class=body><div class="container container--outer"><header class=header><div class="container header__container"><div class=logo><a class=logo__link href=/ title='"地瓜哥"博客网' rel=home><div class="logo__item logo__text"><div class=logo__title>"地瓜哥"博客网</div><div class=logo__tagline>分享技术带来的喜悦 — https://www.diguage.com/</div></div></a></div><nav class=menu><button class=menu__btn aria-haspopup=true aria-expanded=false tabindex=0>
+<span class=menu__btn-title tabindex=-1>菜单</span></button><ul class=menu__list><li class=menu__item><a class=menu__link href=/><span class=menu__text>首页</span></a></li><li class=menu__item><a class=menu__link href=/categories/><span class=menu__text>分类</span></a></li><li class=menu__item><a class=menu__link href=/about/><span class=menu__text>关于</span></a></li><li class=menu__item><a class=menu__link href=/archives/><span class=menu__text>归档</span></a></li></ul></nav></div></header><div class="wrapper flex"><div class=primary><main class="main list" role=main><header class=main__header><h1 class=main__title>系统架构</h1></header><article class="list__item post"><figure class="list__thumbnail thumbnail"><a class=thumbnail__link href=/post/jvm-anatomy-quarks-01-lock-coarsening-for-loops/><img class=thumbnail__image src=/images/java/jvm.jpg alt="JVM 剖析花园：1 - 锁粗化及循环"></a></figure><header class=list__header><h2 class="list__title post__title"><a href=/post/jvm-anatomy-quarks-01-lock-coarsening-for-loops/ rel=bookmark>JVM 剖析花园：1 - 锁粗化及循环</a></h2><div class="list__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2024-01-13T16:08:36+08:00>2024-01-13</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/ rel=category>系统架构</a>, <a class=meta__link href=/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/ rel=category>程序设计</a></span></div></div></header><div class="content list__excerpt post__content clearfix">“JVM 剖析花园”是由 JVM 研发专家及性能极客 Aleksey Shipilëv 撰写的一个系列文章，专门介绍一些有关 JVM 的基本知识。笔者也是前几年无意间发现的一片宝藏文章。早就有翻译过来，介绍给大家的想法，可惜一直未能付诸实践。最近在查资料时，无意间又翻到了这个系列，遂下定决心，完成这个萌发已久的小想法。
+为了便于理解，对该系列的名字做了微调，原文是“JVM Anatomy Quarks”，将原文的“Quarks”（夸克）翻译为了“花园”。
+“JVM 解剖花园”是一个正在进行中的小型系列文章，每篇文章都会介绍一些有关 JVM 的基本知识。这个名字强调了一个事实，即单篇文章不能孤立地看待，这里描述的大部分内容都会很容易地相互影响。
+阅读这篇文章大约需要 5-10 分钟。因此，它只针对单一主题、单一测试、单一基准和单一观察进行深入探讨。这里的证据和讨论可能是轶事，并没有对错误、一致性、写作风格、语法和语义错误、重复或一致性进行实际审查。请自行承担使用和/或信任的风险。
+以上是该系列介绍。这里介绍一次，后续文章不再赘述。 问题 众所周知，Hotspot 可以进行 锁粗化优化，有效合并多个相邻的锁定块，从而减少锁定开销。它能有效地对如下代码做优化：
+synchronized (obj) { // statements 1 } synchronized (obj) { // statements 2 } 优化后：
+synchronized (obj) { // statements 1 // statements 2 } 现在，今天提出的一个有趣问题是：Hotspot 是否会对循环进行这种优化？例如：
+for (...) { synchronized (obj) { // something } } 是否会被优化成如下这样：
+synchronized (this) { for (...) { // something } } 理论上，没有什么能阻止我们这样做。我们甚至可以把这种优化看作是 循环判断外提，只不过这里是针对锁而已。然而，这样做的缺点是有可能使锁变得过于粗糙，从而导致特定线程在执行大循环时占用锁。
+实验 要回答这个问题，最简单的方法就是找到当前 Hotspot 优化的正面证据。幸运的是，有了 JMH，这一切都变得非常简单。它不仅有助于建立基准，还有助于工程中最重要的部分—​基准分析。让我们从一个简单的基准检查程序开始：
+@Fork(..., jvmArgsPrepend = {"-XX:-UseBiasedLocking"}) @State(Scope.Benchmark) public class LockRoach { (1) int x; @Benchmark @CompilerControl(CompilerControl.Mode.DONT_INLINE) public void test() { for (int c = 0; c &lt; 1000; c++) { synchronized (this) { x += 0x42; } } } } 1 完整代码在 这里。 这里有几个重要的技巧：
+使用 -XX:-UseBiasedLocking 禁用偏向锁可以避免更长的预热时间，因为偏向锁不会立即启动，而是会在初始化阶段等待 5 秒（参见 BiasedLockingStartupDelay 选项）。
+禁用 @Benchmark 的方法内联有助于在反汇编时将其分离。
+增加一个神奇的数字 0x42，有助于在反汇编中快速找到增量。</div><div class="list__footer clearfix"><a class="list__footer-readmore btn" href=/post/jvm-anatomy-quarks-01-lock-coarsening-for-loops/>阅读全文…</a></div></article><article class="list__item post"><figure class="list__thumbnail thumbnail"><a class=thumbnail__link href=/post/gc-tuning-success-story-reducing-young-gen-size/><img class=thumbnail__image src=/images/gc-tuning/reducing-young-gen-size.png alt="GC 调优成功案例：减少新生代的大小"></a></figure><header class=list__header><h2 class="list__title post__title"><a href=/post/gc-tuning-success-story-reducing-young-gen-size/ rel=bookmark>GC 调优成功案例：减少新生代的大小</a></h2><div class="list__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2024-01-06T16:51:18+08:00>2024-01-06</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/ rel=category>系统架构</a>, <a class=meta__link href=/categories/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/ rel=category>性能优化</a></span></div></div></header><div class="content list__excerpt post__content clearfix">当对垃圾回收性能做调优时，不仅能改善垃圾回收暂停时间，还能改善整个应用程序的响应时间并降低云计算成本。最近，我们帮助调整了一个流行应用程序的垃圾回收行为。仅仅是一个微小的改动，就带来了巨大的改善。让我们在这篇文章中讨论一下这个垃圾回收调整的成功案例。
+垃圾收集关键绩效指标 有句名言叫“无法衡量的东西就无法优化”。说到垃圾回收的调整，您只需关注 3 个主要关键绩效指标 (KPI)：
+GC 暂停时间
+GC 吞吐量
+CPU 消耗量
+垃圾回收运行时，会暂停应用程序。“GC 停顿时间”表示应用程序在垃圾回收事件中停顿的时间。该指标以秒或毫秒为单位。
+“GC 吞吐量”表示应用程序处理客户事务的总时间与处理垃圾回收活动的总时间之比。该指标以百分比为单位。例如，如果有人说他的应用程序的 GC 吞吐量是 98%，这表明该应用程序有 98% 的时间用于处理客户活动，其余 2% 的时间用于处理垃圾回收活动。
+即使是处理一个简单的请求，现代应用程序也会创建成千上万个对象。因此，垃圾收集器必须在后台不断运行，以释放为每个请求创建的成千上万个对象。因此，垃圾回收往往会消耗大量的 CPU。因此，在调整垃圾回收性能时，还应研究 CPU 消耗。要了解有关这些 KPI 的更多信息，请参阅： 内存调整： 关键性能指标。
+如何获取这些 KPI？ 在调优垃圾回收性能时，垃圾回收日志是您最好的朋友。您可以通过 这篇文章 给出的 JVM 参数在应用程序中启用垃圾回收日志。建议始终开启垃圾回收日志，因为它能提供丰富的信息，有助于预测中断、排除生产问题并帮助进行容量规划。此外，启用垃圾收集不会给应用程序增加任何明显的开销。
+启用垃圾收集日志后，您可以使用免费的垃圾收集日志分析工具，如 GCeasy、 IBM GC & Memory visualizer 和 Google Garbage cat 等，查看上述关键绩效指标。
+在下面这篇文章，教你 如何进行 GC 日志分析。
+垃圾回收行为基线 介绍到此为止。让我们回到本文最初的主题。我们在这个流行的应用程序上启用了垃圾回收日志。我们让应用程序运行了 24 小时。然后，我们将生成的 GC 日志文件上传到 GCeasy 工具。该工具提供了具有洞察力的图表和 GC KPI。该应用程序的 GC 吞吐量为 96.176%，平均暂停时间为 12.429 秒。
+图 1. 基线 GC KPI（由 GCeasy 生成）</div><div class="list__footer clearfix"><a class="list__footer-readmore btn" href=/post/gc-tuning-success-story-reducing-young-gen-size/>阅读全文…</a></div></article><article class="list__item post"><figure class="list__thumbnail thumbnail"><a class=thumbnail__link href=/post/how-to-aim-for-high-gc-throughput/><img class=thumbnail__image src=/images/high-gc-throughput/Parallelism-in-ConcurrentHashMap-1.png alt="如何实现 GC 的高吞吐量？"></a></figure><header class=list__header><h2 class="list__title post__title"><a href=/post/how-to-aim-for-high-gc-throughput/ rel=bookmark>如何实现 GC 的高吞吐量？</a></h2><div class="list__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2024-01-05T09:24:33+08:00>2024-01-05</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/ rel=category>系统架构</a>, <a class=meta__link href=/categories/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/ rel=category>性能优化</a></span></div></div></header><div class="content list__excerpt post__content clearfix">三四十年前，开发人员负责释放在应用程序中创建的对象。业务应用程序相当复杂，有不同的工作流、用例和场景。即使开发人员在某个场景中少释放一个对象，对象也会在内存中累积，造成内存泄漏。Java 于 1995 年推出时，承诺自动进行垃圾回收。它将删除对象的责任从开发人员转移到了 Java 虚拟机（JVM），从而彻底改变了内存管理。整个行业都积极拥抱了这一创新理念，因为开发人员不再需要操心手动内存管理。从那时起，自动垃圾回收已成为所有现代编程语言的默认功能。
+在本篇文章中，我们将探讨垃圾回收过程中的一个关键性能指标："GC 吞吐量"。我们将了解它的含义、在 Java 应用程序中的重要性以及它对整体性能的影响。此外，我们还将深入探讨提高 GC 吞吐量的可行策略，为现代软件开发释放其优势。
+什么是垃圾回收吞吐量？ 每当运行自动垃圾回收事件时，应用程序都会停顿，以识别内存中未引用的对象并将其释放。在停顿期间，不会处理任何客户请求。垃圾回收吞吐量请求应用程序处理客户请求的时间占多大比例，垃圾回收活动的时间占多大比例。例如，如果有人说他的应用程序的 GC 吞吐量是 98%，这意味着他的应用程序有 98% 的时间用于处理客户请求，其余 2% 的时间用于处理垃圾回收活动。 高 GC 吞吐量是可取的，因为它表明应用程序有效地利用了系统资源，从而减少了停顿，提高了整体性能。相反，GC 吞吐量低会导致垃圾回收停顿时间增加，影响应用程序的响应速度，造成性能瓶颈。监控和优化 GC 吞吐量对于确保应用程序的顺利执行和响应速度至关重要。在下一节中，我们将探讨查找应用程序 GC 吞吐量的方法，并了解如何解释结果以优化 Java 应用程序性能。继续…
+如何找到应用程序的 GC 吞吐量？ 垃圾回收日志是研究 GC 性能的最佳来源。如果你的应用程序运行在 JVM 上，你可以通过 如何进行 GC 日志分析 文章中提到的 JVM 参数启用 GC 日志。启用 GC 日志后，让应用程序处理流量至少一天，以观察高流量和低流量时段各自的运行情况。之后，可以将生成的 GC 日志文件上传到 GC 日志分析工具，以获得有价值的分析结果。一些常用的 GC 日志分析工具包括 GCeasy、 IBM GC & Memory visualizer 和 Google Garbage cat 等。这些工具将报告 GC 吞吐量以及其他重要的 GC 指标。下面是 GCeasy 工具的摘录，展示了包括 GC 吞吐量在内的各种 GC 关键性能指标 (KPI) 报告。</div><div class="list__footer clearfix"><a class="list__footer-readmore btn" href=/post/how-to-aim-for-high-gc-throughput/>阅读全文…</a></div></article><article class="list__item post"><figure class="list__thumbnail thumbnail"><a class=thumbnail__link href=/post/java-zgc-algorithm-tuning/><img class=thumbnail__image src=/images/java/zgc-banner.png alt="Java ZGC 调优"></a></figure><header class=list__header><h2 class="list__title post__title"><a href=/post/java-zgc-algorithm-tuning/ rel=bookmark>Java ZGC 调优</a></h2><div class="list__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2024-01-03T22:19:48+08:00>2024-01-03</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/ rel=category>系统架构</a>, <a class=meta__link href=/categories/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/ rel=category>性能优化</a></span></div></div></header><div class="content list__excerpt post__content clearfix">ZGC 是一种专门的垃圾回收器，主要用于管理大型堆和尽量减少 Java 应用程序中的停顿。它能应对在内存密集型工作负载和一致的响应时间至关重要的情况下的垃圾回收的挑战。ZGC 利用并发处理能力和先进的算法，为优化现代 Java 应用程序的性能提供了有效的解决方案。在本篇文章中，将专门探讨调整 ZGC 以提高性能的技术。不过，如果想了解更多基础知识，可以观看在 JAX 伦敦会议上发表的 垃圾回收调优 讲座。
+如何启用 ZGC？ 确保使用的 Java 版本支持 ZGC。OpenJDK 从 JDK11 开始支持 ZGC。在启动应用程序时添加以下 JVM 参数，这样就可以在 Java 应用程序中启用 ZGC 垃圾收集器：
+# D瓜哥 · https://www.digauge.com -XX:+UseZGC -XX:+ZGenerational (1) 1 D瓜哥注：分代 ZGC 从 OpenJDK 21+ 开始支持。 何时使用 ZGC？ 如果应用符合其中任何一项要求，就可以考虑使用 ZGC：
+堆大小较大：ZGC 特别适合堆容量较大的应用程序，堆容量通常在数十 GB 或更大。如果应用需要大量内存，ZGC 的低延迟特性将使其成为一个令人信服的选择。
+低延迟要求：当应用需要一致的响应时间和低延迟性能时，ZGC 将大显身手。在需要最大限度缩短垃圾回收暂停时间的情况下，ZGC 表现出色，特别适合交互式应用和实时性应用。
+具有不同工作负载的应用：ZGC 专为处理不同的工作负载而设计，因此适用于内存使用模式不可预测的应用。无论应用程序经历的是周期性的，突发性的，还是富有变化性的负载，ZGC 都能有效地适应这些调整。
+ZGC 调优参数 ZGC 是 Java 中的一种垃圾收集器，它采用了一种不同的调优方法：将暴露的 JVM 参数数量降至最低。与需要细粒度调整的传统垃圾收集器不同，ZGC 专注于优化大型堆的管理，同时以最小的配置开销提供高效的垃圾收集。这种精简的方法允许开发人员主要关注一个关键的 JVM 调整参数：堆大小。</div><div class="list__footer clearfix"><a class="list__footer-readmore btn" href=/post/java-zgc-algorithm-tuning/>阅读全文…</a></div></article><article class="list__item post"><figure class="list__thumbnail thumbnail"><a class=thumbnail__link href=/post/jvm-bytecode-constant/><img class=thumbnail__image src=/images/java/bytecode.svg alt="Java 虚拟机操作码探秘：常量指令"></a></figure><header class=list__header><h2 class="list__title post__title"><a href=/post/jvm-bytecode-constant/ rel=bookmark>Java 虚拟机操作码探秘：常量指令</a></h2><div class="list__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2022-09-03T16:17:34+08:00>2022-09-03</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/ rel=category>系统架构</a></span></div></div></header><div class="content list__excerpt post__content clearfix">在 Java 虚拟机指令(操作码)集 中给出了一个操作码的列表。针对所有的指令，仅仅给出了一个大概介绍，对理解来说可以说毫无助力。为了弥补这个短板，这里也学习 “Hessian 协议解释与实战”系列 那样，来一个详细解释和实战，配合实例来做个深入分析和讲解。这是这个系列的第一篇文章，就以列表中第一部分“常量”指令开始。
+从 Java 虚拟机指令(操作码)集 列表上来看，一共 21 个指令；按照处理数据的类型，合并同类项后，剩下有 nop、 aconst_null、 iconst_&lt;i>、 lconst_&lt;l>、 fconst_&lt;f>、 dconst_&lt;d>、 bipush、 sipush、 ldc 和 ldc2_w 等几个指令。下面，按照顺序，对其进行一一讲解。
+操作码助记符的首字母一般是有特殊含义的，表示操作码所作用的数据类型： i 代表对 int 类型的数据操作； l 代表 long； s 代表 short； b 代表 byte；c 代表 char；f 代表 float， d 代表 double； a 代表 reference。
+尖括号之间的字母指定了指令隐含操作数的数据类型，&lt;n> 代表非负的整数； &lt;i> 代表是 int 类型数据； &lt;l> 代表 long 类型； &lt;f> 代表 float 类型； &lt;d> 代表 double 类型。
+另外还需要指出一点：这种指令表示法在整个 Java 虚拟机规范之中都是通用的。
+nop 根据 Chapter 6. The Java Virtual Machine Instruction Set：nop 来看，就是“Do nothing”，暂时没有找到使用方法。就不做多介绍，后续看到相关资料，再做补充。</div><div class="list__footer clearfix"><a class="list__footer-readmore btn" href=/post/jvm-bytecode-constant/>阅读全文…</a></div></article><article class="list__item post"><figure class="list__thumbnail thumbnail"><a class=thumbnail__link href=/post/jvm-instruction-set/><img class=thumbnail__image src=/images/java/bytecode.svg alt="Java 虚拟机指令(操作码)集"></a></figure><header class=list__header><h2 class="list__title post__title"><a href=/post/jvm-instruction-set/ rel=bookmark>Java 虚拟机指令(操作码)集</a></h2><div class="list__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2022-08-31T13:00:44+08:00>2022-08-31</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/ rel=category>系统架构</a></span></div></div></header><div class="content list__excerpt post__content clearfix">最近在研究 Java 虚拟机字节码。在 《Java虚拟机规范》 看到一个整理完整的 Java 虚拟机指令集（也叫操作码）列表。转载过来，方便查阅。
+关于 Java 虚拟机指令(操作码)，准备写一个“探秘”系列：
+Java 虚拟机操作码探秘：常量指令 — 重点介绍一下关于“常量”指令。
+分类 操作码 助记符 指令含义 常量
+0
+0x00
+nop
+什么都不做
+1
+0x01
+aconst_null
+将 null 推送至栈顶
+2
+0x02
+iconst_m1
+将 int 类型 -1 推送至栈顶
+3
+0x03
+iconst_0
+将 int 类型 0 推送至栈顶
+4
+0x04
+iconst_1
+将 int 类型 1 推送至栈顶
+5
+0x05
+iconst_2
+将 int 类型 2 推送至栈顶
+6
+0x06
+iconst_3
+将 int 类型 3 推送至栈顶
+7
+0x07
+iconst_4
+将 int 类型 4 推送至栈顶
+8
+0x08
+iconst_5
+将 int 类型 5 推送至栈顶
+9
+0x09
+lconst_0
+将 long 类型 0 推送至栈顶
+10
+0x0a
+lconst_1
+将 long 类型 1 推送至栈顶
+11
+0x0b
+fconst_0
+将 float 类型 0 推送至栈顶
+12
+0x0c
+fconst_1
+将 float 类型 1 推送至栈顶
+13
+0x0d
+fconst_2
+将 float 类型 2 推送至栈顶
+14
+0x0e
+dconst_0
+将 double 类型 0 推送至栈顶
+15
+0x0f
+dconst_1
+将 double 类型 1 推送至栈顶
+16
+0x10
+bipush
+将单字节的常量值(-128 ~ 127)推送至栈顶
+17
+0x11
+sipush
+将一个短整类型常量值(-32,768 ~ 32,767)推送栈顶
+18
+0x12
+ldc
+将 int、 float 或 String 类型常量值从常量池中推送至栈顶
+19
+0x13
+ldc_w
+将int、 float 或 String 类型常量值从常量池中推送栈顶(宽索引)
+20
+0x14
+ldc2_w
+将 long 或 double 类型常量值从常量池中推送至栈(宽索引)
+加载
+21
+0x15
+iload
+将指定的 int 类型本地变量推送至栈顶
+22
+0x16
+lload
+将指定的 long 类型本地变量推送至栈顶
+23
+0x17
+fload
+将指定的 float 类型本地变量推送至栈顶
+24
+0x18
+dload
+将指定的 double 类型本地变量推送至栈顶
+25
+0x19
+aload
+将指定的引用类型本地变量推送至栈顶
+26
+0x1a
+iload_0
+将第 1 个 int 类型本地变量推送至栈顶
+27
+0x1b
+iload_1
+将第 2 个 int 类型本地变量推送至栈顶
+28
+0x1c
+iload_2
+将第 3 个 int 类型本地变量推送至栈顶
+29
+0x1d
+iload_3
+将第 4 个 int 类型本地变量推送至栈顶
+30
+0x1e
+lload_0
+将第 1 个 long 类型本地变量推送至栈顶
+31
+0x1f
+lload_1
+将第 2 个 long 类型本地变量推送至栈顶
+32
+0x20
+lload_2
+将第 3 个 long 类型本地变量推送至栈顶
+33
+0x21
+lload_3
+将第 4 个 long 类型本地变量推送至栈顶
+34
+0x22
+fload_0
+将第 1 个 float 类型本地变量推送至栈顶
+35
+0x23
+fload_1
+将第 2 个 float 类型本地变量推送至栈顶
+36
+0x24
+fload_2
+将第 3 个 float 类型本地变量推送至栈顶
+37
+0x25
+fload_3
+将第 4 个 float 类型本地变量推送至栈顶
+38
+0x26
+dload_0
+将第 1 个 double 类型本地变量推送至栈顶
+39
+0x27
+dload_1
+将第 2 个 double 类型本地变量推送至栈顶
+40
+0x28
+dload_2
+将第 3 个 double 类型本地变量推送至栈顶
+41
+0x29
+dload_3
+将第 4 个 double 类型本地变量推送至栈顶
+42
+0x2a
+aload_0
+将第 1 个引用类型本地变量推送至栈顶
+43
+0x2b
+aload_1
+将第 2 个引用类型本地变量推送至栈顶
+44
+0x2c
+aload_2
+将第 3 个引用类型本地变量推送至栈顶
+45
+0x2d
+aload_3
+将第 4 个引用类型本地变量推送至栈顶
+46
+0x2e
+iaload
+将 int 类型数组的指定元素推送至栈顶
+47
+0x2f
+laload
+将 long 类型数组的指定元素推送至栈顶
+48
+0x30
+faload
+将 float 类型数组的指定元素推送至栈顶
+49
+0x31
+daload
+将 double 类型数组的指定元素推送至栈顶
+50
+0x32
+aaload
+将引用类型数组的指定元素推送至栈顶
+51
+0x33
+baload
+将 boolean 或 byte 类型数组的指定元素推送至栈顶
+52
+0x34
+caload
+将 char 类型数组的指定元素推送至栈顶
+53
+0x35
+saload
+将 short 类型数组的指定元素推送至栈顶
+存储
+54
+0x36
+istore
+将栈顶 int 类型数值存入指定本地变量
+55
+0x37
+lstore
+将栈顶 long 类型数值存入指定本地变量
+56
+0x38
+fstore
+将栈顶 float 类型数值存入指定本地变量
+57
+0x39
+dstore
+将栈顶 double 类型数值存入指定本地变量
+58
+0x3a
+astore
+将栈顶引用类型数值存入指定本地变量
+59
+0x3b
+istore_0
+将栈顶 int 类型数值存入第 1 个本地变量
+60
+0x3c
+istore_1
+将栈顶 int 类型数值存入第 2 个本地变量
+61
+0x3d
+istore_2
+将栈顶 int 类型数值存入第 3 个本地变量
+62
+0x3e
+istore_3
+将栈顶 int 类型数值存入第 4 个本地变量
+63
+0x3f
+lstore_0
+将栈顶 long 类型数值存入第 1 个本地变量
+64
+0x40
+lstore_1
+将栈顶 long 类型数值存入第 2 个本地变量
+65
+0x41
+lstore_2
+将栈顶 long 类型数值存入第 3 个本地变量
+66
+0x42
+lstore_3
+将栈顶 long 类型数值存入第 4 个本地变量
+67
+0x43
+fstore_0
+将栈顶 float 类型数值存入第 1 个本地变量
+68
+0x44
+fstore_1
+将栈顶 float 类型数值存入第 2 个本地变量
+69
+0x45
+fstore_2
+将栈顶 float 类型数值存入第 3 个本地变量
+70
+0x46
+fstore_3
+将栈顶 float 类型数值存入第 4 个本地变量
+71
+0x47
+dstore_0
+将栈顶 double 类型数值存入第 1 个本地变量
+72
+0x48
+dstore_1
+将栈顶 double 类型数值存入第 2 个本地变量
+73
+0x49
+dstore_2
+将栈顶 double 类型数值存入第 3 个本地变量
+74
+0x4a
+dstore_3
+将栈顶 double 类型数值存入第 4 个本地变量
+75
+0x4b
+astore_0
+将栈顶引用类型数值存入第 1 个本地变量
+76
+0x4c
+astore_1
+将栈顶引用类型数值存入第 2 个本地变量
+77
+0x4d
+astore_2
+将栈顶引用类型数值存入第 3 个本地变量
+78
+0x4e
+astore_3
+将栈顶引用类型数值存入第 4 个本地变量
+79
+0x4f
+iastore
+将栈顶 int 类型数值存入指定数组的指定索引位置
+80
+0x50
+lastore
+将栈顶 long 类型数值存入指定数组的指定索引位置
+81
+0x51
+fastore
+将栈顶 float 类型数值存入指定数组的指定索引位置
+82
+0x52
+dastore
+将栈顶 double 类型数值存入指定数组的指定索引位置
+83
+0x53
+aastore
+将栈顶引用类型数值存入指定数组的指定索引位置
+84
+0x54
+bastore
+将栈顶 boolean 或 byte 类型数值存入指定数组的指定索引位置
+85
+0x55
+castore
+将栈顶 char 类型数值存入指定数组的指定索引位置
+86
+0x56
+sastore
+将栈顶 short 类型数值存入指定数组的指定索引位置
+栈
+87
+0x57
+pop
+将栈顶数值弹出(数值不能是 long 或 double 类型的)
+88
+0x58
+pop2
+将栈顶的一个 long 或 double 类型的数值或两个其他类型的数值弹出
+89
+0x59
+dup
+复制栈顶数值并将复制值压入栈顶
+90
+0x5a
+dup_x1
+复制栈顶值并将其插入栈顶那两个值的下面
+91
+0x5b
+dup_x2
+复制栈顶值并将其插入栈顶那两个或三个值的下面
+92
+0x5c
+dup2
+复制栈顶的一个 long 或 double 类型的值，或两个其他类型的值，并将其压入栈顶
+93
+0x5d
+dup2_x1
+复制栈顶的一个或两个值，并将其插入栈顶那两个或三个值的下面
+94
+0x5e
+dup2_x2
+复制栈顶的一个或两个值，并将其插入栈顶那两个、三个或四个值的下面
+95
+0x5f
+swap
+将栈顶的两个数值互换(数值不能是 long 或 double 类型的)
+数学
+96
+0x60
+iadd
+将栈顶两 int 类型数值相加并将结果压入栈顶
+97
+0x61
+ladd
+将栈顶两 1ong 类型数值相加并将结果压入栈顶
+98
+0x62
+fadd
+将栈顶两 float 类型数值相加并将结果压入栈顶
+99
+0x63
+dadd
+将栈顶两 double 类型数值相加并将结果压入栈顶
+100
+0x64
+isub
+将栈顶两 int 类型数值相减并将结果压入栈顶
+101
+0x65
+lsub
+将栈顶两 long 类型数值相减并将结果压入栈顶
+102
+0x66
+fsub
+将栈顶两 float 类型数值相减并将结果压入栈顶
+103
+0x67
+dsub
+将栈顶两 double 类型数值相减并将结果压入栈顶
+104
+0x68
+imul
+将栈顶两 int 类型数值相乘并将结果压入栈顶
+105
+0x69
+lmul
+将栈顶两 long 类型数值相乘并将结果压入栈顶
+106
+0x6a
+fmul
+将栈顶两 float 类型数值相乘并将结果压入栈顶
+107
+0x6b
+dmul
+将栈顶两 double 类型数值相乘并将结果压入栈顶
+108
+0x6с
+idiv
+将栈顶两 int 类型数值相除并将结果压入栈顶
+109
+0x6d
+ldiv
+将栈顶两 long 类型数值相除并将结果压入栈顶
+110
+0x6e
+fdiv
+将栈顶两 float 类型数值相除并将结果压入栈顶
+111
+0x6f
+ddiv
+将栈顶两 double 类型数值相除并将结果压入栈顶
+112
+0x70
+irem
+将栈顶两 int 类型数值作取模运算并将结果压入栈顶
+113
+0x71
+lrem
+将栈顶两 long 类型数值作取模运算并将结果压入栈顶
+114
+0x72
+frem
+将栈顶两 float 类型数值作取模运算并将结果压入栈顶
+115
+0x73
+drem
+将栈顶两 double 类型数值作取模运算并将结果压入栈顶
+116
+0x74
+ineg
+将栈顶 int 类型数值取负并将结果压入栈顶
+117
+0x75
+lneg
+将栈顶 long 类型数值取负并将结果压入栈顶
+118
+0x76
+fneg
+将栈顶 float 类型数值取负并将结果压入栈顶
+119
+0x77
+dneg
+将栈顶 double 类型数值取负并将结果压入栈顶
+120
+0x78
+ishl
+将 int 类型数值左移位指定位数并将结果压入栈顶
+121
+0x79
+lshl
+将 long 类型数值左移位指定位数并将结果压入栈顶
+122
+0x7a
+ishr
+将 int 类型数值(有符号)右移位指定位数并将结果压入栈顶
+123
+0x7b
+lshr
+将 long 类型数值(有符号)右移位指定位数并将结果压入栈顶
+124
+0x7c
+iushr
+将 int 类型数值(无符号)右移位指定位数并将结果压入栈顶
+125
+0x7d
+lushr
+将 long 类型数值(无符号)右移位指定位数并将结果压入栈顶
+126
+0x7e
+iand
+将栈顶两 int 类型数值作“按位与”并将结果压入栈顶
+127
+0x7f
+land
+将栈顶两 long 类型数值作“按位与”并将结果压入栈顶
+128
+0x80
+ior
+将栈顶两 int 类型数值作“按位或”并将结果压入栈顶
+129
+0x81
+lor
+将栈顶两 long 类型数值作“按位或”并将结果压入栈顶
+130
+0x82
+ixor
+将栈顶两 int 类型数值作“按位异或”并将结果压入栈顶
+131
+0x83
+lxor
+将栈顶两 long 类型数值作“按位异或”并将结果压入栈顶
+132
+0x84
+iinc
+将指定 int 类型变量增加指定值(i++，i--，i += 2)
+转换
+133
+0x85
+i2l
+将栈顶 int 类型数值强制转换成 long 类型数值并将结果压入栈顶
+134
+0x86
+i2f
+将栈顶 int 类型数值强制转换成 float 类型数值并将结果压入栈顶
+135
+0x87
+i2d
+将栈顶 int 类型数值强制转换成 double 类型数值并将结果压入栈顶
+136
+0x88
+l2i
+将栈顶 long 类型数值强制转换成 int 类型数值并将结果压入栈顶
+137
+0x89
+l2f
+将栈顶 long 类型数值强制转换成 float 类型数值并将结果压入栈顶
+138
+0x8a
+l2d
+将栈顶 long 类型数值强制转换成 double 类型数值并将结果压入栈顶
+139
+0x8b
+f2i
+将栈顶 float 类型数值强制转换成 int 类型数值并将结果压入栈顶
+140
+0x8c
+f2l
+将栈顶 float 类型数值强制转换成 long 类型数值并将结果压入栈顶
+141
+0x8d
+f2d
+将栈顶 float 类型数值强制转换成 double 类型数值并将结果压入栈顶
+142
+0x8e
+d2i
+将栈顶 double 类型数值强制转换成 int 类型数值并将结果压入栈顶
+143
+0x8f
+d2l
+将栈顶 double 类型数值强制转换成 long 类型数值并将结果压入栈顶
+144
+0x90
+d2f
+将栈顶 double 类型数值强制转换成 float 类型数值并将结果压入栈顶
+145
+0x91
+i2b
+将栈顶 int 类型数值强制转换成 byte 类型数值并将结果压入栈顶
+146
+0x92
+i2c
+将栈顶 int 类型数值强制转换成 char 类型数值并将结果压入栈顶
+147
+0x93
+i2s
+将栈顶 int 类型数值强制转换成 short 类型数值并将结果压入栈顶
+比较
+148
+0x94
+lcmp
+比较栈顶两 long 类型数值大小，并将结果(1，0，-1)压入栈顶
+149
+0x95
+fcmpl
+比较栈顶两 float 类型数值大小，并将结果(1，0，-1)压入栈顶；当其中一个数值为“NaN”时，将 -1 压入栈顶
+150
+0x96
+fcmpg
+比较栈顶两 float 类型数值大小，并将结果(1，0，-1)压入栈顶；当其中一个数值为“NaN”时，将1压入栈顶
+151
+0x97
+dcmpl
+比较栈顶两 double 类型数值大小，并将结果(1，0，-1)压入栈顶；当其中一个数值为“NaN”时，将-1压入栈顶
+152
+0x98
+dcmpg
+比较栈顶两 double 类型数值大小，并将结果(1，0，-1)压入栈顶；当其中一个数值为“NaN”时，将1压入栈顶
+153
+0x99
+ifeq
+当栈顶 int 类型数值等于 0 时跳转
+154
+0x9a
+ifne
+当栈顶 int 类型数值不等于 0 时跳转
+155
+0x9b
+iflt
+当栈顶 int 类型数值小于 0 时跳转
+156
+0x9c
+ifge
+当栈顶 int 类型数值大于等于 0 时跳转
+157
+0x9d
+ifgt
+当栈顶 int 类型数值大于 0 时跳转
+158
+0x9e
+ifle
+当栈顶 int 类型数值小于等于 0 时跳转
+159
+0x9f
+if_icmpeq
+比较栈顶两 int 类型数值大小，当前者等于后者时跳转
+160
+0xa0
+if_icmpne
+比较栈顶两 int 类型数值大小，当前者不等于后者时跳转
+161
+0xa1
+if_icmplt
+比较栈顶两 int 类型数值大小，当前者小于后者时跳转
+162
+0xa2
+if_icmpge
+比较栈顶两 int 类型数值大小，当前者大于等于后者时跳转
+163
+0xa3
+if_icmpgt
+比较栈顶两 int 类型数值大小，当前者大于后者时跳转
+164
+0xa4
+if_icmple
+比较栈顶两 int 类型数值大小，当前者小于等于后者时跳转
+165
+0xa5
+if_acmpeq
+比较栈顶两引用类型数值，当结果相等时跳转
+166
+0xa6
+ifacmpne
+比较栈顶两引用类型数值，当结果不相等时跳转
+控制
+167
+0xa7
+goto
+无条件跳转
+168
+0xa8
+jsr
+跳转至指定 16 位 offset 位置，并将 jsr 下一条指令地址压入栈顶
+169
+0xa9
+ret
+返回至由指定的局部变量所给出的指令位置(一般与 jsr、jsr_w 联合使用)
+170
+0xaa
+tableswitch
+用于 switch 条件跳转，case 值连续(变长指令)
+171
+0xab
+lookupswitch
+用于 switch 条件跳转，case 值不连续(变长指令)
+172
+0xac
+ireturn
+从当前方法返回 int
+173
+Oxad
+lreturn
+从当前方法返回 long
+174
+0xae
+freturn
+从当前方法返回 float
+175
+0xaf
+dreturn
+从当前方法返回 double
+176
+0xb0
+areturn
+从当前方法返回对象引用
+177
+0xb1
+return
+从当前方法返回void
+引用
+178
+0xb2
+getstatic
+获取指定类的静态字段，并将其值压入栈顶
+179
+0xb3
+putstatic
+为指定类的静态字段赋值
+180
+0xb4
+getfield
+获取指定类的实例字段，并将其值压入栈顶
+181
+0xb5
+putfield
+为指定类的实例字段赋值
+182
+0xb6
+invokevirtual
+调用实例方法
+183
+0xb7
+invokespecial
+调用父类方法、实例初始化方法、私有方法
+184
+0xb8
+invokestatic
+调用静态方法
+185
+0xb9
+invokeinterface
+调用接口方法
+186
+0xba
+invokedynamic
+调用动态链接方法
+187
+0xbb
+new
+创建一个对象，并将其引用值压入栈顶
+188
+0xbc
+newarray
+创建一个指定原始类型(如int、float 、char等)的数组，并将其引用值压入栈顶
+189
+0xbd
+anewarray
+创建一个引用型(如类、接口、数组)的数组，并将其引用值压入栈顶
+190
+0xbe
+arraylength
+获得数组的长度值并压入栈顶
+191
+0xbf
+athrow
+将栈顶的异常抛出
+192
+0xcO
+checkcast
+检验类型转换，检验未通过将抛出 ClassCastException
+193
+0xc1
+instanceof
+检验对象是否是指定类的实例。如果是，就将 1 压入栈顶，否则将 0 压入栈顶
+194
+0xc2
+monitorenter
+获得对象的锁，用于实现同步块
+195
+0xc3
+monitorexit
+释放对象的锁，用于实现同步块
+扩展
+196
+0xc4
+wide
+扩展本地变量索引的宽度
+197
+0xс5
+multianewarray
+创建指定类型和指定维度的多维数组(执行该指令时，操作栈中必须包含各维度的长度值)，并将其引用值压入栈顶
+198
+0xc6
+ifnull
+为nu11时跳转
+199
+0xc7
+ifnonnull
+不为nu11时跳转
+200
+0xc8
+goto_w
+无条件跳转(宽索引)
+201
+0xc9
+jsr_w
+跳转至指定 32 位 offset 位置，并将 jsr_w 下一条指令地址压入栈顶
+保留指令
+202
+Оxca
+breakpoint
+调试时的断点标记
+254
+Oxfe
+impdep1
+为特定软件面预留的语言后门
+255
+0xff
+impdep2
+为特定硬件面预留的语言后门
+参考资料 Chapter 6. The Java Virtual Machine Instruction Set
+Java bytecode
+List of Java bytecode instructions</div><div class="list__footer clearfix"><a class="list__footer-readmore btn" href=/post/jvm-instruction-set/>阅读全文…</a></div></article><article class="list__item post"><figure class="list__thumbnail thumbnail"><a class=thumbnail__link href=/post/schema-evolution-in-avro-protobuf-thrift/><img class=thumbnail__image src=/images/marshal/pb-thrift-avro.jpg alt="Avro、ProtoBuf、Thrift 的模式演进之法【翻译】"></a></figure><header class=list__header><h2 class="list__title post__title"><a href=/post/schema-evolution-in-avro-protobuf-thrift/ rel=bookmark>Avro、ProtoBuf、Thrift 的模式演进之法【翻译】</a></h2><div class="list__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2022-08-27T08:30:43+08:00>2022-08-27</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/ rel=category>系统架构</a>, <a class=meta__link href=/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/ rel=category>程序设计</a></span></div></div></header><div class="content list__excerpt post__content clearfix">前面系统研究了 Hessian 序列化协议。并以此为契机，顺带实例对比了 Hessian、MessagePack 和 JSON 的序列化。早在 2012 年，Martin Kleppmann 就写了一篇文章 《Schema evolution in Avro, Protocol Buffers and Thrift》，也是基于实例，对比了 Avro、ProtoBuf、Thrift 的差别。现在翻译出来，方便做系列研究。
+整个“序列化系列”目录如下：
+Hessian 2.0 序列化协议（中文版） — Hessian 序列化协议的中文翻译版。根据后面的“协议解释与实战”系列文章，增加了协议内容错误提示。
+Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数 — 介绍布尔型数据、日期类型、浮点类型数据和整数类型数据等四种类型的数据的处理。
+Hessian 协议解释与实战（二）：长整型、二进制数据与 Null — 介绍长整数类型数据、二进制数据和 null 等三种类型的数据的处理。
+Hessian 协议解释与实战（三）：字符串 — 专门介绍了关于字符串的处理。由于字符串需要铺垫的基础知识比较多，处理细节也有繁琐，所以单独成篇来介绍。
+Hessian 源码分析（Java） — 开始第四篇分析之前，先来介绍一下 Hessian 的源码实现。方便后续展开说明。
+Hessian 协议解释与实战（四）：数组与集合 — 铺垫了一些关于实例对象的处理，重点介绍关于数组和集合的相关处理。
+Hessian 协议解释与实战（五）：对象与映射 — 重点介绍关于对象与映射的相关处理。
+Hessian、Msgpack 和 JSON 实例对比 — 用实例对比 JSON、Hessian 和 MessagePack 的区别。
+Avro、ProtoBuf、Thrift 的模式演进之路 — 翻译的 Martin Kleppmann 的文章，重点对比了 Avro、ProtoBuf、Thrift 的序列化处理思路。</div><div class="list__footer clearfix"><a class="list__footer-readmore btn" href=/post/schema-evolution-in-avro-protobuf-thrift/>阅读全文…</a></div></article><article class="list__item post"><figure class="list__thumbnail thumbnail"><a class=thumbnail__link href=/post/hessian-vs-msgpack-vs-json/><img class=thumbnail__image src=/images/common/bahe.jpg alt="Hessian、Msgpack 和 JSON 实例对比"></a></figure><header class=list__header><h2 class="list__title post__title"><a href=/post/hessian-vs-msgpack-vs-json/ rel=bookmark>Hessian、Msgpack 和 JSON 实例对比</a></h2><div class="list__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2022-08-05T11:28:03+08:00>2022-08-05</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/ rel=category>系统架构</a>, <a class=meta__link href=/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/ rel=category>程序设计</a></span></div></div></header><div class="content list__excerpt post__content clearfix">前段时间，翻译了 Hessian 2.0 的序列化协议，发布在了 Hessian 2.0 序列化协议（中文版）。但是，其中有很多言语不详之处。所以，接下来会用几篇文章来详细解释并实践一下 Hessian 序列化协议，以求做到知其然知其所以然。
+目录如下：
+Hessian 2.0 序列化协议（中文版） — Hessian 序列化协议的中文翻译版。根据后面的“协议解释与实战”系列文章，增加了协议内容错误提示。
+Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数 — 介绍布尔型数据、日期类型、浮点类型数据和整数类型数据等四种类型的数据的处理。
+Hessian 协议解释与实战（二）：长整型、二进制数据与 Null — 介绍长整数类型数据、二进制数据和 null 等三种类型的数据的处理。
+Hessian 协议解释与实战（三）：字符串 — 专门介绍了关于字符串的处理。由于字符串需要铺垫的基础知识比较多，处理细节也有繁琐，所以单独成篇来介绍。
+Hessian 源码分析（Java） — 开始第四篇分析之前，先来介绍一下 Hessian 的源码实现。方便后续展开说明。
+Hessian 协议解释与实战（四）：数组与集合 — 铺垫了一些关于实例对象的处理，重点介绍关于数组和集合的相关处理。
+Hessian 协议解释与实战（五）：对象与映射 — 重点介绍关于对象与映射的相关处理。
+Hessian、Msgpack 和 JSON 实例对比 — 用实例对比 JSON、Hessian 和 MessagePack 的区别。
+Avro、ProtoBuf、Thrift 的模式演进之路 — 翻译的 Martin Kleppmann 的文章，重点对比了 Avro、ProtoBuf、Thrift 的序列化处理思路。
+本文用实际来对比一下 JSON、Hessian 和 MessagePack 的区别。</div><div class="list__footer clearfix"><a class="list__footer-readmore btn" href=/post/hessian-vs-msgpack-vs-json/>阅读全文…</a></div></article><article class="list__item post"><figure class="list__thumbnail thumbnail"><a class=thumbnail__link href=/post/hessian-protocol-interpretation-and-practice-5/><img class=thumbnail__image src=/images/common/confused-target-vector.jpg alt="Hessian 协议解释与实战（五）：对象与映射"></a></figure><header class=list__header><h2 class="list__title post__title"><a href=/post/hessian-protocol-interpretation-and-practice-5/ rel=bookmark>Hessian 协议解释与实战（五）：对象与映射</a></h2><div class="list__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2022-05-31T16:02:13+08:00>2022-05-31</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/ rel=category>系统架构</a>, <a class=meta__link href=/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/ rel=category>程序设计</a></span></div></div></header><div class="content list__excerpt post__content clearfix">前段时间，翻译了 Hessian 2.0 的序列化协议，发布在了 Hessian 2.0 序列化协议（中文版）。但是，其中有很多言语不详之处。所以，接下来会用几篇文章来详细解释并实践一下 Hessian 序列化协议，以求做到知其然知其所以然。目录如下：
+Hessian 2.0 序列化协议（中文版） — Hessian 序列化协议的中文翻译版。根据后面的“协议解释与实战”系列文章，增加了协议内容错误提示。
+Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数 — 介绍布尔型数据、日期类型、浮点类型数据和整数类型数据等四种类型的数据的处理。
+Hessian 协议解释与实战（二）：长整型、二进制数据与 Null — 介绍长整数类型数据、二进制数据和 null 等三种类型的数据的处理。
+Hessian 协议解释与实战（三）：字符串 — 专门介绍了关于字符串的处理。由于字符串需要铺垫的基础知识比较多，处理细节也有繁琐，所以单独成篇来介绍。
+Hessian 源码分析（Java） — 开始第四篇分析之前，先来介绍一下 Hessian 的源码实现。方便后续展开说明。
+Hessian 协议解释与实战（四）：数组与集合 — 铺垫了一些关于实例对象的处理，重点介绍关于数组和集合的相关处理。
+Hessian 协议解释与实战（五）：对象与映射 — 重点介绍关于对象与映射的相关处理。
+Hessian、Msgpack 和 JSON 实例对比 — 用实例对比 JSON、Hessian 和 MessagePack 的区别。
+Avro、ProtoBuf、Thrift 的模式演进之路 — 翻译的 Martin Kleppmann 的文章，重点对比了 Avro、ProtoBuf、Thrift 的序列化处理思路。
+在上一篇文章 Hessian 协议解释与实战（四）：数组与集合 中研究了数组和集合的处理方式。接下来介绍对象和映射的处理。
+基础工具方法 基础工具方法就不再赘述，请直接参考 Hessian 协议解释与实战（一）：基础工具方法 中提到的几个方法。</div><div class="list__footer clearfix"><a class="list__footer-readmore btn" href=/post/hessian-protocol-interpretation-and-practice-5/>阅读全文…</a></div></article><article class="list__item post"><figure class="list__thumbnail thumbnail"><a class=thumbnail__link href=/post/hessian-protocol-interpretation-and-practice-4/><img class=thumbnail__image src=/images/common/confused-target-vector.jpg alt="Hessian 协议解释与实战（四）：数组与集合"></a></figure><header class=list__header><h2 class="list__title post__title"><a href=/post/hessian-protocol-interpretation-and-practice-4/ rel=bookmark>Hessian 协议解释与实战（四）：数组与集合</a></h2><div class="list__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2022-05-26T18:01:43+08:00>2022-05-26</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/ rel=category>系统架构</a>, <a class=meta__link href=/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/ rel=category>程序设计</a></span></div></div></header><div class="content list__excerpt post__content clearfix">前段时间，翻译了 Hessian 2.0 的序列化协议，发布在了 Hessian 2.0 序列化协议（中文版）。但是，其中有很多言语不详之处。所以，接下来会用几篇文章来详细解释并实践一下 Hessian 序列化协议，以求做到知其然知其所以然。目录如下：
+Hessian 2.0 序列化协议（中文版） — Hessian 序列化协议的中文翻译版。根据后面的“协议解释与实战”系列文章，增加了协议内容错误提示。
+Hessian 协议解释与实战（一）：布尔、日期、浮点数与整数 — 介绍布尔型数据、日期类型、浮点类型数据和整数类型数据等四种类型的数据的处理。
+Hessian 协议解释与实战（二）：长整型、二进制数据与 Null — 介绍长整数类型数据、二进制数据和 null 等三种类型的数据的处理。
+Hessian 协议解释与实战（三）：字符串 — 专门介绍了关于字符串的处理。由于字符串需要铺垫的基础知识比较多，处理细节也有繁琐，所以单独成篇来介绍。
+Hessian 源码分析（Java） — 开始第四篇分析之前，先来介绍一下 Hessian 的源码实现。方便后续展开说明。
+Hessian 协议解释与实战（四）：数组与集合 — 铺垫了一些关于实例对象的处理，重点介绍关于数组和集合的相关处理。
+Hessian 协议解释与实战（五）：对象与映射 — 重点介绍关于对象与映射的相关处理。
+Hessian、Msgpack 和 JSON 实例对比 — 用实例对比 JSON、Hessian 和 MessagePack 的区别。
+Avro、ProtoBuf、Thrift 的模式演进之路 — 翻译的 Martin Kleppmann 的文章，重点对比了 Avro、ProtoBuf、Thrift 的序列化处理思路。
+在上一篇文章 Hessian 源码分析（Java） 对 Hessian 的 Java 实现做了一个概要的分析，对处理流程以及整体架构做了一个简单的分析。接下来，回到主题，继续来解释 Hessian 序列化协议。这篇文章，我们来重点分析一下数组与集合相关的操作。</div><div class="list__footer clearfix"><a class="list__footer-readmore btn" href=/post/hessian-protocol-interpretation-and-practice-4/>阅读全文…</a></div></article></main><div class=pagination><a class="pagination__item pagination__item--else" href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/>1
+</a><a class="pagination__item pagination__item--else" href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/page/2/>2
+</a><a class="pagination__item pagination__item--current" href=#>3
+</a><a class="pagination__item pagination__item--else" href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/page/4/>4</a></div></div><aside class=sidebar><div class="widget-search widget"><form class=widget-search__form role=search method=get action=https://google.com/search><label><input class=widget-search__field type=search placeholder=搜索… name=q aria-label=搜索…>
+</label><input class=widget-search__submit type=submit value=Search>
+<input type=hidden name=sitesearch value=https://www.diguage.com/></form></div><div class="widget-wechat widget"><h4 class=widget__title>微信公众号</h4><img alt=微信公众号 class=center src=/images/wx-jikerizhi-qrcode.jpg></div><div class="widget-wechat widget"><h4 class=widget__title>知识星球</h4><img alt=微信公众号 class=center src=/images/zhishixingqiu.png></div><div class="widget-recent widget"><h4 class=widget__title>近期文章</h4><div class=widget__content><ul class=widget__list><li class=widget__item><a class=widget__link href=/post/spring-boot-startup-process-overview/>Spring Boot 启动流程概述</a></li><li class=widget__item><a class=widget__link href=/post/redis-core-data-structure-4/>Redis 核心数据结构（四）</a></li><li class=widget__item><a class=widget__link href=/post/redis-core-data-structure-3/>Redis 核心数据结构（三）</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-subsets/>算法模式：子集</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-backtracking/>算法模式：回溯</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-transform-and-conquer/>算法模式：变治法</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-divide-and-conquer/>算法模式：分治法</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-decrease-and-conquer/>算法模式：减治法</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-topological-sort/>算法模式：拓扑排序</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-union-find/>算法模式：并查集</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-trie/>算法模式：前缀树</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-depth-first-search/>算法模式：深度优先搜索</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-breadth-first-search/>算法模式：广度优先搜索</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-k-way-merge/>算法模式：多路归并</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-two-heaps/>算法模式：双堆</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-cyclic-sort/>算法模式：循环排序</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-quickselect/>算法模式：快速选择</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-top-k-elements/>算法模式：Top K 问题</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-monotonic-stack/>算法模式：单调栈</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-sliding-window/>算法模式：滑动窗口</a></li></ul></div></div><div class="widget-categories widget"><h4 class=widget__title>分类</h4><div class=widget__content><ul class=widget__list><li class=widget__item><a class=widget__link href=/categories/%E4%B8%AA%E4%BA%BA%E6%88%90%E9%95%BF/>个人成长</a></li><li class=widget__item><a class=widget__link href=/categories/%E5%88%86%E5%B8%83%E5%BC%8F/>分布式</a></li><li class=widget__item><a class=widget__link href=/categories/%E5%BC%80%E5%8F%91%E5%B7%A5%E5%85%B7/>开发工具</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/>性能优化</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/>操作系统</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%95%B0%E6%8D%AE%E5%AD%98%E5%82%A8/>数据存储</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%96%87%E5%AD%A6/>文学</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%96%B9%E6%B3%95%E8%AE%BA/>方法论</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/>程序设计</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%AE%97%E6%B3%95/>算法</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/>系统架构</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%BB%8F%E6%B5%8E%E9%87%91%E8%9E%8D/>经济金融</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/>编程语言</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%BD%91%E7%BB%9C/>网络</a></li><li class=widget__item><a class=widget__link href=/categories/%E8%81%8C%E4%B8%9A%E5%8F%91%E5%B1%95/>职业发展</a></li><li class=widget__item><a class=widget__link href=/categories/%E8%BD%AF%E4%BB%B6%E5%B7%A5%E7%A8%8B/>软件工程</a></li><li class=widget__item><a class=widget__link href=/categories/%E9%80%B8%E9%97%BB%E8%B6%A3%E4%BA%8B/>逸闻趣事</a></li><li class=widget__item><a class=widget__link href=/categories/%E9%98%85%E8%AF%BB%E6%91%98%E8%A6%81/>阅读摘要</a></li></ul></div></div><div class="widget-taglist widget"><h4 class=widget__title>标签</h4><div class=widget__content><a class="widget-taglist__link widget__link btn" href=/tags/gc/ title=GC>GC (9)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/http/ title=HTTP>HTTP (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/java/ title=Java>Java (64)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/jvm/ title=JVM>JVM (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/kpi/ title=KPI>KPI (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/kubernetes/ title=Kubernetes>Kubernetes (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/linux/ title=Linux>Linux (12)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/okr/ title=OKR>OKR (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/redis/ title=Redis>Redis (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/shell/ title=Shell>Shell (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/spring/ title=Spring>Spring (26)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/tcp/ title=TCP>TCP (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/udp/ title=UDP>UDP (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/zookeeper/ title=ZooKeeper>ZooKeeper (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E4%B8%AA%E4%BA%BA%E6%8F%90%E5%8D%87/ title=个人提升>个人提升 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E4%B9%A6%E7%B1%8D/ title=书籍>书籍 (15)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E4%BA%A7%E5%93%81/ title=产品>产品 (7)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%80%BA%E5%88%B8/ title=债券>债券 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%88%86%E5%B8%83%E5%BC%8F/ title=分布式>分布式 (15)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%88%86%E6%B2%BB/ title=分治>分治 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/ title=动态规划>动态规划 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9B%A2%E9%98%9F%E5%BB%BA%E8%AE%BE/ title=团队建设>团队建设 (6)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9B%A2%E9%98%9F%E6%96%87%E5%8C%96/ title=团队文化>团队文化 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9B%BE/ title=图>图 (7)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9F%BA%E9%87%91/ title=基金>基金 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%A0%86/ title=堆>堆 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%AD%98%E5%82%A8/ title=存储>存储 (6)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%B7%A5%E4%BD%9C%E6%96%B9%E6%B3%95/ title=工作方法>工作方法 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%B9%B6%E5%8F%91/ title=并发>并发 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%BA%8F%E5%88%97%E5%8C%96/ title=序列化>序列化 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/ title=微服务>微服务 (17)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%BF%83%E7%90%86%E5%AD%A6/ title=心理学>心理学 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95/ title=性能测试>性能测试 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%8A%95%E8%B5%84%E7%90%86%E8%B4%A2/ title=投资理财>投资理财 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/ title=数据库>数据库 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/ title=数据结构>数据结构 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%95%B0%E7%BB%84/ title=数组>数组 (13)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%96%B9%E6%B3%95%E8%AE%BA/ title=方法论>方法论 (13)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%97%85%E8%A1%8C/ title=旅行>旅行 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5/ title=最佳实践>最佳实践 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%9E%B6%E6%9E%84/ title=架构>架构 (44)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%A0%88/ title=栈>栈 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%A0%91/ title=树>树 (11)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%B2%9F%E9%80%9A%E6%8A%80%E5%B7%A7/ title=沟通技巧>沟通技巧 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/ title=源码分析>源码分析 (8)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%90%86%E8%B4%A2/ title=理财>理财 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%94%9F%E6%B4%BB/ title=生活>生活 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%AC%94%E8%AE%B0/ title=笔记>笔记 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%AE%97%E6%B3%95/ title=算法>算法 (8)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%AE%97%E6%B3%95%E6%A8%A1%E5%BC%8F/ title=算法模式>算法模式 (23)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BB%8F%E6%B5%8E/ title=经济>经济 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BC%96%E7%A0%81/ title=编码>编码 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BD%91%E7%BB%9C/ title=网络>网络 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BF%BB%E8%AF%91/ title=翻译>翻译 (7)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%82%A1%E7%A5%A8/ title=股票>股票 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%84%91%E5%9B%BE/ title=脑图>脑图 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%8A%82%E6%97%A5/ title=节日>节日 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%8B%B1%E8%AF%AD/ title=英语>英语 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%99%9A%E6%8B%9F%E6%9C%BA/ title=虚拟机>虚拟机 (9)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AE%BA%E6%96%87/ title=论文>论文 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AE%BE%E8%AE%A1/ title=设计>设计 (36)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/ title=设计模式>设计模式 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AF%97%E6%AD%8C/ title=诗歌>诗歌 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AF%BB%E4%B9%A6/ title=读书>读书 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%80%92%E5%BD%92/ title=递归>递归 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%87%91%E8%9E%8D/ title=金融>金融 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%93%BE%E8%A1%A8/ title=链表>链表 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1/ title=面向对象>面向对象 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%A2%86%E5%9F%9F%E9%A9%B1%E5%8A%A8%E8%AE%BE%E8%AE%A1/ title=领域驱动设计>领域驱动设计 (5)</a></div></div><div class="widget-social widget"><h4 class="widget-social__title widget__title">社交</h4><div class="widget-social__content widget__content"><div class="widget-social__item widget__item"><a class="widget-social__link widget__link btn" title=Twitter rel="noopener noreferrer" href=https://twitter.com/diguage target=_blank><svg class="widget-social__link-icon icon icon-twitter" width="24" height="24" viewBox="0 0 384 312"><path d="m384 36.9c-14.1 6.3-29.3 10.5-45.2 12.4 16.3-9.7 28.8-25.2 34.6-43.6-15.2 9-32.1 15.6-50 19.1-14.4-15.2-34.9-24.8-57.5-24.8-43.5.0-78.8 35.3-78.8 78.8.0 6.2.7 12.2 2 17.9-65.5-3.3-123.5-34.6-162.4-82.3C20 26 16.1 39.6 16.1 54c0 27.3 13.9 51.4 35 65.6-12.9-.4-25.1-4-35.7-9.9v1c0 38.2 27.2 70 63.2 77.2-6.6 1.8-13.6 2.8-20.8 2.8-5.1.0-10-.5-14.8-1.4 10 31.3 39.1 54.1 73.6 54.7-27 21.1-60.9 33.7-97.8 33.7-6.4.0-12.6-.4-18.8-1.1C34.9 299 76.3 312 120.8 312c144.9.0 224.1-120 224.1-224.1.0-3.4-.1-6.8-.2-10.2 15.4-11.1 28.7-25 39.3-40.8z"/></svg>
+<span>Twitter</span></a></div><div class="widget-social__item widget__item"><a class="widget-social__link widget__link btn" title=GitHub rel="noopener noreferrer" href=https://github.com/diguage target=_blank><svg class="widget-social__link-icon icon icon-github" width="24" height="24" viewBox="0 0 384 374"><path d="m192 0C85.9.0.0 85.8.0 191.7c0 84.7 55 156.6 131.3 181.9 9.6 1.8 13.1-4.2 13.1-9.2.0-4.6-.2-16.6-.3-32.6-53.4 11.6-64.7-25.7-64.7-25.7-8.7-22.1-21.3-28-21.3-28-17.4-11.9 1.3-11.6 1.3-11.6 19.3 1.4 29.4 19.8 29.4 19.8 17.1 29.3 44.9 20.8 55.9 15.9 1.7-12.4 6.7-20.8 12.2-25.6-42.6-4.8-87.5-21.3-87.5-94.8.0-20.9 7.5-38 19.8-51.4-2-4.9-8.6-24.3 1.9-50.7.0.0 16.1-5.2 52.8 19.7 15.3-4.2 31.7-6.4 48.1-6.5 16.3.1 32.7 2.2 48.1 6.5 36.7-24.8 52.8-19.7 52.8-19.7 10.5 26.4 3.9 45.9 1.9 50.7 12.3 13.4 19.7 30.5 19.7 51.4.0 73.7-44.9 89.9-87.7 94.6 6.9 5.9 13 17.6 13 35.5.0 25.6-.2 46.3-.2 52.6.0 5.1 3.5 11.1 13.2 9.2C329 348.2 384 276.4 384 191.7 384 85.8 298 0 192 0z"/></svg>
+<span>GitHub</span></a></div><div class="widget-social__item widget__item"><a class="widget-social__link widget__link btn" title=Email href=mailto:leejun119@gmail.com><svg class="widget-social__link-icon icon icon-mail" width="24" height="24" viewBox="0 0 416 288"><path d="m0 16v256 16h16 384 16v-16V16 0h-16H16 0zm347 16-139 92.5L69 32zM199 157.5l9 5.5 9-5.5L384 46v210H32V46z"/></svg>
+<span>leejun119@gmail.com</span></a></div></div></div></aside></div><footer class=footer><div class="container footer__container flex"><div class=footer__copyright>&copy; 2025 "地瓜哥"博客网.
+<span class=footer__copyright-credits>基于 <a href=https://gohugo.io/ rel="nofollow noopener" target=_blank>Hugo</a> 引擎和 <a href=https://github.com/Vimux/Mainroad/ rel="nofollow noopener" target=_blank>Mainroad</a> 主题</span>
+<span><a href=https://beian.miit.gov.cn/ target=_target>京ICP备14046450号-4</a></span></div></div></footer></div><script async defer src=/js/menu.js></script></body></html>

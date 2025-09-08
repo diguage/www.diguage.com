@@ -1,0 +1,238 @@
+<!doctype html><html class=no-js lang=zh-cn><head><meta name=generator content="Hugo 0.134.3"><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><meta http-equiv=X-UA-Compatible content="IE=edge"><title>"地瓜哥"博客网</title>
+<script>(function(e,t){e[t]=e[t].replace("no-js","js")})(document.documentElement,"className")</script><meta name=keywords content="java,架构,设计,spring,算法模式,微服务,书籍,分布式,数组,方法论,linux,树,kubernetes,个人提升,序列化,数据库,最佳实践,gc,虚拟机,源码分析,算法,产品,图,翻译,团队建设,"><meta name=description content='"地瓜哥"博客网是由 D瓜哥 维护的以分享技术文章的博客网站。'><meta property="og:url" content="https://www.diguage.com/"><meta property="og:site_name" content='"地瓜哥"博客网'><meta property="og:title" content='"地瓜哥"博客网'><meta property="og:description" content='"地瓜哥"博客网是由 D瓜哥 维护的以分享技术文章的博客网站。'><meta property="og:locale" content="zh_cn"><meta property="og:type" content="website"><meta name=twitter:card content="summary"><meta name=twitter:title content='"地瓜哥"博客网'><meta name=twitter:description content='"地瓜哥"博客网是由 D瓜哥 维护的以分享技术文章的博客网站。'><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link rel=dns-prefetch href=//fonts.googleapis.com><link rel=dns-prefetch href=//fonts.gstatic.com><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Open+Sans:400,400i,700"><link rel=alternate type=application/rss+xml href=/index.xml title 地瓜哥"博客网"><link rel=stylesheet href=/css/style.min.css><link rel=stylesheet href=/css/asciidoctor.css><link rel=stylesheet href=/css/rouge-monokai.css><link rel=alternate type=application/rss+xml href=/index.xml title 地瓜哥"博客网"><link rel="shortcut icon" href=/favicon.ico><script async src="https://www.googletagmanager.com/gtag/js?id=G-1MMT2NLEL4"></script><script>var dnt,doNotTrack=!1;if(!1&&(dnt=navigator.doNotTrack||window.doNotTrack||navigator.msDoNotTrack,doNotTrack=dnt=="1"||dnt=="yes"),!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-1MMT2NLEL4")}</script><script id=baidu_analytics>var _hmt=_hmt||[];(function(){var e,t=document.createElement("script");t.src="https://hm.baidu.com/hm.js?e56e7dd0a120b414f5741f4c5e5218ea",e=document.getElementsByTagName("script")[0],e.parentNode.insertBefore(t,e)})()</script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css></head><body class=body><div class="container container--outer"><header class=header><div class="container header__container"><div class=logo><a class=logo__link href=/ title='"地瓜哥"博客网' rel=home><div class="logo__item logo__text"><div class=logo__title>"地瓜哥"博客网</div><div class=logo__tagline>分享技术带来的喜悦 — https://www.diguage.com/</div></div></a></div><nav class=menu><button class=menu__btn aria-haspopup=true aria-expanded=false tabindex=0>
+<span class=menu__btn-title tabindex=-1>菜单</span></button><ul class=menu__list><li class=menu__item><a class=menu__link href=/><span class=menu__text>首页</span></a></li><li class=menu__item><a class=menu__link href=/categories/><span class=menu__text>分类</span></a></li><li class=menu__item><a class=menu__link href=/about/><span class=menu__text>关于</span></a></li><li class=menu__item><a class=menu__link href=/archives/><span class=menu__text>归档</span></a></li></ul></nav></div></header><div class="wrapper flex"><div class=primary><main class="main list" role=main><article class="list__item post"><figure class="list__thumbnail thumbnail"><a class=thumbnail__link href=/post/spring-boot-startup-process-overview/><img class=thumbnail__image src=/images/logo/spring.svg alt="Spring Boot 启动流程概述"></a></figure><header class=list__header><h2 class="list__title post__title"><a href=/post/spring-boot-startup-process-overview/ rel=bookmark>Spring Boot 启动流程概述</a></h2><div class="list__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2025-07-08T09:23:05+08:00>2025-07-08</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/ rel=category>程序设计</a></span></div></div></header><div class="content list__excerpt post__content clearfix">在 Spring 启动流程概述 中，D瓜哥简要介绍了一下 Spring 的启动流程概述。前段时间查看了一下 Spring Boot 的启动流程，画了个时序图，分享一下。
+图 1. Spring Boot 启动流程 结合这张时序图，再加上 Spring 启动流程概述 中的 Spring 启动时序图，就可以看到 Spring Boot 和 Spring 启动的全貌了。</div></article><article class="list__item post"><figure class="list__thumbnail thumbnail"><a class=thumbnail__link href=/post/redis-core-data-structure-4/><img class=thumbnail__image src=/images/redis/redis-logo.png alt="Redis 核心数据结构（四）"></a></figure><header class=list__header><h2 class="list__title post__title"><a href=/post/redis-core-data-structure-4/ rel=bookmark>Redis 核心数据结构（四）</a></h2><div class="list__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2025-06-17T16:36:56+08:00>2025-06-17</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/ rel=category>程序设计</a>, <a class=meta__link href=/categories/%E7%AE%97%E6%B3%95/ rel=category>算法</a>, <a class=meta__link href=/categories/%E5%88%86%E5%B8%83%E5%BC%8F/ rel=category>分布式</a></span></div></div></header><div class="content list__excerpt post__content clearfix">在 Redis 核心数据结构（三） 中，重点介绍了一下 Redis 7+ 使用的底层的数据结构 listpack。本文重点看一下，Redis 是如何基于 listpack 以及其他数据结构类型来构建对外暴露的五个核心数据结构的。
+quicklist 关于 quicklist 更详细的介绍，请看 Redis 核心数据结构（一：quicklist。
+与上述内容不一样的地方是，现在的 quicklist 底层是使用 listpack 来构建的，而不是上述内容介绍的 ziplist。
+list 关于 list-max-listpack-size 的解释，在源码中找到了详细介绍：
+redis.conf # Lists are also encoded in a special way to save a lot of space. # The number of entries allowed per internal list node can be specified # as a fixed maximum size or a maximum number of elements. # For a fixed maximum size, use -5 through -1, meaning: # -5: max size: 64 Kb &lt;-- not recommended for normal workloads # -4: max size: 32 Kb &lt;-- not recommended # -3: max size: 16 Kb &lt;-- probably not recommended # -2: max size: 8 Kb &lt;-- good # -1: max size: 4 Kb &lt;-- good # Positive numbers mean store up to _exactly_ that number of elements # per list node. # The highest performing option is usually -2 (8 Kb size) or -1 (4 Kb size), # but if your use case is unique, adjust the settings as necessary. list-max-listpack-size -2</div><div class="list__footer clearfix"><a class="list__footer-readmore btn" href=/post/redis-core-data-structure-4/>阅读全文…</a></div></article><article class="list__item post"><figure class="list__thumbnail thumbnail"><a class=thumbnail__link href=/post/redis-core-data-structure-3/><img class=thumbnail__image src=/images/redis/redis-logo.png alt="Redis 核心数据结构（三）"></a></figure><header class=list__header><h2 class="list__title post__title"><a href=/post/redis-core-data-structure-3/ rel=bookmark>Redis 核心数据结构（三）</a></h2><div class="list__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2025-06-13T17:36:31+08:00>2025-06-13</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/ rel=category>程序设计</a>, <a class=meta__link href=/categories/%E7%AE%97%E6%B3%95/ rel=category>算法</a>, <a class=meta__link href=/categories/%E5%88%86%E5%B8%83%E5%BC%8F/ rel=category>分布式</a></span></div></div></header><div class="content list__excerpt post__content clearfix">在五年前，D瓜哥写了 Redis 核心数据结构（一） 和 Redis 核心数据结构（二） 两篇文章，来对 Redis 内部的数据结构做了深入分析。随着时间的推移，Redis 的实现也在不断进化，现在这些内容已经跟不上最新发展了，推陈出新，现在重写文章，来介绍 Redis 的最新发展。
+listpack 从 Redis 7.0 开始，使用 listpack 替换原来的 ziplist。至于替换原因，在 [NEW] listpack migration - replace all usage of ziplist with listpack 做了解释说明：
+The reason for using listpack instead of ziplist is that ziplist may cause cascading updates when insert and delete in middle, which is the biggest problem.
+— sundb 翻译过来：当在中间进行插入和删除时，ziplist 也许会产生级联更新，这是一个大问题。
+编码规范 图 1. listpack 编码格式 相比 ziplist，listpack 更偏向空间换时间。淡化极致的内存使用率，向更快的方向发力。
+对整数编码</div><div class="list__footer clearfix"><a class="list__footer-readmore btn" href=/post/redis-core-data-structure-3/>阅读全文…</a></div></article><article class="list__item post"><figure class="list__thumbnail thumbnail"><a class=thumbnail__link href=/post/algorithm-pattern-subsets/><img class=thumbnail__image src=/images/data-structure/tree.png alt=算法模式：子集></a></figure><header class=list__header><h2 class="list__title post__title"><a href=/post/algorithm-pattern-subsets/ rel=bookmark>算法模式：子集</a></h2><div class="list__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2025-04-10T11:38:25+08:00>2025-04-10</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E7%AE%97%E6%B3%95/ rel=category>算法</a></span></div></div></header><div class="content list__excerpt post__content clearfix">在上一篇文章 算法模式：回溯 介绍一种“一步三回头”、“落棋有悔”的算法模式：回溯。本篇文章，介绍一种无需“一步三回头”，无需“落棋有悔”也可以解决排列组合问题的算法模式：子集。
+子集 超级多的编程面试问题都会涉及到排列和组合问题。一般都是使用回溯来解决该类问题，回溯法属于 深度优先搜索。子集问题模式讲的是用 广度优先搜索 来处理这些问题。子集模式适用于子集与全排列。下面分别介绍：
+处理子集问题 举例来说明一下这个模式：
+给一组数字 [1, 5, 3]
+我们从空集开始：[[]]
+把第一个数 1，加到之前已经存在的集合中：[[], [1]];
+把第二个数 5，加到之前的集合中得到：[[], [1], [5], [1,5]];
+再加第三个数 3，则有：[[], [1], [5], [1,5], [3], [1,3], [5,3], [1,5,3]].
+如果原有集合中存在重复元素，那么就需要针对这种情况特殊处理一下。流程如下：
+给一组数字 [5, 1, 5]
+先对原有集合进行排序： [1, 5, 3]
+从空集开始：[[]]
+把第一个数 1，加到之前已经存在的集合中：[[], [1]];
+把第二个数 5，加到之前的集合中得到：[[], [1], [5], [1,5]];
+处理第三个数，也是 5 时需要注意：
+如果还是按照上述方案处理，那么就会得到如下结果： [[], [1], [5], [1,5], [5], [1, 5], [5, 5], [1,5, 5]]。这里出现了重复子集： [5], [1, 5]。该方案不通过，❌
+观察最后生成的所有子集与重复的子集，会发现重复的子集，在处理第二个数时，已经处理过 [], [1]，如果再次处理 5，那么就会出现重复。所以，只需要处理在处理上一个相同的数时新增加的子集即可。上一个相同数新增的子集是 [5], [1,5]，只需要在这些子集后面增加当前数字即可。这样最后的子集就是：[[], [1], [5], [1,5], [5, 5], [1,5, 5]]。方案通过 ✅</div><div class="list__footer clearfix"><a class="list__footer-readmore btn" href=/post/algorithm-pattern-subsets/>阅读全文…</a></div></article><article class="list__item post"><figure class="list__thumbnail thumbnail"><a class=thumbnail__link href=/post/algorithm-pattern-backtracking/><img class=thumbnail__image src=/images/data-structure/tree.png alt=算法模式：回溯></a></figure><header class=list__header><h2 class="list__title post__title"><a href=/post/algorithm-pattern-backtracking/ rel=bookmark>算法模式：回溯</a></h2><div class="list__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2025-04-09T17:30:51+08:00>2025-04-09</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E7%AE%97%E6%B3%95/ rel=category>算法</a></span></div></div></header><div class="content list__excerpt post__content clearfix">在上一篇文章 算法模式：变治法 介绍一种有魔力的，可以将复杂问题化繁为简，化腐朽为神奇的算法模式：变治法。本篇文章，介绍一种“一步三回头”、“落棋有悔”的算法模式：回溯。
+回溯 “回溯”算法也叫“回溯搜索”算法，主要用于在一个庞大的空间里搜索我们所需要的问题的解。我们每天使用的“搜索引擎”就是帮助我们在庞大的互联网上搜索我们需要的信息。“搜索”引擎的“搜索”和“回溯搜索”算法的“搜索”意思是一样的。
+“回溯”指的是“状态重置”，可以理解为“回到过去”、“恢复现场”，是在编码的过程中，是为了节约空间而使用的一种技巧。而回溯其实是“深度优先遍历”特有的一种现象。之所以是“深度优先遍历”，是因为我们要解决的问题通常是在一棵树上完成的，在这棵树上搜索需要的答案，一般使用深度优先遍历。
+“全排列”就是一个非常经典的“回溯”算法的应用。我们知道，N 个数字的全排列一共有 \$N!\$ 这么多个。
+使用编程的方法得到全排列，就是在这样的一个树形结构中进行编程，具体来说，就是执行一次深度优先遍历，从树的根结点到叶子结点形成的路径就是一个全排列。
+说明：
+每一个结点表示了“全排列”问题求解的不同阶段，这些阶段通过变量的“不同的值”体现；
+这些变量的不同的值，也称之为“状态”；
+使用深度优先遍历有“回头”的过程，在“回头”以后，状态变量需要设置成为和先前一样；
+因此在回到上一层结点的过程中，需要撤销上一次选择，这个操作也称之为“状态重置”；
+深度优先遍历，可以直接借助系统栈空间，为我们保存所需要的状态变量，在编码中只需要注意遍历到相应的结点的时候，状态变量的值是正确的，具体的做法是：往下走一层的时候，path 变量在尾部追加，而往回走的时候，需要撤销上一次的选择，也是在尾部操作，因此 path 变量是一个栈。
+深度优先遍历通过“回溯”操作，实现了全局使用一份状态变量的效果。
+解决一个回溯问题，实际上就是一个决策树的遍历过程。只需要思考 3 个问题：
+路径：也就是已经做出的选择。
+选择列表：也就是你当前可以做的选择。
+结束条件：也就是到达决策树底层，无法再做选择的条件。
+这三个问题也就对应回溯三部曲：
+定义递归函数以及参数
+确定递归终止条件
+思考递归单层搜索逻辑
+代码方面，回溯算法的框架：
+result = [] def backtrack(路径, 选择列表): if 满足结束条件: result.add(路径) return for 选择 in 选择列表: 做选择 backtrack(路径, 选择列表) 撤销选择 其核心就是 for 循环里面的递归，在递归调用之前「做选择」，在递归调用之后「撤销选择」，特别简单。
+必须说明的是，不管怎么优化，都符合回溯框架，而且时间复杂度都不可能低于 \$O(N!)\$，因为穷举整棵决策树是无法避免的。这也是回溯算法的一个特点，不像动态规划存在重叠子问题可以优化，回溯算法就是纯暴力穷举，复杂度一般都很高。
+玩回溯，一定要画出递归调用树。这样可以帮助我们更深入地理解整个回溯的过程，方便进一步剪枝优化。
+回溯优化，重要的是，要学会剪枝！
+LeetCode 46. 全排列 LeetCode - 46. 全排列 给定一个不含重复数字的数组 nums ，返回其 所有可能的全排列 。你可以 按任意顺序 返回答案。</div><div class="list__footer clearfix"><a class="list__footer-readmore btn" href=/post/algorithm-pattern-backtracking/>阅读全文…</a></div></article><article class="list__item post"><figure class="list__thumbnail thumbnail"><a class=thumbnail__link href=/post/algorithm-pattern-transform-and-conquer/><img class=thumbnail__image src=/images/data-structure/graph.png alt=算法模式：变治法></a></figure><header class=list__header><h2 class="list__title post__title"><a href=/post/algorithm-pattern-transform-and-conquer/ rel=bookmark>算法模式：变治法</a></h2><div class="list__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2025-04-08T16:50:33+08:00>2025-04-08</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E7%AE%97%E6%B3%95/ rel=category>算法</a></span></div></div></header><div class="content list__excerpt post__content clearfix">在上一篇文章 算法模式：分治法 介绍一种可用于处理节点前后顺序的算法模式：拓扑排序。本篇文章，介绍一种有魔力的，可以将复杂问题化繁为简，化腐朽为神奇的算法模式：变治法。
+变治法 D瓜哥最早知道变治法也是在 《算法设计与分析基础》 中。这里也直接引用该书的介绍。
+变治法，就是基于变换的一种思想方法，首先把问题的实例变得容易求解，然后进行求解。
+变治法的工作可以分成两个阶段：首先把问题变得更容易求解，然后对实例进行求解。根据我们对问题实例的变换方式，变治思想有3种主要的类型：
+实例化简(Instance simplification) — 指将原问题变换为同样问题的一个更简单或者更方便的实例。一个典型的案例是：去重时，先排序，
+列表预排序
+检验数组中元素的唯一性
+模式计算
+查找问题
+高斯消元法
+系数矩阵的LU分解(LU decomposition)
+计算矩阵的逆
+计算矩阵的行列式
+AVL 树
+改变表现(Representation Change) — 指将原问题变换为同样实例的不同表现。经典的栗子：霍纳法则。
+多路平衡查找树（最简单的情况：2-3树）
+求多项式的霍纳法则
+两种二进制幂算法
+堆排序
+问题化简(Problem reduction) — 指把一个给定的问题变换为另一个可以用已知算法求解的问题。（归化思想）转换的难题在于如何找到一个变换的目标算法。典型案例是背包问题，背包问题的本质是线性规划。了解了线性规划的本质后，才能更好地解决高维的背包问题。
+求最小公倍数
+计算图中的路径数量
+最优化问题（最大化问题(maximization problem)、最小化问题(minimization problem)）
+线性规划（单纯形法、0/1背包问题）
+简化为图问题
+LeetCode 474. 一和零 LeetCode - 474. 一和零
+给你一个二进制字符串数组 strs 和两个整数 m 和 n 。
+请你找出并返回 strs 的最大子集的长度，该子集中 最多 有 m 个 0 和 n 个 1 。</div><div class="list__footer clearfix"><a class="list__footer-readmore btn" href=/post/algorithm-pattern-transform-and-conquer/>阅读全文…</a></div></article><article class="list__item post"><figure class="list__thumbnail thumbnail"><a class=thumbnail__link href=/post/algorithm-pattern-divide-and-conquer/><img class=thumbnail__image src=/images/data-structure/divide-and-conquer.png alt=算法模式：分治法></a></figure><header class=list__header><h2 class="list__title post__title"><a href=/post/algorithm-pattern-divide-and-conquer/ rel=bookmark>算法模式：分治法</a></h2><div class="list__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2025-04-07T15:59:27+08:00>2025-04-07</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E7%AE%97%E6%B3%95/ rel=category>算法</a></span></div></div></header><div class="content list__excerpt post__content clearfix">在上一篇文章 算法模式：减治法 介绍一种有魔力的，可以将复杂问题化繁为简，化腐朽为神奇的算法模式：减治法。本篇文章，继续介绍一种有魔力的，可以将复杂问题化繁为简，化腐朽为神奇的算法模式：分治法。
+分治法 关于分治法的内容，这里继续参考 《算法设计与分析基础》 中的内容。
+分治法是按照以下方案工作的。
+将一个问题划分为同一类型的若干子问题，子问题最好规模相同。
+对这些子问题求解（一般使用递归方法，但在问题规模足够小时，有时也会利用另一个算法）。
+有必要的话，合并这些子问题的解，以得到原始问题的答案。
+图 1. 分治法 从字面上分析就可以看到有哪些步骤：
+分-分解-将问题分解为规模更小的子问题，子问题最好相同或相似；
+治-求解-将这些规模更小的子问题逐个击破；
+合-合并-将已解决的子问题合并，最终得出原问题的解；
+从上述步骤中我们可以看出，分治算法一般适用满足以下条件的场景：
+问题规模缩小到一定的程度就可以很容易解决；
+问题可以分解为若干个规模较小的相同问题；
+问题分解出的若干子问题的解可以合并为该问题的解；
+每个子问题都是独立的，相互之间没有交集。（这是区别分治法与减）
+在“分”的过程中，我们尽可能让分解出的子问题与原始问题相似，而规模更小。这刚好符合递归的特性。因此，分治法往往与递归联系在一起。
+在分治法最典型的运用中，问题规模为 n 的实例被划分为两个规模为 n/2 的实例。更一般的情况下，一个规模为 n 的实例可以划分为 b 个规模为 n/b 的实例，其中 a 个实例需要求解（这里，a 和 b 是常量，a≥1，b>1）。
+\$T(n) = aT(n/b) + f(n)\$ 其中，\$f(n)\$ 是一个函数，表示将问题分解为小问题和将结果合并起来所消耗的时间
+分治法的典型案例如下：
+归并排序
+快速排序
+二叉树的经典遍历算法和其他类似的算法都需要递归处理左右两棵子树
+Strassen 算法
+最近对问题
+凸包问题
+分治法对分治出的部分需要分别处理，进行分开的单独计算，而减治法则利用了"一个问题给定实例的解和同样问题较小实例的解之间的关系"，只针对部分子问题求解，减治掉的那部分就不需要了。
+减常因子的减治法也可以看做是分治的变种。
+LeetCode 148. 排序链表 LeetCode - 148. 排序链表 给你链表的头结点 head ，请将其按 升序 排列并返回 排序后的链表 。</div><div class="list__footer clearfix"><a class="list__footer-readmore btn" href=/post/algorithm-pattern-divide-and-conquer/>阅读全文…</a></div></article><article class="list__item post"><figure class="list__thumbnail thumbnail"><a class=thumbnail__link href=/post/algorithm-pattern-decrease-and-conquer/><img class=thumbnail__image src=/images/data-structure/graph.png alt=算法模式：减治法></a></figure><header class=list__header><h2 class="list__title post__title"><a href=/post/algorithm-pattern-decrease-and-conquer/ rel=bookmark>算法模式：减治法</a></h2><div class="list__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2025-04-06T23:32:03+08:00>2025-04-06</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E7%AE%97%E6%B3%95/ rel=category>算法</a></span></div></div></header><div class="content list__excerpt post__content clearfix">在上一篇文章 算法模式：拓扑排序 介绍一种可用于处理节点前后顺序的算法模式：拓扑排序。本篇文章，介绍一种有魔力的，可以将复杂问题化繁为简，化腐朽为神奇的算法模式：减治法。
+减治法 D瓜哥最早知道减治法是在 《算法设计与分析基础》 中。这里也直接引用该书的介绍。
+减治(decrease-and-conquer)技术利用了一个问题给定实例的解和同样问题较小实例的解之间的某种关系。自底向上版本往往是迭代实现的，从求解问题的一个较小实例开始，该方法有时也称为增量法(Incremental Approach)。
+减治法有3种主要的变化形式：
+减去一个常量。在减常量(decrease-by-a-constant)变化形式中，每次算法迭代总是从实例中减去一个相同的常量。
+插入排序
+减去一个常量因子。减常因子(decrease-by-a-constant-factor)技术意味着在算法的每次迭代中，总是从实例的规模中减去一个相同的常数因子。在大多数应用中，这样的常数因子等于2，其实就是减半。
+二分查找
+减去的规模是可变的。在减治法的减可变规模(variable-size-decrease)变化形式中，算法在每次迭代时，规模减小的模式都是不同的。
+计算最大公约数的欧几里得算法是这种情况的一个很好的例子。 \$gcd(m, n)=gcd(n,m mod n)\$
+LeetCode 50. Pow(x, n) LeetCode - 50. Pow(x, n) 实现 pow(x, n) ，即计算 x 的整数 n 次幂函数（即，xn）。
+示例 1：
+输入：x = 2.00000, n = 10 输出：1024.00000 示例 2：
+输入：x = 2.10000, n = 3 输出：9.26100 示例 3：
+输入：x = 2.00000, n = -2 输出：0.25000 解释：2-2 = 1/22 = 1/4 = 0.25 提示：</div><div class="list__footer clearfix"><a class="list__footer-readmore btn" href=/post/algorithm-pattern-decrease-and-conquer/>阅读全文…</a></div></article><article class="list__item post"><figure class="list__thumbnail thumbnail"><a class=thumbnail__link href=/post/algorithm-pattern-topological-sort/><img class=thumbnail__image src=/images/data-structure/graph.png alt=算法模式：拓扑排序></a></figure><header class=list__header><h2 class="list__title post__title"><a href=/post/algorithm-pattern-topological-sort/ rel=bookmark>算法模式：拓扑排序</a></h2><div class="list__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2025-04-04T09:09:09+08:00>2025-04-04</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E7%AE%97%E6%B3%95/ rel=category>算法</a></span></div></div></header><div class="content list__excerpt post__content clearfix">在上一篇文章 算法模式：并查集 介绍一种关于特殊的树的算法模式：并查集。本篇文章，介绍一种可用于处理节点前后顺序的算法模式：拓扑排序。
+拓扑排序 拓扑排序模式用来寻找一种线性的顺序，这些元素之间具有依懒性。比如，如果事件 B 依赖于事件 A，那 A 在拓扑排序顺序中排在 B 的前面。
+这种模式定义了一种简单方式来理解拓扑排序这种技术。
+这种模式是这样奏效的：
+初始化
+借助于 Map 将图保存成邻接表形式。
+找到所有的起点，用 Map 来帮助记录每个节点的入度
+创建图，找到每个节点的入度
+利用输入，把图建好，然后遍历一下图，将入度信息记录在 Map 中
+找所有的起点
+所有入度为 0 的节点，都是有效的起点，而且我们讲他们都加入到一个队列中
+排序
+对每个起点，执行以下步骤
+把它加到结果的顺序中
+将其在图中的孩子节点取到
+将其孩子的入度减少1
+如果孩子的入度变为0，则改孩子节点成为起点，将其加入队列中
+重复上述过程，直到起点队列为空。
+用一句话概括：将依赖关系转化成一张有向图，如果这张图中的节点没有循环依赖，那么则方案可行，否则方案不可行。
+这里解释的是一种广度优先搜索，还存在一种深度优先搜索的处理办法，感兴趣可以尝试一下。 拓扑排序模式识别：
+待解决的问题需要处理无环图
+你需要以一种有序的秩序更新输入元素
+需要处理的输入遵循某种特定的顺序
+LeetCode 207. 课程表 LeetCode - 207. 课程表 你这个学期必须选修 numCourses 门课程，记为 0 到 numCourses - 1 。
+在选修某些课程之前需要一些先修课程。 先修课程按数组 prerequisites 给出，其中 prerequisites[i] = [ai, bi]，表示如果要学习课程 ai 则 必须 先学习课程 bi。</div><div class="list__footer clearfix"><a class="list__footer-readmore btn" href=/post/algorithm-pattern-topological-sort/>阅读全文…</a></div></article><article class="list__item post"><figure class="list__thumbnail thumbnail"><a class=thumbnail__link href=/post/algorithm-pattern-union-find/><img class=thumbnail__image src=/images/data-structure/union-find.png alt=算法模式：并查集></a></figure><header class=list__header><h2 class="list__title post__title"><a href=/post/algorithm-pattern-union-find/ rel=bookmark>算法模式：并查集</a></h2><div class="list__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2025-04-03T15:22:41+08:00>2025-04-03</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E7%AE%97%E6%B3%95/ rel=category>算法</a></span></div></div></header><div class="content list__excerpt post__content clearfix">在上一篇文章 算法模式：前缀树 介绍一种关于特殊的树的算法模式。本篇文章，再介绍一种关于特殊的树的算法模式：并查集。
+并查集 并查集算法，英文是 Union-Find，是解决动态连通性（Dynamic Conectivity）问题的一种算法。动态连通性是计算机图论中的一种数据结构，动态维护图结构中相连信息。简单的说就是，图中各个节点之间是否相连、如何将两个节点连接，连接后还剩多少个连通分量。
+动态连通性其实可以抽象成给一幅图连线。假设用一个数组表示一堆节点，每个节点都是一个连通分量。初始化视图如下：
+图 1. 并查集初始化 并查集的一个重要操作是 union(a, b)，就是将节点 a 和节点 b 建立连接。如图所示：
+图 2. 并查集合并 union(a, b) 还可以将已经建立的两个“子网”进行连接：
+图 3. 并查集再合并 并查集除了 union，还有一个重要操作是 connnected(a, b)。判断方法也很简单，从节点 a 和 b 开始，向上查找，直到两个节点的根节点，判断两个根节点是否相等即可判断两个节点是否已经连接。为了加快这个判断速度，可以对其进行“路径压缩”，直白点说，就是将所有树的节点，都直接指向根节点，这样只需要一步即可到达根节点。路径压缩如图所示：
+图 4. 并查集路径压缩 简单代码实现如下：
+package com.diguage.labs; import java.util.ArrayList; import java.util.List; /** * 并查集 * * PS：没想到代码竟然一次通过。 * * @author D瓜哥 · https://www.diguage.com * @since 2025-04-03 15:22:41 */ public class UnionFind { /** * 连通分量 */ private int size; /** * 每个节点及对应的父节点 */ private int[] parent; public UnionFind(int size) { this.size = size; parent = new int[size]; for (int i = 0; i &lt; size; i++) { parent[i] = i; } } /** * a 和 b 建立连接 */ public void union(int a, int b) { int ap = find(a); int bp = find(b); if (ap == bp) { return; } parent[ap] = bp; size--; } /** * a 和 b 是否连通 */ public boolean connected(int a, int b) { int ap = find(a); int bp = find(b); return ap == bp; } /** * 连通分量 */ public int count() { return size; } /** * 查找节点 a 的根节点 */ private int find(int a) { int ap = parent[a]; if (a != ap) { List&lt;Integer> path = new ArrayList&lt;>(); path.add(a); // 向上查找根节点 while (parent[ap] != ap) { path.add(ap); ap = parent[ap]; } // 路径压缩 // 只有一步，无需缩短路径 if (path.size() == 1) { return ap; } for (Integer idx : path) { parent[idx] = ap; } } return ap; } public static void main(String[] args) { UnionFind uf = new UnionFind(10); uf.union(0, 1); uf.union(1, 2); uf.union(2, 3); uf.union(3, 4); uf.union(5, 6); uf.union(6, 7); uf.union(7, 8); uf.union(8, 9); uf.union(0, 5); System.out.println(uf.count() + ", " + uf.connected(0, 9)); System.out.println(uf.count() + ", " + uf.connected(2, 9)); System.out.println(uf.count() + ", " + uf.connected(3, 9)); System.out.println(uf.count() + ", " + uf.connected(5, 9)); } }</div><div class="list__footer clearfix"><a class="list__footer-readmore btn" href=/post/algorithm-pattern-union-find/>阅读全文…</a></div></article></main><div class=pagination><a class="pagination__item pagination__item--current" href=#>1
+</a><a class="pagination__item pagination__item--else" href=/page/2/>2
+</a><a class="pagination__item pagination__item--else" href=/page/3/>3
+</a><a class="pagination__item pagination__item--else" href=/page/4/>4
+</a><a class="pagination__item pagination__item--else" href=/page/5/>5
+</a><a class="pagination__item pagination__item--else" href=/page/6/>6
+</a><a class="pagination__item pagination__item--else" href=/page/7/>7
+</a><a class="pagination__item pagination__item--else" href=/page/8/>8
+</a><a class="pagination__item pagination__item--else" href=/page/9/>9
+</a><a class="pagination__item pagination__item--else" href=/page/2/>>
+</a><a class="pagination__item pagination__item--else" href=/page/16/>»</a></div></div><aside class=sidebar><div class="widget-search widget"><form class=widget-search__form role=search method=get action=https://google.com/search><label><input class=widget-search__field type=search placeholder=搜索… name=q aria-label=搜索…>
+</label><input class=widget-search__submit type=submit value=Search>
+<input type=hidden name=sitesearch value=https://www.diguage.com/></form></div><div class="widget-wechat widget"><h4 class=widget__title>微信公众号</h4><img alt=微信公众号 class=center src=/images/wx-jikerizhi-qrcode.jpg></div><div class="widget-wechat widget"><h4 class=widget__title>知识星球</h4><img alt=微信公众号 class=center src=/images/zhishixingqiu.png></div><div class="widget-recent widget"><h4 class=widget__title>近期文章</h4><div class=widget__content><ul class=widget__list><li class=widget__item><a class=widget__link href=/post/spring-boot-startup-process-overview/>Spring Boot 启动流程概述</a></li><li class=widget__item><a class=widget__link href=/post/redis-core-data-structure-4/>Redis 核心数据结构（四）</a></li><li class=widget__item><a class=widget__link href=/post/redis-core-data-structure-3/>Redis 核心数据结构（三）</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-subsets/>算法模式：子集</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-backtracking/>算法模式：回溯</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-transform-and-conquer/>算法模式：变治法</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-divide-and-conquer/>算法模式：分治法</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-decrease-and-conquer/>算法模式：减治法</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-topological-sort/>算法模式：拓扑排序</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-union-find/>算法模式：并查集</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-trie/>算法模式：前缀树</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-depth-first-search/>算法模式：深度优先搜索</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-breadth-first-search/>算法模式：广度优先搜索</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-k-way-merge/>算法模式：多路归并</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-two-heaps/>算法模式：双堆</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-cyclic-sort/>算法模式：循环排序</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-quickselect/>算法模式：快速选择</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-top-k-elements/>算法模式：Top K 问题</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-monotonic-stack/>算法模式：单调栈</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-sliding-window/>算法模式：滑动窗口</a></li></ul></div></div><div class="widget-categories widget"><h4 class=widget__title>分类</h4><div class=widget__content><ul class=widget__list><li class=widget__item><a class=widget__link href=/categories/%E4%B8%AA%E4%BA%BA%E6%88%90%E9%95%BF/>个人成长</a></li><li class=widget__item><a class=widget__link href=/categories/%E5%88%86%E5%B8%83%E5%BC%8F/>分布式</a></li><li class=widget__item><a class=widget__link href=/categories/%E5%BC%80%E5%8F%91%E5%B7%A5%E5%85%B7/>开发工具</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/>性能优化</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/>操作系统</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%95%B0%E6%8D%AE%E5%AD%98%E5%82%A8/>数据存储</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%96%87%E5%AD%A6/>文学</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%96%B9%E6%B3%95%E8%AE%BA/>方法论</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/>程序设计</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%AE%97%E6%B3%95/>算法</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/>系统架构</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%BB%8F%E6%B5%8E%E9%87%91%E8%9E%8D/>经济金融</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/>编程语言</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%BD%91%E7%BB%9C/>网络</a></li><li class=widget__item><a class=widget__link href=/categories/%E8%81%8C%E4%B8%9A%E5%8F%91%E5%B1%95/>职业发展</a></li><li class=widget__item><a class=widget__link href=/categories/%E8%BD%AF%E4%BB%B6%E5%B7%A5%E7%A8%8B/>软件工程</a></li><li class=widget__item><a class=widget__link href=/categories/%E9%80%B8%E9%97%BB%E8%B6%A3%E4%BA%8B/>逸闻趣事</a></li><li class=widget__item><a class=widget__link href=/categories/%E9%98%85%E8%AF%BB%E6%91%98%E8%A6%81/>阅读摘要</a></li></ul></div></div><div class="widget-taglist widget"><h4 class=widget__title>标签</h4><div class=widget__content><a class="widget-taglist__link widget__link btn" href=/tags/gc/ title=GC>GC (9)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/http/ title=HTTP>HTTP (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/java/ title=Java>Java (64)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/jvm/ title=JVM>JVM (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/kpi/ title=KPI>KPI (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/kubernetes/ title=Kubernetes>Kubernetes (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/linux/ title=Linux>Linux (12)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/okr/ title=OKR>OKR (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/redis/ title=Redis>Redis (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/shell/ title=Shell>Shell (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/spring/ title=Spring>Spring (26)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/tcp/ title=TCP>TCP (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/udp/ title=UDP>UDP (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/zookeeper/ title=ZooKeeper>ZooKeeper (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E4%B8%AA%E4%BA%BA%E6%8F%90%E5%8D%87/ title=个人提升>个人提升 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E4%B9%A6%E7%B1%8D/ title=书籍>书籍 (15)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E4%BA%A7%E5%93%81/ title=产品>产品 (7)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%80%BA%E5%88%B8/ title=债券>债券 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%88%86%E5%B8%83%E5%BC%8F/ title=分布式>分布式 (15)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%88%86%E6%B2%BB/ title=分治>分治 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/ title=动态规划>动态规划 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9B%A2%E9%98%9F%E5%BB%BA%E8%AE%BE/ title=团队建设>团队建设 (6)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9B%A2%E9%98%9F%E6%96%87%E5%8C%96/ title=团队文化>团队文化 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9B%BE/ title=图>图 (7)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9F%BA%E9%87%91/ title=基金>基金 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%A0%86/ title=堆>堆 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%AD%98%E5%82%A8/ title=存储>存储 (6)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%B7%A5%E4%BD%9C%E6%96%B9%E6%B3%95/ title=工作方法>工作方法 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%B9%B6%E5%8F%91/ title=并发>并发 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%BA%8F%E5%88%97%E5%8C%96/ title=序列化>序列化 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/ title=微服务>微服务 (17)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%BF%83%E7%90%86%E5%AD%A6/ title=心理学>心理学 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95/ title=性能测试>性能测试 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%8A%95%E8%B5%84%E7%90%86%E8%B4%A2/ title=投资理财>投资理财 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/ title=数据库>数据库 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/ title=数据结构>数据结构 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%95%B0%E7%BB%84/ title=数组>数组 (13)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%96%B9%E6%B3%95%E8%AE%BA/ title=方法论>方法论 (13)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%97%85%E8%A1%8C/ title=旅行>旅行 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5/ title=最佳实践>最佳实践 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%9E%B6%E6%9E%84/ title=架构>架构 (44)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%A0%88/ title=栈>栈 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%A0%91/ title=树>树 (11)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%B2%9F%E9%80%9A%E6%8A%80%E5%B7%A7/ title=沟通技巧>沟通技巧 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/ title=源码分析>源码分析 (8)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%90%86%E8%B4%A2/ title=理财>理财 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%94%9F%E6%B4%BB/ title=生活>生活 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%AC%94%E8%AE%B0/ title=笔记>笔记 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%AE%97%E6%B3%95/ title=算法>算法 (8)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%AE%97%E6%B3%95%E6%A8%A1%E5%BC%8F/ title=算法模式>算法模式 (23)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BB%8F%E6%B5%8E/ title=经济>经济 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BC%96%E7%A0%81/ title=编码>编码 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BD%91%E7%BB%9C/ title=网络>网络 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BF%BB%E8%AF%91/ title=翻译>翻译 (7)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%82%A1%E7%A5%A8/ title=股票>股票 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%84%91%E5%9B%BE/ title=脑图>脑图 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%8A%82%E6%97%A5/ title=节日>节日 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%8B%B1%E8%AF%AD/ title=英语>英语 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%99%9A%E6%8B%9F%E6%9C%BA/ title=虚拟机>虚拟机 (9)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AE%BA%E6%96%87/ title=论文>论文 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AE%BE%E8%AE%A1/ title=设计>设计 (36)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/ title=设计模式>设计模式 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AF%97%E6%AD%8C/ title=诗歌>诗歌 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AF%BB%E4%B9%A6/ title=读书>读书 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%80%92%E5%BD%92/ title=递归>递归 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%87%91%E8%9E%8D/ title=金融>金融 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%93%BE%E8%A1%A8/ title=链表>链表 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1/ title=面向对象>面向对象 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%A2%86%E5%9F%9F%E9%A9%B1%E5%8A%A8%E8%AE%BE%E8%AE%A1/ title=领域驱动设计>领域驱动设计 (5)</a></div></div><div class="widget-social widget"><h4 class="widget-social__title widget__title">社交</h4><div class="widget-social__content widget__content"><div class="widget-social__item widget__item"><a class="widget-social__link widget__link btn" title=Twitter rel="noopener noreferrer" href=https://twitter.com/diguage target=_blank><svg class="widget-social__link-icon icon icon-twitter" width="24" height="24" viewBox="0 0 384 312"><path d="m384 36.9c-14.1 6.3-29.3 10.5-45.2 12.4 16.3-9.7 28.8-25.2 34.6-43.6-15.2 9-32.1 15.6-50 19.1-14.4-15.2-34.9-24.8-57.5-24.8-43.5.0-78.8 35.3-78.8 78.8.0 6.2.7 12.2 2 17.9-65.5-3.3-123.5-34.6-162.4-82.3C20 26 16.1 39.6 16.1 54c0 27.3 13.9 51.4 35 65.6-12.9-.4-25.1-4-35.7-9.9v1c0 38.2 27.2 70 63.2 77.2-6.6 1.8-13.6 2.8-20.8 2.8-5.1.0-10-.5-14.8-1.4 10 31.3 39.1 54.1 73.6 54.7-27 21.1-60.9 33.7-97.8 33.7-6.4.0-12.6-.4-18.8-1.1C34.9 299 76.3 312 120.8 312c144.9.0 224.1-120 224.1-224.1.0-3.4-.1-6.8-.2-10.2 15.4-11.1 28.7-25 39.3-40.8z"/></svg>
+<span>Twitter</span></a></div><div class="widget-social__item widget__item"><a class="widget-social__link widget__link btn" title=GitHub rel="noopener noreferrer" href=https://github.com/diguage target=_blank><svg class="widget-social__link-icon icon icon-github" width="24" height="24" viewBox="0 0 384 374"><path d="m192 0C85.9.0.0 85.8.0 191.7c0 84.7 55 156.6 131.3 181.9 9.6 1.8 13.1-4.2 13.1-9.2.0-4.6-.2-16.6-.3-32.6-53.4 11.6-64.7-25.7-64.7-25.7-8.7-22.1-21.3-28-21.3-28-17.4-11.9 1.3-11.6 1.3-11.6 19.3 1.4 29.4 19.8 29.4 19.8 17.1 29.3 44.9 20.8 55.9 15.9 1.7-12.4 6.7-20.8 12.2-25.6-42.6-4.8-87.5-21.3-87.5-94.8.0-20.9 7.5-38 19.8-51.4-2-4.9-8.6-24.3 1.9-50.7.0.0 16.1-5.2 52.8 19.7 15.3-4.2 31.7-6.4 48.1-6.5 16.3.1 32.7 2.2 48.1 6.5 36.7-24.8 52.8-19.7 52.8-19.7 10.5 26.4 3.9 45.9 1.9 50.7 12.3 13.4 19.7 30.5 19.7 51.4.0 73.7-44.9 89.9-87.7 94.6 6.9 5.9 13 17.6 13 35.5.0 25.6-.2 46.3-.2 52.6.0 5.1 3.5 11.1 13.2 9.2C329 348.2 384 276.4 384 191.7 384 85.8 298 0 192 0z"/></svg>
+<span>GitHub</span></a></div><div class="widget-social__item widget__item"><a class="widget-social__link widget__link btn" title=Email href=mailto:leejun119@gmail.com><svg class="widget-social__link-icon icon icon-mail" width="24" height="24" viewBox="0 0 416 288"><path d="m0 16v256 16h16 384 16v-16V16 0h-16H16 0zm347 16-139 92.5L69 32zM199 157.5l9 5.5 9-5.5L384 46v210H32V46z"/></svg>
+<span>leejun119@gmail.com</span></a></div></div></div></aside></div><footer class=footer><div class="container footer__container flex"><div class=footer__copyright>&copy; 2025 "地瓜哥"博客网.
+<span class=footer__copyright-credits>基于 <a href=https://gohugo.io/ rel="nofollow noopener" target=_blank>Hugo</a> 引擎和 <a href=https://github.com/Vimux/Mainroad/ rel="nofollow noopener" target=_blank>Mainroad</a> 主题</span>
+<span><a href=https://beian.miit.gov.cn/ target=_target>京ICP备14046450号-4</a></span></div></div></footer></div><script async defer src=/js/menu.js></script></body></html>

@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>论文 on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/%E8%AE%BA%E6%96%87/</link><description>Recent content in 论文 on "地瓜哥"博客网</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Sat, 02 Jul 2022 20:24:55 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/%E8%AE%BA%E6%96%87/index.xml" rel="self" type="application/rss+xml"/><item><title>Raft 论文摘要（二）</title><link>https://www.diguage.com/post/summary-of-the-raft-paper-2/</link><pubDate>Mon, 05 Jul 2021 19:58:32 +0800</pubDate><guid>https://www.diguage.com/post/summary-of-the-raft-paper-2/</guid><description>&lt;div class="paragraph">
+&lt;p>在上一篇文章中，通过阅读 &lt;a href="https://raft.github.io/raft.pdf">《In Search of an Understandable Consensus Algorithm》&lt;/a> 前三节的内容，对论文的大致内容做了简介，简单说明了一下 Replicated state machines 的用途以及 Paxos 本身存在的问题。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_4_designing_for_understandability">4. Designing for understandability&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="quoteblock">
+&lt;blockquote>
+&lt;div class="paragraph">
+&lt;p>several goals in designing Raft:&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>it must providea complete and practical foundation for system building;&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>it must be safe under all conditions and available under typical operating conditions;&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>it must be efficient for common operations.&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>Our most important goal — and most difficult challenge — was &lt;strong>understandability&lt;/strong>.&lt;/p>
+&lt;/div>
+&lt;/blockquote>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>从这里可以看出，Raft 设计的初衷就是为了易于理解和便于构建。&lt;/p>
+&lt;/div>
+&lt;div class="quoteblock">
+&lt;blockquote>
+There were numerous points in the design of Raft where we had to choose among alternative approaches. In these situations we evaluated the alternatives based on understandability.
+&lt;/blockquote>
+&lt;/div></description></item><item><title>Raft 论文摘要（一）</title><link>https://www.diguage.com/post/summary-of-the-raft-paper-1/</link><pubDate>Fri, 02 Jul 2021 11:42:26 +0800</pubDate><guid>https://www.diguage.com/post/summary-of-the-raft-paper-1/</guid><description>&lt;div class="paragraph">
+&lt;p>前一段时间，在一次开组会的时候，给小组成员简单介绍了一下 Raft 协议。大概四年前读过 Raft 的论文，这次分享的时候，好多好多细节都忘了。所以，再次把 &lt;a href="https://raft.github.io/raft.pdf">《In Search of an Understandable Consensus Algorithm》&lt;/a> 这篇论文找出来，重读一遍，做个笔记和摘要，方便后续学习和复习。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_abstract">Abstract&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="quoteblock">
+&lt;blockquote>
+Raft is a consensus algorithm for managing a replicated log.
+&lt;/blockquote>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>开篇摘要就点出了 Raft 的特点： Raft 是一种管理复制日志的共识算法。&lt;/p>
+&lt;/div>
+&lt;div class="quoteblock">
+&lt;blockquote>
+In order to enhance understandability, Raft separates the key elements of consensus, such as leader election, log replication, and safety, and it enforcesa stronger degree of coherency to reduce the number of states that must be considered.
+&lt;/blockquote>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>为了增强可理解性，Raft 将共识分解成几个关键元素，例如 Leader 选举，日志复制，以及安全性等；同时，为了降低需要考虑的状态的数量，还强制实施了更强的一致性。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_1_introduction">1. Introduction&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="quoteblock">
+&lt;blockquote>
+Consensus algorithms allow a collection of machines to work as a coherent group that can survive the failures of some of its members.
+&lt;/blockquote>
+&lt;/div></description></item></channel></rss>

@@ -1,0 +1,984 @@
+@startgantt
+header D瓜哥 · ""https://www.diguage.com @ %date("YYYY-MM-dd")""
+
+title **Kubernetes 发行版及特性**
+
+language zh
+
+skinparamlocked defaultFontSize 18
+skinparamlocked titleFontSize 30
+skinparamlocked headerFontSize 20
+skinparamlocked footerFontSize 20
+
+'skinparam defaultFontName Source Han Serif SC
+skinparam titleFontName Source Han Sans SC
+skinparam defaultMonospacedFontName JetBrains Mono
+
+'projectscale monthly
+projectscale quarterly zoom 1.1
+Project starts 2014-09-09
+
+<style>
+ganttDiagram {
+	separator {
+		LineColor gray
+		BackGroundColor gray
+		FontSize 28
+		FontStyle bold
+		FontColor white
+	}
+}
+</style>
+
+legend
+Legend:
+|= 颜色 |= 状态 |
+|<#Red> | 终止 |
+|<#Gold>| 测试 |
+|<#GreenYellow> | 存续 |
+end legend
+
+-- **版本** --
+
+
+[v0.2] as [v0.2] starts 2014-09-09
+[v0.3] as [v0.3] starts 2014-09-20
+[v0.4 ~ v0.4.4] as [v0.4] starts 2014-10-16 and ends 2014-11-20
+[v0.5 ~ v0.5.6] as [v0.5] starts 2014-11-18 and ends 2014-12-13
+[v0.6.0 ~ v0.6.2] as [v0.6.0] starts 2014-12-02 and ends 2014-12-13
+[v0.7.0 ~ v0.7.4] as [v0.7.0] starts 2014-12-16 and ends 2015-01-10
+[v0.8.0 ~ v0.8.4] as [v0.8.0] starts 2015-01-08 and ends 2015-01-29
+[v0.9.0 ~ v0.9.3] as [v0.9.0] starts 2015-01-24 and ends 2015-01-31
+[v0.10.0 ~ v0.10.1] as [v0.10.0] starts 2015-02-04 and ends 2015-02-10
+[v0.11.0] as [v0.11.0] starts 2015-02-18
+[v0.12.0 ~ v0.12.2] as [v0.12.0] starts 2015-03-03 and ends 2015-03-17
+[v0.13.0 ~ v0.13.2] as [v0.13.0] starts 2015-03-17 and ends 2015-03-19
+[v0.14.0 ~ v0.14.2] as [v0.14.0] starts 2015-03-31 and ends 2015-04-09
+[v0.15.0] as [v0.15.0] starts 2015-04-14
+[v0.16.0 ~ v0.16.2] as [v0.16.0] starts 2015-04-29 and ends 2015-05-05
+[v0.17.0 ~ v0.17.1] as [v0.17.0] starts 2015-05-13 and ends 2015-05-22
+[v0.18.0 ~ v0.18.2] as [v0.18.0] starts 2015-05-30 and ends 2015-06-09
+[v0.19.0 ~ v0.19.3] as [v0.19.0] starts 2015-06-11 and ends 2015-06-23
+[v0.20.0 ~ v0.20.2] as [v0.20.0] starts 2015-06-26 and ends 2015-07-01
+[v0.21.0 ~ v0.21.4] as [v0.21.0] starts 2015-07-08 and ends 2015-07-18
+[v1.0.0 ~ v1.0.7] as [v1.0.0] starts 2015-07-11 and ends 2015-10-27
+[v1.1.0 ~ v1.1.8] as [v1.1.0] starts 2015-09-26 and ends 2016-02-24
+[v1.2.0 ~ v1.2.7] as [v1.2.0] starts 2016-03-17 and ends 2016-10-23
+[v1.3.0 ~ v1.3.10] as [v1.3.0] starts 2016-07-02 and ends 2016-11-01
+[v1.4.0 ~ v1.4.12] as [v1.4.0] starts 2016-09-27 and ends 2017-04-21
+[v1.5.0 ~ v1.5.8] as [v1.5.0] starts 2016-12-13 and ends 2017-10-01
+[v1.6.0 ~ v1.6.13] as [v1.6.0] starts 2017-03-29 and ends 2017-11-23
+[v1.7.0 ~ v1.7.16] as [v1.7.0] starts 2017-06-30 and ends 2018-04-04
+[v1.8.0 ~ v1.8.15] as [v1.8.0] starts 2017-09-29 and ends 2018-07-12
+[v1.9.0 ~ v1.9.11] as [v1.9.0] starts 2017-12-16 and ends 2018-10-02
+[v1.10.0 ~ v1.10.13] as [v1.10.0] starts 2018-03-27 and ends 2019-02-13
+[v1.11.0 ~ v1.11.10] as [v1.11.0] starts 2018-06-28 and ends 2019-05-02
+[v1.12.0 ~ v1.12.10] as [v1.12.0] starts 2018-09-28 and ends 2019-07-08
+[v1.13.0 ~ v1.13.12] as [v1.13.0] starts 2018-12-04 and ends 2019-10-16
+[v1.14.0 ~ v1.14.10] as [v1.14.0] starts 2019-03-25 and ends 2019-12-12
+[v1.15.0 ~ v1.15.12] as [v1.15.0] starts 2019-06-20 and ends 2020-03-07
+[v1.16.0 ~ v1.16.15] as [v1.16.0] starts 2019-09-18 and ends 2020-09-03
+[v1.17.0 ~ v1.17.17] as [v1.17.0] starts 2019-12-08 and ends 2021-01-14
+[v1.18.0 ~ v1.18.20] as [v1.18.0] starts 2020-03-25 and ends 2021-06-17
+[v1.19.0 ~ v1.19.16] as [v1.19.0] starts 2020-08-26 and ends 2021-10-28
+[v1.20.0 ~ v1.20.15] as [v1.20.0] starts 2020-12-09 and ends 2022-01-20
+[v1.21.0 ~ v1.21.14] as [v1.21.0] starts 2021-04-09 and ends 2022-06-17
+[v1.22.0 ~ v1.22.17] as [v1.22.0] starts 2021-08-05 and ends 2022-12-09
+[v1.23.0 ~ v1.23.17] as [v1.23.0] starts 2021-12-08 and ends 2023-03-01
+[v1.24.0 ~ v1.24.17] as [v1.24.0] starts 2022-03-04 and ends 2023-08-24
+[v1.25.0 ~ v1.25.16] as [v1.25.0] starts 2022-08-24 and ends 2023-11-16
+[v1.26.0 ~ v1.26.15] as [v1.26.0] starts 2022-12-09 and ends 2024-03-14
+[v1.27.0 ~ v1.27.16] as [v1.27.0] starts 2023-04-12 and ends 2024-07-17
+[v1.28.0 ~ v1.28.15] as [v1.28.0] starts 2023-08-16 and ends 2024-10-23
+
+[v1.29.0 ~ v1.29.12] as [v1.29.0] starts 2023-12-14
+[v1.29.0] ends %date("YYYY-MM-dd")
+[v1.29.0] is colored in GreenYellow
+
+[v1.30.0 ~ v1.30.8] as [v1.30.0] starts 2024-04-18
+[v1.30.0] ends %date("YYYY-MM-dd")
+[v1.30.0] is colored in GreenYellow
+
+[v1.31.0 ~ v1.31.4] as [v1.31.0] starts 2024-08-13
+[v1.31.0] ends %date("YYYY-MM-dd")
+[v1.31.0] is colored in GreenYellow
+
+[v1.32.0] as [v1.32.0] starts 2024-12-12
+[v1.32.0] ends %date("YYYY-MM-dd")
+[v1.32.0] is colored in GreenYellow
+
+-- 特性/API --
+
+' v1.16
+
+[extensions/v1beta1/NetworkPolicy] starts 2014-09-09 and ends at [v1.16.0]'s start
+[extensions/v1beta1/NetworkPolicy] is colored in Red
+
+[extensions/v1beta1/DaemonSet] starts 2014-09-09 and ends at [v1.16.0]'s start
+[extensions/v1beta1/DaemonSet] is colored in Red
+
+[apps/v1beta2/DaemonSet] starts 2014-09-09 and ends at [v1.16.0]'s start
+[apps/v1beta2/DaemonSet] is colored in Red
+
+[apps/v1/DaemonSet] starts at [v1.9.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[apps/v1/DaemonSet] is colored in GreenYellow
+
+[extensions/v1beta1/Deployment] starts 2014-09-09 and ends at [v1.16.0]'s start
+[extensions/v1beta1/Deployment] is colored in Red
+
+[apps/v1beta1/Deployment] starts 2014-09-09 and ends at [v1.16.0]'s start
+[apps/v1beta1/Deployment] is colored in Red
+
+[apps/v1beta2/Deployment] starts 2014-09-09 and ends at [v1.16.0]'s start
+[apps/v1beta2/Deployment] is colored in Red
+
+[apps/v1/Deployment] starts at [v1.9.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[apps/v1/Deployment] is colored in GreenYellow
+
+[apps/v1beta1/StatefulSet] starts 2014-09-09 and ends at [v1.16.0]'s start
+[apps/v1beta1/StatefulSet] is colored in Red
+
+[apps/v1beta2/StatefulSet] starts 2014-09-09 and ends at [v1.16.0]'s start
+[apps/v1beta2/StatefulSet] is colored in Red
+
+[apps/v1/StatefulSet] starts at [v1.9.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[apps/v1/StatefulSet] is colored in GreenYellow
+
+
+[extensions/v1beta1/ReplicaSet] starts 2014-09-09 and ends at [v1.16.0]'s start
+[extensions/v1beta1/ReplicaSet] is colored in Red
+
+[apps/v1beta1/ReplicaSet] starts 2014-09-09 and ends at [v1.16.0]'s start
+[apps/v1beta1/ReplicaSet] is colored in Red
+
+[apps/v1beta2/ReplicaSet] starts 2014-09-09 and ends at [v1.16.0]'s start
+[apps/v1beta2/ReplicaSet] is colored in Red
+
+[apps/v1/ReplicaSet] starts at [v1.9.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[apps/v1/ReplicaSet] is colored in GreenYellow
+
+
+[extensions/v1beta1/PodSecurityPolicy] starts 2014-09-09 and ends at [v1.16.0]'s start
+[extensions/v1beta1/PodSecurityPolicy] is colored in Red
+
+[policy/v1beta1/PodSecurityPolicy] starts at [v1.10.0]'s start with Lime bold link and ends at [v1.25.0]'s start
+[policy/v1beta1/PodSecurityPolicy] is colored in Red
+
+' v1.7
+
+[networking.k8s.io/v1/NetworkPolicy] starts at [v1.7.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[networking.k8s.io/v1/NetworkPolicy] is colored in GreenYellow
+
+
+' v1.22
+
+[admissionregistration.k8s.io/v1beta1/MutatingWebhookConfiguration] starts 2014-09-09 and ends at [v1.22.0]'s start
+[admissionregistration.k8s.io/v1beta1/MutatingWebhookConfiguration] is colored in Red
+
+[admissionregistration.k8s.io/v1beta1/ValidatingWebhookConfiguration] starts 2014-09-09 and ends at [v1.22.0]'s start
+[admissionregistration.k8s.io/v1beta1/ValidatingWebhookConfiguration] is colored in Red
+
+[admissionregistration.k8s.io/v1/Webhook] starts at [v1.16.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[admissionregistration.k8s.io/v1/Webhook] is colored in GreenYellow
+
+
+[apiextensions.k8s.io/v1beta1/CustomResourceDefinition] starts 2014-09-09 and ends at [v1.22.0]'s start
+[apiextensions.k8s.io/v1beta1/CustomResourceDefinition] is colored in Red
+
+[apiextensions.k8s.io/v1/CustomResourceDefinition] starts at [v1.16.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[apiextensions.k8s.io/v1/CustomResourceDefinition] is colored in GreenYellow
+
+
+[apiregistration/v1beta1/APIService] starts 2014-09-09 and ends at [v1.22.0]'s start
+[apiregistration/v1beta1/APIService] is colored in Red
+
+[apiregistration.k8s.io/v1/APIService] starts at [v1.10.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[apiregistration.k8s.io/v1/APIService] is colored in GreenYellow
+
+
+[authentication.k8s.io/v1beta1/TokenReview] starts 2014-09-09 and ends at [v1.22.0]'s start
+[authentication.k8s.io/v1beta1/TokenReview] is colored in Red
+
+[authentication.k8s.io/v1/TokenReview] starts at [v1.6.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[authentication.k8s.io/v1/TokenReview] is colored in GreenYellow
+
+
+[authorization.k8s.io/v1beta1/LocalSubjectAccessReview] starts 2014-09-09 and ends at [v1.22.0]'s start
+[authorization.k8s.io/v1beta1/LocalSubjectAccessReview] is colored in Red
+
+[authorization.k8s.io/v1beta1/SelfSubjectAccessReview] starts 2014-09-09 and ends at [v1.22.0]'s start
+[authorization.k8s.io/v1beta1/SelfSubjectAccessReview] is colored in Red
+
+[authorization.k8s.io/v1beta1/SubjectAccessReview] starts 2014-09-09 and ends at [v1.22.0]'s start
+[authorization.k8s.io/v1beta1/SubjectAccessReview] is colored in Red
+
+[authorization.k8s.io/v1beta1/SelfSubjectRulesReview] starts 2014-09-09 and ends at [v1.22.0]'s start
+[authorization.k8s.io/v1beta1/SelfSubjectRulesReview] is colored in Red
+
+[authorization.k8s.io/v1/SubjectAccessReview] starts at [v1.6.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[authorization.k8s.io/v1/SubjectAccessReview] is colored in GreenYellow
+
+
+[certificates.k8s.io/v1beta1/CertificateSigningRequest] starts 2014-09-09 and ends at [v1.22.0]'s start
+[certificates.k8s.io/v1beta1/CertificateSigningRequest] is colored in Red
+
+[certificates.k8s.io/v1/CertificateSigningRequest] starts at [v1.19.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[certificates.k8s.io/v1/CertificateSigningRequest] is colored in GreenYellow
+
+
+[coordination.k8s.io/v1beta1/Lease] starts 2014-09-09 and ends at [v1.22.0]'s start
+[coordination.k8s.io/v1beta1/Lease] is colored in Red
+
+[coordination.k8s.io/v1/Lease] starts at [v1.14.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[coordination.k8s.io/v1/Lease] is colored in GreenYellow
+
+
+[extensions/v1beta1/Ingress] starts 2014-09-09 and ends at [v1.22.0]'s start
+[extensions/v1beta1/Ingress] is colored in Red
+
+[networking.k8s.io/v1beta1/Ingress] starts 2014-09-09 and ends at [v1.22.0]'s start
+[networking.k8s.io/v1beta1/Ingress] is colored in Red
+
+[networking.k8s.io/v1/Ingress] starts at [v1.19.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[networking.k8s.io/v1/Ingress] is colored in GreenYellow
+
+
+[networking.k8s.io/v1beta1/IngressClass] starts 2014-09-09 and ends at [v1.22.0]'s start
+[networking.k8s.io/v1beta1/IngressClass] is colored in Red
+
+[networking.k8s.io/v1/IngressClass] starts at [v1.19.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[networking.k8s.io/v1/IngressClass] is colored in GreenYellow
+
+
+[rbac.authorization.k8s.io/v1beta1/ClusterRole] starts 2014-09-09 and ends at [v1.22.0]'s start
+[rbac.authorization.k8s.io/v1beta1/ClusterRole] is colored in Red
+
+[rbac.authorization.k8s.io/v1beta1/ClusterRoleBinding] starts 2014-09-09 and ends at [v1.22.0]'s start
+[rbac.authorization.k8s.io/v1beta1/ClusterRoleBinding] is colored in Red
+
+[rbac.authorization.k8s.io/v1beta1/Role] starts 2014-09-09 and ends at [v1.22.0]'s start
+[rbac.authorization.k8s.io/v1beta1/Role] is colored in Red
+
+[rbac.authorization.k8s.io/v1beta1/RoleBinding] starts 2014-09-09 and ends at [v1.22.0]'s start
+[rbac.authorization.k8s.io/v1beta1/RoleBinding] is colored in Red
+
+[rbac.authorization.k8s.io/v1] starts at [v1.8.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[rbac.authorization.k8s.io/v1] is colored in GreenYellow
+
+
+[scheduling.k8s.io/v1beta1/PriorityClass] starts 2014-09-09 and ends at [v1.22.0]'s start
+[scheduling.k8s.io/v1beta1/PriorityClass] is colored in Red
+
+[scheduling.k8s.io/v1/PriorityClass] starts at [v1.14.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[scheduling.k8s.io/v1/PriorityClass] is colored in GreenYellow
+
+
+[storage.k8s.io/v1beta1/CSIDriver] starts 2014-09-09 and ends at [v1.22.0]'s start
+[storage.k8s.io/v1beta1/CSIDriver] is colored in Red
+
+[storage.k8s.io/v1/CSIDriver] starts at [v1.19.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[storage.k8s.io/v1/CSIDriver] is colored in GreenYellow
+
+
+[storage.k8s.io/v1beta1/CSINode] starts 2014-09-09 and ends at [v1.22.0]'s start
+[storage.k8s.io/v1beta1/CSINode] is colored in Red
+
+[storage.k8s.io/v1/CSINode] starts at [v1.17.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[storage.k8s.io/v1/CSINode] is colored in GreenYellow
+
+
+[storage.k8s.io/v1beta1/StorageClass] starts 2014-09-09 and ends at [v1.22.0]'s start
+[storage.k8s.io/v1beta1/StorageClass] is colored in Red
+
+[storage.k8s.io/v1/StorageClass] starts at [v1.6.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[storage.k8s.io/v1/StorageClass] is colored in GreenYellow
+
+[storage.k8s.io/v1beta1/VolumeAttachment] starts 2014-09-09 and ends at [v1.22.0]'s start
+[storage.k8s.io/v1beta1/VolumeAttachment] is colored in Red
+
+[storage.k8s.io/v1/VolumeAttachment] starts at [v1.13.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[storage.k8s.io/v1/VolumeAttachment] is colored in GreenYellow
+
+
+' v1.25
+
+[batch/v1beta1/CronJob] starts 2014-09-09 and ends at [v1.25.0]'s start
+[batch/v1beta1/CronJob] is colored in Red
+
+[batch/v1/CronJob] starts at [v1.21.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[batch/v1/CronJob] is colored in GreenYellow
+
+
+[discovery.k8s.io/v1beta1/EndpointSlice] starts 2014-09-09 and ends at [v1.25.0]'s start
+[discovery.k8s.io/v1beta1/EndpointSlice] is colored in Red
+
+[discovery.k8s.io/v1/EndpointSlice] starts at [v1.21.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[discovery.k8s.io/v1/EndpointSlice] is colored in GreenYellow
+
+
+[events.k8s.io/v1beta1/Event] starts 2014-09-09 and ends at [v1.25.0]'s start
+[events.k8s.io/v1beta1/Event] is colored in Red
+
+[events.k8s.io/v1/Event] starts at [v1.19.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[events.k8s.io/v1/Event] is colored in GreenYellow
+
+
+[autoscaling/v2beta1/HorizontalPodAutoscaler] starts 2014-09-09 and ends at [v1.25.0]'s start
+[autoscaling/v2beta1/HorizontalPodAutoscaler] is colored in Red
+
+[autoscaling/v2/HorizontalPodAutoscaler] starts at [v1.23.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[autoscaling/v2/HorizontalPodAutoscaler] is colored in GreenYellow
+
+
+[policy/v1beta1/PodDisruptionBudget] starts 2014-09-09 and ends at [v1.25.0]'s start
+[policy/v1beta1/PodDisruptionBudget] is colored in Red
+
+[policy/v1/PodDisruptionBudget] starts at [v1.21.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[policy/v1/PodDisruptionBudget] is colored in GreenYellow
+
+[node.k8s.io/v1beta1/RuntimeClass] starts 2014-09-09 and ends at [v1.25.0]'s start
+[node.k8s.io/v1beta1/RuntimeClass] is colored in Red
+
+[node.k8s.io/v1/RuntimeClass] starts at [v1.20.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[node.k8s.io/v1/RuntimeClass] is colored in GreenYellow
+
+' v1.26
+
+[flowcontrol.apiserver.k8s.io/v1beta1/FlowSchema] starts 2014-09-09 and ends at [v1.26.0]'s start
+[flowcontrol.apiserver.k8s.io/v1beta1/FlowSchema] is colored in Red
+
+[flowcontrol.apiserver.k8s.io/v1beta2/FlowSchema] starts 2014-09-09 and ends  at [v1.29.0]'s start
+[flowcontrol.apiserver.k8s.io/v1beta2/FlowSchema] is colored in Red
+
+[flowcontrol.apiserver.k8s.io/v1beta3/FlowSchema] starts at [v1.26.0]'s start with Lime bold link and ends at [v1.32.0]'s start
+[flowcontrol.apiserver.k8s.io/v1beta3/FlowSchema] is colored in Red
+
+[flowcontrol.apiserver.k8s.io/v1beta1/PriorityLevelConfiguration] starts 2014-09-09 and ends at [v1.26.0]'s start
+[flowcontrol.apiserver.k8s.io/v1beta1/PriorityLevelConfiguration] is colored in Red
+
+[flowcontrol.apiserver.k8s.io/v1beta2/PriorityLevelConfiguration] starts 2014-09-09 and ends at [v1.29.0]'s start
+[flowcontrol.apiserver.k8s.io/v1beta2/PriorityLevelConfiguration] is colored in Red
+
+[flowcontrol.apiserver.k8s.io/v1beta3/PriorityLevelConfiguration] starts at [v1.26.0]'s start with Lime bold link and ends at [v1.32.0]'s start
+[flowcontrol.apiserver.k8s.io/v1beta3/PriorityLevelConfiguration] is colored in Red
+
+
+[autoscaling/v2beta2/HorizontalPodAutoscaler] starts 2014-09-09 and ends at [v1.26.0]'s start
+[autoscaling/v2beta2/HorizontalPodAutoscaler] is colored in Red
+
+[动态资源分配（DRA）] starts at [v1.26.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[动态资源分配（DRA）] is colored in GreenYellow
+
+' v1.27
+
+[storage.k8s.io/v1beta1/CSIStorageCapacity] starts 2014-09-09 and ends at [v1.27.0]'s start
+[storage.k8s.io/v1beta1/CSIStorageCapacity] is colored in Red
+
+[storage.k8s.io/v1/CSIStorageCapacity] starts at [v1.24.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[storage.k8s.io/v1/CSIStorageCapacity] is colored in GreenYellow
+
+' v1.29
+
+[flowcontrol.apiserver.k8s.io/v1/FlowSchema] starts at [v1.29.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[flowcontrol.apiserver.k8s.io/v1/FlowSchema] is colored in GreenYellow
+
+[flowcontrol.apiserver.k8s.io/v1/PriorityLevelConfiguration] starts at [v1.29.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[flowcontrol.apiserver.k8s.io/v1/PriorityLevelConfiguration] is colored in GreenYellow
+
+' v1.30
+
+[结构化鉴权配置(KEP-3221)/Beta] as [KEP-3221] starts at [v1.30.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[KEP-3221] is colored in GreenYellow
+[KEP-3221] links to [[https://kep.k8s.io/3221]]
+
+' v1.32
+
+
+-- 权威指南 --
+
+[kube-proxy/Proxy] as [kube-proxy/Proxy] starts at [v0.2]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[kube-proxy/Proxy] is colored in GreenYellow
+note bottom
+怀疑这种 TCP/UDP 代理模式已经被废弃了。
+只是目前不知道废弃时间。
+end note
+
+
+[ServiceAccount] as [ServiceAccount] starts at [v0.18.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[ServiceAccount] is colored in GreenYellow
+note bottom
+v0.18 引入
+end note
+
+
+[SecurityContext] as [SecurityContext] starts at [v1.0.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[SecurityContext] is colored in GreenYellow
+note bottom
+v1.0 引入，v1.8 达到生产标准。
+用于设置 Pod 或容器安全性的配置项。
+'NOTE：ChatGPT 的回答。
+end note
+
+
+[Persistent Volume 和 Persistent Volume Claim] as [PersistentVolume] starts at [v1.0.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[PersistentVolume] is colored in GreenYellow
+note bottom
+v1.0 引入
+end note
+
+
+[kube-proxy/iptables] as [kube-proxy/iptables] starts at [v1.2.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[kube-proxy/iptables] is colored in GreenYellow
+note bottom
+从 v1.2 改为默认模式，引入的时间应该更早。
+end note
+
+
+[kube-dns] as [kube-dns] starts at [v1.2.0]'s start with Lime bold link and ends at [v1.11.0]'s start
+[kube-dns] is colored in Red
+note bottom
+从 v1.2 以插件方式引入 kube-dns。v1.11 支持 CoreDNS。
+end note
+
+
+[新增资源类型：Job] as [Job] starts at [v1.2.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[Job] is colored in GreenYellow
+note bottom
+v1.2 开始引入。
+' https://github.com/kubernetes/kubernetes/pull/12910
+end note
+
+
+[Scheduler Extender] as [SchedulerExtender] starts at [v1.2.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[SchedulerExtender] is colored in GreenYellow
+note bottom
+Scheduler：支持外部扩展。
+end note
+
+
+[支持 rtk 容器] as [rtk] starts at [v1.3.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[rtk] is colored in GreenYellow
+note bottom
+从 v1.3 开始支持
+end note
+
+
+[NetworkPolicy 网络安全策略] as [NetworkPolicy] starts at [v1.3.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[NetworkPolicy] is colored in GreenYellow
+note bottom
+从 v1.3 开始支持
+end note
+
+
+[Pod间的亲和性和反亲和性调度策略] as [PodAffinity] starts at [v1.4.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[PodAffinity] is colored in GreenYellow
+
+
+[引入 OpenAPI 规范] as [OpenAPI] starts at [v1.4.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[OpenAPI] is colored in GreenYellow
+note bottom
+在 v1.4 中引入，v1.5 已经完备支持，v1.27 完备支持 OpenAPI v3。
+end note
+
+
+[审计机制] as [AuditLog] starts at [v1.4.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[AuditLog] is colored in GreenYellow
+note bottom
+审计机制，主要体现为审计日志。
+end note
+
+
+[StorageClass] as [StorageClass] starts at [v1.4.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[StorageClass] is colored in GreenYellow
+note bottom
+v1.4 引入，v1.6 进一步完善。
+用于标记存储资源的特性和性能。
+end note
+
+
+[Container Runtime Interface 即 CRI 规范] as [CRISpec] starts at [v1.5.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[CRISpec] is colored in GreenYellow
+note bottom
+在 v1.5 中设计
+end note
+
+
+[Node Allocatable Resources 节点可分配资源] as [NAR] starts at [v1.5.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[NAR] is colored in GreenYellow
+note bottom
+v1.5 引入，v1.6 默认开启。
+本质就是 Cgroups Per QoS。通过 /sys/fs/cgroup/kubepods.slice 控制。
+end note
+
+
+[Windows容器] as [Windows] starts at [v1.5.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[Windows] is colored in GreenYellow
+note bottom
+v1.5 引入，v1.14 达到生产标准。
+Windows Server 2016 支持创建和调度 Windows 容器。
+end note
+
+
+[Scheduler Map/Reduce 计算模式] as [SchedulerMapReduce] starts at [v1.5.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[SchedulerMapReduce] is colored in GreenYellow
+note bottom
+Scheduler：为调度器的优先级算法引入 Map/Reduce 计算模式。
+end note
+
+
+[RBAC 基于角色的访问控制] as [RBAC] starts at [v1.5.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[RBAC] is colored in GreenYellow
+note bottom
+v1.5 引入，v1.6 达到 Beta，v1.8 达到稳定版。
+结合 ServiceAccount 进行权限管理。
+end note
+
+
+[Pod Security Policy] as [PodSecurityPolicy] starts at [v1.5.0]'s start with Lime bold link and ends at [v1.25.0]'s start
+[PodSecurityPolicy] is colored in Red
+note bottom
+v1.5 引入，v1.18 达到 Beta，v1.21 废弃，v.125 删除。
+end note
+
+
+[授权规则的自动恢复（Auto-reconciliation）] as [AutoReconciliation] starts at [v1.6.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[AutoReconciliation] is colored in GreenYellow
+note bottom
+v1.6 引入。
+每次集群重启，API Server 都会更新默认的集群角色的缺少权限。
+防止破坏性修改；集群升级时，权限设置及时更新。
+end note
+
+
+[Custom Resource Definition 即 CRD] as [CRD] starts at [v1.7.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[CRD] is colored in GreenYellow
+note bottom
+重要的扩展点！
+end note
+
+
+[高级审计特效 Advanced Auditing] as [AdvancedAuditing] starts at [v1.7.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[AdvancedAuditing] is colored in GreenYellow
+note bottom
+自定义审计策略和审计后端存储等。
+end note
+
+
+[CRD 校验机制] as [CRDValidation] starts at [v1.8.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[CRDValidation] is colored in GreenYellow
+note bottom
+CRD 扩展点增强：
+  1、基于 OpenAPI v3 Schema 的校验；
+  2、基于 Admission Webhook 的自定义校验机制。
+给字段设置默认值，即 Defaulting 特性，在 v1.17 达到 Stable 阶段。
+基于 CEL 的校验机制在 v1.25 达到 Beta，v1.29 到 Stable。
+end note
+
+
+[NUMA/(CPU Manager)] as [CPUManager] starts at [v1.8.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[CPUManager] is colored in GreenYellow
+note bottom
+v1.8 引入，v1.26.0 达到正式版。
+CPU Manager 的 None 策略使用 Linux 内核的 CFS(Completely Fair Scheduler) 调度机制实现。
+CPU Manager 的 Static 策略可实现 Pod 独占 CPU， 使用 Linux cpuset cgroup 来实现。
+注：CFS 就是基于时间片分配的，实现了公平，但牺牲了性能（需要频繁进行上下文切换）。
+end note
+
+
+[kube-proxy/IPVS] as [kube-proxy/IPVS] starts at [v1.8.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[kube-proxy/IPVS] is colored in GreenYellow
+note bottom
+v1.8 引入，v1.11 达到稳定版。
+end note
+
+
+[Pod Priority Preemption 抢占式调度] as [PodPriority] starts at [v1.8.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[PodPriority] is colored in GreenYellow
+note bottom
+v1.8 引入，v1.11 达到 Beta，v1.14 达到 Stable 阶段。
+当有新加入的高优先级的 Pod，在资源紧张的情况下，会把低优先级的 Pod 清理掉，以满足高优先级 Pod 的运行。
+end note
+
+
+[Cluster AutoScaler 集群资源自动扩缩容] as [ClusterAutoScaler] starts at [v1.8.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[PodPriority] is colored in GreenYellow
+note bottom
+v1.8 达到 Stable 阶段。引入时间应该更早。
+自动扩展和收缩 Kubernetes 集群中 Node 数量。
+end note
+
+
+[Container Storage Interface 容器存储接口] as [CSI] starts at [v1.9.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[CSI] is colored in GreenYellow
+note bottom
+v1.9 引入，v1.10 升级 Beta，v1.13 达到 Stable 阶段。
+目标：在 Kubernetes 和外部存储系统之间建立一套标准的存储管理接口。
+end note
+
+
+[进程 PID 限制与预留] as [PID] starts at [v1.10.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[PID] is colored in GreenYellow
+note bottom
+v1.10 引入，v1.14 引入 Node 级别的 PID 资源管理限制，v1.15 成为 Beta 版本，v1.20 达到 Stable 阶段。
+end note
+
+
+[CoreDNS] as [CoreDNS] starts at [v1.11.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[CoreDNS] is colored in GreenYellow
+note bottom
+从 v1.2 以插件方式引入 kube-dns。v1.11 支持 CoreDNS。
+end note
+
+
+[PVC 扩容机制] as [PVCExpansion] starts at [v1.11.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[PVCExpansion] is colored in GreenYellow
+note bottom
+v1.11 引入，v1.24 达到 Stable 阶段。
+CSI 类型的 Volume 扩容在 v1.16 时达到 Beta 阶段。
+end note
+
+
+[CRD subresources 子资源] as [CRDSubresources] starts at [v1.11.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[CRDSubresources] is colored in GreenYellow
+note bottom
+CRD 扩展点增强：增加 subresources 字段及增加了 status 和 scale 两个子选项。
+end note
+
+
+[CRD 自定义输出字段] as [additionalPrinterColumns] starts at [v1.11.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[additionalPrinterColumns] is colored in GreenYellow
+note bottom
+CRD 扩展点增强：通过 additionalPrinterColumns 字段来自定义 kubectl get 输出字段。
+end note
+
+
+[RuntimeClass] as [RuntimeClass] starts at [v1.12.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[RuntimeClass] is colored in GreenYellow
+note bottom
+v1.12 引入，v1.20 达到 Stable 阶段。
+用于指定不同的容器运行时。
+end note
+
+
+[Volume Snapshot 存储卷快照] as [VolumeSnapshot] starts at [v1.12.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[VolumeSnapshot] is colored in GreenYellow
+note bottom
+v1.12 引入，v1.17 到 Beta，v1.20 达到 Stable 阶段。
+用于指定不同的容器运行时。
+end note
+
+
+[存储卷模式设置] as [VolumeMode] starts at [v1.13.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[VolumeMode] is colored in GreenYellow
+note bottom
+v1.13 引入，v1.18 达到 Stable 阶段。
+用于指定存储卷模式： Filesystem 或 Block。
+end note
+
+
+[CRD 版本转换特性] as [CRDVersionUpgrade] starts at [v1.13.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[CRDVersionUpgrade] is colored in GreenYellow
+note bottom
+v1.13 引入，v1.16 达到 Stable 阶段。
+CRD 扩展点增强：通过 Webhook 回调完成多版本 CRD 资源对象转换问题，方便升级。
+end note
+
+
+[Server-side apply 特性] as [ServerSideApply] starts at [v1.14.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[ServerSideApply] is colored in GreenYellow
+note bottom
+v1.14 引入，v1.22 达到 Stable 阶段。
+在 API Server 完整实现 kubectl apply 命令的功能。
+end note
+
+
+[Scheduler Framework 框架] as [SchedulerFramework] starts at [v1.15.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[SchedulerFramework] is colored in GreenYellow
+note bottom
+Scheduler：实现基于 Scheduler Framework 的开发方式，开始支持组件化开发。
+end note
+
+
+[CSI Ephemeral Volume 即 CSI 临时卷] as [CSIEphemeralVolume] starts at [v1.15.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[CSIEphemeralVolume] is colored in GreenYellow
+note bottom
+v1.15 引入，v1.25 达到 Stable 阶段。
+必须由第三方 CSI 存储驱动程序提供。
+end note
+
+
+[Startup Probe] as [StartupProbe] starts at [v1.16.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[StartupProbe] is colored in GreenYellow
+note bottom
+v1.16 引入，v1.20 达到 Stable 阶段。
+end note
+
+
+[API Server Network Proxy] as [NetworkProxy] starts at [v1.16.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[NetworkProxy] is colored in GreenYellow
+note bottom
+v1.16 引入 Alpha 阶段，v1.17 进入 Beta 阶段，v1.28 到 v0.0.9 阶段。
+核心设计思想：将 API Server 放置在一个独立网络中，与 Node 网络隔离，
+            使用网络连通性代理（Connectivity Proxy）来连通两个网络。
+end note
+
+
+[CRD 多版本特性] as [CRDVersioning] starts at [v1.17.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[CRDVersioning] is colored in GreenYellow
+note bottom
+v1.17 达到 Stable 阶段，引入时间应该更早。
+CRD 扩展点增强：在 spec.versions 中列出支持的全部版本号。
+end note
+
+
+[Bootstrap Token] as [BootstrapToken] starts at [v1.18.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[BootstrapToken] is colored in GreenYellow
+note bottom
+v1.18 达到 Stable 阶段。引入时间应该更早。
+TLS Bootstraping 机制，自动签发客户端证书。
+end note
+
+
+[Pod Topology Spread Constraints 基于拓扑信息的调度机制] as [TopologySpreadConstraints] starts at [v1.18.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[TopologySpreadConstraints] is colored in GreenYellow
+note bottom
+在 Pod 中配置 .spec.topologySpreadConstraints 字段。
+end note
+
+
+[Service Account Issuer Discovery] as [IssuerDiscovery] starts at [v1.18.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[IssuerDiscovery] is colored in GreenYellow
+note bottom
+v1.18 新增，v1.20 默认启用。
+允许 Kubernetes 集群作为 OIDC Server 发布出去。
+end note
+
+
+[Scheduler 所有策略全部组件化] as [SchedulerPredicatesPriorities] starts at [v1.18.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[SchedulerPredicatesPriorities] is colored in GreenYellow
+note bottom
+Scheduler：所有策略（Predicates 和 Priorities）全部组件化，
+           默认调度流程切换为 Scheduling Framework。
+end note
+
+
+[Scheduler 抢占过程组件化] as [SchedulerMultiProfile] starts at [v1.19.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[SchedulerMultiProfile] is colored in GreenYellow
+note bottom
+Scheduler：将抢占过程组件化，同时支持 Multi Scheduling Profile(多调度器配置)
+end note
+
+
+[Cgroups V2] as [CgroupsV2] starts at [v1.19.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[CgroupsV2] is colored in GreenYellow
+note bottom
+v1.19 开始支持，v1.25 达到 Stable 阶段。增加了一些新特性，比如 MemoryQoS。
+end note
+
+
+[EndpointSlice API] as [EndpointSlice] starts at [v1.19.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[EndpointSlice] is colored in GreenYellow
+note bottom
+v1.19 引入，v1.21 达到 Stable 阶段。
+end note
+
+
+[Generic Ephemeral Volume 即 通用临时卷] as [GenericEphemeralVolume] starts at [v1.19.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[GenericEphemeralVolume] is colored in GreenYellow
+note bottom
+v1.19 引入，v1.23 达到 Stable 阶段。
+通用临时卷，更加灵活，特性更丰富（支持本地磁盘及网络存储；可以设置上限；可初始化数据。）
+end note
+
+
+[Storage Capacity Tracking 即 CSI 存储容量跟踪] as [StorageCapacityTracking] starts at [v1.19.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[StorageCapacityTracking] is colored in GreenYellow
+note bottom
+v1.19 引入，v1.24 达到 Stable 阶段。v1.28 提供对集群级 API 的支持。
+end note
+
+
+[支持 SCTP 协议] as [SCTP] starts at [v1.20.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[SCTP] is colored in GreenYellow
+note bottom
+v1.20 达到 Stable 阶段。两年前开始引入。
+SCTP 是电信领域基础通信协议。
+Pod、Service 和 NetworkPolicy 都完成支持 SCTP 协议。
+end note
+
+
+[Pod Resources API] as [PodResources] starts at [v1.20.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[PodResources] is colored in GreenYellow
+note bottom
+v1.20 List API 除了报告 CPU Core 和内存，还增加了 NUMA Node 位置。
+v1.21 增加了 GetAllocatableResources 函数。
+v1.28 正式发布，引入时间应该更早。
+end note
+' TODO 要不要加这个正式版里程碑？
+[Pod Resources API 正式版] starts at [v1.28.0]'s start with Gold bold link
+[Pod Resources API 正式版] happens at [v1.28.0]'s start
+
+
+[Credential Provider Plugin] as [CredentialProviderPlugin] starts at [v1.20.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[CredentialProviderPlugin] is colored in GreenYellow
+note bottom
+v1.20 引入，v1.26 达到 Stable 阶段。
+依赖 client-go 的 External Credential Providers 特性。
+end note
+
+
+[Bound ServiceAccount Token] as [BoundTokens] starts at [v1.20.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[BoundTokens] is colored in GreenYellow
+note bottom
+v1.20 达到 Stable 阶段，则引入时间更早。
+Token 绑定到具体的 Pod 实例。
+end note
+
+
+[NUMA/(Memory Manager)] as [MemoryManager] starts at [v1.21.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[MemoryManager] is colored in GreenYellow
+note bottom
+v1.21 增加，v1.22 是 Beta 版，v1.29 达到 Stable 节点。引入时间应该更早。
+对 HugePage 的支持在 v1.28 达到了 Stable 阶段。
+end note
+
+
+[CSI 存储卷监控检查] as [VolumeHealth] starts at [v1.21.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[VolumeHealth] is colored in GreenYellow
+note bottom
+v1.21 引入，目前还是 Alpha 阶段。
+end note
+
+
+[Quality-of-Service for Memory Resources] as [MemoryQoS] starts at [v1.22.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[MemoryQoS] is colored in GreenYellow
+note bottom
+v1.22.0 引入，v1.27.0 成为 Alpha 版本。通过 Cgroups V2 实现。
+end note
+
+
+[支持交换内存] as [swap] starts at [v1.22.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[swap] is colored in GreenYellow
+note bottom
+v1.22 引入，v1.28 Beta。
+注：仅 cgroup v2 支持 NodeSwap。
+end note
+
+
+[Default Profiles for Seccomp] as [SeccompProfiles] starts at [v1.22.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[SeccompProfiles] is colored in GreenYellow
+note bottom
+v1.22 引入
+强制应用容器运行时的 DefaultProfile。
+Kubernetes 中称之为 RuntimeDefaultProfile。
+' Seccomp 即 Secure Computing，是 Linux 内核支持的安全特性之一，限制接口调用。
+end note
+
+
+[Job 对象的垃圾清理] as [JobGC] starts at [v1.23.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[JobGC] is colored in GreenYellow
+note bottom
+v1.23 达到稳定版，引入的时间应该更早。
+end note
+
+
+[PersistentVolume deletion protection finalizer] as [PVdpf] starts at [v1.23.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[PVdpf] is colored in GreenYellow
+note bottom
+v1.23 Alpha
+在删除 PV 时，通过设置 Finalizers 字段来确保只有在删除 Pod 后，
+才删除 Delete 回收策略的 PV。在此之前，PV 处于被保护的状态。
+end note
+
+
+[PodSecurity 安全机制即 Pod Security Standards（Pod 安全标准规范）] as [PodSecurity] starts at [v1.23.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[PodSecurity] is colored in GreenYellow
+note bottom
+v1.23 Beta 引入，v1.25 达到稳定。
+配合 Pod Security Admission 对 Pod 做安全检查。
+end note
+
+
+[Projected ServiceAccount Tokens] as [ProjectedTokens] starts at [v1.24.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[ProjectedTokens] is colored in GreenYellow
+note bottom
+' TODO ？？
+莫非这个是 TokenRequest API？
+更安全、更短有效期、更灵活。
+end note
+
+
+[临时 debug 容器调试 Pod] as [EphemeralContainer] starts at [v1.25.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[EphemeralContainer] is colored in GreenYellow
+note bottom
+v1.25 达到 Stable 阶段。
+建立临时容器，与目标 Pod 共享进程命名空间来访问容器环境。
+end note
+
+
+[RetroactiveDefaultStorageClass 特性] as [RetroactiveDefaultStorageClass] starts at [v1.25.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[RetroactiveDefaultStorageClass] is colored in GreenYellow
+note bottom
+v1.25 引入，v1.28 达到 Stable 阶段。
+配置默认 StorageClass 行为：设置默认 StorageClass 后，
+可以为之前没有设置 StorageClass 的 PVC 设置为最新的默认 StorageClass。
+end note
+
+
+[CRD CEL 校验机制] as [CRDCELValidation] starts at [v1.25.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[CRDCELValidation] is colored in GreenYellow
+note bottom
+v1.25 达到 Beta，在 v1.29 达到 Stable 阶段。
+end note
+
+
+[NUMA/(Device Manager)] as [DeviceManager] starts at [v1.26.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[DeviceManager] is colored in GreenYellow
+note bottom
+v1.26.0 达到正式版，引入时间应该更早。
+在 /var/lib/kubelet/device-plugins/kubelet.sock 启动
+套接字，启动 gRPC Server 服务，以此来注册设备。
+end note
+
+
+[Validating Admission Policy 验证准入策略] as [AdmissionPolicy] starts at [v1.26.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[AdmissionPolicy] is colored in GreenYellow
+note bottom
+v1.26.0 引入，v.128 达到 Beta
+通过 Admission Controller （准入控制插件）机制实现的。
+用于替代之前 Webhook 外挂是的用户授权和鉴权验证机制。
+end note
+
+
+[NUMA/(Topology Manager)] as [TopologyManager] starts at [v1.27.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[TopologyManager] is colored in GreenYellow
+note bottom
+v1.27.0 达到正式版，引入时间应该更早。
+Topology Manager 是NUMA 资源亲和性分配的仲裁者和判决者，
+负责协调 CPU Manager、Device Manager 和 Memory Manager。
+end note
+
+
+[调整 Pod 的 CPU 和内存大小] as [ScaleCpuMem] starts at [v1.27.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[ScaleCpuMem] is colored in GreenYellow
+note bottom
+v1.27.0 Alpha 引入，
+无需重启，动态调整 Pod 的 CPU 和内存大小。
+containerd v1.6.9 以下版本不支持。
+end note
+
+
+[Sidecar Containers] as [Sidecar] starts at [v1.28.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[Sidecar] is colored in GreenYellow
+note bottom
+v1.28.0 Alpha 引入。
+早在 2018 年 5 月提出第一版 KEP，后被废弃。
+在 2020 年 11 月 提出新的提议草案。
+end note
+
+
+[磁盘充足时删除长期未使用的镜像] as [deleteUnusefulImage] starts at [v1.29.0]'s start with Lime bold link and ends %date("YYYY-MM-dd")
+[deleteUnusefulImage] is colored in GreenYellow
+
+footer D瓜哥 · ""https://www.diguage.com"" · 出品
+@endgantt

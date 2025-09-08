@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Shell on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/shell/</link><description>Recent content in Shell on "地瓜哥"博客网</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Sat, 02 Jul 2022 20:24:55 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/shell/index.xml" rel="self" type="application/rss+xml"/><item><title>AWK 简介</title><link>https://www.diguage.com/post/introducing-awk/</link><pubDate>Sat, 10 Jul 2021 10:14:47 +0800</pubDate><guid>https://www.diguage.com/post/introducing-awk/</guid><description>&lt;div class="paragraph">
+&lt;p>这周需要处理一个日志文件，有一次体会到 AWK 强大和方便，但也认识到自己对 AWK 了解的粗浅。所以，写篇文章再深入学习一下。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>根据维基百科显示，AWK 于二十世纪七十年代在 Bell Labs 创建；其名字来源于三位创始人： Alfred Aho、Peter Weinberger and Brian Kernighan。AWK 是一个现在几乎每台 Linux 机器上都会有这个命令。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>AWK 是一种领域专用语言，专用设计用于文本处理，常用于提取文本或者生成报告。 AWK 也像 Shell 一样，方言和实现众多。D瓜哥这里选择最常用的 GNU AWK 实现。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>AWK 是以行为单位来处理文本的。它不仅仅是一个命令行，而且是一门语言。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>先展示一下我们的实例程序：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="bash">&lt;span class="nv">$ &lt;/span>&lt;span class="nb">cat &lt;/span>employee.txt
+ajay manager account 45000
+sunil clerk account 25000
+varun manager sales 50000
+amit manager account 47000
+tarun peon sales 15000
+deepak clerk sales 23000
+sunil peon sales 13000
+satvik director purchase 80000&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>AWK 的基本用法如下：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="bash">&lt;span class="c"># ① 基本格式&lt;/span>
+&lt;span class="nv">$ &lt;/span>&lt;span class="nb">awk &lt;/span>动作 文件名
+
+&lt;span class="c"># ② 标准 I/O 格式&lt;/span>
+&lt;span class="nv">$ &lt;/span>&lt;span class="nb">cat &lt;/span>文件名 | &lt;span class="nb">awk &lt;/span>动作&lt;/code>&lt;/pre>
+&lt;/div></description></item></channel></rss>

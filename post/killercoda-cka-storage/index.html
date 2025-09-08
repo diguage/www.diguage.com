@@ -1,0 +1,803 @@
+<!doctype html><html class=no-js lang=zh-cn><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><meta http-equiv=X-UA-Compatible content="IE=edge"><title>killercoda CKA：Storage - "地瓜哥"博客网</title>
+<script>(function(e,t){e[t]=e[t].replace("no-js","js")})(document.documentElement,"className")</script><meta name=keywords content="Kubernetes,CKA,Kubernetes,Linux,系统架构"><meta name=description content><meta property="og:url" content="https://www.diguage.com/post/killercoda-cka-storage/"><meta property="og:site_name" content='"地瓜哥"博客网'><meta property="og:title" content="killercoda CKA：Storage"><meta property="og:description" content=" 1. Storage - Persistent Volume Storage - Persistent Volume
+Create a PersistentVolume (PV) named black-pv-cka with the following specifications:
+Volume Type: hostPath
+Path: /opt/black-pv-cka
+Capacity: 50Mi
+# @author D瓜哥 · https://www.diguage.com $ vim pv.yaml # 编写 YAML 文件 $ cat pv.yaml apiVersion: v1 kind: PersistentVolume metadata: name: black-pv-cka spec: capacity: storage: 50Mi accessModes: - ReadWriteOnce persistentVolumeReclaimPolicy: Retain hostPath: path: /opt/black-pv-cka $ kubectl apply -f pv.yaml persistentvolume/black-pv-cka created 2. Storage - Persistent Volume Claim Storage - Persistent Volume Claim"><meta property="og:locale" content="zh_cn"><meta property="og:type" content="article"><meta property="article:section" content="post"><meta property="article:published_time" content="2024-12-19T19:54:28+08:00"><meta property="article:modified_time" content="2025-01-11T18:33:43+08:00"><meta property="article:tag" content="Kubernetes"><meta property="article:tag" content="Linux"><meta name=twitter:card content="summary"><meta name=twitter:title content="killercoda CKA：Storage"><meta name=twitter:description content=" 1. Storage - Persistent Volume Storage - Persistent Volume
+Create a PersistentVolume (PV) named black-pv-cka with the following specifications:
+Volume Type: hostPath
+Path: /opt/black-pv-cka
+Capacity: 50Mi
+# @author D瓜哥 · https://www.diguage.com $ vim pv.yaml # 编写 YAML 文件 $ cat pv.yaml apiVersion: v1 kind: PersistentVolume metadata: name: black-pv-cka spec: capacity: storage: 50Mi accessModes: - ReadWriteOnce persistentVolumeReclaimPolicy: Retain hostPath: path: /opt/black-pv-cka $ kubectl apply -f pv.yaml persistentvolume/black-pv-cka created 2. Storage - Persistent Volume Claim Storage - Persistent Volume Claim"><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link rel=dns-prefetch href=//fonts.googleapis.com><link rel=dns-prefetch href=//fonts.gstatic.com><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Open+Sans:400,400i,700"><link rel=stylesheet href=/css/style.min.css><link rel=stylesheet href=/css/asciidoctor.css><link rel=stylesheet href=/css/rouge-monokai.css><link rel="shortcut icon" href=/favicon.ico><script async src="https://www.googletagmanager.com/gtag/js?id=G-1MMT2NLEL4"></script><script>var dnt,doNotTrack=!1;if(!1&&(dnt=navigator.doNotTrack||window.doNotTrack||navigator.msDoNotTrack,doNotTrack=dnt=="1"||dnt=="yes"),!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-1MMT2NLEL4")}</script><script id=baidu_analytics>var _hmt=_hmt||[];(function(){var e,t=document.createElement("script");t.src="https://hm.baidu.com/hm.js?e56e7dd0a120b414f5741f4c5e5218ea",e=document.getElementsByTagName("script")[0],e.parentNode.insertBefore(t,e)})()</script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css></head><body class=body><div class="container container--outer"><header class=header><div class="container header__container"><div class=logo><a class=logo__link href=/ title='"地瓜哥"博客网' rel=home><div class="logo__item logo__text"><div class=logo__title>"地瓜哥"博客网</div><div class=logo__tagline>分享技术带来的喜悦 — https://www.diguage.com/</div></div></a></div><nav class=menu><button class=menu__btn aria-haspopup=true aria-expanded=false tabindex=0>
+<span class=menu__btn-title tabindex=-1>菜单</span></button><ul class=menu__list><li class=menu__item><a class=menu__link href=/><span class=menu__text>首页</span></a></li><li class=menu__item><a class=menu__link href=/categories/><span class=menu__text>分类</span></a></li><li class=menu__item><a class=menu__link href=/about/><span class=menu__text>关于</span></a></li><li class=menu__item><a class=menu__link href=/archives/><span class=menu__text>归档</span></a></li></ul></nav></div></header><div class="wrapper flex"><div class=primary><main class=main role=main><article class=post><header class=post__header><h1 class=post__title>killercoda CKA：Storage</h1><div class="post__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2024-12-19T19:54:28+08:00>2024-12-19</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/ rel=category>系统架构</a></span></div></div></header><figure class="post__thumbnail thumbnail"><img class=thumbnail__image src=/images/logos/kubernetes.svg alt="killercoda CKA：Storage"></figure><div class="content post__content clearfix"><div class=sect1><h2 id=_storage_persistent_volume>1. Storage - Persistent Volume</h2><div class=sectionbody><div class=paragraph><p><a href=https://killercoda.com/sachin/course/CKA/pv target=_blank rel=noopener>Storage - Persistent Volume</a></p></div><div class=sidebarblock><div class=content><div class=paragraph><p>Create a PersistentVolume (PV) named <code>black-pv-cka</code> with the following specifications:</p></div><div class=ulist><ul><li><p>Volume Type: <code>hostPath</code></p></li><li><p>Path: <code>/opt/black-pv-cka</code></p></li><li><p>Capacity: <code>50Mi</code></p></li></ul></div></div></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code data-lang=bash><span class=c># @author D瓜哥 · <a href=https://www.diguage.com target=_blank>https://www.diguage.com</a></span>
+
+<span class=nv>$ </span>vim pv.yaml
+<span class=c># 编写 YAML 文件</span>
+
+<span class=nv>$ </span><span class=nb>cat </span>pv.yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: black-pv-cka
+spec:
+  capacity:
+    storage: 50Mi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: /opt/black-pv-cka
+
+<span class=nv>$ </span>kubectl apply <span class=nt>-f</span> pv.yaml
+persistentvolume/black-pv-cka created</code></pre></div></div></div></div><div class=sect1><h2 id=_storage_persistent_volume_claim>2. Storage - Persistent Volume Claim</h2><div class=sectionbody><div class=paragraph><p><a href=https://killercoda.com/sachin/course/CKA/pvc target=_blank rel=noopener>Storage - Persistent Volume Claim</a></p></div><div class=sidebarblock><div class=content><div class=paragraph><p>A persistent volume named <code>red-pv-cka</code> is available. Your task is to create a PersistentVolumeClaim (PVC) named <code>red-pvc-cka</code> and request <code>30Mi</code> of storage from the <code>red-pv-cka</code> PersistentVolume (PV).</p></div><div class=paragraph><p>Ensure the following criteria are met:</p></div><div class=ulist><ul><li><p>Access mode: <code>ReadWriteOnce</code></p></li><li><p>Storage class: <code>manual</code></p></li></ul></div></div></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code data-lang=bash><span class=c># @author D瓜哥 · <a href=https://www.diguage.com target=_blank>https://www.diguage.com</a></span>
+
+<span class=nv>$ </span>kubectl get pv red-pv-cka <span class=nt>-o</span> wide
+NAME         CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS      CLAIM   STORAGECLASS   VOLUMEATTRIBUTESCLASS   REASON   AGE   VOLUMEMODE
+red-pv-cka   50Mi       RWO            Retain           Available           manual         &lt;<span class=nb>unset</span><span class=o>&gt;</span>                          59s   Filesystem
+
+<span class=nv>$ </span>vim pvc.yaml
+<span class=c># 编写 YAML 文件</span>
+
+<span class=nv>$ </span><span class=nb>cat </span>pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: red-pvc-cka
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 30Mi
+  storageClassName: manual
+
+<span class=nv>$ </span>kubectl apply <span class=nt>-f</span> pvc.yaml
+persistentvolumeclaim/red-pvc-cka created
+
+<span class=nv>$ </span>kubectl get pvc <span class=nt>-o</span> wide
+NAME          STATUS   VOLUME       CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE   VOLUMEMODE
+red-pvc-cka   Bound    red-pv-cka   50Mi       RWO            manual         &lt;<span class=nb>unset</span><span class=o>&gt;</span>                 7s    Filesystem</code></pre></div></div></div></div><div class=sect1><h2 id=_storage_persistent_volume_claim_resize>3. Storage - Persistent Volume Claim Resize</h2><div class=sectionbody><div class=paragraph><p><a href=https://killercoda.com/sachin/course/CKA/pvc-resize target=_blank rel=noopener>Storage - Persistent Volume Claim Resize</a></p></div><div class=sidebarblock><div class=content><div class=paragraph><p>Modify the size of the existing Persistent Volume Claim (PVC) named <code>yellow-pvc-cka</code> to request <code>60Mi</code> of storage from the <code>yellow-pv-cka</code> volume. Ensure that the PVC successfully resizes to the new size and remains in the <code>Bound</code> state.</p></div></div></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code data-lang=bash><span class=c># @author D瓜哥 · <a href=https://www.diguage.com target=_blank>https://www.diguage.com</a></span>
+
+<span class=nv>$ </span>kubectl get pv <span class=nt>-o</span> wide
+NAME            CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                    STORAGECLASS     VOLUMEATTRIBUTESCLASS   REASON   AGE   VOLUMEMODE
+yellow-pv-cka   100Mi      RWO            Retain           Bound    default/yellow-pvc-cka   yellow-stc-cka   &lt;<span class=nb>unset</span><span class=o>&gt;</span>                          57s   Filesystem
+
+<span class=nv>$ </span>kubectl get pvc <span class=nt>-o</span> wide
+NAME             STATUS   VOLUME          CAPACITY   ACCESS MODES   STORAGECLASS     VOLUMEATTRIBUTESCLASS   AGE   VOLUMEMODE
+yellow-pvc-cka   Bound    yellow-pv-cka   100Mi      RWO            yellow-stc-cka   &lt;<span class=nb>unset</span><span class=o>&gt;</span>                 70s   Filesystem
+
+<span class=nv>$ </span>kubectl get pvc yellow-pvc-cka <span class=nt>-o</span> yaml | <span class=nb>tee </span>pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      <span class=o>{</span><span class=s2>&#34;apiVersion&#34;</span>:<span class=s2>&#34;v1&#34;</span>,<span class=s2>&#34;kind&#34;</span>:<span class=s2>&#34;PersistentVolumeClaim&#34;</span>,<span class=s2>&#34;metadata&#34;</span>:<span class=o>{</span><span class=s2>&#34;annotations&#34;</span>:<span class=o>{}</span>,<span class=s2>&#34;name&#34;</span>:<span class=s2>&#34;yellow-pvc-cka&#34;</span>,<span class=s2>&#34;namespace&#34;</span>:<span class=s2>&#34;default&#34;</span><span class=o>}</span>,<span class=s2>&#34;spec&#34;</span>:<span class=o>{</span><span class=s2>&#34;accessModes&#34;</span>:[<span class=s2>&#34;ReadWriteOnce&#34;</span><span class=o>]</span>,<span class=s2>&#34;resources&#34;</span>:<span class=o>{</span><span class=s2>&#34;requests&#34;</span>:<span class=o>{</span><span class=s2>&#34;storage&#34;</span>:<span class=s2>&#34;40Mi&#34;</span><span class=o>}}</span>,<span class=s2>&#34;storageClassName&#34;</span>:<span class=s2>&#34;yellow-stc-cka&#34;</span>,<span class=s2>&#34;volumeName&#34;</span>:<span class=s2>&#34;yellow-pv-cka&#34;</span><span class=o>}}</span>
+    pv.kubernetes.io/bind-completed: <span class=s2>&#34;yes&#34;</span>
+  creationTimestamp: <span class=s2>&#34;2025-01-11T00:57:43Z&#34;</span>
+  finalizers:
+  - kubernetes.io/pvc-protection
+  name: yellow-pvc-cka
+  namespace: default
+  resourceVersion: <span class=s2>&#34;6605&#34;</span>
+  uid: cd2d8e0d-d565-4332-9ecd-b9a9f0e87d36
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 40Mi
+  storageClassName: yellow-stc-cka
+  volumeMode: Filesystem
+  volumeName: yellow-pv-cka
+status:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 100Mi
+  phase: Bound
+
+<span class=nv>$ </span>vim pvc.yaml
+<span class=c># 修改 resources 的值为 60Mi</span>
+
+<span class=nv>$ </span><span class=nb>cat </span>pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      <span class=o>{</span><span class=s2>&#34;apiVersion&#34;</span>:<span class=s2>&#34;v1&#34;</span>,<span class=s2>&#34;kind&#34;</span>:<span class=s2>&#34;PersistentVolumeClaim&#34;</span>,<span class=s2>&#34;metadata&#34;</span>:<span class=o>{</span><span class=s2>&#34;annotations&#34;</span>:<span class=o>{}</span>,<span class=s2>&#34;name&#34;</span>:<span class=s2>&#34;yellow-pvc-cka&#34;</span>,<span class=s2>&#34;namespace&#34;</span>:<span class=s2>&#34;default&#34;</span><span class=o>}</span>,<span class=s2>&#34;spec&#34;</span>:<span class=o>{</span><span class=s2>&#34;accessModes&#34;</span>:[<span class=s2>&#34;ReadWriteOnce&#34;</span><span class=o>]</span>,<span class=s2>&#34;resources&#34;</span>:<span class=o>{</span><span class=s2>&#34;requests&#34;</span>:<span class=o>{</span><span class=s2>&#34;storage&#34;</span>:<span class=s2>&#34;40Mi&#34;</span><span class=o>}}</span>,<span class=s2>&#34;storageClassName&#34;</span>:<span class=s2>&#34;yellow-stc-cka&#34;</span>,<span class=s2>&#34;volumeName&#34;</span>:<span class=s2>&#34;yellow-pv-cka&#34;</span><span class=o>}}</span>
+    pv.kubernetes.io/bind-completed: <span class=s2>&#34;yes&#34;</span>
+  creationTimestamp: <span class=s2>&#34;2025-01-11T00:57:43Z&#34;</span>
+  finalizers:
+  - kubernetes.io/pvc-protection
+  name: yellow-pvc-cka
+  namespace: default
+  resourceVersion: <span class=s2>&#34;6605&#34;</span>
+  uid: cd2d8e0d-d565-4332-9ecd-b9a9f0e87d36
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 60Mi
+  storageClassName: yellow-stc-cka
+  volumeMode: Filesystem
+  volumeName: yellow-pv-cka
+
+<span class=nv>$ </span>kubectl replace <span class=nt>-f</span> pvc.yaml
+persistentvolumeclaim/yellow-pvc-cka replaced
+
+<span class=nv>$ </span>kubectl get pvc <span class=nt>-o</span> wide
+NAME             STATUS   VOLUME          CAPACITY   ACCESS MODES   STORAGECLASS     VOLUMEATTRIBUTESCLASS   AGE     VOLUMEMODE
+yellow-pvc-cka   Bound    yellow-pv-cka   100Mi      RWO            yellow-stc-cka   &lt;<span class=nb>unset</span><span class=o>&gt;</span>                 2m34s   Filesystem
+
+<span class=nv>$ </span>kubectl get pvc yellow-pvc-cka <span class=nt>-o</span> yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      <span class=o>{</span><span class=s2>&#34;apiVersion&#34;</span>:<span class=s2>&#34;v1&#34;</span>,<span class=s2>&#34;kind&#34;</span>:<span class=s2>&#34;PersistentVolumeClaim&#34;</span>,<span class=s2>&#34;metadata&#34;</span>:<span class=o>{</span><span class=s2>&#34;annotations&#34;</span>:<span class=o>{</span><span class=s2>&#34;pv.kubernetes.io/bind-completed&#34;</span>:<span class=s2>&#34;yes&#34;</span><span class=o>}</span>,<span class=s2>&#34;creationTimestamp&#34;</span>:<span class=s2>&#34;2025-01-11T00:57:43Z&#34;</span>,<span class=s2>&#34;finalizers&#34;</span>:[<span class=s2>&#34;kubernetes.io/pvc-protection&#34;</span><span class=o>]</span>,<span class=s2>&#34;name&#34;</span>:<span class=s2>&#34;yellow-pvc-cka&#34;</span>,<span class=s2>&#34;namespace&#34;</span>:<span class=s2>&#34;default&#34;</span>,<span class=s2>&#34;resourceVersion&#34;</span>:<span class=s2>&#34;6605&#34;</span>,<span class=s2>&#34;uid&#34;</span>:<span class=s2>&#34;cd2d8e0d-d565-4332-9ecd-b9a9f0e87d36&#34;</span><span class=o>}</span>,<span class=s2>&#34;spec&#34;</span>:<span class=o>{</span><span class=s2>&#34;accessModes&#34;</span>:[<span class=s2>&#34;ReadWriteOnce&#34;</span><span class=o>]</span>,<span class=s2>&#34;resources&#34;</span>:<span class=o>{</span><span class=s2>&#34;requests&#34;</span>:<span class=o>{</span><span class=s2>&#34;storage&#34;</span>:<span class=s2>&#34;60Mi&#34;</span><span class=o>}}</span>,<span class=s2>&#34;storageClassName&#34;</span>:<span class=s2>&#34;yellow-stc-cka&#34;</span>,<span class=s2>&#34;volumeMode&#34;</span>:<span class=s2>&#34;Filesystem&#34;</span>,<span class=s2>&#34;volumeName&#34;</span>:<span class=s2>&#34;yellow-pv-cka&#34;</span><span class=o>}}</span>
+    pv.kubernetes.io/bind-completed: <span class=s2>&#34;yes&#34;</span>
+  creationTimestamp: <span class=s2>&#34;2025-01-11T00:57:43Z&#34;</span>
+  finalizers:
+  - kubernetes.io/pvc-protection
+  name: yellow-pvc-cka
+  namespace: default
+  resourceVersion: <span class=s2>&#34;6786&#34;</span>
+  uid: cd2d8e0d-d565-4332-9ecd-b9a9f0e87d36
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 60Mi
+  storageClassName: yellow-stc-cka
+  volumeMode: Filesystem
+  volumeName: yellow-pv-cka
+status:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 100Mi
+  phase: Bound</code></pre></div></div></div></div><div class=sect1><h2 id=_storage_persistent_volume_claim_pod>4. Storage - Persistent Volume Claim, Pod</h2><div class=sectionbody><div class=paragraph><p><a href=https://killercoda.com/sachin/course/CKA/pvc-pod target=_blank rel=noopener>Storage - Persistent Volume Claim, Pod</a></p></div><div class=sidebarblock><div class=content><div class=paragraph><p>A Kubernetes pod definition file named <code>nginx-pod-cka.yaml</code> is available. Your task is to make the following modifications to the manifest file:</p></div><div class=ulist><ul><li><p>Create a Persistent Volume Claim (PVC) with the name <code>nginx-pvc-cka</code> . This PVC should request <code>80Mi</code> of storage from an existing Persistent Volume (PV) named <code>nginx-pv-cka</code> and Storage Class named <code>nginx-stc-cka</code>. Use the access mode <code>ReadWriteOnce</code>.</p></li><li><p>Add the created <code>nginx-pvc-cka</code> PVC to the existing <code>nginx-pod-cka</code> POD definition.</p></li><li><p>Mount the volume claimed by <code>nginx-pvc-cka</code> at the path <code>/var/www/html</code> within the <code>nginx-pod-cka</code> POD.</p></li><li><p>Add tolerations with the key <code>node-role.kubernetes.io/control-plane</code> set to <code>Exists</code> and effect <code>NoSchedule</code> to the <code>nginx-pod-cka</code> Pod</p></li><li><p>Ensure that the <code>peach-pod-cka05-str</code> POD is running and that the Persistent Volume (PV) is successfully <code>bound</code>.</p></li></ul></div></div></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code data-lang=bash><span class=c># @author D瓜哥 · <a href=https://www.diguage.com target=_blank>https://www.diguage.com</a></span>
+
+<span class=nv>$ </span>kubectl get  pv <span class=nt>-o</span> wide
+NAME           CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS      CLAIM   STORAGECLASS    VOLUMEATTRIBUTESCLASS   REASON   AGE     VOLUMEMODE
+nginx-pv-cka   100Mi      RWO            Retain           Available           nginx-stc-cka   &lt;<span class=nb>unset</span><span class=o>&gt;</span>                          2m45s   Filesystem
+
+<span class=nv>$ </span><span class=nb>cat </span>nginx-pod-cka.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-pod-cka
+spec:
+  containers:
+    - name: my-container
+      image: nginx:latest
+
+<span class=nv>$ </span>vim nginx-pod-cka.yaml
+<span class=c># 编写 YAML 文件</span>
+
+<span class=nv>$ </span><span class=nb>cat </span>nginx-pod-cka.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-pod-cka
+spec:
+  containers:
+    - name: my-container
+      image: nginx:latest
+      volumeMounts:
+      - mountPath: <span class=s2>&#34;/var/www/html&#34;</span>
+        name: vo-nginx-pvc
+  volumes:
+    - name: vo-nginx-pvc
+      persistentVolumeClaim:
+        claimName: nginx-pvc-cka
+  tolerations:
+  - key: <span class=s2>&#34;node-role.kubernetes.io/control-plane&#34;</span>
+    operator: <span class=s2>&#34;Exists&#34;</span>
+    effect: <span class=s2>&#34;NoSchedule&#34;</span>
+<span class=nt>---</span>
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nginx-pvc-cka
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 80Mi
+  storageClassName: nginx-stc-cka
+
+<span class=nv>$ </span>kubectl apply <span class=nt>-f</span> nginx-pod-cka.yaml
+pod/nginx-pod-cka created
+persistentvolumeclaim/nginx-pvc-cka created
+
+<span class=nv>$ </span>kubectl get pvc
+NAME            STATUS   VOLUME         CAPACITY   ACCESS MODES   STORAGECLASS    VOLUMEATTRIBUTESCLASS   AGE
+nginx-pvc-cka   Bound    nginx-pv-cka   100Mi      RWO            nginx-stc-cka   &lt;<span class=nb>unset</span><span class=o>&gt;</span>                 10s
+
+<span class=nv>$ </span>kubectl get pv
+NAME           CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                   STORAGECLASS    VOLUMEATTRIBUTESCLASS   REASON   AGE
+nginx-pv-cka   100Mi      RWO            Retain           Bound    default/nginx-pvc-cka   nginx-stc-cka   &lt;<span class=nb>unset</span><span class=o>&gt;</span>                          9m35s
+
+<span class=nv>$ </span>kubectl get  pod
+NAME            READY   STATUS    RESTARTS   AGE
+nginx-pod-cka   1/1     Running   0          20s</code></pre></div></div></div></div><div class=sect1><h2 id=_storage_persistent_volume_persistent_volume_claim>5. Storage - Persistent Volume, Persistent Volume Claim</h2><div class=sectionbody><div class=paragraph><p><a href=https://killercoda.com/sachin/course/CKA/pv-pvc target=_blank rel=noopener>Storage - Persistent Volume, Persistent Volume Claim</a></p></div><div class=sidebarblock><div class=content><div class=paragraph><p>Create a PersistentVolume (PV) and a PersistentVolumeClaim (PVC) using an existing storage class named <code>gold-stc-cka</code> to meet the following requirements:</p></div><div class=paragraph><p>Step 1: Create a Persistent Volume (PV)</p></div><div class=ulist><ul><li><p>Name the PV as <code>gold-pv-cka</code>.</p></li><li><p>Set the capacity to <code>50Mi</code>.</p></li><li><p>Use the volume type <code>hostpath</code> with the path <code>/opt/gold-stc-cka</code>.</p></li><li><p>Assign the storage class as <code>gold-stc-cka</code>.</p></li><li><p>Ensure that the PV is created on <code>node01</code> , where the <code>/opt/gold-stc-cka</code> directory already exists.</p></li><li><p>Apply a label to the PV with key <code>tier</code> and value <code>white</code> .</p></li></ul></div><div class=paragraph><p>Step 2: Create a Persistent Volume Claim (PVC)</p></div><div class=ulist><ul><li><p>Name the PVC as <code>gold-pvc-cka</code>.</p></li><li><p>Request <code>30Mi</code> of storage from the PV <code>gold-pv-cka</code> using the matchLabels criterion.</p></li><li><p>Use the <code>gold-stc-cka</code> storage class.</p></li><li><p>Set the access mode to <code>ReadWriteMany</code> .</p></li></ul></div></div></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code data-lang=bash><span class=c># @author D瓜哥 · <a href=https://www.diguage.com target=_blank>https://www.diguage.com</a></span>
+
+<span class=nv>$ </span>kubectl get storageclasses <span class=nt>-o</span> wide
+NAME                   PROVISIONER                    RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
+gold-stc-cka           kubernetes.io/no-provisioner   Delete          WaitForFirstConsumer   <span class=nb>false                  </span>2m29s
+local-path <span class=o>(</span>default<span class=o>)</span>   rancher.io/local-path          Delete          WaitForFirstConsumer   <span class=nb>false                  </span>8d
+
+<span class=nv>$ </span>kubectl get nodes node01 <span class=nt>-o</span> yaml
+apiVersion: v1
+kind: Node
+metadata:
+  annotations:
+    flannel.alpha.coreos.com/backend-data: <span class=s1>&#39;{&#34;VNI&#34;:1,&#34;VtepMAC&#34;:&#34;7e:db:36:b7:d8:41&#34;}&#39;</span>
+    flannel.alpha.coreos.com/backend-type: vxlan
+    flannel.alpha.coreos.com/kube-subnet-manager: <span class=s2>&#34;true&#34;</span>
+    flannel.alpha.coreos.com/public-ip: 172.30.2.2
+    kubeadm.alpha.kubernetes.io/cri-socket: unix:///var/run/containerd/containerd.sock
+    node.alpha.kubernetes.io/ttl: <span class=s2>&#34;0&#34;</span>
+    projectcalico.org/IPv4Address: 172.30.2.2/24
+    projectcalico.org/IPv4IPIPTunnelAddr: 192.168.1.1
+    volumes.kubernetes.io/controller-managed-attach-detach: <span class=s2>&#34;true&#34;</span>
+  creationTimestamp: <span class=s2>&#34;2025-01-02T10:03:01Z&#34;</span>
+  labels:
+    beta.kubernetes.io/arch: amd64
+    beta.kubernetes.io/os: linux
+    kubernetes.io/arch: amd64
+    kubernetes.io/hostname: node01
+    kubernetes.io/os: linux
+  name: node01
+  resourceVersion: <span class=s2>&#34;4019&#34;</span>
+  uid: 93743255-7b3e-4e81-a8a8-4a071984de9a
+<span class=c># 省略无用内容</span>
+
+<span class=nv>$ </span><span class=nb>cat </span>pv.yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: gold-pv-cka
+  labels:
+    tier: white
+spec:
+  storageClassName: gold-stc-cka
+  capacity:
+    storage: 50Mi
+  accessModes:
+    - ReadWriteMany
+  volumeMode: Filesystem
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    <span class=nb>type</span>: Directory
+    path: /opt/gold-stc-cka
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+            - node01
+<span class=nt>---</span>
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: gold-pvc-cka
+spec:
+  storageClassName: gold-stc-cka
+  accessModes:
+    - ReadWriteMany
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 30Mi
+  selector:
+    matchLabels:
+      tier: white
+
+<span class=nv>$ </span>kubectl apply <span class=nt>-f</span> pv.yaml
+persistentvolume/gold-pv-cka created
+persistentvolumeclaim/gold-pvc-cka created
+
+<span class=nv>$ </span>kubectl get pv <span class=nt>-o</span> wide
+NAME          CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS      CLAIM   STORAGECLASS   VOLUMEATTRIBUTESCLASS   REASON   AGE   VOLUMEMODE
+gold-pv-cka   50Mi       RWX            Retain           Available           gold-stc-cka   &lt;<span class=nb>unset</span><span class=o>&gt;</span>                          4s    Filesystem
+
+<span class=nv>$ </span>kubectl get pvc <span class=nt>-o</span> wide
+NAME           STATUS    VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE   VOLUMEMODE
+gold-pvc-cka   Pending                                      gold-stc-cka   &lt;<span class=nb>unset</span><span class=o>&gt;</span>                 21s   Filesystem
+
+<span class=nv>$ </span>kubectl describe pv gold-pv-cka
+Name:              gold-pv-cka
+Labels:            <span class=nv>tier</span><span class=o>=</span>white
+Annotations:       &lt;none&gt;
+Finalizers:        <span class=o>[</span>kubernetes.io/pv-protection]
+StorageClass:      gold-stc-cka
+Status:            Available
+Claim:
+Reclaim Policy:    Retain
+Access Modes:      RWX
+VolumeMode:        Filesystem
+Capacity:          50Mi
+Node Affinity:
+  Required Terms:
+    Term 0:        kubernetes.io/hostname <span class=k>in</span> <span class=o>[</span>node01]
+Message:
+Source:
+    Type:          HostPath <span class=o>(</span>bare host directory volume<span class=o>)</span>
+    Path:          /opt/gold-stc-cka
+    HostPathType:  Directory
+Events:            &lt;none&gt;
+
+<span class=nv>$ </span>kubectl describe pvc gold-pvc-cka
+Name:          gold-pvc-cka
+Namespace:     default
+StorageClass:  gold-stc-cka
+Status:        Pending
+Volume:
+Labels:        &lt;none&gt;
+Annotations:   &lt;none&gt;
+Finalizers:    <span class=o>[</span>kubernetes.io/pvc-protection]
+Capacity:
+Access Modes:
+VolumeMode:    Filesystem
+Used By:       &lt;none&gt;
+Events:
+  Type    Reason                Age               From                         Message
+  <span class=nt>----</span>    <span class=nt>------</span>                <span class=nt>----</span>              <span class=nt>----</span>                         <span class=nt>-------</span>
+  Normal  WaitForFirstConsumer  9s <span class=o>(</span>x5 over 59s<span class=o>)</span>  persistentvolume-controller  waiting <span class=k>for </span>first consumer to be created before binding</code></pre></div></div></div></div><div class=sect1><h2 id=_storage_persistent_volume_persistent_volume_claim_pod>6. Storage - Persistent Volume, Persistent Volume Claim, Pod</h2><div class=sectionbody><div class=paragraph><p><a href=https://killercoda.com/sachin/course/CKA/pv-pvc-pod target=_blank rel=noopener>Storage - Persistent Volume, Persistent Volume Claim, Pod</a></p></div><div class=sidebarblock><div class=content><div class=paragraph><p>You are responsible for provisioning storage for a Kubernetes cluster. Your task is to create a PersistentVolume (PV), a PersistentVolumeClaim (PVC), and deploy a pod that uses the PVC for shared storage.</p></div><div class=paragraph><p>Here are the specific requirements:</p></div><div class=ulist><ul><li><p>Create a PersistentVolume (PV) named <code>my-pv-cka</code> with the following properties:</p><div class=ulist><ul><li><p>Storage capacity: <code>100Mi</code></p></li><li><p>Access mode: <code>ReadWriteOnce</code></p></li><li><p>Host path: <code>/mnt/data</code></p></li><li><p>Storage class: <code>standard</code></p></li></ul></div></li><li><p>Create a PersistentVolumeClaim (PVC) named <code>my-pvc-cka</code> to claim storage from the <code>my-pv-cka</code> PV, with the following properties:</p><div class=ulist><ul><li><p>Storage class: <code>standard</code></p></li><li><p>request storage: <code>100Mi</code> (less than)</p></li></ul></div></li><li><p>Deploy a pod named <code>my-pod-cka</code> using the <code>nginx</code> container image.</p></li><li><p>Mount the PVC, <code>my-pvc-cka</code> , to the pod at the path <code>/var/www/html</code> . Ensure that the PV, PVC, and pod are successfully created, and the pod is in a Running state.</p></li></ul></div><div class=paragraph><p>Note: Binding and Pod might take time to come up, please have patience</p></div></div></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code data-lang=bash><span class=c># @author D瓜哥 · <a href=https://www.diguage.com target=_blank>https://www.diguage.com</a></span>
+
+<span class=nv>$ </span>vim pod.yaml
+<span class=c># 输入 YAML 文件</span>
+
+<span class=nv>$ </span><span class=nb>cat </span>pod.yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: my-pv-cka
+spec:
+  capacity:
+    storage: 100Mi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: standard
+  hostPath:
+    <span class=nb>type</span>: DirectoryOrCreate
+    path: /mnt/data
+<span class=nt>---</span>
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: my-pvc-cka
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 100Mi
+  storageClassName: standard
+<span class=nt>---</span>
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-pod-cka
+spec:
+  containers:
+    - name: nginx
+      image: nginx
+      volumeMounts:
+      - mountPath: <span class=s2>&#34;/var/www/html&#34;</span>
+        name: mypd
+  volumes:
+    - name: mypd
+      persistentVolumeClaim:
+        claimName: my-pvc-cka
+
+<span class=nv>$ </span>kubectl apply <span class=nt>-f</span> pod.yaml
+persistentvolume/my-pv-cka created
+persistentvolumeclaim/my-pvc-cka created
+pod/my-pod-cka created
+
+<span class=nv>$ </span>kubectl get pv <span class=nt>-o</span> wide
+NAME        CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                STORAGECLASS   VOLUMEATTRIBUTESCLASS   REASON   AGE   VOLUMEMODE
+my-pv-cka   100Mi      RWO            Retain           Bound    default/my-pvc-cka   standard       &lt;<span class=nb>unset</span><span class=o>&gt;</span>                          80s   Filesystem
+
+<span class=nv>$ </span>kubectl get pvc <span class=nt>-o</span> wide
+NAME         STATUS   VOLUME      CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE   VOLUMEMODE
+my-pvc-cka   Bound    my-pv-cka   100Mi      RWO            standard       &lt;<span class=nb>unset</span><span class=o>&gt;</span>                 85s   Filesystem
+
+<span class=nv>$ </span>kubectl get pod <span class=nt>-o</span> wide
+NAME         READY   STATUS    RESTARTS   AGE   IP            NODE     NOMINATED NODE   READINESS GATES
+my-pod-cka   1/1     Running   0          21s   192.168.1.6   node01   &lt;none&gt;           &lt;none&gt;</code></pre></div></div></div></div><div class=sect1><h2 id=_storage_shared_volume>7. Storage - Shared Volume</h2><div class=sectionbody><div class=paragraph><p><a href=https://killercoda.com/sachin/course/CKA/Shared-Volume target=_blank rel=noopener>Storage - Shared Volume</a></p></div><div class=sidebarblock><div class=content><div class=paragraph><p>An existing nginx pod, <code>my-pod-cka</code> and Persistent Volume Claim (PVC) named <code>my-pvc-cka</code> are available. Your task is to implement the following modifications:</p></div><div class=ulist><ul><li><p>NOTE:- PVC to PV binding and <code>my-pod-cka</code> pods sometimes takes around 2Mins to Up & Running So Please wait</p></li><li><p>Update the pod to include a sidecar container that uses the <code>busybox</code> image. Ensure that this sidecar container remains operational by including an appropriate command <code>"tail -f /dev/null"</code> .</p></li><li><p>Share the <code>shared-storage</code> volume between the main application and the sidecar container, mounting it at the path <code>/var/www/shared</code> . Additionally, ensure that the sidecar container has <code>read-only</code> access to this shared volume.</p></li></ul></div></div></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code data-lang=bash><span class=c># @author D瓜哥 · <a href=https://www.diguage.com target=_blank>https://www.diguage.com</a></span>
+
+<span class=nv>$ </span>kubectl get pod my-pod-cka <span class=nt>-o</span> yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    cni.projectcalico.org/containerID: a1c711296b2f99bbbfe744fb53274d404be6ba1cbd13228a5c93e745769387f6
+    cni.projectcalico.org/podIP: 192.168.1.5/32
+    cni.projectcalico.org/podIPs: 192.168.1.5/32
+    kubectl.kubernetes.io/last-applied-configuration: |
+      <span class=o>{</span><span class=s2>&#34;apiVersion&#34;</span>:<span class=s2>&#34;v1&#34;</span>,<span class=s2>&#34;kind&#34;</span>:<span class=s2>&#34;Pod&#34;</span>,<span class=s2>&#34;metadata&#34;</span>:<span class=o>{</span><span class=s2>&#34;annotations&#34;</span>:<span class=o>{}</span>,<span class=s2>&#34;name&#34;</span>:<span class=s2>&#34;my-pod-cka&#34;</span>,<span class=s2>&#34;namespace&#34;</span>:<span class=s2>&#34;default&#34;</span><span class=o>}</span>,<span class=s2>&#34;spec&#34;</span>:<span class=o>{</span><span class=s2>&#34;containers&#34;</span>:[<span class=o>{</span><span class=s2>&#34;image&#34;</span>:<span class=s2>&#34;nginx&#34;</span>,<span class=s2>&#34;name&#34;</span>:<span class=s2>&#34;nginx-container&#34;</span>,<span class=s2>&#34;volumeMounts&#34;</span>:[<span class=o>{</span><span class=s2>&#34;mountPath&#34;</span>:<span class=s2>&#34;/var/www/html&#34;</span>,<span class=s2>&#34;name&#34;</span>:<span class=s2>&#34;shared-storage&#34;</span><span class=o>}]}]</span>,<span class=s2>&#34;volumes&#34;</span>:[<span class=o>{</span><span class=s2>&#34;name&#34;</span>:<span class=s2>&#34;shared-storage&#34;</span>,<span class=s2>&#34;persistentVolumeClaim&#34;</span>:<span class=o>{</span><span class=s2>&#34;claimName&#34;</span>:<span class=s2>&#34;my-pvc-cka&#34;</span><span class=o>}}]}}</span>
+  creationTimestamp: <span class=s2>&#34;2025-01-11T09:16:53Z&#34;</span>
+  name: my-pod-cka
+  namespace: default
+  resourceVersion: <span class=s2>&#34;4706&#34;</span>
+  uid: f38ff097-f5b6-465a-9497-c34a9f4f8a73
+spec:
+  containers:
+  - image: nginx
+    imagePullPolicy: Always
+    name: nginx-container
+    resources: <span class=o>{}</span>
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /var/www/html
+      name: shared-storage
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: kube-api-access-jxknh
+      readOnly: <span class=nb>true
+  </span>dnsPolicy: ClusterFirst
+  enableServiceLinks: <span class=nb>true
+  </span>nodeName: node01
+  preemptionPolicy: PreemptLowerPriority
+  priority: 0
+  restartPolicy: Always
+  schedulerName: default-scheduler
+  securityContext: <span class=o>{}</span>
+  serviceAccount: default
+  serviceAccountName: default
+  terminationGracePeriodSeconds: 30
+  tolerations:
+  - effect: NoExecute
+    key: node.kubernetes.io/not-ready
+    operator: Exists
+    tolerationSeconds: 300
+  - effect: NoExecute
+    key: node.kubernetes.io/unreachable
+    operator: Exists
+    tolerationSeconds: 300
+  volumes:
+  - name: shared-storage
+    persistentVolumeClaim:
+      claimName: my-pvc-cka
+  - name: kube-api-access-jxknh
+    projected:
+      defaultMode: 420
+      sources:
+      - serviceAccountToken:
+          expirationSeconds: 3607
+          path: token
+      - configMap:
+          items:
+          - key: ca.crt
+            path: ca.crt
+          name: kube-root-ca.crt
+      - downwardAPI:
+          items:
+          - fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+            path: namespace
+<span class=c># 省略 status 字段</span>
+
+<span class=c># 从 .metadata.annotations.kubectl.kubernetes.io/last-applied-configuration 改的</span>
+<span class=nv>$ </span><span class=nb>cat </span>pod.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-pod-cka
+  namespace: default
+spec:
+  containers:
+    - image: nginx
+      name: nginx-container
+      volumeMounts:
+        - mountPath: /var/www/html
+          name: shared-storage
+  initContainers:
+    - image: busybox
+      name: busybox
+      restartPolicy: Always
+      volumeMounts:
+        - mountPath: /var/www/shared
+          name: shared-storage
+          readOnly: <span class=nb>true
+      command</span>:
+        - <span class=nb>tail</span>
+        - <span class=nt>-f</span>
+        - /dev/null
+  volumes:
+    - name: shared-storage
+      persistentVolumeClaim:
+        claimName: my-pvc-cka
+
+<span class=nv>$ </span>kubectl get pv
+NAME                                       CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                STORAGECLASS   VOLUMEATTRIBUTESCLASS   REASON   AGE
+pvc-11a0fa6f-b3f0-4751-8bd1-2fde422b503c   100Mi      RWO            Delete           Bound    default/my-pvc-cka   local-path     &lt;<span class=nb>unset</span><span class=o>&gt;</span>                          20m
+
+<span class=nv>$ </span>kubectl get pvc
+NAME         STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+my-pvc-cka   Bound    pvc-11a0fa6f-b3f0-4751-8bd1-2fde422b503c   100Mi      RWO            local-path     &lt;<span class=nb>unset</span><span class=o>&gt;</span>                 21m
+
+<span class=nv>$ </span>kubectl get pod <span class=nt>-o</span> wide
+NAME         READY   STATUS    RESTARTS   AGE   IP            NODE     NOMINATED NODE   READINESS GATES
+my-pod-cka   2/2     Running   0          29s   192.168.1.9   node01   &lt;none&gt;           &lt;none&gt;</code></pre></div></div><div class="admonitionblock note"><table><tbody><tr><td class=icon><i class="fa icon-note" title=Note></i></td><td class=content>题目要求都满足了，但是检查没通过！奇怪！</td></tr></tbody></table></div></div></div><div class=sect1><h2 id=_storage_storage_class>8. Storage - Storage Class</h2><div class=sectionbody><div class=paragraph><p><a href=https://killercoda.com/sachin/course/CKA/Storage-class target=_blank rel=noopener>Storage - Storage Class</a></p></div><div class=sidebarblock><div class=content><div class=paragraph><p>Create a storage class called <code>green-stc</code> as per the properties given below:</p></div><div class=ulist><ul><li><p>Provisioner should be <code>kubernetes.io/no-provisioner</code>.</p></li><li><p>Volume binding mode should be <code>WaitForFirstConsumer</code>.</p><div class=ulist><ul><li><p>Volume expansion should be enabled .</p></li></ul></div></li></ul></div></div></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code data-lang=bash><span class=c># @author D瓜哥 · <a href=https://www.diguage.com target=_blank>https://www.diguage.com</a></span>
+
+<span class=nv>$ </span>vim stc.yaml
+<span class=c># 编写 YAML 文件</span>
+<span class=nv>$ </span><span class=nb>cat </span>stc.yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: green-stc
+provisioner: kubernetes.io/no-provisioner
+reclaimPolicy: Retain
+allowVolumeExpansion: <span class=nb>true
+</span>volumeBindingMode: WaitForFirstConsumer
+
+<span class=nv>$ </span>kubectl apply <span class=nt>-f</span> stc.yaml
+storageclass.storage.k8s.io/green-stc created
+
+<span class=nv>$ </span>kubectl get storageclass
+NAME                   PROVISIONER                    RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
+green-stc              kubernetes.io/no-provisioner   Retain          WaitForFirstConsumer   <span class=nb>true                   </span>10s</code></pre></div></div></div></div><div class=sect1><h2 id=_storage_persistent_volume_persistent_volume_claim_storage_class>9. Storage - Persistent Volume, Persistent Volume Claim, Storage Class</h2><div class=sectionbody><div class=paragraph><p><a href=https://killercoda.com/sachin/course/CKA/sc-pv-pvc target=_blank rel=noopener>Storage - Persistent Volume, Persistent Volume Claim, Storage Class</a></p></div><div class=sidebarblock><div class=content><div class=paragraph><p>Your task involves setting up storage components in a Kubernetes cluster. Follow these steps:</p></div><div class=paragraph><p>Step 1: Create a Storage Class named <code>blue-stc-cka</code> with the following properties:</p></div><div class=ulist><ul><li><p>Provisioner: <code>kubernetes.io/no-provisioner</code></p></li><li><p>Volume binding mode: <code>WaitForFirstConsumer</code></p></li></ul></div><div class=paragraph><p>Step 2: Create a Persistent Volume (PV) named <code>blue-pv-cka</code> with the following properties:</p></div><div class=ulist><ul><li><p>Capacity: <code>100Mi</code></p></li><li><p>Access mode: <code>ReadWriteOnce</code></p></li><li><p>Reclaim policy: <code>Retain</code></p></li><li><p>Storage class: <code>blue-stc-cka</code></p></li><li><p>Local path: <code>/opt/blue-data-cka</code></p></li><li><p>Node affinity: Set node affinity to create this PV on <code>controlplane</code> .</p></li></ul></div><div class=paragraph><p>Step 3: Create a Persistent Volume Claim (PVC) named <code>blue-pvc-cka</code> with the following properties:</p></div><div class=ulist><ul><li><p>Access mode: <code>ReadWriteOnce</code></p></li><li><p>Storage class: <code>blue-stc-cka</code></p></li><li><p>Storage request: <code>50Mi</code></p></li><li><p>The volume should be bound to <code>blue-pv-cka</code>.</p></li></ul></div></div></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code data-lang=bash><span class=c># @author D瓜哥 · <a href=https://www.diguage.com target=_blank>https://www.diguage.com</a></span>
+
+<span class=nv>$ </span>vim pv.yaml
+<span class=c># 编写 YAML 文件</span>
+
+<span class=nv>$ </span><span class=nb>cat </span>pv.yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: blue-stc-cka
+provisioner: kubernetes.io/no-provisioner
+reclaimPolicy: Retain
+<span class=c>#allowVolumeExpansion: true</span>
+volumeBindingMode: WaitForFirstConsumer
+<span class=nt>---</span>
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: blue-pv-cka
+spec:
+  volumeMode: Filesystem
+  storageClassName: blue-stc-cka
+  persistentVolumeReclaimPolicy: Retain
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 100Mi
+  <span class=nb>local</span>:
+    path: /opt/blue-data-cka
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+          - key: kubernetes.io/hostname
+            operator: In
+            values:
+            - controlplane
+<span class=nt>---</span>
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: blue-pvc-cka
+spec:
+  volumeMode: Filesystem
+  storageClassName: blue-stc-cka
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Mi
+
+<span class=nv>$ </span>kubectl apply <span class=nt>-f</span> pv.yaml
+storageclass.storage.k8s.io/blue-stc-cka created
+persistentvolume/blue-pv-cka created
+persistentvolumeclaim/blue-pvc-cka created
+
+<span class=nv>$ </span>kubectl get storageclasses
+NAME                   PROVISIONER                    RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
+blue-stc-cka           kubernetes.io/no-provisioner   Retain          WaitForFirstConsumer   <span class=nb>false                  </span>2m45s
+local-path <span class=o>(</span>default<span class=o>)</span>   rancher.io/local-path          Delete          WaitForFirstConsumer   <span class=nb>false                  </span>9d
+
+<span class=nv>$ </span>kubectl get pv
+NAME          CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS      CLAIM   STORAGECLASS   VOLUMEATTRIBUTESCLASS   REASON   AGE
+blue-pv-cka   100Mi      RWO            Retain           Available           blue-stc-cka   &lt;<span class=nb>unset</span><span class=o>&gt;</span>                          2m52s
+
+<span class=nv>$ </span>kubectl get pvc
+NAME           STATUS    VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+blue-pvc-cka   Pending                                      blue-stc-cka   &lt;<span class=nb>unset</span><span class=o>&gt;</span>                 2m55s</code></pre></div></div><div class="admonitionblock note"><table><tbody><tr><td class=icon><i class="fa icon-note" title=Note></i></td><td class=content>没有发现什么错误，但是检查没通过！</td></tr></tbody></table></div></div></div><div class=sect1><h2 id=_storage_storage_class_persistent_volume_persistent_volume_claim_pod>10. Storage - Storage Class, Persistent Volume, Persistent Volume Claim, Pod</h2><div class=sectionbody><div class=paragraph><p><a href=https://killercoda.com/sachin/course/CKA/sc-pv-pvc-pod target=_blank rel=noopener>Storage - Storage Class, Persistent Volume, Persistent Volume Claim, Pod</a></p></div><div class=sidebarblock><div class=content><div class=ulist><ul><li><p>Create a Storage Class named <code>fast-storage</code> with a provisioner of <code>kubernetes.io/no-provisioner</code> and a <code>volumeBindingMode</code> of Immediate .</p></li><li><p>Create a Persistent Volume (PV) named <code>fast-pv-cka</code> with a storage capacity of <code>50Mi</code> using the <code>fast-storage</code> Storage Class with <code>ReadWriteOnce</code> permission and host path <code>/tmp/fast-data</code>.</p></li><li><p>Create a Persistent Volume Claim (PVC) named <code>fast-pvc-cka</code> that requests <code>30Mi</code> of storage from the <code>fast-pv-cka</code> PV(using the <code>fast-storage</code> Storage Class).</p></li><li><p>Create a Pod named <code>fast-pod-cka</code> with <code>nginx:latest</code> image that uses the <code>fast-pvc-cka</code> PVC and mounts the volume at the path <code>/app/data</code>.</p></li></ul></div></div></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code data-lang=bash><span class=c># @author D瓜哥 · <a href=https://www.diguage.com target=_blank>https://www.diguage.com</a></span>
+
+<span class=nv>$ </span>vim pv.yaml
+<span class=c># 编写 Yaml 文件</span>
+
+<span class=nv>$ </span><span class=nb>cat </span>pv.yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: fast-storage
+provisioner: kubernetes.io/no-provisioner
+reclaimPolicy: Retain
+volumeBindingMode: Immediate
+<span class=nt>---</span>
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: fast-pv-cka
+spec:
+  capacity:
+    storage: 50Mi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: fast-storage
+  hostPath:
+    <span class=nb>type</span>: DirectoryOrCreate
+    path: /tmp/fast-data
+<span class=nt>---</span>
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: fast-pvc-cka
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 30Mi
+  storageClassName: fast-storage
+<span class=nt>---</span>
+apiVersion: v1
+kind: Pod
+metadata:
+  name: fast-pod-cka
+spec:
+  containers:
+    - name: nginx
+      image: nginx:latest
+      volumeMounts:
+      - mountPath: <span class=s2>&#34;/app/data&#34;</span>
+        name: mypd
+  volumes:
+    - name: mypd
+      persistentVolumeClaim:
+        claimName: fast-pvc-cka
+
+<span class=nv>$ </span>kubectl apply <span class=nt>-f</span> pv.yaml
+storageclass.storage.k8s.io/fast-storage created
+persistentvolume/fast-pv-cka created
+persistentvolumeclaim/fast-pvc-cka created
+pod/fast-pod-cka created
+
+<span class=nv>$ </span>kubectl get storageclasses  fast-storage
+NAME           PROVISIONER                    RECLAIMPOLICY   VOLUMEBINDINGMODE   ALLOWVOLUMEEXPANSION   AGE
+fast-storage   kubernetes.io/no-provisioner   Retain          Immediate           <span class=nb>false                  </span>35s
+
+<span class=nv>$ </span>kubectl get pv
+NAME          CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                  STORAGECLASS   VOLUMEATTRIBUTESCLASS   REASON   AGE
+fast-pv-cka   50Mi       RWO            Retain           Bound    default/fast-pvc-cka   fast-storage   &lt;<span class=nb>unset</span><span class=o>&gt;</span>                          43s
+
+<span class=nv>$ </span>kubectl get pvc
+NAME           STATUS   VOLUME        CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+fast-pvc-cka   Bound    fast-pv-cka   50Mi       RWO            fast-storage   &lt;<span class=nb>unset</span><span class=o>&gt;</span>                 45s
+
+<span class=nv>$ </span>kubectl get pod fast-pod-cka <span class=nt>-o</span> wide
+NAME           READY   STATUS    RESTARTS   AGE   IP            NODE     NOMINATED NODE   READINESS GATES
+fast-pod-cka   1/1     Running   0          56s   192.168.1.5   node01   &lt;none&gt;           &lt;none&gt;</code></pre></div></div></div></div></div><footer class=post__footer><div class="post__tags tags clearfix"><svg class="tags__badge icon icon-tag" width="16" height="16" viewBox="0 0 32 32"><path d="M32 19c0 1-1 2-1 2L21 31s-1 1-2 1-2-1-2-1L2 16c-1-1-1.4-2-1.4-2S0 12.5.0 11V3C0 1.5.8.8.8.8S1.5.0 3 0h8c1.5.0 3 .6 3 .6S15 1 16 2l15 15s1 1 1 2zM7 10a3 3 0 100-6 3 3 0 000 6z"/></svg><ul class=tags__list><li class=tags__item><a class="tags__link btn" href=/tags/kubernetes/ rel=tag>Kubernetes</a></li><li class=tags__item><a class="tags__link btn" href=/tags/linux/ rel=tag>Linux</a></li></ul></div></footer></article></main><div class=clearfix><h3>看在D瓜哥码字的辛苦上，请友情支持一下，D瓜哥感激不尽，😜</h3><table><tr><td><img alt=微信打赏码 src=/images/wxpay.jpg></td><td><img alt=支付宝打赏码 src=/images/alipay.png></td></tr></table></div><br><div class=clearfix><h3>欢迎关注D瓜哥的微信公众号，在公众号可以获取我的微信二维码：</h3><img alt=微信公众号 src=/images/wx-jikerizhi.jpg></div><div class="admonitionblock tip"><table><tbody><tr><td class=icon><i class="fa icon-tip" title=Tip></i></td><td class=content><strong>公众号的微信号是: <code>jikerizhi</code></strong>。如果图片加载不出来，可以直接通过搜索公众号的微信号来查找D瓜哥的公众号。</td></tr></tbody></table></div><div class="authorbox clearfix"><figure class=authorbox__avatar><a target=_blank href=/about/><img alt="D瓜哥 avatar" src=/images/avatar.jpg class=avatar height=110 width=110></a></figure><div class=authorbox__header><span class=authorbox__name>关于 D瓜哥</span></div><div class=authorbox__description>厨艺界最好的码农，挨踢界最棒的厨师。<ul><li><a target=_blank href=https://wordpress.diguage.com/>旧版“地瓜哥”博客网</a></li><li><a target=_blank href=https://notes.diguage.com/mysql/>MySQL 学习笔记<sup>Alpha</sup></a></li><li><a target=_blank href=https://diguage.github.io/jdk-source-analysis/>JDK 源码分析<sup>Alpha</sup></a></li></ul></div></div><nav class="pager flex"><div class="pager__item pager__item--prev"><a class=pager__link href=/post/killercoda-cka-services-networking/ rel=prev><span class=pager__subtitle>«&#8201;上一篇</span><p class=pager__title>killercoda CKA：Services & Networking</p></a></div><div class="pager__item pager__item--next"><a class=pager__link href=/post/killercoda-cka-workloads-scheduling/ rel=next><span class=pager__subtitle>下一篇&#8201;»</span><p class=pager__title>killercoda CKA：Workloads & Scheduling</p></a></div></nav><section class=comments><div id=SOHUCS sid=/post/killercoda-cka-storage/></div><script type=text/javascript>(function(){if(window.location.hostname==="localhost")return;var n,e="cyuuTeBp3",t="prod_2906c47c31e735e0ed518282fec489a6",s=window.innerWidth||document.documentElement.clientWidth;s<960?window.document.write('<script id="changyan_mobile_js" charset="utf-8" type="text/javascript" src="https://changyan.sohu.com/upload/mobile/wap-js/changyan_mobile.js?client_id='+e+"&conf="+t+'"><\/script>'):(n=function(e,t){var s=document.getElementsByTagName("head")[0]||document.head||document.documentElement,n=document.createElement("script");n.setAttribute("type","text/javascript"),n.setAttribute("charset","UTF-8"),n.setAttribute("src",e),typeof t=="function"&&(window.attachEvent?n.onreadystatechange=function(){var e=n.readyState;(e==="loaded"||e==="complete")&&(n.onreadystatechange=null,t())}:n.onload=t),s.appendChild(n)},n("https://changyan.sohu.com/upload/changyan.js",function(){window.changyan.api.config({appid:e,conf:t})}))})()</script></section></div><aside class=sidebar><div class="widget-search widget"><form class=widget-search__form role=search method=get action=https://google.com/search><label><input class=widget-search__field type=search placeholder=搜索… name=q aria-label=搜索…>
+</label><input class=widget-search__submit type=submit value=Search>
+<input type=hidden name=sitesearch value=https://www.diguage.com/></form></div><div class="widget-wechat widget"><h4 class=widget__title>微信公众号</h4><img alt=微信公众号 class=center src=/images/wx-jikerizhi-qrcode.jpg></div><div class="widget-wechat widget"><h4 class=widget__title>知识星球</h4><img alt=微信公众号 class=center src=/images/zhishixingqiu.png></div><div class="widget-recent widget"><h4 class=widget__title>近期文章</h4><div class=widget__content><ul class=widget__list><li class=widget__item><a class=widget__link href=/post/spring-boot-startup-process-overview/>Spring Boot 启动流程概述</a></li><li class=widget__item><a class=widget__link href=/post/redis-core-data-structure-4/>Redis 核心数据结构（四）</a></li><li class=widget__item><a class=widget__link href=/post/redis-core-data-structure-3/>Redis 核心数据结构（三）</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-subsets/>算法模式：子集</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-backtracking/>算法模式：回溯</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-transform-and-conquer/>算法模式：变治法</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-divide-and-conquer/>算法模式：分治法</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-decrease-and-conquer/>算法模式：减治法</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-topological-sort/>算法模式：拓扑排序</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-union-find/>算法模式：并查集</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-trie/>算法模式：前缀树</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-depth-first-search/>算法模式：深度优先搜索</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-breadth-first-search/>算法模式：广度优先搜索</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-k-way-merge/>算法模式：多路归并</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-two-heaps/>算法模式：双堆</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-cyclic-sort/>算法模式：循环排序</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-quickselect/>算法模式：快速选择</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-top-k-elements/>算法模式：Top K 问题</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-monotonic-stack/>算法模式：单调栈</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-sliding-window/>算法模式：滑动窗口</a></li></ul></div></div><div class="widget-categories widget"><h4 class=widget__title>分类</h4><div class=widget__content><ul class=widget__list><li class=widget__item><a class=widget__link href=/categories/%E4%B8%AA%E4%BA%BA%E6%88%90%E9%95%BF/>个人成长</a></li><li class=widget__item><a class=widget__link href=/categories/%E5%88%86%E5%B8%83%E5%BC%8F/>分布式</a></li><li class=widget__item><a class=widget__link href=/categories/%E5%BC%80%E5%8F%91%E5%B7%A5%E5%85%B7/>开发工具</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/>性能优化</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/>操作系统</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%95%B0%E6%8D%AE%E5%AD%98%E5%82%A8/>数据存储</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%96%87%E5%AD%A6/>文学</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%96%B9%E6%B3%95%E8%AE%BA/>方法论</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/>程序设计</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%AE%97%E6%B3%95/>算法</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/>系统架构</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%BB%8F%E6%B5%8E%E9%87%91%E8%9E%8D/>经济金融</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/>编程语言</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%BD%91%E7%BB%9C/>网络</a></li><li class=widget__item><a class=widget__link href=/categories/%E8%81%8C%E4%B8%9A%E5%8F%91%E5%B1%95/>职业发展</a></li><li class=widget__item><a class=widget__link href=/categories/%E8%BD%AF%E4%BB%B6%E5%B7%A5%E7%A8%8B/>软件工程</a></li><li class=widget__item><a class=widget__link href=/categories/%E9%80%B8%E9%97%BB%E8%B6%A3%E4%BA%8B/>逸闻趣事</a></li><li class=widget__item><a class=widget__link href=/categories/%E9%98%85%E8%AF%BB%E6%91%98%E8%A6%81/>阅读摘要</a></li></ul></div></div><div class="widget-taglist widget"><h4 class=widget__title>标签</h4><div class=widget__content><a class="widget-taglist__link widget__link btn" href=/tags/gc/ title=GC>GC (9)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/http/ title=HTTP>HTTP (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/java/ title=Java>Java (64)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/jvm/ title=JVM>JVM (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/kpi/ title=KPI>KPI (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/kubernetes/ title=Kubernetes>Kubernetes (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/linux/ title=Linux>Linux (12)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/okr/ title=OKR>OKR (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/redis/ title=Redis>Redis (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/shell/ title=Shell>Shell (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/spring/ title=Spring>Spring (26)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/tcp/ title=TCP>TCP (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/udp/ title=UDP>UDP (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/zookeeper/ title=ZooKeeper>ZooKeeper (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E4%B8%AA%E4%BA%BA%E6%8F%90%E5%8D%87/ title=个人提升>个人提升 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E4%B9%A6%E7%B1%8D/ title=书籍>书籍 (15)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E4%BA%A7%E5%93%81/ title=产品>产品 (7)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%80%BA%E5%88%B8/ title=债券>债券 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%88%86%E5%B8%83%E5%BC%8F/ title=分布式>分布式 (15)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%88%86%E6%B2%BB/ title=分治>分治 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/ title=动态规划>动态规划 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9B%A2%E9%98%9F%E5%BB%BA%E8%AE%BE/ title=团队建设>团队建设 (6)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9B%A2%E9%98%9F%E6%96%87%E5%8C%96/ title=团队文化>团队文化 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9B%BE/ title=图>图 (7)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9F%BA%E9%87%91/ title=基金>基金 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%A0%86/ title=堆>堆 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%AD%98%E5%82%A8/ title=存储>存储 (6)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%B7%A5%E4%BD%9C%E6%96%B9%E6%B3%95/ title=工作方法>工作方法 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%B9%B6%E5%8F%91/ title=并发>并发 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%BA%8F%E5%88%97%E5%8C%96/ title=序列化>序列化 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/ title=微服务>微服务 (17)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%BF%83%E7%90%86%E5%AD%A6/ title=心理学>心理学 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95/ title=性能测试>性能测试 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%8A%95%E8%B5%84%E7%90%86%E8%B4%A2/ title=投资理财>投资理财 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/ title=数据库>数据库 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/ title=数据结构>数据结构 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%95%B0%E7%BB%84/ title=数组>数组 (13)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%96%B9%E6%B3%95%E8%AE%BA/ title=方法论>方法论 (13)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%97%85%E8%A1%8C/ title=旅行>旅行 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5/ title=最佳实践>最佳实践 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%9E%B6%E6%9E%84/ title=架构>架构 (44)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%A0%88/ title=栈>栈 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%A0%91/ title=树>树 (11)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%B2%9F%E9%80%9A%E6%8A%80%E5%B7%A7/ title=沟通技巧>沟通技巧 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/ title=源码分析>源码分析 (8)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%90%86%E8%B4%A2/ title=理财>理财 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%94%9F%E6%B4%BB/ title=生活>生活 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%AC%94%E8%AE%B0/ title=笔记>笔记 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%AE%97%E6%B3%95/ title=算法>算法 (8)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%AE%97%E6%B3%95%E6%A8%A1%E5%BC%8F/ title=算法模式>算法模式 (23)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BB%8F%E6%B5%8E/ title=经济>经济 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BC%96%E7%A0%81/ title=编码>编码 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BD%91%E7%BB%9C/ title=网络>网络 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BF%BB%E8%AF%91/ title=翻译>翻译 (7)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%82%A1%E7%A5%A8/ title=股票>股票 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%84%91%E5%9B%BE/ title=脑图>脑图 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%8A%82%E6%97%A5/ title=节日>节日 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%8B%B1%E8%AF%AD/ title=英语>英语 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%99%9A%E6%8B%9F%E6%9C%BA/ title=虚拟机>虚拟机 (9)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AE%BA%E6%96%87/ title=论文>论文 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AE%BE%E8%AE%A1/ title=设计>设计 (36)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/ title=设计模式>设计模式 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AF%97%E6%AD%8C/ title=诗歌>诗歌 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AF%BB%E4%B9%A6/ title=读书>读书 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%80%92%E5%BD%92/ title=递归>递归 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%87%91%E8%9E%8D/ title=金融>金融 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%93%BE%E8%A1%A8/ title=链表>链表 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1/ title=面向对象>面向对象 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%A2%86%E5%9F%9F%E9%A9%B1%E5%8A%A8%E8%AE%BE%E8%AE%A1/ title=领域驱动设计>领域驱动设计 (5)</a></div></div><div class="widget-social widget"><h4 class="widget-social__title widget__title">社交</h4><div class="widget-social__content widget__content"><div class="widget-social__item widget__item"><a class="widget-social__link widget__link btn" title=Twitter rel="noopener noreferrer" href=https://twitter.com/diguage target=_blank><svg class="widget-social__link-icon icon icon-twitter" width="24" height="24" viewBox="0 0 384 312"><path d="m384 36.9c-14.1 6.3-29.3 10.5-45.2 12.4 16.3-9.7 28.8-25.2 34.6-43.6-15.2 9-32.1 15.6-50 19.1-14.4-15.2-34.9-24.8-57.5-24.8-43.5.0-78.8 35.3-78.8 78.8.0 6.2.7 12.2 2 17.9-65.5-3.3-123.5-34.6-162.4-82.3C20 26 16.1 39.6 16.1 54c0 27.3 13.9 51.4 35 65.6-12.9-.4-25.1-4-35.7-9.9v1c0 38.2 27.2 70 63.2 77.2-6.6 1.8-13.6 2.8-20.8 2.8-5.1.0-10-.5-14.8-1.4 10 31.3 39.1 54.1 73.6 54.7-27 21.1-60.9 33.7-97.8 33.7-6.4.0-12.6-.4-18.8-1.1C34.9 299 76.3 312 120.8 312c144.9.0 224.1-120 224.1-224.1.0-3.4-.1-6.8-.2-10.2 15.4-11.1 28.7-25 39.3-40.8z"/></svg>
+<span>Twitter</span></a></div><div class="widget-social__item widget__item"><a class="widget-social__link widget__link btn" title=GitHub rel="noopener noreferrer" href=https://github.com/diguage target=_blank><svg class="widget-social__link-icon icon icon-github" width="24" height="24" viewBox="0 0 384 374"><path d="m192 0C85.9.0.0 85.8.0 191.7c0 84.7 55 156.6 131.3 181.9 9.6 1.8 13.1-4.2 13.1-9.2.0-4.6-.2-16.6-.3-32.6-53.4 11.6-64.7-25.7-64.7-25.7-8.7-22.1-21.3-28-21.3-28-17.4-11.9 1.3-11.6 1.3-11.6 19.3 1.4 29.4 19.8 29.4 19.8 17.1 29.3 44.9 20.8 55.9 15.9 1.7-12.4 6.7-20.8 12.2-25.6-42.6-4.8-87.5-21.3-87.5-94.8.0-20.9 7.5-38 19.8-51.4-2-4.9-8.6-24.3 1.9-50.7.0.0 16.1-5.2 52.8 19.7 15.3-4.2 31.7-6.4 48.1-6.5 16.3.1 32.7 2.2 48.1 6.5 36.7-24.8 52.8-19.7 52.8-19.7 10.5 26.4 3.9 45.9 1.9 50.7 12.3 13.4 19.7 30.5 19.7 51.4.0 73.7-44.9 89.9-87.7 94.6 6.9 5.9 13 17.6 13 35.5.0 25.6-.2 46.3-.2 52.6.0 5.1 3.5 11.1 13.2 9.2C329 348.2 384 276.4 384 191.7 384 85.8 298 0 192 0z"/></svg>
+<span>GitHub</span></a></div><div class="widget-social__item widget__item"><a class="widget-social__link widget__link btn" title=Email href=mailto:leejun119@gmail.com><svg class="widget-social__link-icon icon icon-mail" width="24" height="24" viewBox="0 0 416 288"><path d="m0 16v256 16h16 384 16v-16V16 0h-16H16 0zm347 16-139 92.5L69 32zM199 157.5l9 5.5 9-5.5L384 46v210H32V46z"/></svg>
+<span>leejun119@gmail.com</span></a></div></div></div></aside></div><footer class=footer><div class="container footer__container flex"><div class=footer__copyright>&copy; 2025 "地瓜哥"博客网.
+<span class=footer__copyright-credits>基于 <a href=https://gohugo.io/ rel="nofollow noopener" target=_blank>Hugo</a> 引擎和 <a href=https://github.com/Vimux/Mainroad/ rel="nofollow noopener" target=_blank>Mainroad</a> 主题</span>
+<span><a href=https://beian.miit.gov.cn/ target=_target>京ICP备14046450号-4</a></span></div></div></footer></div><script async defer src=/js/menu.js></script><script type=text/x-mathjax-config>
+	MathJax.Hub.Config({
+	  messageStyle: "none",
+	  tex2jax: {
+		inlineMath: [["\\(", "\\)"]],
+		displayMath: [["\\[", "\\]"]],
+		ignoreClass: "nostem|nolatexmath"
+	  },
+	  asciimath2jax: {
+		delimiters: [["\\$", "\\$"]],
+		ignoreClass: "nostem|noasciimath"
+	  },
+	  TeX: { equationNumbers: { autoNumber: "none" } }
+	})
+	MathJax.Hub.Register.StartupHook("AsciiMath Jax Ready", function () {
+	  MathJax.InputJax.AsciiMath.postfilterHooks.Add(function (data, node) {
+		if ((node = data.script.parentNode) && (node = node.parentNode) && node.classList.contains("stemblock")) {
+		  data.math.root.display = "block"
+		}
+		return data
+	  })
+	})
+</script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js?config=TeX-MML-AM_HTMLorMML" async></script></body></html>

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>编程语言 on "地瓜哥"博客网</title><link>https://www.diguage.com/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/</link><description>Recent content in 编程语言 on "地瓜哥"博客网</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Mon, 10 Jun 2024 10:36:01 +0800</lastBuildDate><atom:link href="https://www.diguage.com/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/index.xml" rel="self" type="application/rss+xml"/><item><title>OpenJDK 21 升级指南</title><link>https://www.diguage.com/post/upgrade-to-openjdk21/</link><pubDate>Mon, 06 May 2024 19:50:22 +0800</pubDate><guid>https://www.diguage.com/post/upgrade-to-openjdk21/</guid><description>&lt;div class="paragraph">
+&lt;p>&lt;a href="https://openjdk.org/projects/jdk/21/" target="_blank" rel="noopener">OpenJDK 21&lt;/a> 已经发布半年有余，在这个版本中， &lt;a href="https://openjdk.org/jeps/439" target="_blank" rel="noopener">Generational ZGC&lt;/a> 也一起发布了。在 &lt;a href="https://malloc.se/blog/zgc-jdk16" target="_blank" rel="noopener">ZGC | What’s new in JDK 16&lt;/a> 中， &lt;a href="https://malloc.se/" target="_blank" rel="noopener">Per Lidén&lt;/a> 宣称，将 ZGC 的最大停顿时间从 10ms 降低到了 1ms。再加上 &lt;a href="https://www.diguage.com/post/gc-performance-incremental-qps/" target="_blank" rel="noopener">JVM GC 性能测试（二）：递增流量&lt;/a> 和 &lt;a href="https://www.diguage.com/post/gc-performance-real-qps/" target="_blank" rel="noopener">JVM GC 性能测试（三）：真实流量&lt;/a> 文中，GenZGC 的惊艳表现，这些种种先进技术，着实充满诱惑，忍不住想吃口螃蟹 🦀。这篇文章，D瓜哥就来分享一下，自己在升级 OpenJDK 21 中的一些经验。&lt;/p>
+&lt;/div>
+&lt;div class="admonitionblock tip">
+&lt;table>
+&lt;tbody>&lt;tr>
+&lt;td class="icon">
+&lt;i class="fa icon-tip" title="Tip">&lt;/i>
+&lt;/td>
+&lt;td class="content">
+本文仅介绍升级 OpenJDK 的相关内容，ZGC 原理等会专门撰文介绍。
+&lt;/td>
+&lt;/tr>
+&lt;/tbody>&lt;/table>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_升级依赖">升级依赖&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>依赖升级不是 KPI，也不涉及需求交付。所以，大多数项目的依赖自从项目创建后，就很少升级。如果想比较顺利地将项目升级到 OpenJDK 21，那么，先将项目所用依赖做一个整体升级是一个事半功倍的操作。可以直接使用 Maven 命令来检查依赖可以升级的情况：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">mvn versions:display-dependency-updates&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>执行该命令后，会有如下类似输出：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="c"># 检查依赖升级情况&lt;/span>
+&lt;span class="nv">$ &lt;/span>mvn versions:display-dependency-updates
+
+&lt;span class="c"># 此处省略一万个字&lt;/span>
+&lt;span class="c"># @author: D瓜哥 · &lt;a href="https://www.diguage.com" target="_blank">https://www.diguage.com&lt;/a>&lt;/span>
+
+&lt;span class="o">[&lt;/span>INFO] org.springframework:spring-aop ......... 5.3.33 -&amp;gt; 6.1.6
+&lt;span class="o">[&lt;/span>INFO] org.springframework:spring-aspects ..... 5.3.33 -&amp;gt; 6.1.6
+&lt;span class="o">[&lt;/span>INFO] org.springframework:spring-beans ....... 5.3.33 -&amp;gt; 6.1.6
+&lt;span class="o">[&lt;/span>INFO] org.springframework:spring-context ..... 5.3.33 -&amp;gt; 6.1.6
+&lt;span class="o">[&lt;/span>INFO] org.springframework:spring-core ........ 5.3.33 -&amp;gt; 6.1.6
+&lt;span class="o">[&lt;/span>INFO] org.springframework:spring-jdbc ........ 5.3.33 -&amp;gt; 6.1.6
+&lt;span class="o">[&lt;/span>INFO] org.springframework:spring-web ......... 5.3.33 -&amp;gt; 6.1.6
+
+&lt;span class="o">[&lt;/span>INFO] org.mybatis:mybatis-2-spring ............ 1.1.0 -&amp;gt; 1.2.0
+&lt;span class="o">[&lt;/span>INFO] org.mybatis:mybatis-spring .............. 2.1.1 -&amp;gt; 2.1.2
+
+&lt;span class="o">[&lt;/span>INFO] org.junit.jupiter:junit-jupiter ........ 5.9.3 -&amp;gt; 5.10.2
+&lt;span class="o">[&lt;/span>INFO] org.junit.jupiter:junit-jupiter-api .... 5.9.3 -&amp;gt; 5.10.2&lt;/code>&lt;/pre>
+&lt;/div></description></item></channel></rss>

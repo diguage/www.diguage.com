@@ -1,0 +1,1926 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>方法论 on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/%E6%96%B9%E6%B3%95%E8%AE%BA/</link><description>Recent content in 方法论 on "地瓜哥"博客网</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Fri, 25 Oct 2024 11:01:03 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/%E6%96%B9%E6%B3%95%E8%AE%BA/index.xml" rel="self" type="application/rss+xml"/><item><title>JVM GC 性能测试（三）：真实流量</title><link>https://www.diguage.com/post/gc-performance-real-qps/</link><pubDate>Wed, 01 May 2024 12:12:12 +0800</pubDate><guid>https://www.diguage.com/post/gc-performance-real-qps/</guid><description>&lt;div class="paragraph">
+&lt;p>&lt;strong>JVM GC 性能测试系列&lt;/strong>:&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-comparison-method/" target="_blank" rel="noopener">JVM GC 性能对比方法&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-same-qps/" target="_blank" rel="noopener">JVM GC 性能测试（一）：相同流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-incremental-qps/" target="_blank" rel="noopener">JVM GC 性能测试（二）：递增流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-real-qps/" target="_blank" rel="noopener">JVM GC 性能测试（三）：真实流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;hr/>
+&lt;div class="paragraph">
+&lt;p>书接上文，在 &lt;a href="https://www.diguage.com/post/gc-performance-incremental-qps/" target="_blank" rel="noopener">JVM GC 性能测试（二）：递增流量&lt;/a> 的最后，D瓜哥提到了一个问题，对于在 &lt;a href="https://www.diguage.com/post/gc-performance-same-qps/" target="_blank" rel="noopener">JVM GC 性能测试（一）：相同流量&lt;/a> 和 &lt;a href="https://www.diguage.com/post/gc-performance-incremental-qps/" target="_blank" rel="noopener">JVM GC 性能测试（二）：递增流量&lt;/a> 中存在的巨大 QPS 差异疑惑不解。所以，D瓜哥决定将测试机器接入到线上环境，在真实访问中，观察各个 GC 的表现。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_一言以蔽之">一言以蔽之&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>J21-Gen-ZGC 和 J21-G1 无论在稳定性，吞吐量以及响应时效性上都非常优秀。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>再极端峰值情况，J21-G1 是更好的选择，更加稳定，不容易出凸点。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>日常使用，J21-Gen-ZGC 响应性更好，接口耗时更低。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="sidebarblock">
+&lt;div class="content">
+&lt;div class="paragraph">
+&lt;p>鉴于 OpenJDK 21 G1 GC 一如既往的惊艳表现，D瓜哥准备整理一下 G1 GC 的主要优化，敬请关注： &lt;a href="https://www.diguage.com/post/main-optimization-of-garbage-first-collector/" target="_blank" rel="noopener">Java G1 垃圾收集器主要优化&lt;/a>。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_服务调用监控数据">1. 服务调用监控数据&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>监控服务调用的相关数据，这是对于用户来说，感知最强烈的相关数据，也是直接关系到服务质量的数据。&lt;/p>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_服务调用次数">1.1. 服务调用次数&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>从调用次数上来看，五个分组没有大的变化，可以说根本没有达到系统的极限峰值。当然，这才是正常现象，如果日常运行都爆峰值，那说明系统早该扩容了。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/gc-performance-3/api-qps-second.jpg" alt="服务调用次数（秒级）" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. 服务调用次数（秒级）&lt;/div>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/gc-performance-3/api-qps-minute.jpg" alt="服务调用次数（分钟级）" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 2. 服务调用次数（分钟级）&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="api-qps-time">1.2. 服务调用耗时&lt;/h3>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>整体上讲，J21-Gen-ZGC 的耗时更短，从数据上来看，TP999 能比 J21-G1 的少 10~20ms；TP99 更加夸张，J21-Gen-ZGC 的耗时只有 J21-G1 的一半。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>J21-Gen-ZGC 和 J21-G1 还是一如既往的稳。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>这次测试中，J17-ZGC 也很稳，有些出乎意料。但是，结合下面 &lt;a href="#jvm-cpu">JVM CPU 使用率&lt;/a> 和 &lt;a href="#os-cpu">系统 CPU 使用率&lt;/a> 来看，J17-ZGC 和 J21-ZGC 的 CPU 使用率早早就达到 90%+，再结合上面两个测试，从稳定性来看，J17-ZGC 和 J21-ZGC 只能被排除掉。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div></description></item><item><title>JVM GC 性能对比方法</title><link>https://www.diguage.com/post/gc-performance-comparison-method/</link><pubDate>Wed, 24 Apr 2024 19:52:47 +0800</pubDate><guid>https://www.diguage.com/post/gc-performance-comparison-method/</guid><description>&lt;div class="paragraph">
+&lt;p>&lt;strong>JVM GC 性能测试系列&lt;/strong>:&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-comparison-method/" target="_blank" rel="noopener">JVM GC 性能对比方法&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-same-qps/" target="_blank" rel="noopener">JVM GC 性能测试（一）：相同流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-incremental-qps/" target="_blank" rel="noopener">JVM GC 性能测试（二）：递增流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-real-qps/" target="_blank" rel="noopener">JVM GC 性能测试（三）：真实流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;hr/>
+&lt;div class="paragraph">
+&lt;p>现在部门内部绝大部分应用都还在使用 OpenJDK 8，计划推进部门升级 JDK 到 OpenJDK21。本着实事求是，用数据说话的原则，准备对如下 GC 做性能测试：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>OpenJDK 8 G1 GC（以下称 J8-G1。具体版本号：1.8.0_321-b07。）&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>OpenJDK 17 ZGC（以下称 J17-ZGC。具体版本号：17.0.9+9。）&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>OpenJDK 21 G1（以下称 J21-G1。具体版本号：21.0.2+13-LTS。）&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>OpenJDK 21 ZGC（以下称 J21-ZGC。具体版本号：21.0.2+13-LTS。）&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>OpenJDK 21 Gen ZGC（以下称 J21-Gen-ZGC。具体版本号：21.0.2+13-LTS。）&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="admonitionblock note">
+&lt;table>
+&lt;tbody>&lt;tr>
+&lt;td class="icon">
+&lt;i class="fa icon-note" title="Note">&lt;/i>
+&lt;/td>
+&lt;td class="content">
+所有 OpenJDK 版本都是选用相同大版本号里的最高的版本。所有的机器都是 4C8G 的配置，JVM 堆栈内存设置为 4608M 。
+&lt;/td>
+&lt;/tr>
+&lt;/tbody>&lt;/table>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>为了减少不必要的干扰，JVM 相关参数也尽可能做到了一致或者接近。（等测试完，D瓜哥会把相关参数也分享出来。）&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_测试对象">测试对象&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>由于D瓜哥所处的部门是一个直接面向用户的线上业务部门，所以，大部分系统是直接面对用户，接受用户访问的在线业务系统。所以，为了服务线上业务系统的需求，测试对象的选择就限定在了类似的场景中。测试对象是线上接受用户访问的一个服务。结构如下：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/gc-performance/api.svg" alt="压测接口依赖关系图" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. 压测接口依赖关系图&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>该接口有外部依赖服务，也有数据库查询，是一个微服务架构下典型的在线服务接口。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_测试方法">测试方法&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>原本计划是想直接通过上线，将线上不同分组的机器使用不同的 GC 来做测试，但是，这样面临好几个问题：&lt;/p>
+&lt;/div></description></item><item><title>《投资中最简单的事》之读书笔记（四）：投资心理学</title><link>https://www.diguage.com/post/the-simple-things-in-investment-4/</link><pubDate>Sat, 26 Feb 2022 09:24:35 +0800</pubDate><guid>https://www.diguage.com/post/the-simple-things-in-investment-4/</guid><description>&lt;div class="paragraph">
+&lt;p>最近一位同事离职，在践行宴会上，大家聊到投资理财，D瓜哥推荐了 &lt;a href="https://book.douban.com/subject/35000951/" target="_blank" rel="noopener">《投资中最简单的事》&lt;/a>。去年已经把这本书读完了，下班后把这本书的摘要笔记整理一下，按照章节，分四篇来分享：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/the-simple-things-in-investment-1/" target="_blank" rel="noopener">《投资中最简单的事》之读书笔记（一）：投资理念&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/the-simple-things-in-investment-2/" target="_blank" rel="noopener">《投资中最简单的事》之读书笔记（二）：投资方法&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/the-simple-things-in-investment-3/" target="_blank" rel="noopener">《投资中最简单的事》之读书笔记（三）：投资风险&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/the-simple-things-in-investment-4/" target="_blank" rel="noopener">《投资中最简单的事》之读书笔记（四）：投资心理学&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_第四部分投资心理学">第四部分　投资心理学&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="sect2">
+&lt;h3 id="_11人性的弱点投资者常见的心理误区">11　人性的弱点：投资者常见的心理误区&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>一个股票便宜与否，看估值比看近期涨跌更可靠：基本面大幅超预期时会越涨越便宜，反之会越跌越贵。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>美国消费股多，适合价值投资；加拿大资源股多，适合趋势投资。互联网赢家通吃，买龙头；休闲服装百花齐放，买成长。差异化产品，买品牌；同质化产品，买成本低的。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>俾斯麦说，每个笨蛋都会从自己的教训中吸取经验，聪明人则会从别人的经验中获益。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>同样是错过航班，错过 3分钟的比错过 30分钟的更沮丧；同样是彩票没中，号码与头奖号码只差一点的是最痛苦的。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>与成功擦肩而过比从未接近成功更令人难以接受，更令人想再试一次，所以，许多赌博形式正是包含大量“差点就赢”的设计，才吸引了这么多赌徒不惜倾家荡产屡败屡战。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_12后视镜">12　后视镜&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>应该跑向球将要去的地方，而不是球现在所在的地方。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_13傻瓜定价说">13　傻瓜定价说&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>对市场敬畏但不屈服，逆市场而动但懂得自我保护。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_14这次不同了">14　这次不同了&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>人们从历史中学到的唯一教训就是人们从来不吸取任何教训。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>每一次危机或泡沫都感觉像是史无前例，其实不过是历史长河中的一朵浪花。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>当人们在为“黄金十年”找论据时，市场离见顶就不远了；当人们在为长期的悲观寻找理由时，市场已经在底部区域了。投资者的悲哀，永远是轻易地放弃和错误地坚持。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_15树动风动心动">15　树动风动心动&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>短期来说，股价波动是人心与人心博弈的结果，是心在动，难以预测。中期来说，股价更多是由政策面决定：吹的是政策宽松的暖风，股价就上涨；刮的是政策紧缩的寒风，股价就下跌。所以说，中期是风在动。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>长期来说，股价是由基本面决定的。那些根基不稳的病树，难以避免在风中被连根拔起的命运；而那些有稳固根基的好树，不管人心冷暖，风向东西，终将成长为参天大树。所以说，长期是树在动。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>“心在动”常对“风在动”推波助澜，把五级风放大为十级，此时人们已不关心“树动”与否，反正玩的是击鼓传花的游戏。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_附录投资访谈顺应规律投资才能事半功倍">附录　投资访谈：顺应规律投资，才能事半功倍&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>过去 10年，人家问我看好什么行业，我在任何时候都是讲三大类行业：金融地产、品牌消费、先进制造。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>有“霸王条款”的行业都不会太差。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>便宜是硬道理，股票的回报并不取决于它未来的增长快还是慢，而是取决于未来增长比当前股价反映的增长预期更快还是更慢。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>我们找白酒的顺序是先找高端，再找次高端，再到平价酒，因为中国经济的复苏通常是先重点扶持基建，商务应酬增加，对高端酒的需求会增加，之后经济恢复，老百姓有钱了，中端酒开始起来，然后再到低端酒。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>市场是一个拍卖系统，最后的顶点总是最疯狂的人在定价，就像在拍卖会上面，最后的买主肯定是那个最狂热的、愿意出最高价的人。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>一个投资人说过，当一家公司的创始人和管理者，主要是做好两点：一个是算命，即想清楚一些大的战略性的问题；第二是相面，就是选人。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_后记">后记&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>大佬为什么对科技股长期持谨慎的态度？为什么热衷科技股的基金经理鲜有长时间业绩突出者？&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>第一，科技进步内在的突变性决定了科技股投资人业绩内在的不可延续性。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>第二，科学技术是不断变化的。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>第三，虽然新技术的前景广阔，初期的行业格局却非常散乱，绝大多数投资人很难在事前判断出谁是最终赢家。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>临渊羡鱼不如退而结网，投资必须把握你能把握的东西。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>知道自己的能力边界，发挥自己的优势，买便宜的好公司，注意安全边际，注重定价权，人弃我取，在胜负已分的行业里找赢家，这些貌似投资中最简单的事，其实也是投资中最本质的东西。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div></description></item><item><title>《投资中最简单的事》之读书笔记（三）：投资风险</title><link>https://www.diguage.com/post/the-simple-things-in-investment-3/</link><pubDate>Sat, 26 Feb 2022 08:38:00 +0800</pubDate><guid>https://www.diguage.com/post/the-simple-things-in-investment-3/</guid><description>&lt;div class="paragraph">
+&lt;p>最近一位同事离职，在践行宴会上，大家聊到投资理财，D瓜哥推荐了 &lt;a href="https://book.douban.com/subject/35000951/" target="_blank" rel="noopener">《投资中最简单的事》&lt;/a>。去年已经把这本书读完了，下班后把这本书的摘要笔记整理一下，按照章节，分四篇来分享：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/the-simple-things-in-investment-1/" target="_blank" rel="noopener">《投资中最简单的事》之读书笔记（一）：投资理念&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/the-simple-things-in-investment-2/" target="_blank" rel="noopener">《投资中最简单的事》之读书笔记（二）：投资方法&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/the-simple-things-in-investment-3/" target="_blank" rel="noopener">《投资中最简单的事》之读书笔记（三）：投资风险&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/the-simple-things-in-investment-4/" target="_blank" rel="noopener">《投资中最简单的事》之读书笔记（四）：投资心理学&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_第三部分投资风险">第三部分　投资风险&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="sect2">
+&lt;h3 id="_07价值陷阱与成长陷阱">07　价值陷阱与成长陷阱&lt;/h3>
+&lt;div class="sect3">
+&lt;h4 id="_价值陷阱">价值陷阱&lt;/h4>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>第一类是被技术进步淘汰的。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>第二类是赢家通吃行业里的小公司。&lt;/p>
+&lt;div class="paragraph">
+&lt;p>集中度越来越高说明行业里的龙头企业比其他企业增长更快，不然就是越来越分散。&lt;/p>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>第三类是分散的、重资产的夕阳行业。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>第四类是景气顶点的周期股。&lt;/p>
+&lt;div class="openblock">
+&lt;div class="content">
+&lt;div class="paragraph">
+&lt;p>对周期股价值的评估可以借助两个概念，一个是常态化的盈利（ Normalized Earnings），计算剔除了经济周期波动后的企业盈利；另一个是盈利能力（ Earnings Power），而不是某一时间的盈利数额，评估企业内在的可持续的盈利水平。&lt;/p>
+&lt;/div>
+&lt;div class="quoteblock">
+&lt;blockquote>
+&lt;div class="paragraph">
+&lt;p>怎么操作?&lt;/p>
+&lt;/div>
+&lt;/blockquote>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>第五类是有会计欺诈的公司。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>最后一类是人不行、捧着“金饭碗”讨饭的公司。“&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>金玉之堂，莫之能守&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect3">
+&lt;h4 id="_成长陷阱">成长陷阱&lt;/h4>
+&lt;div class="paragraph">
+&lt;p>成长陷阱比价值陷阱更常见。&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>估值过高&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>技术路径踏空&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>无利润增长&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>成长性破产&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>盲目多元化&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>树大招风&lt;/p>
+&lt;div class="paragraph">
+&lt;p>追随者挑战巨头的时候要小心，不要太早显露目的，以免遭到巨头的封杀和围剿。&lt;/p>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>新产品风险&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>寄生式增长&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>强弩之末&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>会计造假&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>各类价值陷阱的共性是利润的不可持续性，各类成长陷阱的共性是成长的不可持续性。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>成长本身并不是陷阱，但人性的弱点中对未来成长习惯性地过高预期和过高估值却是不折不扣的陷阱。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>管子说：“不为不可成，不求不可得，不处不可久，不行不可复。”&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect3">
+&lt;h4 id="_黄金坑还是融化中的冰棒">“黄金坑”还是“融化中的冰棒”&lt;/h4>
+&lt;div class="paragraph">
+&lt;p>这有点像一根正在融化的冰棒，你拿在手中它就不断地融化。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>价值陷阱大部分的问题主要出现在内在逻辑被破坏，这样整个公司的护城河、核心竞争力逐步丧失，整个公司要么被时代淘汰，要么被对手打败，这种大多数是价值陷阱。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>我们需要理解什么是永久性的下跌，什么是暂时性的调整。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>如果找到了每一个公司便宜的原因，就能判断相应的股票是价值陷阱还是“黄金坑”。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>趋势投资是可以不断止损的，每一次错误最大的损失是有限的。所以，从这个意义上看，价值投资的风险比趋势投资更大。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_08真假风险与安全边际">08　真假风险与安全边际&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>股市如围城，城内的人在往外逃，城外的人在往里冲。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在互联网时代，品牌的优势比渠道的优势更重要。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>股票暴涨后，真实的风险上升，感受到的风险却在下降，在 6 000点股市最危险的时候大家感受到的都是歌舞升平；股票暴跌后，真实的风险下降，感受到的风险上升，在 2 000点股市相对低谷时人们感受到的却都是凄风苦雨。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>黑色星期一之后暴露的风险很大，但是隐藏的风险不大；感受到的风险很大，但是真实的风险不大。能区分并利用这两种风险的不同，是成功投资的必要条件。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>对于逆向投资者来说，最痛的时候，往往是最不该放手的时候。正如索罗斯所说，如果你承受不了失败的痛苦，就不要入市，因为没有人能够百战百胜。&lt;/p>
+&lt;/div>
+&lt;div class="sect3">
+&lt;h4 id="_安全边际">安全边际&lt;/h4>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>东方不亮西方亮，给点阳光就灿烂&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>估值低到足以反映大多数可能的坏情况&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>有“冗余设计”，有“备用系统”来限制下跌空间&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>价值易估，不具反身性，可越跌越买&lt;/p>
+&lt;div class="openblock">
+&lt;div class="content">
+&lt;div class="paragraph">
+&lt;p>索罗斯所说的反身性是指股价下跌本身对公司基本面有负面作用，易形成自我强化的恶性循环。&lt;/p>
+&lt;/div>
+&lt;div class="quoteblock">
+&lt;blockquote>
+&lt;div class="paragraph">
+&lt;p>贝尔斯登和可口可乐对比!多思考!!!&lt;/p>
+&lt;/div>
+&lt;/blockquote>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>鼻莫如大，目莫如小&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect3">
+&lt;h4 id="_止损">止损&lt;/h4>
+&lt;div class="paragraph">
+&lt;p>对于趋势投资者而言，止损不止赢是短线交易的第一法则，自不必多说。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>忘掉你的成本，是成功投资的第一步。&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>不止损是有很严格的前提条件的：必须避开各种价值陷阱；所买的股票有足够安全边际；所承担的只是价格波动的风险而非本金永久性丧失的风险。&lt;/p>
+&lt;/div></description></item><item><title>《投资中最简单的事》之读书笔记（二）：投资方法</title><link>https://www.diguage.com/post/the-simple-things-in-investment-2/</link><pubDate>Fri, 25 Feb 2022 22:34:00 +0800</pubDate><guid>https://www.diguage.com/post/the-simple-things-in-investment-2/</guid><description>&lt;div class="paragraph">
+&lt;p>最近一位同事离职，在践行宴会上，大家聊到投资理财，D瓜哥推荐了 &lt;a href="https://book.douban.com/subject/35000951/" target="_blank" rel="noopener">《投资中最简单的事》&lt;/a>。去年已经把这本书读完了，下班后把这本书的摘要笔记整理一下，按照章节，分四篇来分享：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/the-simple-things-in-investment-1/" target="_blank" rel="noopener">《投资中最简单的事》之读书笔记（一）：投资理念&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/the-simple-things-in-investment-2/" target="_blank" rel="noopener">《投资中最简单的事》之读书笔记（二）：投资方法&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/the-simple-things-in-investment-3/" target="_blank" rel="noopener">《投资中最简单的事》之读书笔记（三）：投资风险&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/the-simple-things-in-investment-4/" target="_blank" rel="noopener">《投资中最简单的事》之读书笔记（四）：投资心理学&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_第二部分投资方法">第二部分　投资方法&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="sect2">
+&lt;h3 id="_04投资的三个基本问题">04　投资的三个基本问题&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>如果把我过去十几年的投资分析方法做一个简单的概括，最根本的就是要回答三个问题：为什么认为一家公司便宜，为什么认为一家公司好，以及为什么要现在买。这三个问题中，第一个是估值的问题，第二个是公司品质的问题，第三个是买卖时机的问题。&lt;/p>
+&lt;/div>
+&lt;div class="sect3">
+&lt;h4 id="_问题1估值">问题1：估值&lt;/h4>
+&lt;div class="paragraph">
+&lt;p>世界上不存在每年都有效的投资方法。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在好行业中挑选好公司，然后等待好价格出现时买入。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>三板斧：&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>波特五力分析。不要孤立地看待一只股票，而要把一个公司放到行业的上下游产业链和行业竞争格局的大背景中分析，重点搞清三个问题：公司对上下游的议价权、与竞争对手的比较优势、行业对潜在进入者的门槛。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>杜邦分析。弄清公司过去 5年究竟是靠什么模式赚钱的（高利润、高周转还是高杠杆），然后看公司战略规划、团队背景和管理执行力等是否与其商业模式一致。例如，高利润模式的看其广告投入、研发投入、产品定位、差异化营销是否合理有效，高周转模式的看其运营管理能力、渠道管控能力、成本控制能力等是否具备，高杠杆模式的看其风险控制能力、融资成本高低等。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>估值分析。通过同业横比和历史纵比，加上市值与未来成长空间比，在显著低估时买入。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这“三板斧”分别解决的是好行业、好公司和好价格的问题，挑出来的“三好学生”就是值得长期持有的好股票了。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>不要被上市公司讲的“美好未来”忽悠了，一定要看现在看得见摸得着的利润、现金流和资产。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect3">
+&lt;h4 id="_问题2品质">问题2：品质&lt;/h4>
+&lt;div class="paragraph">
+&lt;p>便宜不便宜大多数人都能够判断，因此关键的区别在于搞清楚公司的品质。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>三个要素中，投资者真正需要下大力气搞清楚的就是品质。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>马和骑师，选马比选骑师重要。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>我认为选一个好行业是成功投资的基本条件。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>公司的品质好坏，关键是看能不能具有定价权。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>你对你的竞争对手怎么看？最近竞争对手有没有什么做法让你特别难受？你最近有没有什么做法让你的竞争对手感到难受？&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>我为什么不太喜欢政府支持的新兴行业？因为政府的支持其实是增加了供应，增加了行业的竞争对手。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>如何判断公司的品质？&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>是不是一个好行业？首先是看行业的格局，不要有太多人做，做的人多了，竞争自然就激烈了。&lt;/p>
+&lt;div class="paragraph">
+&lt;p>扶持其实是鼓励更多的人进入行业而加剧了竞争，打压却限制了新增供给，反而改善了竞争格局并且让行业龙头做大。&lt;/p>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>第二个要注意的是差异化竞争和同质化竞争的区别。&lt;/p>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>差异化的第一个标志是品牌。差异化、定价权的一个来源是品牌，而且最好是请客送礼的品牌。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>差异化的第二个标志是有回头客，即用户黏度高。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>差异化的第三个标志是单价不要太高。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>差异化的第四个标志是转换成本。&lt;/p>
+&lt;div class="paragraph">
+&lt;p>差异化的关键在于能不能提价，提价之后是不是影响销售。&lt;/p>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>差异化的第五个标志是服务网络。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>差异化的第六个标志是先发优势。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>对行业格局的分析和对公司核心竞争力的理解是“道”，财务分析只是“术”，但是后者对前者起着验证和把关的作用。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>判断一个公司所在的行业好不好，首先是看行业竞争格局是不是清晰，领先者有没有品牌的美誉度，领先者产品的售价是不是显著高于其他竞争者，领先者有没有网络服务的优势，有没有规模效应，产品的销售半径是不是相对比较小（不用参与全球竞争），是不是有回头客，是不是低单价（下游对价格不敏感），是不是转换成本高，领先者是不是有先发优势，技术变化是不是没有那么快。对品质的评判有很多指标，核心是“这是不是一门好生意，有没有定价权，是不是一门容易赚钱的生意”。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>我一直强调胜而后求战，愿意买已经把竞争对手打趴下的公司，而不是战而后求胜，在百舸争流中猜赢家。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>我认为行业研究员能够给基金经理提供的附加值在于讲出这个行业的特点。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>我分析公司、分析行业，更看重的是行业的内在特质和公司的长期经济特征这一类静态的信息，这些是规律性的东西，只有对行业真正理解了才能够说得出来。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>一个成功的投资者应该能够把行业到底竞争的是什么说清楚，把这个行业是得什么东西得天下弄明白。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在不同的细分子行业中竞争的东西也是不一样的，投资之前必须把每个细分子行业中决定胜负的因素研究清楚。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>即使是同一个行业，投资者也得明白在不同阶段，到底什么因素是决定胜负的关键。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>要认识一个行业，不妨做一道填空题：得___者得天下，用一个词来概括这个行业竞争的是什么。例如，基金业是得人才者得天下，高端消费品是得品牌者得天下，低端消费品是得渠道者得天下，无差异中间品是得成本者得天下，制造业是得规模者得天下，大宗品是得资源者得天下。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect3">
+&lt;h4 id="_问题3时机">问题3：时机&lt;/h4>
+&lt;div class="paragraph">
+&lt;p>投资的第三个大问题是时机。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>投资是科学加艺术，在投资的三个基本问题中，估值是最接近科学的，有一整套的方法和规律可以学习；而选时是最接近艺术的，只可悟、不可学，只可意会、不可言传。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>对于多数人而言，对待选时的正确态度应该是避免把大量的时间花在试图“抄底”或者“逃顶”上。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>彼得·林奇说的“如果你每年花 10分钟在宏观分析上，你就浪费了 10分钟”&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>如何在合适的时候加仓？&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>第一种办法是看估值。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>第二种办法，是根据各种指标之间的领先和滞后关系进行分析（具体请参读 &lt;a href="https://www.diguage.com/post/the-simple-things-in-investment-3/#chapter-10" target="_blank" rel="noopener">本书第 10章：四种周期、三种杠杆，行业轮动时机的把握&lt;/a>）。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>第三种办法，是根据对市场情绪的把握和逆向思考进行分析。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>“表弟指标”&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>对于多数人而言，只要把估值掌握好，把基本面分析好，淡化选时，长期来看投资回报就不会差。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>历史上的股市见底信号 1．市场估值在历史低位； 2. M1见底回升； 3．降存准或降息； 4．成交量极度萎缩； 5．社保汇金入市； 6．大股东和高管增持； 7．机构大幅超配非周期类股票； 8．强周期股在跌时抗跌，涨时领涨； 9．机构仓位在历史低点； 10．新股停发或降印花税。&lt;/p>
+&lt;/div></description></item><item><title>《投资中最简单的事》之读书笔记（一）：投资理念</title><link>https://www.diguage.com/post/the-simple-things-in-investment-1/</link><pubDate>Thu, 24 Feb 2022 23:38:00 +0800</pubDate><guid>https://www.diguage.com/post/the-simple-things-in-investment-1/</guid><description>&lt;div class="paragraph">
+&lt;p>最近一位同事离职，在践行宴会上，大家聊到投资理财，D瓜哥推荐了 &lt;a href="https://book.douban.com/subject/35000951/" target="_blank" rel="noopener">《投资中最简单的事》&lt;/a>。去年已经把这本书读完了，下班后把这本书的摘要笔记整理一下，按照章节，分四篇来分享：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/the-simple-things-in-investment-1/" target="_blank" rel="noopener">《投资中最简单的事》之读书笔记（一）：投资理念&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/the-simple-things-in-investment-2/" target="_blank" rel="noopener">《投资中最简单的事》之读书笔记（二）：投资方法&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/the-simple-things-in-investment-3/" target="_blank" rel="noopener">《投资中最简单的事》之读书笔记（三）：投资风险&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/the-simple-things-in-investment-4/" target="_blank" rel="noopener">《投资中最简单的事》之读书笔记（四）：投资心理学&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_推荐序">推荐序&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>天下武林，林林总总。名门正宗如少林武当，诚然名扬天下，而武林之大，但凡修得暗镖神剑者，亦可独步江湖。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>即使最成功的投资人，也要心胸坦荡，认识到自我局限，不可以名门正宗自居，须认识到获得真理是一个学无止境、永远追求的过程。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在多数人都醉心于“即时满足”（ instant gratification）的世界里，懂得用“延迟满足”（ delayed gratification）去做交易的人，已先胜一筹了。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>健康的环境和心情是长期修行的结果。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_初版序">初版序&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>成长投资的价值支撑主要来自企业未来收入和利润的高增长，更强调公司未来的价值 V&lt;sub>n&lt;/sub> 要远大于公司现在的价值 V&lt;sub>0&lt;/sub>，但这种投资需要预测未来的远见，只有极少数的人能够做到。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>我努力奉行一些简单的原则，例如：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;strong>第一，便宜是硬道理。&lt;/strong>即使是普通公司，只要足够便宜，也会有丰厚的回报。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>第二，定价权是核心竞争力。&lt;/strong>有核心竞争力的公司有两个标准：一是做的是自己可以不断复制的事情，比如麦当劳和星巴克可以不断地跨区域开新店，在全世界成功复制；二是做的是别人不可能复制的事情，具备独占资源、品牌美誉度、专利、技术、寡头垄断地位、牌照准入限制等特征，最终体现为企业的定价权。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>第三，胜而后求战，不要战而后求胜。&lt;/strong>百舸争流的行业，增长再快也很难找投资标的，不妨等待行业“内战”结束、赢家产生后再做投资。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>第四，人弃我取，逆向投资。&lt;/strong>无论是巴菲特、索罗斯，还是邓普顿、卡尔·伊坎，投资领域的集大成者大多数都具有超强的逆向思维能力。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这些规律性的东西虽然看起来是投资中最简单的事，却也是投资中最本质的东西，并不会因为时空的不同而产生大的差异。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_第一部分投资理念">第一部分　投资理念&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="sect2">
+&lt;h3 id="_01以实业的眼光做投资">01　以实业的眼光做投资&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>下跌后，悲痛欲绝；上涨后，欢欣雀跃。两者均无必要。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>以买企业的心态做投资，不因急跌而失措，也不因急涨而忘形。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在一个先发优势不断被颠覆、没有永远的赢家的行业里，只有勇于自我否定、因时而变才能生存。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>成长是未来的，难预测；门槛是既成的，易把握。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>第一，把客户的钱当作自己的钱来珍惜；第二，把二级市场的股票投资当作一级市场的实业投资来分析。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>如果用自己的钱做实业投资，首先要考虑的问题就是：这是不是一门好生意。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>人们只看到成功的“一将”，选择性地忽视了“枯了的万骨”。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>什么行业易出长期牛股？行业集中度持续提高的行业。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>用自己的钱做实业投资要考虑的第二个问题，就是这门生意的现金流状况如何，毕竟做生意的最终目的是赚取现金流。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>好公司的两个标准：一是它做的事情别人做不了；二是它做的事情自己可以重复做。前者是门槛，决定利润率的高低和趋势；后者是成长的可复制性，决定销售增速。如果二者不可兼得，宁要有门槛的低增长（可持续），也不要没门槛的高增长（不可持续）。门槛是现有的，好把握；成长是将来的，难预测。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>用自己的钱做实业投资要考虑的第三个问题就是行业的竞争格局以及公司是否具有比较优势。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>作为一个后来者，想颠覆既有的龙头老大的地位，就得看自己能够为客户提供哪些不可比拟的价值，以及相对于竞争对手的比较竞争优势在哪里。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>互联网的本质是“人生人”，优势在于能以极低成本服务无数客户，规模效应体现在“人多”，“二八”现象不明显，是典型的散户经济，得散户者得天下。银行业的本质是“钱生钱”，规模效应体现在“钱多”， 80%的业务来自 20%的客户，“二八”现象显著，得大户者得天下，而且那 20%的大客户是需要线下的高端服务的，这就是网上银行至今在欧美日韩都没有很成功的案例的重要原因。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>互联网“人生人”主要靠两条：一是网络效应；二靠人多提升用户体验。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>中国线下零售的分散和低效是中国线上电商迅速崛起的重要原因。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>分析技术变化快的行业时不必看市场占有率，而要看是否适应最新的杀手级应用的潮流。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>做投资要研究的就是这些不以人的意志为转移的规律，而不是整天去猜测市场的情绪变化。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>宝石被人扔进泥里再踩上几只脚也仍是宝石，砖头被请进庙堂受人膜拜也仍是砖头。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>市场的主题炒作往往是短期的，长期起决定性作用的仍然是行业竞争格局、公司竞争优势和定价权。只有坚持以实业的眼光去评估企业的价值，不受市场的极端情绪波动所影响，时间才会是我们的朋友。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_02人弃我取逆向投资的关键">02　人弃我取，逆向投资的关键&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>众人夺路而逃时，不挡路、不跟随。不挡路是因为不想被踩死，不跟随是因为乌合之众往往跑错方向。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>新兴行业讲的是需求快速成长的事，不必纠结于供给。而传统行业则只有控制供给，企业利润才能快速增长。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>长期看表现好的传统行业要么是寡头行业，要么是淘汰落后产能的行业，二者的供给增长相对于需求而言都受到了有效控制。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>很多人认为小股票的成长性普遍好于大股票。如果这是事实的话，那么大多数行业的集中度就会越来越低。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>以高估值买新兴行业而落入成长陷阱的是沉迷于“未得到”，以低估值买夕阳行业而落入价值陷阱的是沉迷于“已失去”。投资中风险收益比最高的还是那些容易被低估的“正拥有”。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>人弃我取、逆向投资是超额收益的重要来源。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>一只下跌的股票是否值得逆向投资的关键在于以下三点：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>首先，看估值是否够低、是否已经过度反映了可能的坏消息。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>其次，看遭遇的问题是否是短期问题、是否是可解决的问题。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>最后，看股价暴跌本身是否会导致公司的基本面进一步恶化，即是否有索罗斯所说的反身性。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>买股票之前问问自己，下跌后敢加仓吗？如果不敢，最好一开始就别买，因为价格的波动是不可避免的。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>食品饮料是个适合逆向投资的领域。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>大家都挤在树上摘葡萄时，也许就是该在地上捡苹果的时候了。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>A股的情绪波动容易走极端，因此“人多的地方不去”是至理名言。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>牢记管子所说的“不处不可久，不行不可复”，不去“击鼓传花”，不接最后一棒，把选股范围基本限制在低估值的大盘蓝筹里，以此躲过中小盘中的许多“地雷”。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>一般说来，趋势的初期和末期，就是真理在少数人手里的时候。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>买早了还得熬得住，这是逆向投资者的必备素质。&lt;/p>
+&lt;/div></description></item><item><title>《事实》之读书笔记（二）</title><link>https://www.diguage.com/post/factfulness-2/</link><pubDate>Sun, 24 Oct 2021 20:38:29 +0800</pubDate><guid>https://www.diguage.com/post/factfulness-2/</guid><description>&lt;div class="paragraph">
+&lt;p>在去年世界读书日时，D瓜哥在 &lt;a href="https://www.diguage.com/post/books-on-book-day/" target="_blank" rel="noopener">在世界读书日，推荐书单&lt;/a> 中推荐了 &lt;a href="https://book.douban.com/subject/33385402/" target="_blank" rel="noopener">《事实》&lt;/a> 这本书。这周五，上班路上在地铁上把这本书看完了。受益匪浅，获益良多。做个笔记，摘录学习一下。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>整本书主要分享了下面这十条事实的经验法则：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/books/factfulness-0.jpeg" alt="事实的经验法则" width="95%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>从这本书中，让D瓜哥感受最大的是：现在，不止中国，全世界范围内，所有人的生活都在整体地变好。这不仅仅是一种感觉，而是有很多相关国际机构的统计数据做支撑的。以前也有这种感觉，但那只是一种猜测，一种从自身生活感觉上的推断。虽然，新闻媒体中，全球各地各种灾难、冲突，甚至战争不断，但那些都是小范围内的小概率事件。为全世界人民，尤其是中国人民的生活提高，感到深深的自豪。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>除了自豪以外，在做读书笔记时，还有一点趣闻，值得分享一二。这本书D瓜哥看的是纸版书。下文中的摘录也都是随手在书上划线出来的。但是，D瓜哥却可以利用一下午的时间，快速整理出来。之所以这么快速，完全得益于微信的“文字识别”功能：拍照，通过微信发送，然后在微信中打开图片，就会“文字识别”功能。这样就可以快速提取文字，整理出读书摘要。使用过程中，D瓜哥也发现，识别率依赖于图片和文字的清洗程度，偶尔也有识别出错的地方。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>当然，这种方法也并非D瓜哥首创，而是在坐地铁上班时，看到一个人用同样的方法做笔记，原以为效率不高，试了一下竟然效率还挺高。感兴趣的小伙伴，不妨试试。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这本书与 &lt;a href="https://www.diguage.com/post/the-art-of-thinking-clearly-1/" target="_blank" rel="noopener">《清醒思考的艺术》&lt;/a> 有一种异曲同工之妙。《事实》侧重数据分析，从上往下从世界上更广阔的现象去分析人本身的一些偏见或错觉；而《清醒思考的艺术》则是侧重自我反思，从下往上从自身去透视普罗大众的一些思维偏误。两本书一起阅读，相信会相得益彰，妙趣横生的。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥把读书笔记整理一下。按照章节，分二篇来分享：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/factfulness-1/" target="_blank" rel="noopener">《事实》之读书笔记（一）&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/factfulness-2/" target="_blank" rel="noopener">《事实》之读书笔记（二）&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_6_以偏概全">6. 以偏概全&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>一分为二的本能促使我们把世界分为“我们”和“他们”，而以偏概全的本能使得“我们”认为“他们”是完全一样的。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>真正有效的商业策略，需要建立在实事求交是的世界观的基础上，才能够发现未来的客户在哪里。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>真正的挑战是我们要做正确的归纳和分类，而不是错误的。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>要想做到正确的归纳和分类，最好的办法就是行万里路。没有什么比切身经历更重要。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>失去意识的士兵在仰面躺着的时候，很容易被自己的呕吐物呛到，导致窒息。而俯卧的情况下，他门的呕吐可以自然排出，他们白呼吸道可以保持畅通。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>我们也应该尽可能地发现我们逻辑思维中隐藏的以偏概全的错误。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>当我们面对新的证据的时候，我们必须有勇气质疑我们之前的假设，并且重新做出评估。如果我们错了，我们应当勇于承认。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/books/factfulness-6.jpeg" alt="以偏概全" width="95%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>要做到实事求是，就是要意识到当我们讨论一个群体的时候，我们的分类可能是错误的。我们一定会继续做分类和类比的工作，但是我们要尽可能地提醒自己，不要做错。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>要想控制住我们的以偏概全的本能，我们要经常质疑自己的分类方法。&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;strong>在同一类别中寻找不同。&lt;/strong>特别是当一个类别非常巨大的时候，我们应该试图找到有效的办法来将其分得更小、更准确。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>在不同类别中寻找相同。&lt;/strong>如果你发现不同的类别之间存在着巨大的相似性，那么要考虑，你的分类方法有可能是不正确的。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>在不同类别中寻找不同。&lt;/strong>不要假设在一个类别中适用的规则可以在其他类别中同样适用。比如收入水平第四级的人不要假设其他级别的人也适用同样的生活规则。再比如失去意识的士兵和沉睡中的婴儿是不同的。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>注意大多数。&lt;/strong>大多数仅仅意味着超过一半，我们应当具体区分，大多数究竟意味着51%还是99%。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>注意极端案例。&lt;/strong>活灵活现的图片往往会给我们留下深刻的印象，但是它们有可能只代表着极端案例，而不是普遍现象。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>不要假设别人是傻瓜。&lt;/strong>当你发现一些奇怪现象的时候，请保持好奇心和谦卑之心，去探究这现象背后的道理。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_7_命中注定">7. 命中注定&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>为你所处的特定群体宣称一种所谓的命运，也将有利于将这个群体团结在一起，并且产生一种优越感。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>社会和文化并不像岩石一样不可改变。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>文化、国家、宗教和人民都不是岩石，它们都处在持续的变化中。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>我认为，最后脱离贫困的人将是那些生活在偏远、极其贫瘠的土地上，同时又受到战争困扰白的农民。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>事实上宗教和妇女人均生育人数之间并没有必然的联系。反而是收入水平和妇女人均生育人数有非常强 的相关性。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>要想控制命中注定的本能 就要注意不要忽视微小的改变。不要轻易忽略每年的变化，尽管这个变化可能仅有百分之一。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>为了控制命中注定的本能， 我们应该持续关注新的数据，并且随时更新我们的认识。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/books/factfulness-7.jpeg" alt="命中注定" width="95%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>要做到实事求是，就是要认识到很多事情（比如人民、国家、宗教和文化）看起来似乎保持不变，仅仅是因为改变发生得非常缓慢，并且要记住聚沙成塔。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>要想控制命中注定的本能，就要记住缓慢的改变也仍然是改变。&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;strong>注意追踪持续的提高。&lt;/strong>每年小的改变可以在几十年后积累成巨大的改变。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>更新你的知识。&lt;/strong>有些知识很快就会变得过时，技术、国家、社会文化和宗教都在持续的改变当中。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>与老年人对话。&lt;/strong>如果你想弄清楚价值观是如何改变的，请想一想你的祖父母们的价值观和你的价值观有什么不同。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>收集文化改变的案例。&lt;/strong>找到反面的案例来挑战那种认为文化一成不变的说法。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_8_单一视角">8. 单一视角&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>人们总是倾向于认为所有的问题都有单一的原因和单一的解决方案，我把这称为人类的单一视角本能。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>应该持续地测试自己的想法的不足之处。对你自己有限的经验采取谦卑的态度，积极获取最新的信息。&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>政治的意识形态；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>专业局限性。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>拥有高智商，数学很好 受过高等教育，甚至得过诺贝尔奖 这些都不能确保你能更正确地认识世界。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>知识有时候会成为专家自的障碍，使他们看不到真正的解决方案。最好的方法就是以多视角来观察这个世界。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>与其试图去根治一种或者几种特别的疾病，还不如致力于提高整个社会的医疗健康水平。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>如果这些孕妇不能及时到达医院，医院就起不到作用。如果没有救护车，或者没有能够让救护车通行的道路的话，光有医院又有什么用呢?同样地，教育工作者们非常清楚，电灯的作用要远远大于更多的教科书和更多的老师，因为电灯使得学生们可以在太阳落山之后做家庭作业。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>如果让我选择在哪里生活的话，我不会根据意识形态进行行选择， 而会基于这个国家究竟给它的人民带来了什么而做选择。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在大家讨论自由市场或是政府于预的话题的时候，答案不应该是绝对的是或者否，而应当具体问题具体分析。真正的答案不应该是非黑即白，而是应该在监管和自由之间取得一种平衡。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>任何人如果想强调民主是经济增长和健康水平提高的必要条件的话，都无法在现实中找到足够的依据。与其把民主当作一种取得进步的手段，还不如把民主当作国家奋斗的目标。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>没有任何一种单一的指标可以衡量一个国家的进步。现实永远是复杂的。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/books/factfulness-8.jpeg" alt="单一视角" width="95%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>要做到实事求是，就是要认识到单一视角会限制你的想象力。并且时刻牢记获取最佳解决问题的方法就是从多个不同的角度来观察问题，得到一个更全面的了解，从而制订切实可行的解决方案。&lt;/p>
+&lt;/div></description></item><item><title>《事实》之读书笔记（一）</title><link>https://www.diguage.com/post/factfulness-1/</link><pubDate>Sun, 24 Oct 2021 12:38:38 +0800</pubDate><guid>https://www.diguage.com/post/factfulness-1/</guid><description>&lt;div class="paragraph">
+&lt;p>在去年世界读书日时，D瓜哥在 &lt;a href="https://www.diguage.com/post/books-on-book-day/" target="_blank" rel="noopener">在世界读书日，推荐书单&lt;/a> 中推荐了 &lt;a href="https://book.douban.com/subject/33385402/" target="_blank" rel="noopener">《事实》&lt;/a> 这本书。这周五，上班路上在地铁上把这本书看完了。受益匪浅，获益良多。做个笔记，摘录学习一下。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>整本书主要分享了下面这十条事实的经验法则：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/books/factfulness-0.jpeg" alt="事实的经验法则" width="95%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>从这本书中，让D瓜哥感受最大的是：现在，不止中国，全世界范围内，所有人的生活都在整体地变好。这不仅仅是一种感觉，而是有很多相关国际机构的统计数据做支撑的。以前也有这种感觉，但那只是一种猜测，一种从自身生活感觉上的推断。虽然，新闻媒体中，全球各地各种灾难、冲突，甚至战争不断，但那些都是小范围内的小概率事件。为全世界人民，尤其是中国人民的生活提高，感到深深的自豪。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>除了自豪以外，在做读书笔记时，还有一点趣闻，值得分享一二。这本书D瓜哥看的是纸版书。下文中的摘录也都是随手在书上划线出来的。但是，D瓜哥却可以利用一下午的时间，快速整理出来。之所以这么快速，完全得益于微信的“文字识别”功能：拍照，通过微信发送，然后在微信中打开图片，就会“文字识别”功能。这样就可以快速提取文字，整理出读书摘要。使用过程中，D瓜哥也发现，识别率依赖于图片和文字的清洗程度，偶尔也有识别出错的地方。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>当然，这种方法也并非D瓜哥首创，而是在坐地铁上班时，看到一个人用同样的方法做笔记，原以为效率不高，试了一下竟然效率还挺高。感兴趣的小伙伴，不妨试试。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这本书与 &lt;a href="https://www.diguage.com/post/the-art-of-thinking-clearly-1/" target="_blank" rel="noopener">《清醒思考的艺术》&lt;/a> 有一种异曲同工之妙。《事实》侧重数据分析，从上往下从世界上更广阔的现象去分析人本身的一些偏见或错觉；而《清醒思考的艺术》则是侧重自我反思，从下往上从自身去透视普罗大众的一些思维偏误。两本书一起阅读，相信会相得益彰，妙趣横生的。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥把读书笔记整理一下。按照章节，分二篇来分享：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/factfulness-1/" target="_blank" rel="noopener">《事实》之读书笔记（一）&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/factfulness-2/" target="_blank" rel="noopener">《事实》之读书笔记（二）&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_引言">引言&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>貌以绝大多数人对这个世界的理解都是错误的。并且不仅仅是错误， 而是系统性的错误。所谓系统性的错误，我指的是这些错误答案并不是随机选择所得。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>人类的答案却是毫无例外地偏向一个方向。人们想象中的世界比真实的世界更加夸张。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>人们对世界的认识是如此错误 ，这一点使我陷入了深深的沮丧和焦虑。这就好比当你使用 GPS 系统的时候，你希望你使用的是正确的信息。你绝不希望你在使用导航系统的时候，这个系统的基础信息全部是另外一个城市的。因为你很清楚，用错误的信息来导航，你最终只能去到一个错误的终点。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>因为缺乏知识只会导致人们和大猩猩一样随机选择答案，而不是犯下系统性错误，回答得比随机选择更差。只有错误的知识，才能够使我们犯下系统性的错误，才能使我们得到如此差的结果。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>我所面对的问题，其实是一个有关知识升级的问题。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>我得到了一个结论，要想根除无知，我必须帮助人们升级他们的知识系统。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>我也总是非常乐于告诉所有人，他们就是《皇帝的新衣》里一丝不挂的皇帝，他们对自己所生活的世界毫无了解。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>无知的问题，并不仅仅是知识升级的问题，也并不可能仅仅通过提供更好的教学工具以及更清晰的数据来解决。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>当人们思考的时候人们会持续地并且本能地通过他们的世界观来猜测和理解这个世界。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>根源在于人们错误的过分情绪化的世界观。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>当我们知道，我们对世界的误解是来源于系统性的为误判时，我们就大可不必为我们答错题而感到尴尬了。取而代之的应该是感到无比好奇这种错觉是如何产生的呢？&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>以数据作为根治无知的良方，以理性作为心灵平静的源泉。因为这个世界并没有你所感觉到的那么糟糕。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>实事求是的思维方式 应该就像健康饮食和持续锻炼一样，成为你日常生活的一部分。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这本书将会告诉你一个真实的世界，也会告诉你为什么你自己不能看到这个世界的真相，你应当如何做才能够看到世界的真相以及如何在现实的生活中变得更加乐观，少点紧张，多点希望。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_一分为二">1. 一分为二&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>人类十大情绪化本能中的一个，一分为二的本能。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>人们似乎总是喜欢把事物一分为二为两种类别，而这两种类别又是互相对立、互相矛盾的，并且这两个类别之间存在着一道巨大的鸿沟。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>如果你想真正地首付某人他的观念是错误的，那么最有效的办法就是能够用数据来测试他们的观念。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>今年你会用一张 1965 年的地图来为你导航吗？今天你会愿意你的医生用 1965 年的顶尖科技来为你进行诊断和治疗吗？&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>那种把世界一分为二的观念，那种认为全世界大多数人口都过着贫穷而悲催的生活的观念，是一种错觉。是彻头彻尾的误解。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>人类有一种很强烈的、情绪化的本能。这种本能促使人们习惯于把事情一分为二：好的和坏的，英雄和恶棍，我所在的国家和其他国家。把时间一分为二是简单、直观而且情绪化的方法。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这种一分为二的本能会误导我们，把平滑过渡当做两极分化，把和而不同当做分道扬镳，把求同存异当做矛盾对立。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>三种情况激发一分为二的错误本能：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>只比较平均数&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>只比较极端情况&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>只俯视不仰视&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>平均数最大的问题就是它用了一个单独的数字取代了大量数据的分布规律。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>可能只看到了两个平均数直接的鸿沟，而错过了两组数据之间重合的部分。所谓的鸿沟在事实上并不存在。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在更多的时候，一分为二的的思维方式只能带给我们误导性的和过度情绪化的结论。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>事实上，即便在全世界最不平等的国家，人们的收入之间也并不存在一条鸿沟，绝大多数人都生活在中间阶层。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>对你而言，遥想建立一种实事求是的世界观，最大的挑战就是认识到你自己绝大多数的第一手经验是来自第四级以上的生活，而几乎所有的二手经验则经过了大众媒体过滤，大众媒体基本上只会关心那些极端的案例，却并不真正反应现实。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>任何一个从高层建筑从上向下俯视的人都很难辨别出接近地面的矮层建筑的真实高度，因为它们看起来都一样矮。&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/books/factfulness-1.jpeg" alt="一分为二" width="95%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>要做到实事求是，就要做到当你听到一分为二的说法时，你就能迅速认识到这种说法描述的是一种两极分化的图画，而两极之间存在一道巨大的鸿沟。而在现实中，这道鸿沟往往并不存在，绝大多数人都生活于中间状态。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>要想有效地控制我们一分为二的错误本能，我们就要坚持寻找绝大多数。&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;strong>我们要注意只比较平均数的做法。&lt;/strong>平均数之外，我们还要注意数据的实际分布。如果两组数据的分布出现了重叠，那么有可能两组之间的鸿沟并不存在。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>我们要注意只比较极端情况的做法。&lt;/strong>在所有的群体、国家或者国民中，总会有极端情况的存在，总会有顶层和底层。而顶层和底层之间的差别，有时候是极端不公平的。即便如此，大多数仍然分布在中间状态，而在中间并不存在鸿沟。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>我们要注意只俯视不仰视的做法。&lt;/strong>记住俯视会带来错觉，一切看起来都一样矮，但是事实并非如此。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_负面思维">2. 负面思维&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>负面思维：我们队坏事总会比好事更加关注。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>国际合作的基础就是我们拥有对这个世界同样的、实事求是的理解。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在统计学里面，有一个很好的基本原则：当差别小于 10% 时，不要轻易做任何结论。&lt;/p>
+&lt;/div></description></item><item><title>《卡片笔记写作法》之读书笔记（三）：成功写作的六个步骤</title><link>https://www.diguage.com/post/how-to-take-smart-notes-3/</link><pubDate>Wed, 11 Aug 2021 06:48:10 +0800</pubDate><guid>https://www.diguage.com/post/how-to-take-smart-notes-3/</guid><description>&lt;div class="quoteblock">
+&lt;blockquote>
+&lt;div class="paragraph">
+&lt;p>不写，就无法思考。&lt;/p>
+&lt;/div>
+&lt;/blockquote>
+&lt;div class="attribution">
+— 卢曼 1992，53
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>最近把 &lt;a href="https://book.douban.com/subject/35503571/" target="_blank" rel="noopener">《卡片笔记写作法》&lt;/a> 读完了，深受启发，相见恨晚。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>先分享一个小趣闻：看完这本书，想实践一下，就去购物网站搜合适的活页卡片。考虑到便利性，就选择了 A6 大小的活页。上网找了一圈，也没有找到标准尺寸的 A6 活页。考虑以后直接拿 A4 纸进行裁剪。现在的问题变成了如何把 A4 纸裁剪得标准一些。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>看完全书，纵观卡曼的发展过程，特别叹服的一点是，他会不断反思自己的行为和学习方法，并且反复尝试改进自己的学习方法，以求达到最好的效率。反思自己，虽然总是耕读不断，虽然过程中也许捡了不少好砖，但是就像那个捡玉米的猴子，随捡随丢，终究没能垒起我的阅读城堡！可惜可惜！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>闲言少叙，书归正传。读这本书，有几点印象特别深刻：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>书中将记忆区分为两种机智：&lt;strong>存储强度（storage strength）与提取强度（retrieval strength）。并且“存储与提取负相关”，也就是说，存入记忆越容易，提取出来越困难；反之，如果你有些吃力地存入，知识提取会更方便。&lt;/strong>这点有点意思。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>书中一个比喻特别形象：&lt;strong>卢曼卡片盒就像是复利投资，而特罗洛普的技术就像是储蓄罐。&lt;/strong>复利投资可以滚雪球，越滚越大，而且是指数增长。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>书中还有一个概念很有意思：“思维网格”，&lt;strong>如果知识既不是被孤立地保存，也不是被孤立地学习，而是聚集在一个思想网络中，或者说是“思维模型的网格”中，那么理解新的信息就变得更容易了。&lt;/strong>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>卡片笔记学习法自然而然产生的自下而上写作法拥有一个巨大优势：&lt;strong>我们所使用的想法都嵌入了丰富的上下文中，并且附带了可以使用的素材，而不是凭空产生的。这样做会带来另一个意想不到的收获，那就是我们会对新的想法持更加开放的态度。&lt;/strong>可以轻松避免由于预设结论导致的认知偏误。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>卡片盒笔记的精华所在：&lt;strong>以新的和意想不到的方式，将不同的想法汇集在一起，从而产生新的想法。&lt;/strong>卢曼的卡片不是简简单单地摘抄，而是自己组织语言的转述，需要加工再输出。不仅仅是摘录原文，更是思想的录像机与连接器，记录下当下的思想，建立与已有思想的链接。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>一个巨大的误解是：如果不制订计划，就只能是漫无目的地乱写一气。其实我们真正该做的是构建适合自己的工作流程，让洞见和新想法成为推动我们前进的驱动力。&lt;/strong>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>记笔记也不是最关键的工作，思考、阅读、理解和提出想法才是，笔记只是它们的具体成果。写，无疑是我们思考、阅读、学习、理解和产生想法的最佳催化剂。&lt;/strong>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>书中的真知灼见数不胜数，可以通过D瓜哥的这几篇读书笔记“管中窥豹”。当然，更推荐大家去阅读原文。D瓜哥是在“微信读书”中阅读的免费版，礼尚往来，推荐一下。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥把读书笔记整理一下。按照章节，分三篇来分享：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/how-to-take-smart-notes-1/" target="_blank" rel="noopener">《卡片笔记写作法》之读书笔记（一）：绪论&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/how-to-take-smart-notes-2/" target="_blank" rel="noopener">《卡片笔记写作法》之读书笔记（二）：有效写作的四个基本原则&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/how-to-take-smart-notes-3/" target="_blank" rel="noopener">《卡片笔记写作法》之读书笔记（三）：成功写作的六个步骤&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_第三章_成功写作的六个步骤">第三章 成功写作的六个步骤&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="sect2">
+&lt;h3 id="_明确区分独立而又相关联的任务">明确区分独立而又相关联的任务&lt;/h3>
+&lt;div class="sect3">
+&lt;h4 id="_全神贯注于每一项任务">全神贯注于每一项任务&lt;/h4>
+&lt;div class="paragraph">
+&lt;p>根据一项引用量很大的研究，频繁出现的电子邮件和短信所造成的不断干扰，会使我们的工作效率降低40%，并使我们的智商至少降低10%。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>我们正被越来越多的干扰因素包围着，并且提升注意力的机会也更少了。&lt;/p>
+&lt;/div>
+&lt;div class="sidebarblock">
+&lt;div class="content">
+&lt;div class="paragraph">
+&lt;p>考虑把微信和工作通讯录的提醒给关闭掉。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect3">
+&lt;h4 id="_不要一心多用">不要一心多用&lt;/h4>
+&lt;div class="paragraph">
+&lt;p>虽然那些进行多任务处理的人感觉自己更有效率，但实际上他们的效率却低了很多（Wang and Tchernev,2012;Rosen,2008;Ophir,Nass and Wagner,2009），而且在数量和质量方面的表现都明显落后于一次只做一件事的人。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>当我们认为自己在同时处理多项任务时，我们真正做的其实是在两件甚至多件事情之间快速转移注意力，每一次转移注意力都会消耗我们的转移能力，并会延长我们再次集中注意力所需要的时间。总的来说，一心多用会让人疲惫不堪，也会降低我们处理多项任务的能力。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>写论文不仅仅是在键盘上打字，它还包括阅读、理解、思索、产生想法、建立联系、区分术语、寻找合适的词语、结构化、组织、编辑、修正和重写等。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>自从20世纪70年代米哈里·契克森米哈赖（Mihaly Csikszentmihalyi）描述了“心流”状态——一种毫不费力就能高度集中注意力的状态（Csikszentmihalyi, 1975）[2&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>集中注意力不同于“持续注意”，后者指的是我们需要在较长的时间内保持对一项任务的关注，这也是学习、理解或完成某件事情所必需的。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>好消息是，如果我们能避免同时处理多项任务，尽可能将不同类型的任务分开，使它们不会相互干扰，并排除可能的其他干扰，我们就能训练自己在更长时间内专注于一件事的能力。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect3">
+&lt;h4 id="_不同的任务需要不同的关注度">不同的任务需要不同的关注度&lt;/h4>
+&lt;div class="paragraph">
+&lt;p>校对则需要重点关注写作时用什么词表达更准确，因而校对需要的是更专注的注意力，而写作过程中寻找合适的词语则需要更多的漂浮注意力。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>如果我们不用同时考虑文章的结构，就更容易集中精力琢磨正确的词语。这就是我们为什么应该把稿件的大纲打印出来，一直放在眼前的原因。我们必须搞清楚眼下哪些内容不必写，因为知道这些内容要写在其他章节里。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>专业地阅读，不是指掌握一种方法，并将其应用于一切情况，而是根据不同的文本灵活地调整阅读的速度和方法。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>“具体来说，杰出科学家解决问题的行为可以在‘对特定概念的超常专注程度’和‘对想法的有趣探索’之间交替进行。这表明，要想成功解决问题，可能需要根据任务和需求灵活地选择应对策略。”（Vartanian,2009）&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>真正的答案是有创造力的人需要以上两种能力，创造力的关键是能够在开放、活泼的思维和传统的分析框架之间灵活地切换。”（Dean,2013）&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect3">
+&lt;h4 id="_做专家不做计划制订者">做专家，不做计划制订者&lt;/h4>
+&lt;div class="paragraph">
+&lt;p>我们停止制订计划之时，就是开始学习之时。根据具体情况在最重要和最有前景的任务之间灵活地选择和切换，变得擅于产生洞见和写出好文章——这需要通过练习来实现。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>学术写作是一个高度依赖认知和思考的过程，但人们误以为仅仅依靠有意识的决策就可以完成，这就是制订计划广受推崇的原因。如果真的想在学术写作方面取得进步，可以通过经验和刻意练习来掌握这门艺术。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>不要害怕犯错，要在错误中成长！
+&amp;gt;要想成为专家，我们需要自由地、独立地做出决定，还要经历能够帮助我们学习的必要错误。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>要想成为专家，我们需要自由地、独立地做出决定，还要经历能够帮助我们学习的必要错误。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>根据德雷福斯的模型理论[4]，正确运用学习到的规则，可以使你成为一个称职的“胜任者”（位于5层级模型中的第3层级），但它不会使你成为“精通者”（第4层级），当然也不会使你变成“专家”（第5层级）。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>根据德雷福斯的模型理论[4]，正确运用学习到的规则，可以使你成为一个称职的“胜任者”（位于5层级模型中的第3层级），但它不会使你成为“精通者”（第4层级），当然也不会使你变成“专家”（第5层级）。&lt;/p>
+&lt;/div>
+&lt;div class="sidebarblock">
+&lt;div class="content">
+&lt;div class="paragraph">
+&lt;p>经常只是一味地循规蹈矩，只会在“别人的规则”里打转！&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这里所说的直觉不是指某种神秘的力量，而是一种融入了过去的经验，通过无数次成功或失败的反馈循环，深入学习、反复实践的沉淀。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect3">
+&lt;h4 id="_写下来为大脑减负">写下来为大脑减负&lt;/h4>
+&lt;div class="paragraph">
+&lt;p>心理学家过去在谈到短期记忆容量时的看法是一致的：我们最多可以同时在脑海中保存7±2件事（Miller,1956）。&lt;/p>
+&lt;/div></description></item><item><title>《卡片笔记写作法》之读书笔记（二）：有效写作的四个基本原则</title><link>https://www.diguage.com/post/how-to-take-smart-notes-2/</link><pubDate>Tue, 10 Aug 2021 06:17:30 +0800</pubDate><guid>https://www.diguage.com/post/how-to-take-smart-notes-2/</guid><description>&lt;div class="quoteblock">
+&lt;blockquote>
+&lt;div class="paragraph">
+&lt;p>不写，就无法思考。&lt;/p>
+&lt;/div>
+&lt;/blockquote>
+&lt;div class="attribution">
+— 卢曼 1992，53
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>最近把 &lt;a href="https://book.douban.com/subject/35503571/" target="_blank" rel="noopener">《卡片笔记写作法》&lt;/a> 读完了，深受启发，相见恨晚。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>先分享一个小趣闻：看完这本书，想实践一下，就去购物网站搜合适的活页卡片。考虑到便利性，就选择了 A6 大小的活页。上网找了一圈，也没有找到标准尺寸的 A6 活页。考虑以后直接拿 A4 纸进行裁剪。现在的问题变成了如何把 A4 纸裁剪得标准一些。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>看完全书，纵观卡曼的发展过程，特别叹服的一点是，他会不断反思自己的行为和学习方法，并且反复尝试改进自己的学习方法，以求达到最好的效率。反思自己，虽然总是耕读不断，虽然过程中也许捡了不少好砖，但是就像那个捡玉米的猴子，随捡随丢，终究没能垒起我的阅读城堡！可惜可惜！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>闲言少叙，书归正传。读这本书，有几点印象特别深刻：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>书中将记忆区分为两种机智：&lt;strong>存储强度（storage strength）与提取强度（retrieval strength）。并且“存储与提取负相关”，也就是说，存入记忆越容易，提取出来越困难；反之，如果你有些吃力地存入，知识提取会更方便。&lt;/strong>这点有点意思。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>书中一个比喻特别形象：&lt;strong>卢曼卡片盒就像是复利投资，而特罗洛普的技术就像是储蓄罐。&lt;/strong>复利投资可以滚雪球，越滚越大，而且是指数增长。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>书中还有一个概念很有意思：“思维网格”，&lt;strong>如果知识既不是被孤立地保存，也不是被孤立地学习，而是聚集在一个思想网络中，或者说是“思维模型的网格”中，那么理解新的信息就变得更容易了。&lt;/strong>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>卡片笔记学习法自然而然产生的自下而上写作法拥有一个巨大优势：&lt;strong>我们所使用的想法都嵌入了丰富的上下文中，并且附带了可以使用的素材，而不是凭空产生的。这样做会带来另一个意想不到的收获，那就是我们会对新的想法持更加开放的态度。&lt;/strong>可以轻松避免由于预设结论导致的认知偏误。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>卡片盒笔记的精华所在：&lt;strong>以新的和意想不到的方式，将不同的想法汇集在一起，从而产生新的想法。&lt;/strong>卢曼的卡片不是简简单单地摘抄，而是自己组织语言的转述，需要加工再输出。不仅仅是摘录原文，更是思想的录像机与连接器，记录下当下的思想，建立与已有思想的链接。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>一个巨大的误解是：如果不制订计划，就只能是漫无目的地乱写一气。其实我们真正该做的是构建适合自己的工作流程，让洞见和新想法成为推动我们前进的驱动力。&lt;/strong>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>记笔记也不是最关键的工作，思考、阅读、理解和提出想法才是，笔记只是它们的具体成果。写，无疑是我们思考、阅读、学习、理解和产生想法的最佳催化剂。&lt;/strong>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>书中的真知灼见数不胜数，可以通过D瓜哥的这几篇读书笔记“管中窥豹”。当然，更推荐大家去阅读原文。D瓜哥是在“微信读书”中阅读的免费版，礼尚往来，推荐一下。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥把读书笔记整理一下。按照章节，分三篇来分享：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/how-to-take-smart-notes-1/" target="_blank" rel="noopener">《卡片笔记写作法》之读书笔记（一）：绪论&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/how-to-take-smart-notes-2/" target="_blank" rel="noopener">《卡片笔记写作法》之读书笔记（二）：有效写作的四个基本原则&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/how-to-take-smart-notes-3/" target="_blank" rel="noopener">《卡片笔记写作法》之读书笔记（三）：成功写作的六个步骤&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_第二章_有效写作的四个基本原则">第二章 有效写作的四个基本原则&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="sect2">
+&lt;h3 id="_写作是唯一重要的事情">写作是唯一重要的事情&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>有了想法只有自己知道，就等于没想法，而无法重现的论据也根本算不上论据。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>教授不是为了学生而存在的，学生也不是为了教授而存在的，两者都只为真理而存在，而真理永远属于公共事务。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>专注于写作，并不意味着要减少阅读量，因为它是写作材料的主要来源；专注于写作，并不意味着要少参加讲座或研讨会，因为它们不但能为你提供写作的思路和值得解答的问题，而且是了解研究现状的最佳途径之一，更不用说它为提出和讨论问题提供了平台；专注于写作也并不意味着要停止做演讲或寻找其他方式将自己的想法公之于众——没有什么比这更好的途径为你的想法提供反馈了。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>努力找寻你“应该”做的事情并不是在浪费时间，相反，借助于此，你会努力以尽可能高的效率去学习，从而迅速找到那个开放性的问题，也是唯一值得写作的问题。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_简洁是最重要的">简洁是最重要的&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>越简单的想法往往具有越强大的效果（并且在一开始总被忽视）。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>马尔科姆·麦克莱恩（Malcom McLean）的集装箱思想和实践，改变了世界贸易格局。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>1956年4月26日，麦克莱恩把“理想X号（Ideal X）”邮轮改装成可以装载58个集装箱的邮轮起航的时候，仅仅是因为这种直接装卸集装箱的分装方式比整船装卸货物的方式便捷，能免于在港口漫长的等待几天。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>麦克莱恩比别人更明白，重要的不是船东的观点，而是整个贸易的目的，即把货物从生产者那里带到最终目的地。只有将运输链的每一个环节——从包装到运送，从设计船舶到设计港口——都统一起来之后，集装箱的潜力才能够得到充分释放。&lt;/p>
+&lt;/div>
+&lt;div class="sidebarblock">
+&lt;div class="content">
+&lt;div class="paragraph">
+&lt;p>从这个地方也可以看出，不要只谋求一城的得失，要从战略的高度看全局的胜负。做笔记也一样，不是写完就完事了，整理输出再加工更加重要。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>当他们读到一个有趣的句子，就在下面画线；当他们想要评论时，就写到空白处；当他们有一个想法时，就写进笔记本；当他们觉得一篇文章足够重要，就努力摘抄。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>传统的笔记系统中，主要问题是人们把某条笔记存放在了哪个主题下；而卢曼卡片盒笔记系统中，主要问题则是考虑想在哪个主题下再见到它。&lt;/p>
+&lt;/div>
+&lt;div class="sidebarblock">
+&lt;div class="content">
+&lt;div class="paragraph">
+&lt;p>有点举一反三的灵动，也有反其道而行之的逆向思维。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这里还有一个问题：一些潜在关联不能及时发现，需要后续逐步探索才能慢慢展示出来。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>所有的努力只为一个目的：发表有价值的观点。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>传统的笔记系统是为了找到你意图搜索的东西，让你的大脑疲于回忆，而卢曼卡片盒笔记系统则是为了给你呈现你已经忘记的想法，让你的大脑专注于思考。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>要达到群聚效应的最佳点，关键是要分清楚三类笔记。&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>闪念笔记（Fleeting Notes）：这类笔记只是对收集信息起提醒作用，可以用任何一种方式来写，最后会在一两天内被扔进垃圾桶。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>永久笔记（Permanent Notes）：这种笔记以一种永久可以理解的方式包含了必要的信息，并且永远不会被扔掉。它们总是以同样的方式存放在同一个地方，或者是在文献管理系统中，或者按出版标准写好放在卡片盒中。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>项目笔记（Project Notes）：它们只与某一特定项目有关，保存在特定项目的文件夹内，项目结束后即可丢弃或存档。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>第一个典型的错误是很多勤奋的学生都会遵循“要像写科学杂志一样记笔记”的建议。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>由于他把每一条笔记都划分到“永久笔记”的范畴，导致优秀的笔记被其他或许只与特定项目有关、或许实际上不那么好的笔记淹没了，因此永远也无法实现群聚效应。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>第二个典型的错误是只收集与特定项目有关的笔记。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>第三个典型的错误当然是把所有的笔记都当作闪念笔记。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这三种类别的混乱有一个共同点，那就是记笔记的好处会随着你保存笔记数量的增加而减少，笔记记得越多，就越难找到恰当的那个，越难以自如地将相关的笔记整合到一起。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>闪念笔记只有在你能在一两天内回顾它们，并将它们变成以后可以使用的适当的笔记时才有价值。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>永久笔记不只是思想或观点的备忘录，而是以书面形式包含实际思想或观点的文本，这是一个至关重要的区别。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>与项目有关的笔记可以是以下内容：&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>手稿中的评论；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>与项目有关的文献收集；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>大纲；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>草稿片段；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>备忘录；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>待办事项；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>草稿本身。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div></description></item><item><title>《卡片笔记写作法》之读书笔记（一）：绪论</title><link>https://www.diguage.com/post/how-to-take-smart-notes-1/</link><pubDate>Mon, 09 Aug 2021 06:48:10 +0800</pubDate><guid>https://www.diguage.com/post/how-to-take-smart-notes-1/</guid><description>&lt;div class="quoteblock">
+&lt;blockquote>
+&lt;div class="paragraph">
+&lt;p>不写，就无法思考。&lt;/p>
+&lt;/div>
+&lt;/blockquote>
+&lt;div class="attribution">
+— 卢曼 1992，53
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>最近把 &lt;a href="https://book.douban.com/subject/35503571/" target="_blank" rel="noopener">《卡片笔记写作法》&lt;/a> 读完了，深受启发，相见恨晚。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>先分享一个小趣闻：看完这本书，想实践一下，就去购物网站搜合适的活页卡片。考虑到便利性，就选择了 A6 大小的活页。上网找了一圈，也没有找到标准尺寸的 A6 活页。考虑以后直接拿 A4 纸进行裁剪。现在的问题变成了如何把 A4 纸裁剪得标准一些。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>看完全书，纵观卡曼的发展过程，特别叹服的一点是，他会不断反思自己的行为和学习方法，并且反复尝试改进自己的学习方法，以求达到最好的效率。反思自己，虽然总是耕读不断，虽然过程中也许捡了不少好砖，但是就像那个捡玉米的猴子，随捡随丢，终究没能垒起我的阅读城堡！可惜可惜！&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>闲言少叙，书归正传。读这本书，有几点印象特别深刻：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>书中将记忆区分为两种机智：&lt;strong>存储强度（storage strength）与提取强度（retrieval strength）。并且“存储与提取负相关”，也就是说，存入记忆越容易，提取出来越困难；反之，如果你有些吃力地存入，知识提取会更方便。&lt;/strong>这点有点意思。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>书中一个比喻特别形象：&lt;strong>卢曼卡片盒就像是复利投资，而特罗洛普的技术就像是储蓄罐。&lt;/strong>复利投资可以滚雪球，越滚越大，而且是指数增长。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>书中还有一个概念很有意思：“思维网格”，&lt;strong>如果知识既不是被孤立地保存，也不是被孤立地学习，而是聚集在一个思想网络中，或者说是“思维模型的网格”中，那么理解新的信息就变得更容易了。&lt;/strong>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>卡片笔记学习法自然而然产生的自下而上写作法拥有一个巨大优势：&lt;strong>我们所使用的想法都嵌入了丰富的上下文中，并且附带了可以使用的素材，而不是凭空产生的。这样做会带来另一个意想不到的收获，那就是我们会对新的想法持更加开放的态度。&lt;/strong>可以轻松避免由于预设结论导致的认知偏误。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>卡片盒笔记的精华所在：&lt;strong>以新的和意想不到的方式，将不同的想法汇集在一起，从而产生新的想法。&lt;/strong>卢曼的卡片不是简简单单地摘抄，而是自己组织语言的转述，需要加工再输出。不仅仅是摘录原文，更是思想的录像机与连接器，记录下当下的思想，建立与已有思想的链接。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>一个巨大的误解是：如果不制订计划，就只能是漫无目的地乱写一气。其实我们真正该做的是构建适合自己的工作流程，让洞见和新想法成为推动我们前进的驱动力。&lt;/strong>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>记笔记也不是最关键的工作，思考、阅读、理解和提出想法才是，笔记只是它们的具体成果。写，无疑是我们思考、阅读、学习、理解和产生想法的最佳催化剂。&lt;/strong>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>书中的真知灼见数不胜数，可以通过D瓜哥的这几篇读书笔记“管中窥豹”。当然，更推荐大家去阅读原文。D瓜哥是在“微信读书”中阅读的免费版，礼尚往来，推荐一下。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥把读书笔记整理一下。按照章节，分三篇来分享：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/how-to-take-smart-notes-1/" target="_blank" rel="noopener">《卡片笔记写作法》之读书笔记（一）：绪论&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/how-to-take-smart-notes-2/" target="_blank" rel="noopener">《卡片笔记写作法》之读书笔记（二）：有效写作的四个基本原则&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/how-to-take-smart-notes-3/" target="_blank" rel="noopener">《卡片笔记写作法》之读书笔记（三）：成功写作的六个步骤&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_中文版序">中文版序&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>卡片盒笔记依赖一种非线性的方式，即缓慢而稳定的改进，促进思维产生持续、微妙的变化，并且事物间相生相依。朱利安发现这些主题在中国哲学中被讨论得更为广泛。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>我欣喜地发现，并非我一人有此体验：卡片盒笔记法——关联的、分散的、自下而上的方法不仅比一些教育者们所推崇的线性的、自上而下的方法更为自然，而且衍生出了诸多写作及笔记记录工具。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>卡片盒笔记的精华所在：以新的和意想不到的方式，将不同的想法汇集在一起，从而产生新的想法。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>随着可使用工具的快速变化，我决定让这本书尽可能地与工具无关。书籍有着不同的生命周期，因此应该更多地关注不受时间影响的方面。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_推荐序一_像卢曼一样写卡片">推荐序一 像卢曼一样写卡片&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>我写作时，手边会放着纸质的卡片。我一般会先在卡片上写下一些灵感，然后再用卡片写作软件将它们正式整合成文章。同样，在阅读时，我也会不断地使用纸质卡片盒与卡片写作软件写下读书心得。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>日本知名学者梅棹忠夫在《智识的生产技术》中提到的“京大卡”，他认为卡片要大一些，大概是B6开本大小，更容易保存写作灵感。而我带队研发的“写匠”，更多地参考了美国知名作家纳博科夫的卡片写作法——使用索引卡，通过任意打乱卡片次序完成自己的写作。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>尼克拉斯·卢曼是20世纪德国重要的社会学家，而且其影响力已远远超出了社会学领域。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>传统的卡片写作法，像纳博科夫，是只使用一个盒子，用一个盒子来保存自己写作的内容。而卢曼多了一个盒子，对自己卡片写作的内容进行索引和整理。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>比约克率先区分了记忆竞争的两种不同类型：存储强度（storage strength）与提取强度（retrieval strength）。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>“存储与提取负相关”，也就是说，存入记忆越容易，提取出来越困难；反之，如果你有些吃力地存入，知识提取会更方便。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>第一类是主题索引。当某个主题的内容积累得足够丰富，卢曼就会做一张主题索引卡，对这个主题进行概览。主题索引卡上会汇集所有相关笔记的编码或链接，每条笔记会用一两个词或一个短句简要说明核心内容。这类索引，相当于给了你一个进入某一主题的入口。第二类与主题索引类似，只不过不是对某一主题的概览，而是针对盒子里相近位置的卡片所涉及的所有不同主题进行概览。第三类是在当前卡片上做索引，标明这条笔记逻辑上的前一条是什么、后一条是什么（这些卡片在盒子里的位置可能并不挨着）。第四类，也是最常用的索引形式，就是简单的“笔记-笔记”连接。两条笔记可能完全没有关系，把它们关联在一起，往往会产生出乎意料的新思路。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>我经常推荐的是德国科学家丹尼尔·卢德克（Daniel Lüdecke）开发的开源软件——卡片盒笔记（Zettelkasten）。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>一是将文本的颗粒度拆分得更细。组块（block）是认知科学上的一个常用概念，文本组块正是这个概念的具象化。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>以大的单位很难记住，拆分成小的单位就更容易记住。写作时，用大脑直接记住的东西越多，写作就越不容易被打断，节省的脑力就越多。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>二是建立了一个“双向引用”关系。什么是“双向引用”？&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_推荐序二_外脑思考突破思维局限的写作法">推荐序二 外脑思考，突破思维局限的写作法&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>我和作者的兴趣一样，也是外脑思考（Thinking Outside the Brain）。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>但工具功能很难改变人的思维习惯，而需要配合课程、书籍或教练服务。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>千里之行始于跬步的道理中国人都懂，但没人教过我们在一步一步地、枯燥地踏在探索未知的路上时如何保持热情，如何坚持，如何充满信心，如何时刻和自己对话，以及如何走好每一步。书中介绍的工作流和原则，是卢曼等人利用卡片盒实践过的，他们完全无须坚持就充满乐趣地达成了非凡成就。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>深知全世界的人仅凭意志力和坚持，绝无可能完成那种极限挑战。只有完全换另一种思维方式，才能心情愉悦地、安全地达成目标。创业如此，做产品如此，写论文亦如此。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>把诸如拖延、坚持、压力、焦虑、知识管理、时间管理等热词从脑海里划掉。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>使用卡片笔记写作法，我们可以不定期地提取先前的想法和事实，并将它们与其他信息联系起来，这正是专家们推荐的学习方式。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_推荐序三_用卡片笔记积累你的知识复利">推荐序三 用卡片笔记积累你的知识复利&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>书中主要介绍的是德国社会学家尼克拉斯·卢曼自创的一套笔记方法，利用这套方法，他一生积累了90000个知识卡片，写了58本书和其他大量出版物。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>就是把你感兴趣或者将来可能会用到的知识收集起来，然后用一种像集装箱一样标准化的方式，去处理这些笔记，建立笔记之间的联系，供你使用。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>重要的不是记录，而是更好地思考。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>比如拒绝做知识的搬运工，必须用自己的话写下来；比如需要记录的是知识，而非信息；比如不需要进行机械分类，而是让关系慢慢地自动生长出来等。&lt;/p>
+&lt;/div></description></item><item><title>如何阅读 Spring 源码？</title><link>https://www.diguage.com/post/how-to-read-spring-sources/</link><pubDate>Sat, 08 Aug 2020 07:53:32 +0800</pubDate><guid>https://www.diguage.com/post/how-to-read-spring-sources/</guid><description>&lt;div class="paragraph">
+&lt;p>昨晚原计划给几个朋友简单介绍一下阅读 Spring 源码的方法。结果，大家因为各种原因没能及时参加。后来，就取消分享了。干脆写一篇文章出来，感兴趣欢迎自取。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_代码准备">代码准备&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>Spring Framework 是开源的，代码托管在 GitHub 上： &lt;a href="https://github.com/spring-projects/spring-framework" target="_blank" rel="noopener">Spring Framework&lt;/a>。任何人都可以方便地获得它的源代码。所以，如果想阅读 Spring 的源代码，当然是直接把代码克隆到本地，然后直接在 IDE（推荐 IDEA）中进行调试了。另外，还需要存放自己写一些测试和文档。所以，最好把代码 fork 到自己的账户下，从 &lt;code>master&lt;/code> 上切出一个新分支并 push 到自己的 Repo 中，这样自己就可以随意更新了。具体步骤如下：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>克隆代码&lt;/p>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="c"># 直接克隆原始仓库为 origin&lt;/span>
+git clone git@github.com:spring-projects/spring-framework.git&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>fork 代码，D瓜哥直接 fork 到自己账户下了： &lt;a href="https://github.com/diguage/spring-framework" target="_blank" rel="noopener">diguage/spring-framework&lt;/a>。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>添加原创仓库地址：&lt;/p>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="c"># 添加自己仓库为 diguage&lt;/span>
+&lt;span class="c"># 这样就能在所有项目中保持命名的一致性，方便标识&lt;/span>
+git remote add diguage git@github.com:diguage/spring-framework.git&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>创建新分支&lt;/p>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="c"># 创建新分支&lt;/span>
+git switch &lt;span class="nt">-c&lt;/span> analysis
+
+&lt;span class="c"># 将新分支 push 到自己的 Repo 中&lt;/span>
+git push diguage analysis&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这样，在这个新分支上，就可以随意折腾了。&lt;/p>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>下载依赖&lt;/p>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="c"># Mac or Linux&lt;/span>
+./gradlew clean &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> ./gradlew :spring-oxm:compileTestJava &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> ./gradlew &lt;span class="nb">test&lt;/span>
+
+&lt;span class="c"># Windows&lt;/span>
+gradlew.bat clean &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> gradlew.bat :spring-oxm:compileTestJava &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> gradlew.bat &lt;span class="nb">test&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>《如何阅读一本书？》之读书笔记</title><link>https://www.diguage.com/post/how-to-read-a-book/</link><pubDate>Wed, 08 Jan 2020 22:23:51 +0800</pubDate><guid>https://www.diguage.com/post/how-to-read-a-book/</guid><description>&lt;div class="paragraph">
+&lt;p>D瓜哥在 &lt;a href="https://www.diguage.com/post/goodbye-2019-hello-2020/#how-to-read-a-book" target="_blank" rel="noopener">“告别 2019，迎接 2020”&lt;/a> 中已经提过，今年的一个重要改进就是把书读透，学以致用，不求速度但求质量。并且，还提到要重读《如何阅读一本书》和《如何有效阅读一本书》，以求提高读书技能，把书读透。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>最近在读《如何阅读一本书》，大概读了五分之一。最近有个想法，何不用《如何阅读一本书》中介绍的方法来阅读《如何阅读一本书》呢？熟悉编程（尤其是 Ruby）的朋友估计该会心一笑，有点元编程的感觉。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥这里先大概介绍一下书中的内容，然后再根据读书方法来剖析这本书。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>作者在全书第一章就开宗明义地写道：这本书为那些想把读书的主要目的当作是增进理解能力的人而写。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>我们的目标就是：第一提醒读者，阅读可以是一件多少主动的事。第二要指出的是，阅读越主动，效果越好。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>阅读艺术是一个凭借着头脑运作，除了玩味读物中的一些字句之外，不假任何外助，以一己之力来提升自我的过程。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>蒙田说：“初学者的无知在于未学，而学者的无知在于学后。”&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>阅读的艺术包括了所有非辅助型自我发现学习的技巧：敏锐的观察、灵敏可靠的记忆、想象的空间，再者当然就是训练有素的分析、省思能力。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>要避免这样的错误 —— 以为读得多就是读得好的错误。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_做一个自我要求的读者">做一个自我要求的读者&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>主动阅读的核心就是：你在阅读时要提出问题来 — 在阅读的过程中，你自己必须尝试去回答的问题。&lt;/p>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_四个基本问题">四个基本问题&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>一个阅读者要提出的四个基本问题:&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>整体来说，这本书到底在谈些什么？你一定要想办法找出这本书的主题，作者如何依次发展这个主题，如何逐步从核心主题分解出从属的关键议题来。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>作者细部说了什么，怎么说的？你一定要想办法找出主要的想法、声明与论点。这些组合成作者想要传达的特殊讯息。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>这本书说得有道理吗？是全部有道理，还是部分有道理？&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>这本书跟你有什么关系？&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_做笔记的方法">做笔记的方法&lt;/h3>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>画底线 —— 在主要的重点，或重要又有力量的句子下画线。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>在画底线处的栏外再加画一道线。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>在空白处做星号或其他符号 —— 要慎用。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>在空白处编号 —— 作者的某个论点发展出一连串的重要陈述时，可以做顺序编号。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>在空白处记下其他的页码 —— 强调作者在书中其他部分也有过同样的论点，或相关的要点，或是与此处观点不同的地方。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>将关键字或句子圈出来 —— 这跟画底线是同样的功能。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>在书页的空白处做笔记 —— 在阅读某一章节时，你可能会有些问题 （ 或答案 ），在空白处记下来，这样可以帮你回想起你的问题或答案。
+.&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_三种笔记">三种笔记&lt;/h3>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>笔记主要的重点是全书的架构，而不是内容 —— 至少不是细节。因此我们称这样的笔记为结构笔记（Structural Note-making）。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>概念笔记（Conceptual Note-making）。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>针对一场讨论情境的笔记 —— 辩证笔记 （ Dialectical Note-making）。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>你在做这件事时，每一个分开来的步骤都需要你全神贯注地去做。在你分别练习过这些分开来的步骤后，你不但能放下你的注意力，很有效地将每个步骤做好，还能将所有的动作结合起来，表现出一个整体的顺畅行动。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>一个人只要学习过一种复杂的技巧，就会知道要学习一项新技巧，一开始的复杂过程是不足为惧的。等所有分开的动作不再分离，渐渐融为一体时，学习者便能将注意力转移到目标上，而他也具备了要达成目标的能力了。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_阅读的四个层次">阅读的四个层次&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>第一层次的阅读为基础阅读（Elementary Reading）。这个层次的任务就是识文认字。&lt;/p>
+&lt;/div></description></item></channel></rss>

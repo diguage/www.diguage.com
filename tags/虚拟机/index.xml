@@ -1,0 +1,1891 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>虚拟机 on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/%E8%99%9A%E6%8B%9F%E6%9C%BA/</link><description>Recent content in 虚拟机 on "地瓜哥"博客网</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Sat, 11 May 2024 20:39:38 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/%E8%99%9A%E6%8B%9F%E6%9C%BA/index.xml" rel="self" type="application/rss+xml"/><item><title>JVM GC 性能测试（三）：真实流量</title><link>https://www.diguage.com/post/gc-performance-real-qps/</link><pubDate>Wed, 01 May 2024 12:12:12 +0800</pubDate><guid>https://www.diguage.com/post/gc-performance-real-qps/</guid><description>&lt;div class="paragraph">
+&lt;p>&lt;strong>JVM GC 性能测试系列&lt;/strong>:&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-comparison-method/" target="_blank" rel="noopener">JVM GC 性能对比方法&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-same-qps/" target="_blank" rel="noopener">JVM GC 性能测试（一）：相同流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-incremental-qps/" target="_blank" rel="noopener">JVM GC 性能测试（二）：递增流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-real-qps/" target="_blank" rel="noopener">JVM GC 性能测试（三）：真实流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;hr/>
+&lt;div class="paragraph">
+&lt;p>书接上文，在 &lt;a href="https://www.diguage.com/post/gc-performance-incremental-qps/" target="_blank" rel="noopener">JVM GC 性能测试（二）：递增流量&lt;/a> 的最后，D瓜哥提到了一个问题，对于在 &lt;a href="https://www.diguage.com/post/gc-performance-same-qps/" target="_blank" rel="noopener">JVM GC 性能测试（一）：相同流量&lt;/a> 和 &lt;a href="https://www.diguage.com/post/gc-performance-incremental-qps/" target="_blank" rel="noopener">JVM GC 性能测试（二）：递增流量&lt;/a> 中存在的巨大 QPS 差异疑惑不解。所以，D瓜哥决定将测试机器接入到线上环境，在真实访问中，观察各个 GC 的表现。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_一言以蔽之">一言以蔽之&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>J21-Gen-ZGC 和 J21-G1 无论在稳定性，吞吐量以及响应时效性上都非常优秀。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>再极端峰值情况，J21-G1 是更好的选择，更加稳定，不容易出凸点。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>日常使用，J21-Gen-ZGC 响应性更好，接口耗时更低。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="sidebarblock">
+&lt;div class="content">
+&lt;div class="paragraph">
+&lt;p>鉴于 OpenJDK 21 G1 GC 一如既往的惊艳表现，D瓜哥准备整理一下 G1 GC 的主要优化，敬请关注： &lt;a href="https://www.diguage.com/post/main-optimization-of-garbage-first-collector/" target="_blank" rel="noopener">Java G1 垃圾收集器主要优化&lt;/a>。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_服务调用监控数据">1. 服务调用监控数据&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>监控服务调用的相关数据，这是对于用户来说，感知最强烈的相关数据，也是直接关系到服务质量的数据。&lt;/p>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_服务调用次数">1.1. 服务调用次数&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>从调用次数上来看，五个分组没有大的变化，可以说根本没有达到系统的极限峰值。当然，这才是正常现象，如果日常运行都爆峰值，那说明系统早该扩容了。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/gc-performance-3/api-qps-second.jpg" alt="服务调用次数（秒级）" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. 服务调用次数（秒级）&lt;/div>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/gc-performance-3/api-qps-minute.jpg" alt="服务调用次数（分钟级）" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 2. 服务调用次数（分钟级）&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="api-qps-time">1.2. 服务调用耗时&lt;/h3>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>整体上讲，J21-Gen-ZGC 的耗时更短，从数据上来看，TP999 能比 J21-G1 的少 10~20ms；TP99 更加夸张，J21-Gen-ZGC 的耗时只有 J21-G1 的一半。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>J21-Gen-ZGC 和 J21-G1 还是一如既往的稳。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>这次测试中，J17-ZGC 也很稳，有些出乎意料。但是，结合下面 &lt;a href="#jvm-cpu">JVM CPU 使用率&lt;/a> 和 &lt;a href="#os-cpu">系统 CPU 使用率&lt;/a> 来看，J17-ZGC 和 J21-ZGC 的 CPU 使用率早早就达到 90%+，再结合上面两个测试，从稳定性来看，J17-ZGC 和 J21-ZGC 只能被排除掉。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div></description></item><item><title>JVM GC 性能测试（二）：递增流量</title><link>https://www.diguage.com/post/gc-performance-incremental-qps/</link><pubDate>Tue, 30 Apr 2024 00:29:00 +0800</pubDate><guid>https://www.diguage.com/post/gc-performance-incremental-qps/</guid><description>&lt;div class="paragraph">
+&lt;p>&lt;strong>JVM GC 性能测试系列&lt;/strong>:&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-comparison-method/" target="_blank" rel="noopener">JVM GC 性能对比方法&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-same-qps/" target="_blank" rel="noopener">JVM GC 性能测试（一）：相同流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-incremental-qps/" target="_blank" rel="noopener">JVM GC 性能测试（二）：递增流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-real-qps/" target="_blank" rel="noopener">JVM GC 性能测试（三）：真实流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;hr/>
+&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/gc-performance-same-qps/" target="_blank" rel="noopener">JVM GC 性能测试（一）：相同流量&lt;/a> 中，D瓜哥使用一个总量请求对所有分组的所有机器进行性能测试。但是，经过测试发现了一个问题，同时产生了另外一个问题，有两个问题没有得到很好的解答：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>由于服务响应时长直接关系到服务调用次数，当某一台机器出现问题时，整体调用次数就会急剧下降，调用次数加不上去。一个机器出问题，所有机器的访问量就上不去了。这是测试中发现的一个问题。当然，这属于测试工具的问题，别不是 GC 的问题。但是，也影响到我们的压测，也需要解决。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>上次测试，这是针对某一个指定服务调用量进行性能测试，那么，无法确定每个 GC 能支撑的极限调用峰值。另外，在极限峰值和超极限峰值的情况下，各个 GC 的表现如何？这个也有待验证。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>针对上述两个问题，设计了本次测试。测试方法如下：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>各个分组使用一套相同的流量策略：&lt;/p>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>各个分组几乎同时开始执行测试任务；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>调用量从低到高，以此同时使用相关的调用量进行测试；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>除最开始预热阶段的调用量外，后续每个调用量都持续进行十分钟的测试。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>针对每个 GC 分组单独设定一套调用发量程序，这个保证各个 GC 分组直接不相互影响。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>最后，再分析调用量相同时段的各个 GC 表现，就可以看到各个 GC 的极限峰值。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="admonitionblock tip">
+&lt;table>
+&lt;tbody>&lt;tr>
+&lt;td class="icon">
+&lt;i class="fa icon-tip" title="Tip">&lt;/i>
+&lt;/td>
+&lt;td class="content">
+为了保留更多细节，本文所有截图都是在 34 吋带鱼屏下，使用全屏模式展示并截图的。如果看不清楚，可以右击在新页面打开图片来查看。
+&lt;/td>
+&lt;/tr>
+&lt;/tbody>&lt;/table>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>具体流量及时间段：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>750， 23:14:30 ~ 23:19:30&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>800， 23:19:30 ~ 23:29:30&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>850， 23:29:30 ~ 23:39:30&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>900， 23:39:30 ~ 23:49:30&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>950， 23:49:30 ~ 23:59:30&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>1000，23:59:30 ~ 00:09:30&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>1050，00:09:30 ~ 00:19:30&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>1100，00:19:30 ~ 00:29:30&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div></description></item><item><title>JVM GC 性能测试（一）：相同流量</title><link>https://www.diguage.com/post/gc-performance-same-qps/</link><pubDate>Thu, 25 Apr 2024 22:02:47 +0800</pubDate><guid>https://www.diguage.com/post/gc-performance-same-qps/</guid><description>&lt;div class="paragraph">
+&lt;p>&lt;strong>JVM GC 性能测试系列&lt;/strong>:&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-comparison-method/" target="_blank" rel="noopener">JVM GC 性能对比方法&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-same-qps/" target="_blank" rel="noopener">JVM GC 性能测试（一）：相同流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-incremental-qps/" target="_blank" rel="noopener">JVM GC 性能测试（二）：递增流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-real-qps/" target="_blank" rel="noopener">JVM GC 性能测试（三）：真实流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;hr/>
+&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/gc-performance-comparison-method/" target="_blank" rel="noopener">JVM GC 性能对比方法&lt;/a> 介绍了性能对比的方法，这篇文章就根据该方法对上述提到的5种 JVM GC 进行性能测试。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在正式测试之前，D瓜哥进行了多次小流量试探性测试，来探索一个合适的量。找到一个比较平稳的量后，乘以机器数量，获得一个每秒总计请求量，最后使用该总量数据去做压测。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>根据多次测试的数据来看，最后选择的是每台每秒 500 QPS，5 个分组，每个分组 5 台机器，所以，每秒的请求总量是： 500 * 5 * 5 = 12500 QPS；每个分组每分钟的总量是：500 * 5 * 60 = 150000 QPS。使用每台机器以此使用 100 QPS，200 QPS，300 QPS，400 QPS 各运行一分钟来对系统进行预热。最后以每台每秒 500 QPS 的访问量来对测试机器进行持续十分钟的性能测试，最后分析这十分钟的相关数据。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_一言以蔽之">一言以蔽之&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>服务稳定性：J21-Gen-ZGC、J21-G1、J8-G1 稳定性最好；J17-ZGC 有轻微波动；J21-ZGC 有剧烈波动；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>服务耗时 TP999：J21-Gen-ZGC &amp;lt; J17-ZGC &amp;lt; J21-G1 &amp;lt; J8-G1 &amp;lt; J21-ZGC；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>CPU 消耗：J21-G1 &amp;lt; J8-G1 &amp;lt; J17-ZGC &amp;lt; J21-Gen-ZGC &amp;lt; J21-ZGC；&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div></description></item><item><title>JVM GC 性能对比方法</title><link>https://www.diguage.com/post/gc-performance-comparison-method/</link><pubDate>Wed, 24 Apr 2024 19:52:47 +0800</pubDate><guid>https://www.diguage.com/post/gc-performance-comparison-method/</guid><description>&lt;div class="paragraph">
+&lt;p>&lt;strong>JVM GC 性能测试系列&lt;/strong>:&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-comparison-method/" target="_blank" rel="noopener">JVM GC 性能对比方法&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-same-qps/" target="_blank" rel="noopener">JVM GC 性能测试（一）：相同流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-incremental-qps/" target="_blank" rel="noopener">JVM GC 性能测试（二）：递增流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/gc-performance-real-qps/" target="_blank" rel="noopener">JVM GC 性能测试（三）：真实流量&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;hr/>
+&lt;div class="paragraph">
+&lt;p>现在部门内部绝大部分应用都还在使用 OpenJDK 8，计划推进部门升级 JDK 到 OpenJDK21。本着实事求是，用数据说话的原则，准备对如下 GC 做性能测试：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>OpenJDK 8 G1 GC（以下称 J8-G1。具体版本号：1.8.0_321-b07。）&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>OpenJDK 17 ZGC（以下称 J17-ZGC。具体版本号：17.0.9+9。）&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>OpenJDK 21 G1（以下称 J21-G1。具体版本号：21.0.2+13-LTS。）&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>OpenJDK 21 ZGC（以下称 J21-ZGC。具体版本号：21.0.2+13-LTS。）&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>OpenJDK 21 Gen ZGC（以下称 J21-Gen-ZGC。具体版本号：21.0.2+13-LTS。）&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="admonitionblock note">
+&lt;table>
+&lt;tbody>&lt;tr>
+&lt;td class="icon">
+&lt;i class="fa icon-note" title="Note">&lt;/i>
+&lt;/td>
+&lt;td class="content">
+所有 OpenJDK 版本都是选用相同大版本号里的最高的版本。所有的机器都是 4C8G 的配置，JVM 堆栈内存设置为 4608M 。
+&lt;/td>
+&lt;/tr>
+&lt;/tbody>&lt;/table>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>为了减少不必要的干扰，JVM 相关参数也尽可能做到了一致或者接近。（等测试完，D瓜哥会把相关参数也分享出来。）&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_测试对象">测试对象&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>由于D瓜哥所处的部门是一个直接面向用户的线上业务部门，所以，大部分系统是直接面对用户，接受用户访问的在线业务系统。所以，为了服务线上业务系统的需求，测试对象的选择就限定在了类似的场景中。测试对象是线上接受用户访问的一个服务。结构如下：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/gc-performance/api.svg" alt="压测接口依赖关系图" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. 压测接口依赖关系图&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>该接口有外部依赖服务，也有数据库查询，是一个微服务架构下典型的在线服务接口。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_测试方法">测试方法&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>原本计划是想直接通过上线，将线上不同分组的机器使用不同的 GC 来做测试，但是，这样面临好几个问题：&lt;/p>
+&lt;/div></description></item><item><title>JVM 剖析花园：2 - 透明大页</title><link>https://www.diguage.com/post/jvm-anatomy-quarks-02-transparent-huge-pages/</link><pubDate>Sat, 13 Jan 2024 19:24:37 +0800</pubDate><guid>https://www.diguage.com/post/jvm-anatomy-quarks-02-transparent-huge-pages/</guid><description>&lt;div class="sect1">
+&lt;h2 id="_问题">问题&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>什么是大页（Large Page）？什么是透明大页（Transparent Huge Page）？它对我有什么帮助？&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_理论">理论&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>虚拟内存现在已被视为理所当然。现在只有少数人还记得，更不用说做一些“真实模式”编程了，在这种情况下，你会接触到实际的物理内存。相反，每个进程都有自己的虚拟内存空间，该空间被映射到实际内存上。例如，两个进程在相同的虚拟地址 &lt;code>0x42424242&lt;/code> 上拥有不同的数据，而这些数据将由不同的物理内存支持。现在，当程序访问该地址时，应将虚拟地址转换为物理地址。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/os/virtual-address-space-and-physical-address-space-relationship.svg" alt="虚拟内存地址与物理内存地址之间的关系" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. 虚拟内存地址与物理内存地址之间的关系&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这通常由操作系统维护 &lt;a href="https://en.wikipedia.org/wiki/Page_table" target="_blank" rel="noopener">“页表”&lt;/a>，硬件通过“页表遍历”来实现地址转换。如果在页面粒度上维护翻译，整个过程就会变得简单。但这样做的成本并不低，而且每次内存访问都需要这样做！因此，还需要对最新的翻译进行小型缓存，即 &lt;a href="https://en.wikipedia.org/wiki/Translation_lookaside_buffer" target="_blank" rel="noopener">转译后备缓冲区（Translation Lookaside Buffer (TLB)）&lt;/a>。TLB 通常很小，只有不到 100 个条目，因为它的速度至少要与 L1 缓存相当，甚至更快。对于许多工作负载来说，TLB 未命中和相关的页表遍历需要大量时间。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>既然我们无法将 TLB 做得更大，那么我们可以做其他事情：制作更大的页面！大多数硬件有 4K 基本页和 2M/4M/1G “大页”。用更大的页来覆盖相同的区域，还能使页表本身更小，从而降低页表遍历的成本。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在 Linux 世界中，至少有两种不同的方法可以在应用程序中实现这一点：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;a href="https://www.kernel.org/doc/Documentation/vm/hugetlbpage.txt" target="_blank" rel="noopener">&lt;strong>hugetlbfs&lt;/strong>&lt;/a>。切出系统内存的一部分，将其作为虚拟文件系统公开，让应用程序通过 &lt;code>mmap(2)&lt;/code> 从其中获取。这是一个特殊的接口，需要操作系统配置和应用程序更改才能使用。这也是一种“要么全有，要么全无”的交易：分配给 &lt;code>hugetlbfs&lt;/code>（持久部分）的空间不能被普通进程使用。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://www.kernel.org/doc/Documentation/vm/transhuge.txt" target="_blank" rel="noopener">&lt;strong>透明大页（Transparent Huge Pages (THP)）&lt;/strong>&lt;/a>。让应用程序像往常一样分配内存，但尽量以透明方式为应用程序提供大容量页面支持的存储空间。理想情况下，不需要更改应用程序，但我们会看到应用程序如何从了解 THP 的可用性中获益。但在实际应用中，会产生内存开销（因为会为小文件分配整个大页面）或时间开销（因为 THP 有时需要对内存进行碎片整理以分配页面）。好在有一个中间方案：通过 &lt;code>madvise(2)&lt;/code> 可以让应用程序告诉 Linux 在哪里使用 THP。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>不明白为什么术语中会交替使用 &amp;#34;large &amp;#34;和 &amp;#34;huge&amp;#34;。总之，OpenJDK 支持这两种模式：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="nv">$ &lt;/span>java &lt;span class="nt">-XX&lt;/span>:+PrintFlagsFinal 2&amp;gt;&amp;amp;1 | &lt;span class="nb">grep &lt;/span>Huge
+ bool UseHugeTLBFS &lt;span class="o">=&lt;/span> &lt;span class="nb">false&lt;/span> &lt;span class="o">{&lt;/span>product&lt;span class="o">}&lt;/span> &lt;span class="o">{&lt;/span>default&lt;span class="o">}&lt;/span>
+ bool UseTransparentHugePages &lt;span class="o">=&lt;/span> &lt;span class="nb">false&lt;/span> &lt;span class="o">{&lt;/span>product&lt;span class="o">}&lt;/span> &lt;span class="o">{&lt;/span>default&lt;span class="o">}&lt;/span>
+&lt;span class="nv">$ &lt;/span>java &lt;span class="nt">-XX&lt;/span>:+PrintFlagsFinal 2&amp;gt;&amp;amp;1 | &lt;span class="nb">grep &lt;/span>LargePage
+ bool UseLargePages &lt;span class="o">=&lt;/span> &lt;span class="nb">false&lt;/span> &lt;span class="o">{&lt;/span>pd product&lt;span class="o">}&lt;/span> &lt;span class="o">{&lt;/span>default&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>JVM 剖析花园：1 - 锁粗化及循环</title><link>https://www.diguage.com/post/jvm-anatomy-quarks-01-lock-coarsening-for-loops/</link><pubDate>Sat, 13 Jan 2024 16:08:36 +0800</pubDate><guid>https://www.diguage.com/post/jvm-anatomy-quarks-01-lock-coarsening-for-loops/</guid><description>&lt;div class="quoteblock">
+&lt;blockquote>
+&lt;div class="paragraph">
+&lt;p>“JVM 剖析花园”是由 JVM 研发专家及性能极客 &lt;a href="https://shipilev.net/" target="_blank" rel="noopener">Aleksey Shipilëv&lt;/a> 撰写的一个系列文章，专门介绍一些有关 JVM 的基本知识。笔者也是前几年无意间发现的一片宝藏文章。早就有翻译过来，介绍给大家的想法，可惜一直未能付诸实践。最近在查资料时，无意间又翻到了这个系列，遂下定决心，完成这个萌发已久的小想法。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>为了便于理解，对该系列的名字做了微调，原文是“JVM Anatomy Quarks”，将原文的“Quarks”（夸克）翻译为了“花园”。&lt;/p>
+&lt;/div>
+&lt;/blockquote>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>“JVM 解剖花园”是一个正在进行中的小型系列文章，每篇文章都会介绍一些有关 JVM 的基本知识。这个名字强调了一个事实，即单篇文章不能孤立地看待，这里描述的大部分内容都会很容易地相互影响。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>阅读这篇文章大约需要 5-10 分钟。因此，它只针对单一主题、单一测试、单一基准和单一观察进行深入探讨。这里的证据和讨论可能是轶事，并没有对错误、一致性、写作风格、语法和语义错误、重复或一致性进行实际审查。请自行承担使用和/或信任的风险。&lt;/p>
+&lt;/div>
+&lt;div class="admonitionblock note">
+&lt;table>
+&lt;tbody>&lt;tr>
+&lt;td class="icon">
+&lt;i class="fa icon-note" title="Note">&lt;/i>
+&lt;/td>
+&lt;td class="content">
+以上是该系列介绍。这里介绍一次，后续文章不再赘述。
+&lt;/td>
+&lt;/tr>
+&lt;/tbody>&lt;/table>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_问题">问题&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>众所周知，Hotspot 可以进行 &lt;a href="https://en.wikipedia.org/wiki/Java_performance#Escape_analysis_and_lock_coarsening" target="_blank" rel="noopener">锁粗化优化&lt;/a>，有效合并多个相邻的锁定块，从而减少锁定开销。它能有效地对如下代码做优化：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="java">&lt;span class="kd">synchronized&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">obj&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="c1">// statements 1&lt;/span>
+&lt;span class="o">}&lt;/span>
+&lt;span class="kd">synchronized&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">obj&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="c1">// statements 2&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>优化后：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="java">&lt;span class="kd">synchronized&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">obj&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="c1">// statements 1&lt;/span>
+ &lt;span class="c1">// statements 2&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>现在，今天提出的一个有趣问题是：Hotspot 是否会对循环进行这种优化？例如：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="java">&lt;span class="k">for&lt;/span> &lt;span class="o">(...)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="kd">synchronized&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">obj&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="c1">// something&lt;/span>
+ &lt;span class="o">}&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>是否会被优化成如下这样：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="java">&lt;span class="kd">synchronized&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="k">this&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="k">for&lt;/span> &lt;span class="o">(...)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="c1">// something&lt;/span>
+ &lt;span class="o">}&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>理论上，没有什么能阻止我们这样做。我们甚至可以把这种优化看作是 &lt;a href="https://en.wikipedia.org/wiki/Loop_unswitching" target="_blank" rel="noopener">循环判断外提&lt;/a>，只不过这里是针对锁而已。然而，这样做的缺点是有可能使锁变得过于粗糙，从而导致特定线程在执行大循环时占用锁。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_实验">实验&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>要回答这个问题，最简单的方法就是找到当前 Hotspot 优化的正面证据。幸运的是，有了 &lt;a href="https://github.com/openjdk/jmh" target="_blank" rel="noopener">JMH&lt;/a>，这一切都变得非常简单。它不仅有助于建立基准，还有助于工程中最重要的部分—​基准分析。让我们从一个简单的基准检查程序开始：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="java">&lt;span class="nd">@Fork&lt;/span>&lt;span class="o">(...,&lt;/span> &lt;span class="n">jvmArgsPrepend&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="o">{&lt;/span>&lt;span class="s">&amp;#34;-XX:-UseBiasedLocking&amp;#34;&lt;/span>&lt;span class="o">})&lt;/span>
+&lt;span class="nd">@State&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">Scope&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">Benchmark&lt;/span>&lt;span class="o">)&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">LockRoach&lt;/span> &lt;span class="o">{&lt;/span> &lt;i class="conum" data-value="1">&lt;/i>&lt;b>(1)&lt;/b>
+ &lt;span class="kt">int&lt;/span> &lt;span class="n">x&lt;/span>&lt;span class="o">;&lt;/span>
+
+ &lt;span class="nd">@Benchmark&lt;/span>
+ &lt;span class="nd">@CompilerControl&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">CompilerControl&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">Mode&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">DONT_INLINE&lt;/span>&lt;span class="o">)&lt;/span>
+ &lt;span class="kd">public&lt;/span> &lt;span class="kt">void&lt;/span> &lt;span class="nf">test&lt;/span>&lt;span class="o">()&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="k">for&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="kt">int&lt;/span> &lt;span class="n">c&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="o">;&lt;/span> &lt;span class="n">c&lt;/span> &lt;span class="o">&amp;lt;&lt;/span> &lt;span class="mi">1000&lt;/span>&lt;span class="o">;&lt;/span> &lt;span class="n">c&lt;/span>&lt;span class="o">++)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="kd">synchronized&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="k">this&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="n">x&lt;/span> &lt;span class="o">+=&lt;/span> &lt;span class="mh">0x42&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="o">}&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="colist arabic">
+&lt;table>
+&lt;tbody>&lt;tr>
+&lt;td>&lt;i class="conum" data-value="1">&lt;/i>&lt;b>1&lt;/b>&lt;/td>
+&lt;td>完整代码在 &lt;a href="https://shipilev.net/jvm/anatomy-quarks/1-lock-coarsening-for-loops/LockRoach.java" target="_blank" rel="noopener">这里&lt;/a>。&lt;/td>
+&lt;/tr>
+&lt;/tbody>&lt;/table>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这里有几个重要的技巧：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>使用 &lt;code>-XX:-UseBiasedLocking&lt;/code> 禁用偏向锁可以避免更长的预热时间，因为偏向锁不会立即启动，而是会在初始化阶段等待 5 秒（参见 &lt;code>BiasedLockingStartupDelay&lt;/code> 选项）。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>禁用 &lt;code>@Benchmark&lt;/code> 的方法内联有助于在反汇编时将其分离。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>增加一个神奇的数字 &lt;code>0x42&lt;/code>，有助于在反汇编中快速找到增量。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div></description></item><item><title>深入理解 Java 代码块</title><link>https://www.diguage.com/post/dive-into-java-code-block/</link><pubDate>Sun, 04 Sep 2022 19:17:06 +0800</pubDate><guid>https://www.diguage.com/post/dive-into-java-code-block/</guid><description>&lt;div class="paragraph">
+&lt;p>在 &lt;a href="https://www.diguage.com/post/jvm-bytecode-constant/" target="_blank" rel="noopener">Java 虚拟机操作码探秘：常量指令&lt;/a> 中对 Java 虚拟机操作码中关于常量操作的指令(操作码)做了初步介绍。估计会有人疑问：文中的“栈”、“栈顶”等是什么？接下来就准备解答这些疑问。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在答疑解惑之前，先来了解一下 Java 编译器对 Java 代码中的代码块是如何处理的？常见的代码块有普通代码块和静态代码块，下面对其做分别介绍。由于涉及到构造函数，所以，先对构造函数做一个介绍。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_构造函数">构造函数&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="sect2">
+&lt;h3 id="no-constructor">无构造函数&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>先来看看当没有声明构造函数时，编译结果是什么样的：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="java">&lt;span class="cm">/**
+ * 无构造函数示例
+ *
+ * @author D瓜哥 · &lt;a href="https://www.diguage.com" target="_blank">https://www.diguage.com&lt;/a>
+ */&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">Example&lt;/span> &lt;span class="o">{&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>编译后，使用 &lt;code>javap -c&lt;/code> 查看一下编译结果：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="nv">$ &lt;/span>javap &lt;span class="nt">-c&lt;/span> Example
+Compiled from &lt;span class="s2">&amp;#34;Example.java&amp;#34;&lt;/span>
+public class Example &lt;span class="o">{&lt;/span>
+ public Example&lt;span class="o">()&lt;/span>&lt;span class="p">;&lt;/span>
+ Code:
+ 0: aload_0
+ 1: invokespecial &lt;span class="c">#1 // Method java/lang/Object.&amp;#34;&amp;lt;init&amp;gt;&amp;#34;:()V&lt;/span>
+ 4: &lt;span class="k">return&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>从结果上来看：编译器自动给没有声明构造函数的类，生成了一个无参构造函数，并且在其中调用了父类（这里是 &lt;code>Object&lt;/code>）的无参构造函数。这是大家都熟知的基础知识。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_有参构造函数">有参构造函数&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>再来看看当有声明参数的构造函数时，编译结果是什么样的：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="java">&lt;span class="cm">/**
+ * 有参构造函数示例
+ *
+ * @author D瓜哥 · &lt;a href="https://www.diguage.com" target="_blank">https://www.diguage.com&lt;/a>
+ */&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">Example&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="kd">public&lt;/span> &lt;span class="nf">Example&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="kt">int&lt;/span> &lt;span class="n">i&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="o">}&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>编译后，使用 &lt;code>javap -c&lt;/code> 查看一下编译结果：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="nv">$ &lt;/span>javap &lt;span class="nt">-c&lt;/span> Example
+Compiled from &lt;span class="s2">&amp;#34;Example.java&amp;#34;&lt;/span>
+public class Example &lt;span class="o">{&lt;/span>
+ public Example&lt;span class="o">(&lt;/span>int&lt;span class="o">)&lt;/span>&lt;span class="p">;&lt;/span> &lt;i class="conum" data-value="1">&lt;/i>&lt;b>(1)&lt;/b>
+ Code:
+ 0: aload_0
+ 1: invokespecial &lt;span class="c">#1 // Method java/lang/Object.&amp;#34;&amp;lt;init&amp;gt;&amp;#34;:()V&lt;/span>
+ 4: &lt;span class="k">return&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>Java 虚拟机操作码探秘：常量指令</title><link>https://www.diguage.com/post/jvm-bytecode-constant/</link><pubDate>Sat, 03 Sep 2022 16:17:34 +0800</pubDate><guid>https://www.diguage.com/post/jvm-bytecode-constant/</guid><description>&lt;div class="paragraph">
+&lt;p>在 &lt;a href="https://www.diguage.com/post/jvm-instruction-set/" target="_blank" rel="noopener">Java 虚拟机指令(操作码)集&lt;/a> 中给出了一个操作码的列表。针对所有的指令，仅仅给出了一个大概介绍，对理解来说可以说毫无助力。为了弥补这个短板，这里也学习 &lt;a href="https://www.diguage.com/post/hessian-protocol-interpretation-and-practice-1/" target="_blank" rel="noopener">“Hessian 协议解释与实战”系列&lt;/a> 那样，来一个详细解释和实战，配合实例来做个深入分析和讲解。这是这个系列的第一篇文章，就以列表中第一部分“常量”指令开始。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>从 &lt;a href="https://www.diguage.com/post/jvm-instruction-set/" target="_blank" rel="noopener">Java 虚拟机指令(操作码)集&lt;/a> 列表上来看，一共 21 个指令；按照处理数据的类型，合并同类项后，剩下有 &lt;code>nop&lt;/code>、 &lt;a href="#aconst_null">&lt;code>aconst_null&lt;/code>&lt;/a>、 &lt;a href="#iconst">&lt;code>iconst_&amp;lt;i&amp;gt;&lt;/code>&lt;/a>、 &lt;a href="#lconst">&lt;code>lconst_&amp;lt;l&amp;gt;&lt;/code>&lt;/a>、 &lt;a href="#fconst">&lt;code>fconst_&amp;lt;f&amp;gt;&lt;/code>&lt;/a>、 &lt;a href="#dconst">&lt;code>dconst_&amp;lt;d&amp;gt;&lt;/code>&lt;/a>、 &lt;a href="#bipush">&lt;code>bipush&lt;/code>&lt;/a>、 &lt;a href="#sipush">&lt;code>sipush&lt;/code>&lt;/a>、 &lt;a href="#ldc">&lt;code>ldc&lt;/code>&lt;/a> 和 &lt;a href="#ldc2_w">&lt;code>ldc2_w&lt;/code>&lt;/a> 等几个指令。下面，按照顺序，对其进行一一讲解。&lt;/p>
+&lt;/div>
+&lt;div class="admonitionblock note">
+&lt;table>
+&lt;tbody>&lt;tr>
+&lt;td class="icon">
+&lt;i class="fa icon-note" title="Note">&lt;/i>
+&lt;/td>
+&lt;td class="content">
+&lt;div class="paragraph">
+&lt;p>操作码助记符的首字母一般是有特殊含义的，表示操作码所作用的数据类型： &lt;code>i&lt;/code> 代表对 &lt;code>int&lt;/code> 类型的数据操作； &lt;code>l&lt;/code> 代表 &lt;code>long&lt;/code>； &lt;code>s&lt;/code> 代表 &lt;code>short&lt;/code>； &lt;code>b&lt;/code> 代表 &lt;code>byte&lt;/code>；&lt;code>c&lt;/code> 代表 &lt;code>char&lt;/code>；&lt;code>f&lt;/code> 代表 &lt;code>float&lt;/code>， &lt;code>d&lt;/code> 代表 &lt;code>double&lt;/code>； &lt;code>a&lt;/code> 代表 reference。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>尖括号之间的字母指定了指令隐含操作数的数据类型，&lt;code>&amp;lt;n&amp;gt;&lt;/code> 代表非负的整数； &lt;code>&amp;lt;i&amp;gt;&lt;/code> 代表是 &lt;code>int&lt;/code> 类型数据； &lt;code>&amp;lt;l&amp;gt;&lt;/code> 代表 &lt;code>long&lt;/code> 类型； &lt;code>&amp;lt;f&amp;gt;&lt;/code> 代表 &lt;code>float&lt;/code> 类型； &lt;code>&amp;lt;d&amp;gt;&lt;/code> 代表 &lt;code>double&lt;/code> 类型。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>另外还需要指出一点：这种指令表示法在整个 Java 虚拟机规范之中都是通用的。&lt;/p>
+&lt;/div>
+&lt;/td>
+&lt;/tr>
+&lt;/tbody>&lt;/table>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_nop">&lt;code>nop&lt;/code>&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>根据 &lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.nop" target="_blank" rel="noopener">Chapter 6. The Java Virtual Machine Instruction Set：nop&lt;/a> 来看，就是“Do nothing”，暂时没有找到使用方法。就不做多介绍，后续看到相关资料，再做补充。&lt;/p>
+&lt;/div></description></item><item><title>Java 虚拟机指令(操作码)集</title><link>https://www.diguage.com/post/jvm-instruction-set/</link><pubDate>Wed, 31 Aug 2022 13:00:44 +0800</pubDate><guid>https://www.diguage.com/post/jvm-instruction-set/</guid><description>&lt;div class="paragraph">
+&lt;p>最近在研究 Java 虚拟机字节码。在 &lt;a href="https://book.douban.com/subject/26418340/" target="_blank" rel="noopener">《Java虚拟机规范》&lt;/a> 看到一个整理完整的 Java 虚拟机指令集（也叫操作码）列表。转载过来，方便查阅。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>关于 Java 虚拟机指令(操作码)，准备写一个“探秘”系列：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;a href="https://www.diguage.com/post/jvm-bytecode-constant/" target="_blank" rel="noopener">Java 虚拟机操作码探秘：常量指令&lt;/a> — 重点介绍一下关于“常量”指令。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;table class="tableblock frame-all grid-all stripes-even stretch">
+&lt;colgroup>
+&lt;col style="width: 7%;"/>
+&lt;col style="width: 7%;"/>
+&lt;col style="width: 7%;"/>
+&lt;col style="width: 12%;"/>
+&lt;col style="width: 67%;"/>
+&lt;/colgroup>
+&lt;thead>
+&lt;tr>
+&lt;th class="tableblock halign-center valign-middle">分类&lt;/th>
+&lt;th class="tableblock halign-center valign-middle" colspan="2">操作码&lt;/th>
+&lt;th class="tableblock halign-center valign-middle">助记符&lt;/th>
+&lt;th class="tableblock halign-center valign-middle">指令含义&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle" rowspan="21">&lt;p class="tableblock">常量&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">0&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x00&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.nop" target="_blank" rel="noopener">nop&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">什么都不做&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">1&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x01&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.aconst_null" target="_blank" rel="noopener">aconst_null&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将 null 推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">2&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x02&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iconst_i" target="_blank" rel="noopener">iconst_m1&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将 int 类型 -1 推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">3&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x03&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iconst_i" target="_blank" rel="noopener">iconst_0&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将 int 类型 0 推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">4&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x04&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iconst_i" target="_blank" rel="noopener">iconst_1&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将 int 类型 1 推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">5&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x05&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iconst_i" target="_blank" rel="noopener">iconst_2&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将 int 类型 2 推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">6&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x06&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iconst_i" target="_blank" rel="noopener">iconst_3&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将 int 类型 3 推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">7&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x07&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iconst_i" target="_blank" rel="noopener">iconst_4&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将 int 类型 4 推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">8&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x08&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iconst_i" target="_blank" rel="noopener">iconst_5&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将 int 类型 5 推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">9&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x09&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lconst_l" target="_blank" rel="noopener">lconst_0&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将 long 类型 0 推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">10&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x0a&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lconst_l" target="_blank" rel="noopener">lconst_1&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将 long 类型 1 推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">11&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x0b&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fconst_f" target="_blank" rel="noopener">fconst_0&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将 float 类型 0 推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">12&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x0c&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fconst_f" target="_blank" rel="noopener">fconst_1&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将 float 类型 1 推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">13&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x0d&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fconst_f" target="_blank" rel="noopener">fconst_2&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将 float 类型 2 推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">14&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x0e&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dconst_d" target="_blank" rel="noopener">dconst_0&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将 double 类型 0 推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">15&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x0f&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dconst_d" target="_blank" rel="noopener">dconst_1&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将 double 类型 1 推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">16&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x10&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.bipush" target="_blank" rel="noopener">bipush&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将单字节的常量值(-128 ~ 127)推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">17&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x11&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.sipush" target="_blank" rel="noopener">sipush&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将一个短整类型常量值(-32,768 ~ 32,767)推送栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">18&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x12&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.ldc" target="_blank" rel="noopener">ldc&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将 int、 float 或 String 类型常量值从常量池中推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">19&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x13&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.ldc_w" target="_blank" rel="noopener">ldc_w&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将int、 float 或 String 类型常量值从常量池中推送栈顶(宽索引)&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">20&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x14&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.ldc2_w" target="_blank" rel="noopener">ldc2_w&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将 long 或 double 类型常量值从常量池中推送至栈(宽索引)&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle" rowspan="33">&lt;p class="tableblock">加载&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">21&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;code>0x15&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iload" target="_blank" rel="noopener">iload&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将指定的 int 类型本地变量推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">22&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x16&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lload" target="_blank" rel="noopener">lload&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将指定的 long 类型本地变量推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">23&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x17&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fload" target="_blank" rel="noopener">fload&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将指定的 float 类型本地变量推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">24&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x18&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dload" target="_blank" rel="noopener">dload&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将指定的 double 类型本地变量推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">25&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x19&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.aload" target="_blank" rel="noopener">aload&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将指定的引用类型本地变量推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">26&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x1a&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iload_n" target="_blank" rel="noopener">iload_0&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将第 1 个 int 类型本地变量推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">27&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x1b&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iload_n" target="_blank" rel="noopener">iload_1&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将第 2 个 int 类型本地变量推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">28&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x1c&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iload_n" target="_blank" rel="noopener">iload_2&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将第 3 个 int 类型本地变量推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">29&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x1d&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iload_n" target="_blank" rel="noopener">iload_3&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将第 4 个 int 类型本地变量推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">30&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x1e&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lload_n" target="_blank" rel="noopener">lload_0&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将第 1 个 long 类型本地变量推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">31&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x1f&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lload_n" target="_blank" rel="noopener">lload_1&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将第 2 个 long 类型本地变量推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">32&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x20&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lload_n" target="_blank" rel="noopener">lload_2&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将第 3 个 long 类型本地变量推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">33&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x21&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lload_n" target="_blank" rel="noopener">lload_3&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将第 4 个 long 类型本地变量推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">34&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x22&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fload_n" target="_blank" rel="noopener">fload_0&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将第 1 个 float 类型本地变量推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">35&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x23&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fload_n" target="_blank" rel="noopener">fload_1&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将第 2 个 float 类型本地变量推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">36&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x24&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fload_n" target="_blank" rel="noopener">fload_2&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将第 3 个 float 类型本地变量推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">37&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x25&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fload_n" target="_blank" rel="noopener">fload_3&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将第 4 个 float 类型本地变量推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">38&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x26&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dload_n" target="_blank" rel="noopener">dload_0&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将第 1 个 double 类型本地变量推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">39&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x27&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dload_n" target="_blank" rel="noopener">dload_1&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将第 2 个 double 类型本地变量推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">40&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x28&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dload_n" target="_blank" rel="noopener">dload_2&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将第 3 个 double 类型本地变量推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">41&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x29&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dload_n" target="_blank" rel="noopener">dload_3&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将第 4 个 double 类型本地变量推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">42&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x2a&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.aload_n" target="_blank" rel="noopener">aload_0&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将第 1 个引用类型本地变量推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">43&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x2b&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.aload_n" target="_blank" rel="noopener">aload_1&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将第 2 个引用类型本地变量推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">44&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x2c&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.aload_n" target="_blank" rel="noopener">aload_2&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将第 3 个引用类型本地变量推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">45&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x2d&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.aload_n" target="_blank" rel="noopener">aload_3&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将第 4 个引用类型本地变量推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">46&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x2e&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iaload" target="_blank" rel="noopener">iaload&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将 int 类型数组的指定元素推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">47&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x2f&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.laload" target="_blank" rel="noopener">laload&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将 long 类型数组的指定元素推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">48&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x30&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.faload" target="_blank" rel="noopener">faload&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将 float 类型数组的指定元素推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">49&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x31&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.daload" target="_blank" rel="noopener">daload&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将 double 类型数组的指定元素推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">50&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x32&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.aaload" target="_blank" rel="noopener">aaload&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将引用类型数组的指定元素推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">51&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x33&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.baload" target="_blank" rel="noopener">baload&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将 boolean 或 byte 类型数组的指定元素推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">52&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x34&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.caload" target="_blank" rel="noopener">caload&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将 char 类型数组的指定元素推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">53&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x35&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.saload" target="_blank" rel="noopener">saload&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将 short 类型数组的指定元素推送至栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle" rowspan="33">&lt;p class="tableblock">存储&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">54&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;code>0x36&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.istore" target="_blank" rel="noopener">istore&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 int 类型数值存入指定本地变量&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">55&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x37&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lstore" target="_blank" rel="noopener">lstore&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 long 类型数值存入指定本地变量&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">56&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x38&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fstore" target="_blank" rel="noopener">fstore&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 float 类型数值存入指定本地变量&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">57&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x39&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dstore" target="_blank" rel="noopener">dstore&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 double 类型数值存入指定本地变量&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">58&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x3a&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.astore" target="_blank" rel="noopener">astore&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶引用类型数值存入指定本地变量&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">59&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x3b&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.istore_n" target="_blank" rel="noopener">istore_0&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 int 类型数值存入第 1 个本地变量&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">60&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x3c&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.istore_n" target="_blank" rel="noopener">istore_1&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 int 类型数值存入第 2 个本地变量&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">61&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x3d&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.istore_n" target="_blank" rel="noopener">istore_2&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 int 类型数值存入第 3 个本地变量&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">62&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x3e&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.istore_n" target="_blank" rel="noopener">istore_3&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 int 类型数值存入第 4 个本地变量&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">63&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x3f&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lstore_n" target="_blank" rel="noopener">lstore_0&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 long 类型数值存入第 1 个本地变量&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">64&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x40&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lstore_n" target="_blank" rel="noopener">lstore_1&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 long 类型数值存入第 2 个本地变量&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">65&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x41&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lstore_n" target="_blank" rel="noopener">lstore_2&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 long 类型数值存入第 3 个本地变量&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">66&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x42&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lstore_n" target="_blank" rel="noopener">lstore_3&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 long 类型数值存入第 4 个本地变量&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">67&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x43&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fstore_n" target="_blank" rel="noopener">fstore_0&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 float 类型数值存入第 1 个本地变量&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">68&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x44&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fstore_n" target="_blank" rel="noopener">fstore_1&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 float 类型数值存入第 2 个本地变量&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">69&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x45&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fstore_n" target="_blank" rel="noopener">fstore_2&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 float 类型数值存入第 3 个本地变量&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">70&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x46&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fstore_n" target="_blank" rel="noopener">fstore_3&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 float 类型数值存入第 4 个本地变量&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">71&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x47&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dstore_n" target="_blank" rel="noopener">dstore_0&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 double 类型数值存入第 1 个本地变量&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">72&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x48&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dstore_n" target="_blank" rel="noopener">dstore_1&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 double 类型数值存入第 2 个本地变量&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">73&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x49&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dstore_n" target="_blank" rel="noopener">dstore_2&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 double 类型数值存入第 3 个本地变量&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">74&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x4a&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dstore_n" target="_blank" rel="noopener">dstore_3&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 double 类型数值存入第 4 个本地变量&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">75&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x4b&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.astore_n" target="_blank" rel="noopener">astore_0&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶引用类型数值存入第 1 个本地变量&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">76&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x4c&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.astore_n" target="_blank" rel="noopener">astore_1&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶引用类型数值存入第 2 个本地变量&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">77&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x4d&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.astore_n" target="_blank" rel="noopener">astore_2&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶引用类型数值存入第 3 个本地变量&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">78&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x4e&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.astore_n" target="_blank" rel="noopener">astore_3&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶引用类型数值存入第 4 个本地变量&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">79&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x4f&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iastore" target="_blank" rel="noopener">iastore&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 int 类型数值存入指定数组的指定索引位置&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">80&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x50&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lastore" target="_blank" rel="noopener">lastore&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 long 类型数值存入指定数组的指定索引位置&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">81&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x51&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fastore" target="_blank" rel="noopener">fastore&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 float 类型数值存入指定数组的指定索引位置&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">82&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x52&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dastore" target="_blank" rel="noopener">dastore&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 double 类型数值存入指定数组的指定索引位置&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">83&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x53&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.aastore" target="_blank" rel="noopener">aastore&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶引用类型数值存入指定数组的指定索引位置&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">84&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x54&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.bastore" target="_blank" rel="noopener">bastore&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 boolean 或 byte 类型数值存入指定数组的指定索引位置&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">85&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x55&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.castore" target="_blank" rel="noopener">castore&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 char 类型数值存入指定数组的指定索引位置&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">86&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x56&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.sastore" target="_blank" rel="noopener">sastore&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 short 类型数值存入指定数组的指定索引位置&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle" rowspan="9">&lt;p class="tableblock">栈&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">87&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;code>0x57&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.pop" target="_blank" rel="noopener">pop&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶数值弹出(数值不能是 long 或 double 类型的)&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">88&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x58&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.pop2" target="_blank" rel="noopener">pop2&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶的一个 long 或 double 类型的数值或两个其他类型的数值弹出&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">89&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x59&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dup" target="_blank" rel="noopener">dup&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">复制栈顶数值并将复制值压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">90&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x5a&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dup_x1" target="_blank" rel="noopener">dup_x1&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">复制栈顶值并将其插入栈顶那两个值的下面&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">91&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x5b&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dup_x2" target="_blank" rel="noopener">dup_x2&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">复制栈顶值并将其插入栈顶那两个或三个值的下面&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">92&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x5c&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dup2" target="_blank" rel="noopener">dup2&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">复制栈顶的一个 long 或 double 类型的值，或两个其他类型的值，并将其压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">93&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x5d&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dup2_x1" target="_blank" rel="noopener">dup2_x1&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">复制栈顶的一个或两个值，并将其插入栈顶那两个或三个值的下面&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">94&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x5e&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dup2_x2" target="_blank" rel="noopener">dup2_x2&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">复制栈顶的一个或两个值，并将其插入栈顶那两个、三个或四个值的下面&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">95&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x5f&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.swap" target="_blank" rel="noopener">swap&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶的两个数值互换(数值不能是 long 或 double 类型的)&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle" rowspan="37">&lt;p class="tableblock">数学&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">96&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;code>0x60&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iadd" target="_blank" rel="noopener">iadd&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶两 int 类型数值相加并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">97&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x61&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.ladd" target="_blank" rel="noopener">ladd&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶两 1ong 类型数值相加并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">98&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x62&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fadd" target="_blank" rel="noopener">fadd&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶两 float 类型数值相加并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">99&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x63&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dadd" target="_blank" rel="noopener">dadd&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶两 double 类型数值相加并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">100&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x64&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.isub" target="_blank" rel="noopener">isub&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶两 int 类型数值相减并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">101&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x65&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lsub" target="_blank" rel="noopener">lsub&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶两 long 类型数值相减并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">102&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x66&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fsub" target="_blank" rel="noopener">fsub&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶两 float 类型数值相减并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">103&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x67&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dsub" target="_blank" rel="noopener">dsub&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶两 double 类型数值相减并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">104&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x68&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.imul" target="_blank" rel="noopener">imul&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶两 int 类型数值相乘并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">105&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x69&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lmul" target="_blank" rel="noopener">lmul&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶两 long 类型数值相乘并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">106&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x6a&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fmul" target="_blank" rel="noopener">fmul&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶两 float 类型数值相乘并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">107&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x6b&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dmul" target="_blank" rel="noopener">dmul&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶两 double 类型数值相乘并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">108&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x6с&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.idiv" target="_blank" rel="noopener">idiv&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶两 int 类型数值相除并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">109&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x6d&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.ldiv" target="_blank" rel="noopener">ldiv&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶两 long 类型数值相除并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">110&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x6e&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fdiv" target="_blank" rel="noopener">fdiv&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶两 float 类型数值相除并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">111&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x6f&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.ddiv" target="_blank" rel="noopener">ddiv&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶两 double 类型数值相除并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">112&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x70&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.irem" target="_blank" rel="noopener">irem&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶两 int 类型数值作取模运算并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">113&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x71&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lrem" target="_blank" rel="noopener">lrem&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶两 long 类型数值作取模运算并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">114&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x72&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.frem" target="_blank" rel="noopener">frem&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶两 float 类型数值作取模运算并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">115&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x73&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.drem" target="_blank" rel="noopener">drem&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶两 double 类型数值作取模运算并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">116&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x74&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.ineg" target="_blank" rel="noopener">ineg&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 int 类型数值取负并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">117&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x75&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lneg" target="_blank" rel="noopener">lneg&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 long 类型数值取负并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">118&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x76&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fneg" target="_blank" rel="noopener">fneg&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 float 类型数值取负并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">119&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x77&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dneg" target="_blank" rel="noopener">dneg&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 double 类型数值取负并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">120&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x78&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.ishl" target="_blank" rel="noopener">ishl&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将 int 类型数值左移位指定位数并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">121&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x79&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lshl" target="_blank" rel="noopener">lshl&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将 long 类型数值左移位指定位数并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">122&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x7a&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.ishr" target="_blank" rel="noopener">ishr&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将 int 类型数值(有符号)右移位指定位数并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">123&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x7b&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lshr" target="_blank" rel="noopener">lshr&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将 long 类型数值(有符号)右移位指定位数并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">124&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">0x7c&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iushr" target="_blank" rel="noopener">iushr&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将 int 类型数值(无符号)右移位指定位数并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">125&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x7d&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lushr" target="_blank" rel="noopener">lushr&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将 long 类型数值(无符号)右移位指定位数并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">126&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x7e&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iand" target="_blank" rel="noopener">iand&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶两 int 类型数值作“按位与”并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">127&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x7f&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.land" target="_blank" rel="noopener">land&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶两 long 类型数值作“按位与”并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">128&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x80&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.ior" target="_blank" rel="noopener">ior&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶两 int 类型数值作“按位或”并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">129&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">0x81&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lor" target="_blank" rel="noopener">lor&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶两 long 类型数值作“按位或”并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">130&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x82&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.ixor" target="_blank" rel="noopener">ixor&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶两 int 类型数值作“按位异或”并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">131&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x83&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lxor" target="_blank" rel="noopener">lxor&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶两 long 类型数值作“按位异或”并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">132&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x84&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.iinc" target="_blank" rel="noopener">iinc&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将指定 int 类型变量增加指定值(&lt;code>i++&lt;/code>，&lt;code>i--&lt;/code>，&lt;code>i += 2&lt;/code>)&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle" rowspan="15">&lt;p class="tableblock">转换&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">133&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;code>0x85&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.i2l" target="_blank" rel="noopener">i2l&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 int 类型数值强制转换成 long 类型数值并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">134&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x86&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.i2f" target="_blank" rel="noopener">i2f&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 int 类型数值强制转换成 float 类型数值并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">135&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x87&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.i2d" target="_blank" rel="noopener">i2d&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 int 类型数值强制转换成 double 类型数值并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">136&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x88&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.l2i" target="_blank" rel="noopener">l2i&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 long 类型数值强制转换成 int 类型数值并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">137&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x89&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.l2f" target="_blank" rel="noopener">l2f&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 long 类型数值强制转换成 float 类型数值并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">138&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x8a&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.l2d" target="_blank" rel="noopener">l2d&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 long 类型数值强制转换成 double 类型数值并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">139&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x8b&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.f2i" target="_blank" rel="noopener">f2i&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 float 类型数值强制转换成 int 类型数值并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">140&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x8c&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.f2l" target="_blank" rel="noopener">f2l&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 float 类型数值强制转换成 long 类型数值并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">141&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x8d&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.f2d" target="_blank" rel="noopener">f2d&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 float 类型数值强制转换成 double 类型数值并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">142&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x8e&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.d2i" target="_blank" rel="noopener">d2i&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 double 类型数值强制转换成 int 类型数值并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">143&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x8f&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.d2l" target="_blank" rel="noopener">d2l&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 double 类型数值强制转换成 long 类型数值并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">144&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x90&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.d2f" target="_blank" rel="noopener">d2f&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 double 类型数值强制转换成 float 类型数值并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">145&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x91&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.i2b" target="_blank" rel="noopener">i2b&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 int 类型数值强制转换成 byte 类型数值并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">146&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x92&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.i2c" target="_blank" rel="noopener">i2c&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 int 类型数值强制转换成 char 类型数值并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">147&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x93&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.i2s" target="_blank" rel="noopener">i2s&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶 int 类型数值强制转换成 short 类型数值并将结果压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle" rowspan="19">&lt;p class="tableblock">比较&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">148&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;code>0x94&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lcmp" target="_blank" rel="noopener">lcmp&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">比较栈顶两 long 类型数值大小，并将结果(1，0，-1)压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">149&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x95&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fcmp_op" target="_blank" rel="noopener">fcmpl&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">比较栈顶两 float 类型数值大小，并将结果(1，0，-1)压入栈顶；当其中一个数值为“NaN”时，将 -1 压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">150&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x96&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.fcmp_op" target="_blank" rel="noopener">fcmpg&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">比较栈顶两 float 类型数值大小，并将结果(1，0，-1)压入栈顶；当其中一个数值为“NaN”时，将1压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">151&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x97&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dcmp_op" target="_blank" rel="noopener">dcmpl&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">比较栈顶两 double 类型数值大小，并将结果(1，0，-1)压入栈顶；当其中一个数值为“NaN”时，将-1压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">152&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x98&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dcmp_op" target="_blank" rel="noopener">dcmpg&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">比较栈顶两 double 类型数值大小，并将结果(1，0，-1)压入栈顶；当其中一个数值为“NaN”时，将1压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">153&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x99&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.if_cond" target="_blank" rel="noopener">ifeq&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">当栈顶 int 类型数值等于 0 时跳转&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">154&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x9a&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.if_cond" target="_blank" rel="noopener">ifne&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">当栈顶 int 类型数值不等于 0 时跳转&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">155&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x9b&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.if_cond" target="_blank" rel="noopener">iflt&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">当栈顶 int 类型数值小于 0 时跳转&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">156&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x9c&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.if_cond" target="_blank" rel="noopener">ifge&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">当栈顶 int 类型数值大于等于 0 时跳转&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">157&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x9d&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.if_cond" target="_blank" rel="noopener">ifgt&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">当栈顶 int 类型数值大于 0 时跳转&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">158&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x9e&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.if_cond" target="_blank" rel="noopener">ifle&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">当栈顶 int 类型数值小于等于 0 时跳转&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">159&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0x9f&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.if_icmp_cond" target="_blank" rel="noopener">if_icmpeq&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">比较栈顶两 int 类型数值大小，当前者等于后者时跳转&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">160&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0xa0&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.if_icmp_cond" target="_blank" rel="noopener">if_icmpne&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">比较栈顶两 int 类型数值大小，当前者不等于后者时跳转&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">161&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0xa1&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.if_icmp_cond" target="_blank" rel="noopener">if_icmplt&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">比较栈顶两 int 类型数值大小，当前者小于后者时跳转&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">162&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0xa2&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.if_icmp_cond" target="_blank" rel="noopener">if_icmpge&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">比较栈顶两 int 类型数值大小，当前者大于等于后者时跳转&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">163&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0xa3&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.if_icmp_cond" target="_blank" rel="noopener">if_icmpgt&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">比较栈顶两 int 类型数值大小，当前者大于后者时跳转&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">164&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0xa4&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.if_icmp_cond" target="_blank" rel="noopener">if_icmple&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">比较栈顶两 int 类型数值大小，当前者小于等于后者时跳转&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">165&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0xa5&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.if_acmp_cond" target="_blank" rel="noopener">if_acmpeq&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">比较栈顶两引用类型数值，当结果相等时跳转&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">166&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0xa6&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.if_acmp_cond" target="_blank" rel="noopener">ifacmpne&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">比较栈顶两引用类型数值，当结果不相等时跳转&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle" rowspan="11">&lt;p class="tableblock">控制&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">167&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;code>0xa7&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.goto" target="_blank" rel="noopener">goto&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">无条件跳转&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">168&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0xa8&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.jsr" target="_blank" rel="noopener">jsr&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">跳转至指定 16 位 offset 位置，并将 jsr 下一条指令地址压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">169&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0xa9&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.ret" target="_blank" rel="noopener">ret&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">返回至由指定的局部变量所给出的指令位置(一般与 jsr、jsr_w 联合使用)&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">170&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0xaa&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.tableswitch" target="_blank" rel="noopener">tableswitch&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">用于 switch 条件跳转，case 值连续(变长指令)&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">171&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0xab&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lookupswitch" target="_blank" rel="noopener">lookupswitch&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">用于 switch 条件跳转，case 值不连续(变长指令)&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">172&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0xac&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.ireturn" target="_blank" rel="noopener">ireturn&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">从当前方法返回 int&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">173&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>Oxad&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.lreturn" target="_blank" rel="noopener">lreturn&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">从当前方法返回 long&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">174&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0xae&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.freturn" target="_blank" rel="noopener">freturn&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">从当前方法返回 float&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">175&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0xaf&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.dreturn" target="_blank" rel="noopener">dreturn&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">从当前方法返回 double&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">176&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0xb0&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.areturn" target="_blank" rel="noopener">areturn&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">从当前方法返回对象引用&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">177&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0xb1&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.return" target="_blank" rel="noopener">return&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">从当前方法返回void&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle" rowspan="18">&lt;p class="tableblock">引用&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">178&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;code>0xb2&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.getstatic" target="_blank" rel="noopener">getstatic&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">获取指定类的静态字段，并将其值压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">179&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0xb3&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.putstatic" target="_blank" rel="noopener">putstatic&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">为指定类的静态字段赋值&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">180&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0xb4&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.getfield" target="_blank" rel="noopener">getfield&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">获取指定类的实例字段，并将其值压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">181&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0xb5&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.putfield" target="_blank" rel="noopener">putfield&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">为指定类的实例字段赋值&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">182&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0xb6&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.invokevirtual" target="_blank" rel="noopener">invokevirtual&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">调用实例方法&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">183&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0xb7&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.invokespecial" target="_blank" rel="noopener">invokespecial&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">调用父类方法、实例初始化方法、私有方法&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">184&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0xb8&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.invokestatic" target="_blank" rel="noopener">invokestatic&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">调用静态方法&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">185&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0xb9&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.invokeinterface" target="_blank" rel="noopener">invokeinterface&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">调用接口方法&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">186&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0xba&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.invokedynamic" target="_blank" rel="noopener">invokedynamic&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">调用动态链接方法&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">187&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0xbb&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.new" target="_blank" rel="noopener">new&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">创建一个对象，并将其引用值压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">188&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0xbc&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.newarray" target="_blank" rel="noopener">newarray&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">创建一个指定原始类型(如int、float 、char等)的数组，并将其引用值压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">189&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0xbd&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.anewarray" target="_blank" rel="noopener">anewarray&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">创建一个引用型(如类、接口、数组)的数组，并将其引用值压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">190&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0xbe&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.arraylength" target="_blank" rel="noopener">arraylength&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">获得数组的长度值并压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">191&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0xbf&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.athrow" target="_blank" rel="noopener">athrow&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">将栈顶的异常抛出&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">192&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">0xcO&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.checkcast" target="_blank" rel="noopener">checkcast&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">检验类型转换，检验未通过将抛出 ClassCastException&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">193&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">0xc1&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.instanceof" target="_blank" rel="noopener">instanceof&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">检验对象是否是指定类的实例。如果是，就将 1 压入栈顶，否则将 0 压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">194&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0xc2&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.monitorenter" target="_blank" rel="noopener">monitorenter&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">获得对象的锁，用于实现同步块&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">195&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0xc3&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.monitorexit" target="_blank" rel="noopener">monitorexit&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">释放对象的锁，用于实现同步块&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle" rowspan="6">&lt;p class="tableblock">扩展&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">196&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;code>0xc4&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.wide" target="_blank" rel="noopener">wide&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">扩展本地变量索引的宽度&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">197&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0xс5&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.multianewarray" target="_blank" rel="noopener">multianewarray&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">创建指定类型和指定维度的多维数组(执行该指令时，操作栈中必须包含各维度的长度值)，并将其引用值压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">198&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0xc6&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.ifnull" target="_blank" rel="noopener">ifnull&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">为nu11时跳转&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">199&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0xc7&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.ifnonnull" target="_blank" rel="noopener">ifnonnull&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">不为nu11时跳转&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">200&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0xc8&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.goto_w" target="_blank" rel="noopener">goto_w&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">无条件跳转(宽索引)&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">201&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0xc9&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html#jvms-6.5.jsr_w" target="_blank" rel="noopener">jsr_w&lt;/a>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">跳转至指定 32 位 offset 位置，并将 jsr_w 下一条指令地址压入栈顶&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle" rowspan="3">&lt;p class="tableblock">保留指令&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">202&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">&lt;code>Оxca&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">breakpoint&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">调试时的断点标记&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">254&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>Oxfe&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">impdep1&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">为特定软件面预留的语言后门&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">255&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-center valign-middle">&lt;p class="tableblock">&lt;code>0xff&lt;/code>&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">impdep2&lt;/p>&lt;/td>
+&lt;td class="tableblock halign-left valign-top">&lt;p class="tableblock">为特定硬件面预留的语言后门&lt;/p>&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;div class="sect1">
+&lt;h2 id="_参考资料">参考资料&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;a href="https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-6.html" target="_blank" rel="noopener">Chapter 6. The Java Virtual Machine Instruction Set&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://en.wikipedia.org/wiki/Java_bytecode" target="_blank" rel="noopener">Java bytecode&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://en.wikipedia.org/wiki/List_of_Java_bytecode_instructions" target="_blank" rel="noopener">List of Java bytecode instructions&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div></description></item></channel></rss>

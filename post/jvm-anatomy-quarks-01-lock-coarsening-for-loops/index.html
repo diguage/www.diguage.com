@@ -1,0 +1,205 @@
+<!doctype html><html class=no-js lang=zh-cn><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><meta http-equiv=X-UA-Compatible content="IE=edge"><title>JVM 剖析花园：1 - 锁粗化及循环 - "地瓜哥"博客网</title>
+<script>(function(e,t){e[t]=e[t].replace("no-js","js")})(document.documentElement,"className")</script><meta name=keywords content="Java,虚拟机,程序设计,Java,虚拟机,翻译,系统架构,程序设计"><meta name=description content><meta property="og:url" content="https://www.diguage.com/post/jvm-anatomy-quarks-01-lock-coarsening-for-loops/"><meta property="og:site_name" content='"地瓜哥"博客网'><meta property="og:title" content="JVM 剖析花园：1 - 锁粗化及循环"><meta property="og:description" content=' “JVM 剖析花园”是由 JVM 研发专家及性能极客 Aleksey Shipilëv 撰写的一个系列文章，专门介绍一些有关 JVM 的基本知识。笔者也是前几年无意间发现的一片宝藏文章。早就有翻译过来，介绍给大家的想法，可惜一直未能付诸实践。最近在查资料时，无意间又翻到了这个系列，遂下定决心，完成这个萌发已久的小想法。
+为了便于理解，对该系列的名字做了微调，原文是“JVM Anatomy Quarks”，将原文的“Quarks”（夸克）翻译为了“花园”。
+“JVM 解剖花园”是一个正在进行中的小型系列文章，每篇文章都会介绍一些有关 JVM 的基本知识。这个名字强调了一个事实，即单篇文章不能孤立地看待，这里描述的大部分内容都会很容易地相互影响。
+阅读这篇文章大约需要 5-10 分钟。因此，它只针对单一主题、单一测试、单一基准和单一观察进行深入探讨。这里的证据和讨论可能是轶事，并没有对错误、一致性、写作风格、语法和语义错误、重复或一致性进行实际审查。请自行承担使用和/或信任的风险。
+以上是该系列介绍。这里介绍一次，后续文章不再赘述。 问题 众所周知，Hotspot 可以进行 锁粗化优化，有效合并多个相邻的锁定块，从而减少锁定开销。它能有效地对如下代码做优化：
+synchronized (obj) { // statements 1 } synchronized (obj) { // statements 2 } 优化后：
+synchronized (obj) { // statements 1 // statements 2 } 现在，今天提出的一个有趣问题是：Hotspot 是否会对循环进行这种优化？例如：
+for (...) { synchronized (obj) { // something } } 是否会被优化成如下这样：
+synchronized (this) { for (...) { // something } } 理论上，没有什么能阻止我们这样做。我们甚至可以把这种优化看作是 循环判断外提，只不过这里是针对锁而已。然而，这样做的缺点是有可能使锁变得过于粗糙，从而导致特定线程在执行大循环时占用锁。
+实验 要回答这个问题，最简单的方法就是找到当前 Hotspot 优化的正面证据。幸运的是，有了 JMH，这一切都变得非常简单。它不仅有助于建立基准，还有助于工程中最重要的部分—​基准分析。让我们从一个简单的基准检查程序开始：
+@Fork(..., jvmArgsPrepend = {"-XX:-UseBiasedLocking"}) @State(Scope.Benchmark) public class LockRoach { (1) int x; @Benchmark @CompilerControl(CompilerControl.Mode.DONT_INLINE) public void test() { for (int c = 0; c < 1000; c++) { synchronized (this) { x += 0x42; } } } } 1 完整代码在 这里。 这里有几个重要的技巧：
+使用 -XX:-UseBiasedLocking 禁用偏向锁可以避免更长的预热时间，因为偏向锁不会立即启动，而是会在初始化阶段等待 5 秒（参见 BiasedLockingStartupDelay 选项）。
+禁用 @Benchmark 的方法内联有助于在反汇编时将其分离。
+增加一个神奇的数字 0x42，有助于在反汇编中快速找到增量。'><meta property="og:locale" content="zh_cn"><meta property="og:type" content="article"><meta property="article:section" content="post"><meta property="article:published_time" content="2024-01-13T16:08:36+08:00"><meta property="article:modified_time" content="2024-05-01T22:12:16+08:00"><meta property="article:tag" content="Java"><meta property="article:tag" content="虚拟机"><meta property="article:tag" content="翻译"><meta name=twitter:card content="summary"><meta name=twitter:title content="JVM 剖析花园：1 - 锁粗化及循环"><meta name=twitter:description content=' “JVM 剖析花园”是由 JVM 研发专家及性能极客 Aleksey Shipilëv 撰写的一个系列文章，专门介绍一些有关 JVM 的基本知识。笔者也是前几年无意间发现的一片宝藏文章。早就有翻译过来，介绍给大家的想法，可惜一直未能付诸实践。最近在查资料时，无意间又翻到了这个系列，遂下定决心，完成这个萌发已久的小想法。
+为了便于理解，对该系列的名字做了微调，原文是“JVM Anatomy Quarks”，将原文的“Quarks”（夸克）翻译为了“花园”。
+“JVM 解剖花园”是一个正在进行中的小型系列文章，每篇文章都会介绍一些有关 JVM 的基本知识。这个名字强调了一个事实，即单篇文章不能孤立地看待，这里描述的大部分内容都会很容易地相互影响。
+阅读这篇文章大约需要 5-10 分钟。因此，它只针对单一主题、单一测试、单一基准和单一观察进行深入探讨。这里的证据和讨论可能是轶事，并没有对错误、一致性、写作风格、语法和语义错误、重复或一致性进行实际审查。请自行承担使用和/或信任的风险。
+以上是该系列介绍。这里介绍一次，后续文章不再赘述。 问题 众所周知，Hotspot 可以进行 锁粗化优化，有效合并多个相邻的锁定块，从而减少锁定开销。它能有效地对如下代码做优化：
+synchronized (obj) { // statements 1 } synchronized (obj) { // statements 2 } 优化后：
+synchronized (obj) { // statements 1 // statements 2 } 现在，今天提出的一个有趣问题是：Hotspot 是否会对循环进行这种优化？例如：
+for (...) { synchronized (obj) { // something } } 是否会被优化成如下这样：
+synchronized (this) { for (...) { // something } } 理论上，没有什么能阻止我们这样做。我们甚至可以把这种优化看作是 循环判断外提，只不过这里是针对锁而已。然而，这样做的缺点是有可能使锁变得过于粗糙，从而导致特定线程在执行大循环时占用锁。
+实验 要回答这个问题，最简单的方法就是找到当前 Hotspot 优化的正面证据。幸运的是，有了 JMH，这一切都变得非常简单。它不仅有助于建立基准，还有助于工程中最重要的部分—​基准分析。让我们从一个简单的基准检查程序开始：
+@Fork(..., jvmArgsPrepend = {"-XX:-UseBiasedLocking"}) @State(Scope.Benchmark) public class LockRoach { (1) int x; @Benchmark @CompilerControl(CompilerControl.Mode.DONT_INLINE) public void test() { for (int c = 0; c < 1000; c++) { synchronized (this) { x += 0x42; } } } } 1 完整代码在 这里。 这里有几个重要的技巧：
+使用 -XX:-UseBiasedLocking 禁用偏向锁可以避免更长的预热时间，因为偏向锁不会立即启动，而是会在初始化阶段等待 5 秒（参见 BiasedLockingStartupDelay 选项）。
+禁用 @Benchmark 的方法内联有助于在反汇编时将其分离。
+增加一个神奇的数字 0x42，有助于在反汇编中快速找到增量。'><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link rel=dns-prefetch href=//fonts.googleapis.com><link rel=dns-prefetch href=//fonts.gstatic.com><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Open+Sans:400,400i,700"><link rel=stylesheet href=/css/style.min.css><link rel=stylesheet href=/css/asciidoctor.css><link rel=stylesheet href=/css/rouge-monokai.css><link rel="shortcut icon" href=/favicon.ico><script async src="https://www.googletagmanager.com/gtag/js?id=G-1MMT2NLEL4"></script><script>var dnt,doNotTrack=!1;if(!1&&(dnt=navigator.doNotTrack||window.doNotTrack||navigator.msDoNotTrack,doNotTrack=dnt=="1"||dnt=="yes"),!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-1MMT2NLEL4")}</script><script id=baidu_analytics>var _hmt=_hmt||[];(function(){var e,t=document.createElement("script");t.src="https://hm.baidu.com/hm.js?e56e7dd0a120b414f5741f4c5e5218ea",e=document.getElementsByTagName("script")[0],e.parentNode.insertBefore(t,e)})()</script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css></head><body class=body><div class="container container--outer"><header class=header><div class="container header__container"><div class=logo><a class=logo__link href=/ title='"地瓜哥"博客网' rel=home><div class="logo__item logo__text"><div class=logo__title>"地瓜哥"博客网</div><div class=logo__tagline>分享技术带来的喜悦 — https://www.diguage.com/</div></div></a></div><nav class=menu><button class=menu__btn aria-haspopup=true aria-expanded=false tabindex=0>
+<span class=menu__btn-title tabindex=-1>菜单</span></button><ul class=menu__list><li class=menu__item><a class=menu__link href=/><span class=menu__text>首页</span></a></li><li class=menu__item><a class=menu__link href=/categories/><span class=menu__text>分类</span></a></li><li class=menu__item><a class=menu__link href=/about/><span class=menu__text>关于</span></a></li><li class=menu__item><a class=menu__link href=/archives/><span class=menu__text>归档</span></a></li></ul></nav></div></header><div class="wrapper flex"><div class=primary><main class=main role=main><article class=post><header class=post__header><h1 class=post__title>JVM 剖析花园：1 - 锁粗化及循环</h1><div class="post__meta meta"><div class="meta__item-author meta__item"><svg class="meta__icon icon icon-author" width="16" height="16" viewBox="0 0 12 16"><path d="M6 1c2.2.0 3.5 2 3.5 4.5C9.5 7 8.9 8.2 8 9c2.9.8 4 2.5 4 5v1H0v-1c0-2.5 1.1-4.2 4-5-.9-.8-1.5-2-1.5-3.5C2.5 3 3.8 1 6 1z"/></svg><span class=meta__text>D瓜哥</span></div><div class="meta__item-datetime meta__item"><svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class=meta__text datetime=2024-01-13T16:08:36+08:00>2024-01-13</time></div><div class="meta__item-categories meta__item"><svg class="meta__icon icon icon-category" width="16" height="16" viewBox="0 0 16 16"><path d="m7 2 1 2h8v11H0V2z"/></svg><span class=meta__text><a class=meta__link href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/ rel=category>系统架构</a>, <a class=meta__link href=/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/ rel=category>程序设计</a></span></div></div></header><figure class="post__thumbnail thumbnail"><img class=thumbnail__image src=/images/java/jvm.jpg alt="JVM 剖析花园：1 - 锁粗化及循环"></figure><div class="content post__content clearfix"><div class=quoteblock><blockquote><div class=paragraph><p>“JVM 剖析花园”是由 JVM 研发专家及性能极客 <a href=https://shipilev.net/ target=_blank rel=noopener>Aleksey Shipilëv</a> 撰写的一个系列文章，专门介绍一些有关 JVM 的基本知识。笔者也是前几年无意间发现的一片宝藏文章。早就有翻译过来，介绍给大家的想法，可惜一直未能付诸实践。最近在查资料时，无意间又翻到了这个系列，遂下定决心，完成这个萌发已久的小想法。</p></div><div class=paragraph><p>为了便于理解，对该系列的名字做了微调，原文是“JVM Anatomy Quarks”，将原文的“Quarks”（夸克）翻译为了“花园”。</p></div></blockquote></div><div class=paragraph><p>“JVM 解剖花园”是一个正在进行中的小型系列文章，每篇文章都会介绍一些有关 JVM 的基本知识。这个名字强调了一个事实，即单篇文章不能孤立地看待，这里描述的大部分内容都会很容易地相互影响。</p></div><div class=paragraph><p>阅读这篇文章大约需要 5-10 分钟。因此，它只针对单一主题、单一测试、单一基准和单一观察进行深入探讨。这里的证据和讨论可能是轶事，并没有对错误、一致性、写作风格、语法和语义错误、重复或一致性进行实际审查。请自行承担使用和/或信任的风险。</p></div><div class="admonitionblock note"><table><tbody><tr><td class=icon><i class="fa icon-note" title=Note></i></td><td class=content>以上是该系列介绍。这里介绍一次，后续文章不再赘述。</td></tr></tbody></table></div><div class=sect1><h2 id=_问题>问题</h2><div class=sectionbody><div class=paragraph><p>众所周知，Hotspot 可以进行 <a href=https://en.wikipedia.org/wiki/Java_performance#Escape_analysis_and_lock_coarsening target=_blank rel=noopener>锁粗化优化</a>，有效合并多个相邻的锁定块，从而减少锁定开销。它能有效地对如下代码做优化：</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code data-lang=java><span class=kd>synchronized</span> <span class=o>(</span><span class=n>obj</span><span class=o>)</span> <span class=o>{</span>
+  <span class=c1>// statements 1</span>
+<span class=o>}</span>
+<span class=kd>synchronized</span> <span class=o>(</span><span class=n>obj</span><span class=o>)</span> <span class=o>{</span>
+  <span class=c1>// statements 2</span>
+<span class=o>}</span></code></pre></div></div><div class=paragraph><p>优化后：</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code data-lang=java><span class=kd>synchronized</span> <span class=o>(</span><span class=n>obj</span><span class=o>)</span> <span class=o>{</span>
+  <span class=c1>// statements 1</span>
+  <span class=c1>// statements 2</span>
+<span class=o>}</span></code></pre></div></div><div class=paragraph><p>现在，今天提出的一个有趣问题是：Hotspot 是否会对循环进行这种优化？例如：</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code data-lang=java><span class=k>for</span> <span class=o>(...)</span> <span class=o>{</span>
+  <span class=kd>synchronized</span> <span class=o>(</span><span class=n>obj</span><span class=o>)</span> <span class=o>{</span>
+    <span class=c1>// something</span>
+  <span class=o>}</span>
+<span class=o>}</span></code></pre></div></div><div class=paragraph><p>是否会被优化成如下这样：</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code data-lang=java><span class=kd>synchronized</span> <span class=o>(</span><span class=k>this</span><span class=o>)</span> <span class=o>{</span>
+  <span class=k>for</span> <span class=o>(...)</span> <span class=o>{</span>
+     <span class=c1>// something</span>
+  <span class=o>}</span>
+<span class=o>}</span></code></pre></div></div><div class=paragraph><p>理论上，没有什么能阻止我们这样做。我们甚至可以把这种优化看作是 <a href=https://en.wikipedia.org/wiki/Loop_unswitching target=_blank rel=noopener>循环判断外提</a>，只不过这里是针对锁而已。然而，这样做的缺点是有可能使锁变得过于粗糙，从而导致特定线程在执行大循环时占用锁。</p></div></div></div><div class=sect1><h2 id=_实验>实验</h2><div class=sectionbody><div class=paragraph><p>要回答这个问题，最简单的方法就是找到当前 Hotspot 优化的正面证据。幸运的是，有了 <a href=https://github.com/openjdk/jmh target=_blank rel=noopener>JMH</a>，这一切都变得非常简单。它不仅有助于建立基准，还有助于工程中最重要的部分—​基准分析。让我们从一个简单的基准检查程序开始：</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code data-lang=java><span class=nd>@Fork</span><span class=o>(...,</span> <span class=n>jvmArgsPrepend</span> <span class=o>=</span> <span class=o>{</span><span class=s>&#34;-XX:-UseBiasedLocking&#34;</span><span class=o>})</span>
+<span class=nd>@State</span><span class=o>(</span><span class=nc>Scope</span><span class=o>.</span><span class=na>Benchmark</span><span class=o>)</span>
+<span class=kd>public</span> <span class=kd>class</span> <span class=nc>LockRoach</span> <span class=o>{</span> <i class=conum data-value=1></i><b>(1)</b>
+    <span class=kt>int</span> <span class=n>x</span><span class=o>;</span>
+
+    <span class=nd>@Benchmark</span>
+    <span class=nd>@CompilerControl</span><span class=o>(</span><span class=nc>CompilerControl</span><span class=o>.</span><span class=na>Mode</span><span class=o>.</span><span class=na>DONT_INLINE</span><span class=o>)</span>
+    <span class=kd>public</span> <span class=kt>void</span> <span class=nf>test</span><span class=o>()</span> <span class=o>{</span>
+        <span class=k>for</span> <span class=o>(</span><span class=kt>int</span> <span class=n>c</span> <span class=o>=</span> <span class=mi>0</span><span class=o>;</span> <span class=n>c</span> <span class=o>&lt;</span> <span class=mi>1000</span><span class=o>;</span> <span class=n>c</span><span class=o>++)</span> <span class=o>{</span>
+            <span class=kd>synchronized</span> <span class=o>(</span><span class=k>this</span><span class=o>)</span> <span class=o>{</span>
+                <span class=n>x</span> <span class=o>+=</span> <span class=mh>0x42</span><span class=o>;</span>
+            <span class=o>}</span>
+        <span class=o>}</span>
+    <span class=o>}</span>
+<span class=o>}</span></code></pre></div></div><div class="colist arabic"><table><tbody><tr><td><i class=conum data-value=1></i><b>1</b></td><td>完整代码在 <a href=https://shipilev.net/jvm/anatomy-quarks/1-lock-coarsening-for-loops/LockRoach.java target=_blank rel=noopener>这里</a>。</td></tr></tbody></table></div><div class=paragraph><p>这里有几个重要的技巧：</p></div><div class="olist arabic"><ol class=arabic><li><p>使用 <code>-XX:-UseBiasedLocking</code> 禁用偏向锁可以避免更长的预热时间，因为偏向锁不会立即启动，而是会在初始化阶段等待 5 秒（参见 <code>BiasedLockingStartupDelay</code> 选项）。</p></li><li><p>禁用 <code>@Benchmark</code> 的方法内联有助于在反汇编时将其分离。</p></li><li><p>增加一个神奇的数字 <code>0x42</code>，有助于在反汇编中快速找到增量。</p></li></ol></div><div class=paragraph><p>运行于 i7 4790K、Linux x86_64、JDK EA 9b156：</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code>Benchmark            Mode  Cnt      Score    Error  Units
+LockRoach.test       avgt    5   5331.617 ± 19.051  ns/op</code></pre></div></div><div class=paragraph><p>你能从这个数字看出什么？什么都看不出来，对吧？我们需要看看下面到底发生了什么。在这方面，<code>-prof perfasm</code> 非常有用，因为它会显示生成代码中最热的区域。使用默认设置运行时，会发现最热的指令是 <code>lock cmpxchg</code>（比较和设置（compare-and-sets）），执行锁定，只打印它们周围的热区。使用 <code>-prof perfasm:mergeMargin=1000</code> 运行，将这些最热区域合并成一幅完整的图画，就会得到这个一看就吓人的 <a href=https://shipilev.net/jvm/anatomy-quarks/1-lock-coarsening-for-loops/default.perfasm>输出结果</a>。</p></div><div class=paragraph><p>再往下剥离，级联跳转是锁定/解锁，然后注意累计循环次数最多的代码（第一列），我们可以看到最热的循环是这样的：</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code>↗  0x00007f455cc708c1: lea    0x20(%rsp),%rbx
+│          &lt; blah-blah-blah, monitor enter &gt;     ; &lt;--- coarsened!
+│  0x00007f455cc70918: mov    (%rsp),%r10        ; load $this
+│  0x00007f455cc7091c: mov    0xc(%r10),%r11d    ; load $this.x
+│  0x00007f455cc70920: mov    %r11d,%r10d        ; ...hm...
+│  0x00007f455cc70923: add    $0x42,%r10d        ; ...hmmm...
+│  0x00007f455cc70927: mov    (%rsp),%r8         ; ...hmmmmm!...
+│  0x00007f455cc7092b: mov    %r10d,0xc(%r8)     ; LOL Hotspot, redundant store, killed two lines below
+│  0x00007f455cc7092f: add    $0x108,%r11d       ; add 0x108 = 0x42 * 4 &lt;-- unrolled by 4
+│  0x00007f455cc70936: mov    %r11d,0xc(%r8)     ; store $this.x back
+│          &lt; blah-blah-blah, monitor exit &gt;      ; &lt;--- coarsened!
+│  0x00007f455cc709c6: add    $0x4,%ebp          ; c += 4   &lt;--- unrolled by 4
+│  0x00007f455cc709c9: cmp    $0x3e5,%ebp        ; c &lt; 1000?
+╰  0x00007f455cc709cf: jl     0x00007f455cc708c1</code></pre></div></div><div class=paragraph><p>咦？循环似乎被以 4 为批次被 <a href=https://en.wikipedia.org/wiki/Loop_unrolling target=_blank rel=noopener>展开</a>，然后在每批迭代中对锁进行了粗化！好吧，如果这是由于循环展开造成的，我们就可以量化这种有限粗化的性能优势，但要使用 <code>-XX:LoopUnrollLimit=1</code> 来减少展开：</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code>Benchmark            Mode  Cnt      Score    Error  Units
+
+# Default
+LockRoach.test       avgt    5   5331.617 ± 19.051  ns/op
+
+# -XX:LoopUnrollLimit=1
+LockRoach.test       avgt    5  20679.043 ±  3.133  ns/op</code></pre></div></div><div class=paragraph><p>哇哦，性能提升了 4 倍！这是有原因的，因为我们已经观察到，最热门的代码已经从从锁定变为 <code>lock cmpxchg</code>。当然，4 倍的粗略锁定意味着 4 倍的吞吐量提升。很酷吧，我们可以宣称成功并继续前进了吗？还不行，我们还得验证一下禁用循环展开是否真的能提供我们想要比较的结果。</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code>↗  0x00007f964d0893d2: lea    0x20(%rsp),%rbx
+│          &lt; blah-blah-blah, monitor enter &gt;
+│  0x00007f964d089429: mov    (%rsp),%r10        ; load $this
+│  0x00007f964d08942d: addl   $0x42,0xc(%r10)    ; $this.x += 0x42
+│          &lt; blah-blah-blah, monitor exit &gt;
+│  0x00007f964d0894be: inc    %ebp               ; c++
+│  0x00007f964d0894c0: cmp    $0x3e8,%ebp        ; c &lt; 1000?
+╰  0x00007f964d0894c6: jl     0x00007f964d0893d2 ;</code></pre></div></div><div class=paragraph><p>啊，好的，一切正常。</p></div><div class=sidebarblock><div class=content><div class=title>D瓜哥注</div><div class=paragraph><p>虽然文章的主旨是明了的。但是，不好意思，最后几段的翻译有些差强人意。一个是原文有些不够明确（严谨地来说，也许是笔者理解的不够到位。）；更严重的是，笔者的英语也差强人意。实在抱歉。备注一下，以后再完善。除此之外，还想说明的是另外一个问题。</p></div><div class=paragraph><p>笔者按照原文描述运行了一下测试程序，数据确实如文章描述的这样，又大概 4 倍的差距。有疑惑的是，笔者针对 <code>-XX:LoopUnrollLimit=&lt;Number></code> 的不同参数做了测试，结果却没有倍差的情况出现，百思不得其解。数据如下：</p></div><div class=listingblock><div class=content><pre class="rouge highlight nowrap"><code>无 -XX:LoopUnrollLimit 设置
+Benchmark       Mode  Cnt     Score     Error  Units
+LockRoach.test  avgt    5  4588.090 ± 224.640  ns/op
+
+-XX:LoopUnrollLimit=1
+Benchmark       Mode  Cnt      Score     Error  Units
+LockRoach.test  avgt    5  18110.053 ± 437.384  ns/op
+
+-XX:LoopUnrollLimit=2
+Benchmark       Mode  Cnt      Score     Error  Units
+LockRoach.test  avgt    5  18054.901 ± 577.089  ns/op
+
+-XX:LoopUnrollLimit=4
+Benchmark       Mode  Cnt      Score     Error  Units
+LockRoach.test  avgt    5  18203.350 ± 908.288  ns/op
+
+-XX:LoopUnrollLimit=8
+Benchmark       Mode  Cnt      Score     Error  Units
+LockRoach.test  avgt    5  18059.318 ± 399.724  ns/op
+
+-XX:LoopUnrollLimit=16
+Benchmark       Mode  Cnt      Score     Error  Units
+LockRoach.test  avgt    5  18075.222 ± 401.691  ns/op</code></pre></div></div><div class=paragraph><p>有机会再深入了解学习一下相关知识再来探索。</p></div></div></div></div></div><div class=sect1><h2 id=_结论>结论</h2><div class=sectionbody><div class=paragraph><p>虽然锁粗化并不适用于整个循环，但另一种循环优化方法—​循环展开—​为常规锁粗化创造了条件，一旦中间表示开始看起来好像有 N 个相邻的锁-解锁序列，就可以进行锁粗化。这不仅能带来性能上的优势，还有助于限制粗化的范围，避免对过大的循环进行过度粗化。</p></div><div class=paragraph><p>原文： <a href=https://shipilev.net/jvm/anatomy-quarks/1-lock-coarsening-for-loops/ target=_blank rel=noopener>JVM Anatomy Quark #1: Lock Coarsening and Loops</a></p></div></div></div></div><footer class=post__footer><div class="post__tags tags clearfix"><svg class="tags__badge icon icon-tag" width="16" height="16" viewBox="0 0 32 32"><path d="M32 19c0 1-1 2-1 2L21 31s-1 1-2 1-2-1-2-1L2 16c-1-1-1.4-2-1.4-2S0 12.5.0 11V3C0 1.5.8.8.8.8S1.5.0 3 0h8c1.5.0 3 .6 3 .6S15 1 16 2l15 15s1 1 1 2zM7 10a3 3 0 100-6 3 3 0 000 6z"/></svg><ul class=tags__list><li class=tags__item><a class="tags__link btn" href=/tags/java/ rel=tag>Java</a></li><li class=tags__item><a class="tags__link btn" href=/tags/%E8%99%9A%E6%8B%9F%E6%9C%BA/ rel=tag>虚拟机</a></li><li class=tags__item><a class="tags__link btn" href=/tags/%E7%BF%BB%E8%AF%91/ rel=tag>翻译</a></li></ul></div></footer></article></main><div class=clearfix><h3>看在D瓜哥码字的辛苦上，请友情支持一下，D瓜哥感激不尽，😜</h3><table><tr><td><img alt=微信打赏码 src=/images/wxpay.jpg></td><td><img alt=支付宝打赏码 src=/images/alipay.png></td></tr></table></div><br><div class=clearfix><h3>欢迎关注D瓜哥的微信公众号，在公众号可以获取我的微信二维码：</h3><img alt=微信公众号 src=/images/wx-jikerizhi.jpg></div><div class="admonitionblock tip"><table><tbody><tr><td class=icon><i class="fa icon-tip" title=Tip></i></td><td class=content><strong>公众号的微信号是: <code>jikerizhi</code></strong>。如果图片加载不出来，可以直接通过搜索公众号的微信号来查找D瓜哥的公众号。</td></tr></tbody></table></div><div class="authorbox clearfix"><figure class=authorbox__avatar><a target=_blank href=/about/><img alt="D瓜哥 avatar" src=/images/avatar.jpg class=avatar height=110 width=110></a></figure><div class=authorbox__header><span class=authorbox__name>关于 D瓜哥</span></div><div class=authorbox__description>厨艺界最好的码农，挨踢界最棒的厨师。<ul><li><a target=_blank href=https://wordpress.diguage.com/>旧版“地瓜哥”博客网</a></li><li><a target=_blank href=https://notes.diguage.com/mysql/>MySQL 学习笔记<sup>Alpha</sup></a></li><li><a target=_blank href=https://diguage.github.io/jdk-source-analysis/>JDK 源码分析<sup>Alpha</sup></a></li></ul></div></div><nav class="pager flex"><div class="pager__item pager__item--prev"><a class=pager__link href=/post/memory-wasted-by-spring-boot-application/ rel=prev><span class=pager__subtitle>«&#8201;上一篇</span><p class=pager__title>Spring Boot 应用程序浪费的内存</p></a></div><div class="pager__item pager__item--next"><a class=pager__link href=/post/jvm-anatomy-quarks-02-transparent-huge-pages/ rel=next><span class=pager__subtitle>下一篇&#8201;»</span><p class=pager__title>JVM 剖析花园：2 - 透明大页</p></a></div></nav><section class=comments><div id=SOHUCS sid=/post/jvm-anatomy-quarks-01-lock-coarsening-for-loops/></div><script type=text/javascript>(function(){if(window.location.hostname==="localhost")return;var n,e="cyuuTeBp3",t="prod_2906c47c31e735e0ed518282fec489a6",s=window.innerWidth||document.documentElement.clientWidth;s<960?window.document.write('<script id="changyan_mobile_js" charset="utf-8" type="text/javascript" src="https://changyan.sohu.com/upload/mobile/wap-js/changyan_mobile.js?client_id='+e+"&conf="+t+'"><\/script>'):(n=function(e,t){var s=document.getElementsByTagName("head")[0]||document.head||document.documentElement,n=document.createElement("script");n.setAttribute("type","text/javascript"),n.setAttribute("charset","UTF-8"),n.setAttribute("src",e),typeof t=="function"&&(window.attachEvent?n.onreadystatechange=function(){var e=n.readyState;(e==="loaded"||e==="complete")&&(n.onreadystatechange=null,t())}:n.onload=t),s.appendChild(n)},n("https://changyan.sohu.com/upload/changyan.js",function(){window.changyan.api.config({appid:e,conf:t})}))})()</script></section></div><aside class=sidebar><div class="widget-search widget"><form class=widget-search__form role=search method=get action=https://google.com/search><label><input class=widget-search__field type=search placeholder=搜索… name=q aria-label=搜索…>
+</label><input class=widget-search__submit type=submit value=Search>
+<input type=hidden name=sitesearch value=https://www.diguage.com/></form></div><div class="widget-wechat widget"><h4 class=widget__title>微信公众号</h4><img alt=微信公众号 class=center src=/images/wx-jikerizhi-qrcode.jpg></div><div class="widget-wechat widget"><h4 class=widget__title>知识星球</h4><img alt=微信公众号 class=center src=/images/zhishixingqiu.png></div><div class="widget-recent widget"><h4 class=widget__title>近期文章</h4><div class=widget__content><ul class=widget__list><li class=widget__item><a class=widget__link href=/post/spring-boot-startup-process-overview/>Spring Boot 启动流程概述</a></li><li class=widget__item><a class=widget__link href=/post/redis-core-data-structure-4/>Redis 核心数据结构（四）</a></li><li class=widget__item><a class=widget__link href=/post/redis-core-data-structure-3/>Redis 核心数据结构（三）</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-subsets/>算法模式：子集</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-backtracking/>算法模式：回溯</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-transform-and-conquer/>算法模式：变治法</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-divide-and-conquer/>算法模式：分治法</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-decrease-and-conquer/>算法模式：减治法</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-topological-sort/>算法模式：拓扑排序</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-union-find/>算法模式：并查集</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-trie/>算法模式：前缀树</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-depth-first-search/>算法模式：深度优先搜索</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-breadth-first-search/>算法模式：广度优先搜索</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-k-way-merge/>算法模式：多路归并</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-two-heaps/>算法模式：双堆</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-cyclic-sort/>算法模式：循环排序</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-quickselect/>算法模式：快速选择</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-top-k-elements/>算法模式：Top K 问题</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-monotonic-stack/>算法模式：单调栈</a></li><li class=widget__item><a class=widget__link href=/post/algorithm-pattern-sliding-window/>算法模式：滑动窗口</a></li></ul></div></div><div class="widget-categories widget"><h4 class=widget__title>分类</h4><div class=widget__content><ul class=widget__list><li class=widget__item><a class=widget__link href=/categories/%E4%B8%AA%E4%BA%BA%E6%88%90%E9%95%BF/>个人成长</a></li><li class=widget__item><a class=widget__link href=/categories/%E5%88%86%E5%B8%83%E5%BC%8F/>分布式</a></li><li class=widget__item><a class=widget__link href=/categories/%E5%BC%80%E5%8F%91%E5%B7%A5%E5%85%B7/>开发工具</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/>性能优化</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/>操作系统</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%95%B0%E6%8D%AE%E5%AD%98%E5%82%A8/>数据存储</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%96%87%E5%AD%A6/>文学</a></li><li class=widget__item><a class=widget__link href=/categories/%E6%96%B9%E6%B3%95%E8%AE%BA/>方法论</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1/>程序设计</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%AE%97%E6%B3%95/>算法</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84/>系统架构</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%BB%8F%E6%B5%8E%E9%87%91%E8%9E%8D/>经济金融</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/>编程语言</a></li><li class=widget__item><a class=widget__link href=/categories/%E7%BD%91%E7%BB%9C/>网络</a></li><li class=widget__item><a class=widget__link href=/categories/%E8%81%8C%E4%B8%9A%E5%8F%91%E5%B1%95/>职业发展</a></li><li class=widget__item><a class=widget__link href=/categories/%E8%BD%AF%E4%BB%B6%E5%B7%A5%E7%A8%8B/>软件工程</a></li><li class=widget__item><a class=widget__link href=/categories/%E9%80%B8%E9%97%BB%E8%B6%A3%E4%BA%8B/>逸闻趣事</a></li><li class=widget__item><a class=widget__link href=/categories/%E9%98%85%E8%AF%BB%E6%91%98%E8%A6%81/>阅读摘要</a></li></ul></div></div><div class="widget-taglist widget"><h4 class=widget__title>标签</h4><div class=widget__content><a class="widget-taglist__link widget__link btn" href=/tags/gc/ title=GC>GC (9)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/http/ title=HTTP>HTTP (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/java/ title=Java>Java (64)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/jvm/ title=JVM>JVM (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/kpi/ title=KPI>KPI (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/kubernetes/ title=Kubernetes>Kubernetes (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/linux/ title=Linux>Linux (12)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/okr/ title=OKR>OKR (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/redis/ title=Redis>Redis (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/shell/ title=Shell>Shell (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/spring/ title=Spring>Spring (26)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/tcp/ title=TCP>TCP (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/udp/ title=UDP>UDP (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/zookeeper/ title=ZooKeeper>ZooKeeper (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E4%B8%AA%E4%BA%BA%E6%8F%90%E5%8D%87/ title=个人提升>个人提升 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E4%B9%A6%E7%B1%8D/ title=书籍>书籍 (15)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E4%BA%A7%E5%93%81/ title=产品>产品 (7)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%80%BA%E5%88%B8/ title=债券>债券 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%88%86%E5%B8%83%E5%BC%8F/ title=分布式>分布式 (15)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%88%86%E6%B2%BB/ title=分治>分治 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/ title=动态规划>动态规划 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9B%A2%E9%98%9F%E5%BB%BA%E8%AE%BE/ title=团队建设>团队建设 (6)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9B%A2%E9%98%9F%E6%96%87%E5%8C%96/ title=团队文化>团队文化 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9B%BE/ title=图>图 (7)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%9F%BA%E9%87%91/ title=基金>基金 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%A0%86/ title=堆>堆 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%AD%98%E5%82%A8/ title=存储>存储 (6)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%B7%A5%E4%BD%9C%E6%96%B9%E6%B3%95/ title=工作方法>工作方法 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%B9%B6%E5%8F%91/ title=并发>并发 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%BA%8F%E5%88%97%E5%8C%96/ title=序列化>序列化 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%BE%AE%E6%9C%8D%E5%8A%A1/ title=微服务>微服务 (17)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E5%BF%83%E7%90%86%E5%AD%A6/ title=心理学>心理学 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95/ title=性能测试>性能测试 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%8A%95%E8%B5%84%E7%90%86%E8%B4%A2/ title=投资理财>投资理财 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/ title=数据库>数据库 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/ title=数据结构>数据结构 (4)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%95%B0%E7%BB%84/ title=数组>数组 (13)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%96%B9%E6%B3%95%E8%AE%BA/ title=方法论>方法论 (13)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%97%85%E8%A1%8C/ title=旅行>旅行 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5/ title=最佳实践>最佳实践 (10)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%9E%B6%E6%9E%84/ title=架构>架构 (44)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%A0%88/ title=栈>栈 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%A0%91/ title=树>树 (11)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%B2%9F%E9%80%9A%E6%8A%80%E5%B7%A7/ title=沟通技巧>沟通技巧 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/ title=源码分析>源码分析 (8)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%90%86%E8%B4%A2/ title=理财>理财 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%94%9F%E6%B4%BB/ title=生活>生活 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%AC%94%E8%AE%B0/ title=笔记>笔记 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%AE%97%E6%B3%95/ title=算法>算法 (8)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%AE%97%E6%B3%95%E6%A8%A1%E5%BC%8F/ title=算法模式>算法模式 (23)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BB%8F%E6%B5%8E/ title=经济>经济 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BC%96%E7%A0%81/ title=编码>编码 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BD%91%E7%BB%9C/ title=网络>网络 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E7%BF%BB%E8%AF%91/ title=翻译>翻译 (7)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%82%A1%E7%A5%A8/ title=股票>股票 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%84%91%E5%9B%BE/ title=脑图>脑图 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%8A%82%E6%97%A5/ title=节日>节日 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%8B%B1%E8%AF%AD/ title=英语>英语 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%99%9A%E6%8B%9F%E6%9C%BA/ title=虚拟机>虚拟机 (9)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AE%BA%E6%96%87/ title=论文>论文 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AE%BE%E8%AE%A1/ title=设计>设计 (36)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/ title=设计模式>设计模式 (3)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AF%97%E6%AD%8C/ title=诗歌>诗歌 (2)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E8%AF%BB%E4%B9%A6/ title=读书>读书 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%80%92%E5%BD%92/ title=递归>递归 (1)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%87%91%E8%9E%8D/ title=金融>金融 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%93%BE%E8%A1%A8/ title=链表>链表 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1/ title=面向对象>面向对象 (5)</a>
+<a class="widget-taglist__link widget__link btn" href=/tags/%E9%A2%86%E5%9F%9F%E9%A9%B1%E5%8A%A8%E8%AE%BE%E8%AE%A1/ title=领域驱动设计>领域驱动设计 (5)</a></div></div><div class="widget-social widget"><h4 class="widget-social__title widget__title">社交</h4><div class="widget-social__content widget__content"><div class="widget-social__item widget__item"><a class="widget-social__link widget__link btn" title=Twitter rel="noopener noreferrer" href=https://twitter.com/diguage target=_blank><svg class="widget-social__link-icon icon icon-twitter" width="24" height="24" viewBox="0 0 384 312"><path d="m384 36.9c-14.1 6.3-29.3 10.5-45.2 12.4 16.3-9.7 28.8-25.2 34.6-43.6-15.2 9-32.1 15.6-50 19.1-14.4-15.2-34.9-24.8-57.5-24.8-43.5.0-78.8 35.3-78.8 78.8.0 6.2.7 12.2 2 17.9-65.5-3.3-123.5-34.6-162.4-82.3C20 26 16.1 39.6 16.1 54c0 27.3 13.9 51.4 35 65.6-12.9-.4-25.1-4-35.7-9.9v1c0 38.2 27.2 70 63.2 77.2-6.6 1.8-13.6 2.8-20.8 2.8-5.1.0-10-.5-14.8-1.4 10 31.3 39.1 54.1 73.6 54.7-27 21.1-60.9 33.7-97.8 33.7-6.4.0-12.6-.4-18.8-1.1C34.9 299 76.3 312 120.8 312c144.9.0 224.1-120 224.1-224.1.0-3.4-.1-6.8-.2-10.2 15.4-11.1 28.7-25 39.3-40.8z"/></svg>
+<span>Twitter</span></a></div><div class="widget-social__item widget__item"><a class="widget-social__link widget__link btn" title=GitHub rel="noopener noreferrer" href=https://github.com/diguage target=_blank><svg class="widget-social__link-icon icon icon-github" width="24" height="24" viewBox="0 0 384 374"><path d="m192 0C85.9.0.0 85.8.0 191.7c0 84.7 55 156.6 131.3 181.9 9.6 1.8 13.1-4.2 13.1-9.2.0-4.6-.2-16.6-.3-32.6-53.4 11.6-64.7-25.7-64.7-25.7-8.7-22.1-21.3-28-21.3-28-17.4-11.9 1.3-11.6 1.3-11.6 19.3 1.4 29.4 19.8 29.4 19.8 17.1 29.3 44.9 20.8 55.9 15.9 1.7-12.4 6.7-20.8 12.2-25.6-42.6-4.8-87.5-21.3-87.5-94.8.0-20.9 7.5-38 19.8-51.4-2-4.9-8.6-24.3 1.9-50.7.0.0 16.1-5.2 52.8 19.7 15.3-4.2 31.7-6.4 48.1-6.5 16.3.1 32.7 2.2 48.1 6.5 36.7-24.8 52.8-19.7 52.8-19.7 10.5 26.4 3.9 45.9 1.9 50.7 12.3 13.4 19.7 30.5 19.7 51.4.0 73.7-44.9 89.9-87.7 94.6 6.9 5.9 13 17.6 13 35.5.0 25.6-.2 46.3-.2 52.6.0 5.1 3.5 11.1 13.2 9.2C329 348.2 384 276.4 384 191.7 384 85.8 298 0 192 0z"/></svg>
+<span>GitHub</span></a></div><div class="widget-social__item widget__item"><a class="widget-social__link widget__link btn" title=Email href=mailto:leejun119@gmail.com><svg class="widget-social__link-icon icon icon-mail" width="24" height="24" viewBox="0 0 416 288"><path d="m0 16v256 16h16 384 16v-16V16 0h-16H16 0zm347 16-139 92.5L69 32zM199 157.5l9 5.5 9-5.5L384 46v210H32V46z"/></svg>
+<span>leejun119@gmail.com</span></a></div></div></div></aside></div><footer class=footer><div class="container footer__container flex"><div class=footer__copyright>&copy; 2025 "地瓜哥"博客网.
+<span class=footer__copyright-credits>基于 <a href=https://gohugo.io/ rel="nofollow noopener" target=_blank>Hugo</a> 引擎和 <a href=https://github.com/Vimux/Mainroad/ rel="nofollow noopener" target=_blank>Mainroad</a> 主题</span>
+<span><a href=https://beian.miit.gov.cn/ target=_target>京ICP备14046450号-4</a></span></div></div></footer></div><script async defer src=/js/menu.js></script><script type=text/x-mathjax-config>
+	MathJax.Hub.Config({
+	  messageStyle: "none",
+	  tex2jax: {
+		inlineMath: [["\\(", "\\)"]],
+		displayMath: [["\\[", "\\]"]],
+		ignoreClass: "nostem|nolatexmath"
+	  },
+	  asciimath2jax: {
+		delimiters: [["\\$", "\\$"]],
+		ignoreClass: "nostem|noasciimath"
+	  },
+	  TeX: { equationNumbers: { autoNumber: "none" } }
+	})
+	MathJax.Hub.Register.StartupHook("AsciiMath Jax Ready", function () {
+	  MathJax.InputJax.AsciiMath.postfilterHooks.Add(function (data, node) {
+		if ((node = data.script.parentNode) && (node = node.parentNode) && node.classList.contains("stemblock")) {
+		  data.math.root.display = "block"
+		}
+		return data
+	  })
+	})
+</script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js?config=TeX-MML-AM_HTMLorMML" async></script></body></html>

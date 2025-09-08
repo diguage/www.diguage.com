@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>数据结构 on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/</link><description>Recent content in 数据结构 on "地瓜哥"博客网</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Mon, 01 May 2023 22:33:03 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/index.xml" rel="self" type="application/rss+xml"/><item><title>HikariCP 源码分析 -- FastList</title><link>https://www.diguage.com/post/hikari-cp-source-analysis-fast-list/</link><pubDate>Sun, 02 Aug 2020 15:06:02 +0800</pubDate><guid>https://www.diguage.com/post/hikari-cp-source-analysis-fast-list/</guid><description>&lt;div class="paragraph">
+&lt;p>在前面的文章 &lt;a href="https://www.diguage.com/post/hikari-cp-source-analysis-concurrent-bag/">HikariCP 源码分析 — ConcurrentBag&lt;/a> 中，D瓜哥分析了一下 HikariCP 中一个非常重要的数据结构 &lt;code>ConcurrentBag&lt;/code>。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>今天，继续再介绍 HikariCP 中另一个很关键的数据结构： &lt;code>FastList&lt;/code>。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;code>FastList&lt;/code> 本身的实现非常简单，要理解它的奥秘，就需要结合 Java 原生集合类的 &lt;code>ArrayList&lt;/code> 来比较性地看。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_构造函数">构造函数&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>先来对比一下两者的构造函数。先来看看 &lt;code>FastList&lt;/code>：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="title">&lt;code>FastList&lt;/code>&lt;/div>
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="kd">public&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">FastList&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="kd">implements&lt;/span> &lt;span class="nc">List&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">&amp;gt;,&lt;/span> &lt;span class="nc">RandomAccess&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="nc">Serializable&lt;/span>
+&lt;span class="o">{&lt;/span>
+ &lt;span class="kd">private&lt;/span> &lt;span class="kd">static&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="kt">long&lt;/span> &lt;span class="n">serialVersionUID&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="o">-&lt;/span>&lt;span class="mi">4598088075242913858L&lt;/span>&lt;span class="o">;&lt;/span>
+
+ &lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="nc">Class&lt;/span>&lt;span class="o">&amp;lt;?&amp;gt;&lt;/span> &lt;span class="n">clazz&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="kd">private&lt;/span> &lt;span class="no">T&lt;/span>&lt;span class="o">[]&lt;/span> &lt;span class="n">elementData&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="kd">private&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="n">size&lt;/span>&lt;span class="o">;&lt;/span>
+
+ &lt;span class="cm">/**
+ * Construct a FastList with a default size of 32.
+ * @param clazz the Class stored in the collection
+ */&lt;/span>
+ &lt;span class="nd">@SuppressWarnings&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;unchecked&amp;#34;&lt;/span>&lt;span class="o">)&lt;/span>
+ &lt;span class="kd">public&lt;/span> &lt;span class="nf">FastList&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">Class&lt;/span>&lt;span class="o">&amp;lt;?&amp;gt;&lt;/span> &lt;span class="n">clazz&lt;/span>&lt;span class="o">)&lt;/span>
+ &lt;span class="o">{&lt;/span>
+ &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">elementData&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">[])&lt;/span> &lt;span class="nc">Array&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">newInstance&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">clazz&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="mi">32&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">clazz&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">clazz&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>
+
+ &lt;span class="cm">/**
+ * Construct a FastList with a specified size.
+ * @param clazz the Class stored in the collection
+ * @param capacity the initial size of the FastList
+ */&lt;/span>
+ &lt;span class="nd">@SuppressWarnings&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;unchecked&amp;#34;&lt;/span>&lt;span class="o">)&lt;/span>
+ &lt;span class="kd">public&lt;/span> &lt;span class="nf">FastList&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">Class&lt;/span>&lt;span class="o">&amp;lt;?&amp;gt;&lt;/span> &lt;span class="n">clazz&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="n">capacity&lt;/span>&lt;span class="o">)&lt;/span>
+ &lt;span class="o">{&lt;/span>
+ &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">elementData&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">[])&lt;/span> &lt;span class="nc">Array&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">newInstance&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">clazz&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">capacity&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">clazz&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">clazz&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>深入剖析 Spring 核心数据结构：BeanFactory</title><link>https://www.diguage.com/post/dive-into-spring-core-data-structure-bean-factory/</link><pubDate>Fri, 26 Jun 2020 15:30:08 +0800</pubDate><guid>https://www.diguage.com/post/dive-into-spring-core-data-structure-bean-factory/</guid><description>&lt;div class="paragraph">
+&lt;p>在 &lt;a href="https://www.diguage.com/post/dive-into-spring-core-data-structure-bean-definition/" target="_blank" rel="noopener">深入剖析 Spring 核心数据结构：BeanDefinition&lt;/a> 中，介绍了 &lt;code>BeanDefinition&lt;/code>。网上很多文章介绍 &lt;code>BeanDefinition&lt;/code> 的 API，D瓜哥却要反其道而行之，从内部属性来分析一下。下面我们开始。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_继承体系">继承体系&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>Spring 非常好地遵循了面向对象的设计原则：面向接口编程。不放过任何可以提取出成接口的机会。虽然感觉似乎增加了类的继承关系，增加了一点的复杂度。但是，却带来了非常好的可扩展性。而 &lt;code>BeanFactory&lt;/code> 的继承体系就是一个非常典型的例子。我们来看一下它的继承体系：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/spring-framework/BeanFactory.svg" alt="BeanFactory 继承体系" width="98%"/>
+&lt;/div>
+&lt;div class="title">图 1. BeanFactory 继承体系&lt;/div>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;code>AliasRegistry&lt;/code>：别名注册器。Spring 中，别名注册相关的功能就是从这里实现的。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>SimpleAliasRegistry&lt;/code>：别名注册器的一个简单实现，从内部属性可以看出，它是把别名映射信息存到一个 &lt;code>Map&lt;/code> 中了。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>DefaultSingletonBeanRegistry&lt;/code>：默认的单例 Bean 注册器，从内部属性来说，也是基于 &lt;code>Map&lt;/code> 实现的。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>FactoryBeanRegistrySupport&lt;/code>： &lt;code>FactoryBean&lt;/code> 注册器。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>SingletonBeanRegistry&lt;/code>：单例 Bean 注册器。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>BeanDefinitionRegistry&lt;/code>： &lt;code>BeanDefinition&lt;/code> 注册器。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>BeanFactory&lt;/code>：容器的基类。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>ListableBeanFactory&lt;/code>：在基本容器基础上，增加了遍历相关功能。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>HierarchicalBeanFactory&lt;/code>：在基本容器基础上，增加了父子上下级容器关联。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>AutowireCapableBeanFactory&lt;/code>：在基本容器基础上，增加了自动注入功能。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>ConfigurableBeanFactory&lt;/code>：对容器增加可配置性，比如父级容器、&lt;code>ClassLoader&lt;/code>、&lt;code>TypeConverter&lt;/code> 等。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>ConfigurableListableBeanFactory&lt;/code>：可配置可遍历容器。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>AbstractBeanFactory&lt;/code>：容器的抽象实现类，实现了容器的基础功能。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>AbstractAutowireCapableBeanFactory&lt;/code>：带自动装配功能的抽象容器类。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>DefaultListableBeanFactory&lt;/code>：这是 Spring 内部使用的默认容器实现。也是 Spring 中最重要的一个类。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_核心属性">核心属性&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="sect2">
+&lt;h3 id="registry">Registry&lt;/h3>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;code>Map&amp;lt;String, String&amp;gt; aliasMap = new ConcurrentHashMap&amp;lt;&amp;gt;(16)&lt;/code>：别名到 Bean 名称的映射。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>&lt;code>Map&amp;lt;String, Object&amp;gt; singletonObjects = new ConcurrentHashMap&amp;lt;&amp;gt;(256)&lt;/code>&lt;/strong>：Bean 名称到单例 Bean 的映射。可以理解成，这就是所谓的容器。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>Map&amp;lt;String, Object&amp;gt; earlySingletonObjects = new HashMap&amp;lt;&amp;gt;(16)&lt;/code>：Bean 到“未成熟”单例 Bean 的映射。该 Bean 对象只是被创建出来，但是还没有注入依赖。在容器解决循环依赖时，用于存储中间状态。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>Map&amp;lt;String, ObjectFactory&amp;lt;?&amp;gt;&amp;gt; singletonFactories = new HashMap&amp;lt;&amp;gt;(16)&lt;/code>：Bean 名称到 Bean 的 &lt;code>ObjectFactory&lt;/code> 对象的映射，在容器解决循环依赖时，用于存储中间状态。&lt;/p>
+&lt;div class="paragraph">
+&lt;p>关于这三个属性的进一步说明，请移步： &lt;a href="https://www.diguage.com//post/spring-circular-dependence/">源码剖析 Spring 循环依赖&lt;/a>。&lt;/p>
+&lt;/div></description></item><item><title>深入剖析 Spring 核心数据结构：BeanDefinition</title><link>https://www.diguage.com/post/dive-into-spring-core-data-structure-bean-definition/</link><pubDate>Sun, 21 Jun 2020 21:18:57 +0800</pubDate><guid>https://www.diguage.com/post/dive-into-spring-core-data-structure-bean-definition/</guid><description>&lt;div class="paragraph">
+&lt;p>林纳斯·托瓦兹（Linus Torvalds）说：“我从心底认为，优秀的程序员与平庸的程序员之间的区别，是在于认为自己的代码重要还是数据结构更加重要。平庸的程序员眼里只有代码，优秀的程序员则关注数据结构及之前的关系。” 也许很多人觉得 Spring 神秘莫测，但是如果了解了它的核心数据结构，很多问题迎刃而解。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>Spring 中两个数据结构最核心：① &lt;code>BeanDefinition&lt;/code>，用于表示 Bean 的定义；② &lt;code>BeanFactory&lt;/code>，用于表示整个 IoC 容器。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在前面文章 &lt;a href="https://www.diguage.com/post/spring-bean-lifecycle-overview/" target="_blank" rel="noopener">Spring Bean 生命周期概述&lt;/a>中，介绍了 Spring Bean 的生命周期。不知道大家有没有思考过 Spring 在内部是如何表示一个 Bean 的？本篇文章，就来聊一聊 &lt;code>BeanDefinition&lt;/code>&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_问题">问题&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>使用 Spring 时，尤其是使用 XML 配置的时候，也许我们会这样的问题：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>Bean 怎么表示？&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Bean 的依赖怎么表示？&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>init-method&lt;/code> 方法怎么存储？&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Bean 的一些属性，比如 &lt;code>lazy-init&lt;/code> 等，怎么表示？&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Bean 构造函数的参数怎么存储？&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>…​&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>Java 也有类似的问题，比如怎么表示一个类？Java 通过反射 API 来解决这个问题：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;code>Class&lt;/code>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>Method&lt;/code>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>Field&lt;/code>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>Constructor&lt;/code>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>Annotation&lt;/code>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>但是，为什么 Spring 还要自己定义一套呢？主要原因是 Java 反射 API 不满足 Spring 的需求，比如，它没办法表示哪些类是 &lt;code>SCOPE_SINGLETON&lt;/code>，哪些类是 &lt;code>SCOPE_PROTOTYPE&lt;/code>。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>另外，Spring 的 Bean 抽象也并不是完全自定义的，它是基于 Java 反射 API 又增加了自定义功能，其核心 API 就是 &lt;code>BeanDefinition&lt;/code>。下面，我们来仔细看一下它的继承体系以及内部核心属性。&lt;/p>
+&lt;/div></description></item><item><title>HikariCP 源码分析 -- ConcurrentBag</title><link>https://www.diguage.com/post/hikari-cp-source-analysis-concurrent-bag/</link><pubDate>Wed, 06 May 2020 17:12:55 +0800</pubDate><guid>https://www.diguage.com/post/hikari-cp-source-analysis-concurrent-bag/</guid><description>&lt;div class="paragraph">
+&lt;p>以前无意间搜资料了解到 HikariCP，一下子就被它的简洁代码和卓越性能吸引住了。以前也有翻过它的代码，但是不是很系统，最近再次翻阅，正好做些笔记，方便以后学习。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥最近在学习 Java 并发知识。那就从 HikariCP 自定义的并发集合 &lt;code>ConcurrentBag&lt;/code> 开始学习。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在 HikariCP 的 Wiki 中，有 &lt;a href="https://github.com/brettwooldridge/HikariCP/wiki/Down-the-Rabbit-Hole#concurrentbag" target="_blank" rel="noopener">Down the Rabbit Hole · ConcurrentBag&lt;/a> 的章节来专门介绍 &lt;code>ConcurrentBag&lt;/code>：&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;code>ConcurrentBag&lt;/code> 的灵感借鉴自 C# .NET 的 &lt;code>ConcurrentBag&lt;/code> 类。但是实现却是完全不同的。这里的 &lt;code>ConcurrentBag&lt;/code> 有如下特性：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>A lock-free design&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>ThreadLocal caching&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Queue-stealing&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Direct hand-off optimizations&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>下面，通过代码来对此做个说明。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在 &lt;code>ConcurrentBag&lt;/code> 类的定义中，声明了集合元素必须是 &lt;code>IConcurrentBagEntry&lt;/code> 的子类。先来看看这个接口的定义：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="kd">public&lt;/span> &lt;span class="kd">interface&lt;/span> &lt;span class="nc">IConcurrentBagEntry&lt;/span>
+&lt;span class="o">{&lt;/span>
+ &lt;span class="kt">int&lt;/span> &lt;span class="no">STATE_NOT_IN_USE&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="kt">int&lt;/span> &lt;span class="no">STATE_IN_USE&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">1&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="kt">int&lt;/span> &lt;span class="no">STATE_REMOVED&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="o">-&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="kt">int&lt;/span> &lt;span class="no">STATE_RESERVED&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="o">-&lt;/span>&lt;span class="mi">2&lt;/span>&lt;span class="o">;&lt;/span>
+
+ &lt;span class="kt">boolean&lt;/span> &lt;span class="nf">compareAndSet&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="kt">int&lt;/span> &lt;span class="n">expectState&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="n">newState&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="kt">void&lt;/span> &lt;span class="nf">setState&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="kt">int&lt;/span> &lt;span class="n">newState&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="kt">int&lt;/span> &lt;span class="nf">getState&lt;/span>&lt;span class="o">();&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>接下来，看一下成员变量：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="c1">// 存放共享元素&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="nc">CopyOnWriteArrayList&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="n">sharedList&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="kt">boolean&lt;/span> &lt;span class="n">weakThreadLocals&lt;/span>&lt;span class="o">;&lt;/span>
+
+&lt;span class="c1">// 在 ThreadLocal 缓存线程本地元素，避免线程争用&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="nc">ThreadLocal&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="nc">List&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="nc">Object&lt;/span>&lt;span class="o">&amp;gt;&amp;gt;&lt;/span> &lt;span class="n">threadList&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="nc">IBagStateListener&lt;/span> &lt;span class="n">listener&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="c1">//&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="nc">AtomicInteger&lt;/span> &lt;span class="n">waiters&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">volatile&lt;/span> &lt;span class="kt">boolean&lt;/span> &lt;span class="n">closed&lt;/span>&lt;span class="o">;&lt;/span>
+
+&lt;span class="c1">// 接力队列&lt;/span>
+&lt;span class="kd">private&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="nc">SynchronousQueue&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="n">handoffQueue&lt;/span>&lt;span class="o">;&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在 &lt;code>ConcurrentBag&lt;/code> 开头的 JavaDoc 中就做了明确说明：&lt;/p>
+&lt;/div>
+&lt;div class="sidebarblock">
+&lt;div class="content">
+&lt;div class="paragraph">
+&lt;p>Note that items that are &amp;#34;borrowed&amp;#34; from the bag are not actually removed from any collection, so garbage collection will not occur even if the reference is abandoned. Thus care must be taken to &amp;#34;requite&amp;#34; borrowed objects otherwise a memory leak will result. Only the &amp;#34;remove&amp;#34; method can completely remove an object from the bag.&lt;/p>
+&lt;/div></description></item></channel></rss>

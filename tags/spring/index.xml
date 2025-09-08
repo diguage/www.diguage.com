@@ -1,0 +1,1927 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Spring on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/spring/</link><description>Recent content in Spring on "地瓜哥"博客网</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Tue, 08 Jul 2025 09:29:43 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/spring/index.xml" rel="self" type="application/rss+xml"/><item><title>Spring Boot 启动流程概述</title><link>https://www.diguage.com/post/spring-boot-startup-process-overview/</link><pubDate>Tue, 08 Jul 2025 09:23:05 +0800</pubDate><guid>https://www.diguage.com/post/spring-boot-startup-process-overview/</guid><description>&lt;div class="paragraph">
+&lt;p>在 &lt;a href="https://www.diguage.com/post/spring-startup-process-overview/" target="_blank" rel="noopener">Spring 启动流程概述&lt;/a> 中，D瓜哥简要介绍了一下 Spring 的启动流程概述。前段时间查看了一下 Spring Boot 的启动流程，画了个时序图，分享一下。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/spring-boot/SpringApplication-run.svg" alt="Spring Boot 启动流程" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. Spring Boot 启动流程&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>结合这张时序图，再加上 &lt;a href="https://www.diguage.com/post/spring-startup-process-overview/" target="_blank" rel="noopener">Spring 启动流程概述&lt;/a> 中的 Spring 启动时序图，就可以看到 Spring Boot 和 Spring 启动的全貌了。&lt;/p>
+&lt;/div></description></item><item><title>深入研究 BeanFactoryPostProcessor</title><link>https://www.diguage.com/post/dive-into-beanfactorypostprocessor/</link><pubDate>Sat, 01 Jun 2024 16:18:55 +0800</pubDate><guid>https://www.diguage.com/post/dive-into-beanfactorypostprocessor/</guid><description>&lt;div class="paragraph">
+&lt;p>D瓜哥在 &lt;a href="https://www.diguage.com/post/spring-extensions-overview/" target="_blank" rel="noopener">Spring 扩展点概览及实践&lt;/a> 中概要性地介绍了一下 Spring 的核心扩展点。里面也提到了 &lt;code>BeanFactoryPostProcessor&lt;/code> 和 &lt;code>BeanDefinitionRegistryPostProcessor&lt;/code>，但仅仅提了一句，没有深入研究。在 &lt;a href="https://www.diguage.com/post/spring-extensions-and-mybatis/" target="_blank" rel="noopener">Spring 扩展点实践：整合 MyBATIS&lt;/a> 中，由于 &lt;code>MapperScannerConfigurer&lt;/code> 实现了 &lt;code>BeanDefinitionRegistryPostProcessor&lt;/code> 接口，也只是简单介绍了一些作用，又一次没有深入研究。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>最近，在开发一个插件时，遇到了一个问题：&lt;strong>利用 &lt;code>BeanFactoryPostProcessor&lt;/code> 对一些特定 &lt;code>BeanDefinition&lt;/code> 设置属性，但生成的 Bean 却没有相关的属性值。&lt;/strong>由此，对 &lt;code>BeanFactoryPostProcessor&lt;/code> 做了一些研究。记录一下，以备不时之需。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_spring_启动流程简介">Spring 启动流程简介&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>在 &lt;a href="https://www.diguage.com/post/spring-startup-process-overview/" target="_blank" rel="noopener">Spring 启动流程概述&lt;/a> 中，D瓜哥对 Spring 的启动流程做了比较详细的介绍。同时画了一张启动流程图，如下：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/spring-framework/AbstractApplicationContext-refresh.svg" alt="AbstractApplicationContext.refresh — 重塑容器" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. AbstractApplicationContext.refresh — 重塑容器&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>从该图中可以明显看到，如果需要对 Spring 的 &lt;code>BeanDefinition&lt;/code> 做些修改，那么，就需要通过实现 &lt;code>BeanFactoryPostProcessor&lt;/code> 接口，来对 Spring 做些扩展。坦白讲，为了上述流程图只展示了一个非常概要性的流程。如果深入一下 &lt;code>invokeBeanFactoryPostProcessors&lt;/code> 方法的细节，会发现这又是一番天地。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_beanfactorypostprocessor_调用详解">&lt;code>BeanFactoryPostProcessor&lt;/code> 调用详解&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>D瓜哥把 &lt;code>invokeBeanFactoryPostProcessors&lt;/code> 方法的流程图也画了出来，细节如下：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/spring-framework/AbstractApplicationContext-invokeBeanFactoryPostProcessors.svg" alt="BeanDefinitionRegistryPostProcessor &amp;amp; BeanFactoryPostProcessor 调用过程" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 2. BeanDefinitionRegistryPostProcessor &amp;amp; BeanFactoryPostProcessor 调用过程&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>从这张流程图上可以看出 &lt;code>BeanFactoryPostProcessor&lt;/code> 的调用过程，比在 &lt;a href="https://www.diguage.com/post/spring-startup-process-overview/" target="_blank" rel="noopener">Spring 启动流程概述&lt;/a> 中介绍的要复杂很多：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>首先，执行 &lt;code>BeanDefinitionRegistryPostProcessor#postProcessBeanDefinitionRegistry&lt;/code> 方法，顺序如下：&lt;/p>
+&lt;div class="paragraph">
+&lt;p>关于 &lt;code>BeanDefinitionRegistryPostProcessor&lt;/code> 的处理流程，D瓜哥在 &lt;a href="https://www.diguage.com/post/spring-extensions-overview/#bean-factory-post-processor" target="_blank" rel="noopener">Spring 扩展点概览及实践：BeanDefinitionRegistryPostProcessor&lt;/a> 中有更详细的描述，不了解的朋友请参考那篇文章的介绍。&lt;/p>
+&lt;/div></description></item><item><title>Spring Boot 应用程序浪费的内存</title><link>https://www.diguage.com/post/memory-wasted-by-spring-boot-application/</link><pubDate>Mon, 08 Jan 2024 23:12:14 +0800</pubDate><guid>https://www.diguage.com/post/memory-wasted-by-spring-boot-application/</guid><description>&lt;div class="paragraph">
+&lt;p>当今世界被广泛浪费的资源之一是：内存。由于编程效率低下，内存浪费量惊人（有时 &amp;#34;令人震惊&amp;#34;）。我们在多个企业应用程序中都看到了这种情况。为了证明这一点，我们进行了一项小型研究。我们分析了著名的 Spring Boot Pet Clinic 应用程序，看看它浪费了多少内存。该应用程序由社区设计，旨在展示如何使用 Spring 应用程序框架构建简单但功能强大的面向数据库的应用程序。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_环境">环境&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>Spring Boot 2.1.4.RELEASE&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Java SDK 1.8&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Tomcat 8.5.20&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>MySQL 5.7.26 with MySQL Connector/J 8.0.15&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_压力测试">压力测试&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>我们使用流行的开源压力测试工具 &lt;a href="https://jmeter.apache.org/" target="_blank" rel="noopener">Apache JMeter&lt;/a> 进行压力测试。我们使用以下设置执行了 30 分钟的压力测试：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;strong>线程数（用户&lt;/strong>）- 1000（连接到目标的用户数量）&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>上升周期（秒）&lt;/strong> - 10。所有请求开始的时间范围。根据我们的配置，每 0.01 秒将启动 1 个新线程，即 100 个线程/秒。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>循环次数&lt;/strong> - 永久。这 1000 个线程将背靠背执行测试迭代。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>持续时间（秒）&lt;/strong> - 1800。启动后，1000 个线程持续运行 1800 秒。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/gc-tuning/jmeter-setting.png" alt="JMeter 设置" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. JMeter 设置&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>我们在负载测试中使用了以下场景：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>在系统中添加新的宠物主人。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>查看宠物主人的相关信息。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>向系统中添加一只新宠物。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>查看宠物相关信息。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>在宠物探视历史中添加探视信息。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>更新宠物相关信息。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>更新宠物主人的相关信息。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>通过搜索主人姓名查看主人信息。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>查看所有主人的信息。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_如何测量内存浪费">如何测量内存浪费？&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>业界有数百种工具可以显示&lt;strong>内存使用量&lt;/strong>。但是，我们很少遇到能测量因低效编程而浪费的内存量的工具。 &lt;a href="https://heaphero.io/" target="_blank" rel="noopener">HeapHero&lt;/a> 是一款简单的工具，它可以分析堆转储，并告诉我们由于编程效率低下而浪费了多少内存。&lt;/p>
+&lt;/div></description></item><item><title>Spring 应用合并之路</title><link>https://www.diguage.com/post/the-merging-spring-applications-road/</link><pubDate>Sat, 23 Dec 2023 20:38:47 +0800</pubDate><guid>https://www.diguage.com/post/the-merging-spring-applications-road/</guid><description>&lt;div class="paragraph">
+&lt;p>公司最近一年在推进降本增效，在用尽各种手段之后，发现应用太多，每个应用都做跨机房容灾部署，则最少需要 4 台机器（称为容器更合适）。那么，将相近应用做一个合并，减少维护项目，提高机器利用率就是一个可选方案。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>经过前后三次不同的折腾，最后探索出来一个可行方案。记录一下，分享出来，希望对有相关需求的研发童鞋有所帮助。下面按照四种可能的方案，分别做介绍。另外，为了方便做演示，专门整了两个演示项目：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;a href="https://github.com/diguage/merge-demo-boot" target="_blank" rel="noopener">diguage/merge-demo-boot&lt;/a> — 合并项目，下面简称为 &lt;code>boot&lt;/code>。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://github.com/diguage/merge-demo-web" target="_blank" rel="noopener">diguage/merge-demo-web&lt;/a> — 被合并项目，下面简称为 &lt;code>web&lt;/code>。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_jar_包引用">Jar 包引用&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>这个方式，可能是给人印象最容易的方式。仔细思考一下，从维护性的角度来看，这个方式反而是最麻烦的方式，理由如下：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;code>web&lt;/code> 项目每次更新，都需要重新打包发布新版； &lt;code>boot&lt;/code> 项目也需要跟着更新发布。拉一次屎，脱两次裤子。属实麻烦。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>还需要考虑 &lt;code>web&lt;/code> 项目的加载问题，类似下面要描述的，是否共用容器：&lt;/p>
+&lt;div class="olist loweralpha">
+&lt;ol class="loweralpha" type="a">
+&lt;li>
+&lt;p>共用容器 — 这是最容器想到的方式。但是这种方式，需要解决 Bean 冲突的问题。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>不共用容器 — 这种方式需要处理 &lt;code>web&lt;/code> 容器如何加载的问题。默认应该是无法识别。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>基于这些考虑，这种方式直接被抛弃了。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_仓库合并公用一套容器">仓库合并，公用一套容器&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>这是第一次尝试使用的方案。也是遇到问题最多的方案。&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>将两个仓库做合并。&lt;/p>
+&lt;div class="olist loweralpha">
+&lt;ol class="loweralpha" type="a">
+&lt;li>
+&lt;p>将 &lt;code>web&lt;/code> 仓库的地址配置到 &lt;code>boot&lt;/code> 项目里： &lt;code>git remote add web &lt;a href="mailto:git@github.com">git@github.com&lt;/a>:diguage/merge-demo-web.git&lt;/code>；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>在 &lt;code>boot&lt;/code> 项目里，切出来一个分支： &lt;code>git switch -c web&lt;/code>；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>将 &lt;code>web&lt;/code> 分支的提交清空： &lt;code>git update-ref -d HEAD&lt;/code>，然后做一次提交；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>将 &lt;code>web&lt;/code> 项目的代码克隆到 &lt;code>web&lt;/code> 分支上： &lt;code>git pull --rebase --allow-unrelated-histories web master&lt;/code>；注意，这里需要加 &lt;code>--allow-unrelated-histories&lt;/code> 参数，以允许不相干的仓库进行合并。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>从 &lt;code>boot&lt;/code> 项目的 &lt;code>master&lt;/code> 分支上，切出来一个合并分支： &lt;code>git switch -c merge&lt;/code>；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>将 &lt;code>web&lt;/code> 项目向 &lt;code>boot&lt;/code> 项目合并： &lt;code>git merge --allow-unrelated-histories web&lt;/code>；注意，这里需要加 &lt;code>--allow-unrelated-histories&lt;/code> 参数，以允许不相干的仓库进行合并。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>处理代码冲突，完成合并即可。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div></description></item><item><title>Spring 对占位符的处理（一）：XML 中的 Bean</title><link>https://www.diguage.com/post/placeholder-in-spring-1/</link><pubDate>Mon, 01 May 2023 22:15:55 +0800</pubDate><guid>https://www.diguage.com/post/placeholder-in-spring-1/</guid><description>&lt;div class="paragraph">
+&lt;p>最近有小伙伴在开发时，遇到了一个 Spring 占位符，例如 &lt;code>${token}&lt;/code>， 在不同环境下处理不一致的问题，正好对 Spring 对占位符的处理也有一些不清楚的地方，趁此机会，把 Spring 对占位符的处理机制深入了解一下，方便后续排查问题。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>经常阅读D瓜哥博客的朋友可能知道，D瓜哥在 &lt;a href="https://www.diguage.com/post/spring-extensions-and-dubbo-1/#spring-plugin" target="_blank" rel="noopener">Spring 扩展点实践：整合 Apache Dubbo（一）： Spring 插件机制简介&lt;/a> 中已经介绍了 Spring 的插件机制。在阅读以下内容之前，建议大家先去阅读一下这篇文章中“Spring 插件机制简介”章节的内容，以便于无缝衔接。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在分析的过程中发现， Spring 对占位符有两种截然不同的出来阶段：① XML 配置文件中的占位符；② Java 源代码中 &lt;code>@Value&lt;/code> 注解中的占位符。由于内容较多，一篇讲解完有些过长，所以分三篇文章来分别介绍这两种处理过程。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>本篇首先来介绍一下对 XML 配置文件中的占位符的处理。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_示例代码">示例代码&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>在正式开始之前，先来看一下示例代码：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="title">&lt;code>UserRpc.java&lt;/code>&lt;/div>
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="java">&lt;span class="cm">/**
+ * @author D瓜哥 · &lt;a href="https://www.diguage.com" target="_blank">https://www.diguage.com&lt;/a>
+ * @since 2023-05-02 10:23:49
+ */&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">UserRpc&lt;/span> &lt;span class="o">{&lt;/span>
+
+ &lt;span class="nd">@Value&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;${user.appId}&amp;#34;&lt;/span>&lt;span class="o">)&lt;/span>
+ &lt;span class="kd">private&lt;/span> &lt;span class="nc">String&lt;/span> &lt;span class="n">appId&lt;/span>&lt;span class="o">;&lt;/span>
+
+ &lt;span class="c1">// 这里不使用注解，而是使用 XML 配置&lt;/span>
+ &lt;span class="c1">// @Value(&amp;#34;${user.token}&amp;#34;)&lt;/span>
+ &lt;span class="kd">private&lt;/span> &lt;span class="nc">String&lt;/span> &lt;span class="n">token&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="title">&lt;code>token.properties&lt;/code>&lt;/div>
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">user.appId&lt;span class="o">=&lt;/span>dummyAppId
+user.token&lt;span class="o">=&lt;/span>dummyToken&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="title">&lt;code>spring.xml&lt;/code>&lt;/div>
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="xml">&lt;span class="cp">&amp;lt;?xml version=&amp;#34;1.0&amp;#34; encoding=&amp;#34;UTF-8&amp;#34;?&amp;gt;&lt;/span>
+&lt;span class="nt">&amp;lt;beans&lt;/span> &lt;span class="na">xmlns=&lt;/span>&lt;span class="s">&amp;#34;http://www.springframework.org/schema/beans&amp;#34;&lt;/span>
+ &lt;span class="na">xmlns:xsi=&lt;/span>&lt;span class="s">&amp;#34;http://www.w3.org/2001/XMLSchema-instance&amp;#34;&lt;/span>
+ &lt;span class="na">xmlns:context=&lt;/span>&lt;span class="s">&amp;#34;http://www.springframework.org/schema/context&amp;#34;&lt;/span>
+ &lt;span class="na">xsi:schemaLocation=&lt;/span>&lt;span class="s">&amp;#34;http://www.springframework.org/schema/beans
+ http://www.springframework.org/schema/beans/spring-beans.xsd
+ http://www.springframework.org/schema/context
+ https://www.springframework.org/schema/context/spring-context.xsd&amp;#34;&lt;/span>&lt;span class="nt">&amp;gt;&lt;/span>
+
+ &lt;span class="c">&amp;lt;!-- @author D瓜哥 · &lt;a href="https://www.diguage.com" target="_blank">https://www.diguage.com&lt;/a> --&amp;gt;&lt;/span>
+
+ &lt;span class="nt">&amp;lt;context:annotation-config/&amp;gt;&lt;/span>
+
+ &lt;span class="nt">&amp;lt;bean&lt;/span> &lt;span class="na">id=&lt;/span>&lt;span class="s">&amp;#34;userRpc&amp;#34;&lt;/span>
+ &lt;span class="na">class=&lt;/span>&lt;span class="s">&amp;#34;com.diguage.truman.context.UserRpc&amp;#34;&lt;/span>&lt;span class="nt">&amp;gt;&lt;/span>
+ &lt;span class="c">&amp;lt;!-- XML 配置的占位符实例在此 --&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;property&lt;/span> &lt;span class="na">name=&lt;/span>&lt;span class="s">&amp;#34;token&amp;#34;&lt;/span> &lt;span class="na">value=&lt;/span>&lt;span class="s">&amp;#34;${user.token}&amp;#34;&lt;/span>&lt;span class="nt">/&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;/bean&amp;gt;&lt;/span>
+
+ &lt;span class="nt">&amp;lt;context:property-placeholder&lt;/span> &lt;span class="na">location=&lt;/span>&lt;span class="s">&amp;#34;classpath:token.properties&amp;#34;&lt;/span>&lt;span class="nt">/&amp;gt;&lt;/span>
+
+&lt;span class="nt">&amp;lt;/beans&amp;gt;&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_bean_标签处理">&lt;code>&amp;lt;bean&amp;gt;&lt;/code> 标签处理&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>在 &lt;a href="https://www.diguage.com/post/spring-startup-process-overview/" target="_blank" rel="noopener">Spring 启动流程概述&lt;/a> 中，已经介绍过，Spring 的启动过程几乎都被封装在 &lt;code>AbstractApplicationContext#refresh&lt;/code> 方法中。在 &lt;code>refresh&lt;/code> 方法中调用了 &lt;code>refreshBeanFactory&lt;/code> 方法；在 &lt;code>refreshBeanFactory&lt;/code> 方法执行过程中，调用了 &lt;code>loadBeanDefinitions&lt;/code> 方法。而 &lt;code>BeanDefinition&lt;/code> 的加载是由 &lt;code>org.springframework.context.support.AbstractRefreshableApplicationContext#loadBeanDefinitions&lt;/code> 来完成的。通过 XML 文件配置的 Bean 是由 &lt;code>org.springframework.context.support.AbstractXmlApplicationContext#loadBeanDefinitions(org.springframework.beans.factory.support.DefaultListableBeanFactory)&lt;/code> （&lt;code>AbstractRefreshableApplicationContext&lt;/code> 的子类）处理完成的。处理过程的时序图如下：&lt;/p>
+&lt;/div></description></item><item><title>Versions Maven 插件简介</title><link>https://www.diguage.com/post/intro-to-versions-maven-plugin/</link><pubDate>Fri, 21 Apr 2023 22:07:37 +0800</pubDate><guid>https://www.diguage.com/post/intro-to-versions-maven-plugin/</guid><description>&lt;div class="paragraph">
+&lt;p>在 &lt;a href="https://www.diguage.com/post/specification-for-maven-bom/" target="_blank" rel="noopener">制定组织内 Maven BOM 的一些规范&lt;/a> 中，D瓜哥 介绍了一些组织内指定 Maven BOM 的一些规范。根据这些规范，D瓜哥 创建并维护了部门内部的 Maven BOM。今年，要求对部门内的陈旧依赖做一些升级工作。所以，在 &lt;a href="https://www.diguage.com/post/experience-about-upgrading-java-dependencies/" target="_blank" rel="noopener">关于升级 Spring 等依赖的一些经验&lt;/a> 中介绍了一些升级开源依赖的经验；在上一篇文章 &lt;a href="https://www.diguage.com/post/upgrade-maven-plugins/" target="_blank" rel="noopener">升级 Maven 插件&lt;/a> 中介绍了升级 Maven 插件的一些注意事项。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥一直坚持“机器可以干的事情，就应该交给机器干”。对于依赖管理，Maven Enforcer 插件就可以对依赖做必要的检查，所以，在 &lt;a href="https://www.diguage.com/post/use-maven-enforcer-plugin-to-check-dependencies/" target="_blank" rel="noopener">使用 Maven Enforcer 插件检查依赖&lt;/a> 中，介绍了如何使用 Apache Maven Enforcer 来管理依赖。由于要维护部门内部的 Maven BOM，同时由于版本控的特质，所以，需要时长检查依赖升级情况。原来都是手动检查，需要一个一个去搜索各个依赖，不仅费时费力，而且还低效。最近，Maven 有一个插件可以胜任这个工作，它就是： &lt;a href="https://www.mojohaus.org/versions/versions-maven-plugin/index.html" target="_blank" rel="noopener">Versions Maven Plugin&lt;/a>。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_依赖检查">依赖检查&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>Versions Maven Plugin 支持两种配置方式：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>外置配置文件 &lt;code>maven-version-rules.xml&lt;/code>；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>内置在 POM 文件中，直接写在插件的 &lt;code>&amp;lt;configuration&amp;gt;&lt;/code> 标签中。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>第一种方案不方便迁移。还要额外管理一个配置文件。推荐使用第二种方式。另外，直接将这些配置放在 Maven BOM 中，使用继承的方式使用 Maven BOM，那么子项目就自动继承了这些配置。后续也只需要一个地方的配置即可。示例配置如下：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="xml">&lt;span class="c">&amp;lt;!-- @author: D瓜哥 · &lt;a href="https://www.diguage.com" target="_blank">https://www.diguage.com&lt;/a> --&amp;gt;&lt;/span>
+&lt;span class="nt">&amp;lt;plugin&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;groupId&amp;gt;&lt;/span>org.codehaus.mojo&lt;span class="nt">&amp;lt;/groupId&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;artifactId&amp;gt;&lt;/span>versions-maven-plugin&lt;span class="nt">&amp;lt;/artifactId&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;version&amp;gt;&lt;/span>2.15.0&lt;span class="nt">&amp;lt;/version&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;configuration&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;ruleSet&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;ignoreVersions&amp;gt;&lt;/span>
+ &lt;span class="c">&amp;lt;!-- 可以使用 ignoreVersion 配置忽略 SNAPSHOT、alpha、beta 版等 --&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;ignoreVersion&amp;gt;&lt;/span>
+ &lt;span class="c">&amp;lt;!-- &amp;#39;exact&amp;#39; (默认) 或 &amp;#39;regex&amp;#39; --&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;type&amp;gt;&lt;/span>regex&lt;span class="nt">&amp;lt;/type&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;version&amp;gt;&lt;/span>(.+-SNAPSHOT|.+-M\d)&lt;span class="nt">&amp;lt;/version&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;/ignoreVersion&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;ignoreVersion&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;type&amp;gt;&lt;/span>regex&lt;span class="nt">&amp;lt;/type&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;version&amp;gt;&lt;/span>.+-(alpha|beta)&lt;span class="nt">&amp;lt;/version&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;/ignoreVersion&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;/ignoreVersions&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;/ruleSet&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;/configuration&amp;gt;&lt;/span>
+&lt;span class="nt">&amp;lt;/plugin&amp;gt;&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>升级 Maven 插件</title><link>https://www.diguage.com/post/upgrade-maven-plugins/</link><pubDate>Tue, 21 Mar 2023 17:36:48 +0800</pubDate><guid>https://www.diguage.com/post/upgrade-maven-plugins/</guid><description>&lt;div class="paragraph">
+&lt;p>D瓜哥在 &lt;a href="https://www.diguage.com/post/experience-about-upgrading-java-dependencies/" target="_blank" rel="noopener">关于升级 Spring 等依赖的一些经验&lt;/a> 中，介绍了一些升级 Spring 等依赖的一些经验。在 &lt;a href="https://www.diguage.com/post/upgrade-ibatis-mybatis-about-duplicate-key-exception/" target="_blank" rel="noopener">升级 iBATIS/MyBATIS 对处理 DuplicateKeyException 的影响&lt;/a> 中，分析了升级 iBATIS/MyBATIS 对处理 DuplicateKeyException 异常的影响。在升级中，还遇到一些 Maven 插件相关的问题。这里也分享出来，希望对大家有所帮助。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_properties_文件编码错误">Properties 文件编码错误&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>在升级过程中，遇到过 Properties 文件编码错误的问题。可以通过配置对应的编码来解决这个问题。配置如下：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="xml">&lt;span class="c">&amp;lt;!-- D瓜哥 · &lt;a href="https://www.diguage.com" target="_blank">https://www.diguage.com&lt;/a> --&amp;gt;&lt;/span>
+&lt;span class="nt">&amp;lt;plugin&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;groupId&amp;gt;&lt;/span>org.apache.maven.plugins&lt;span class="nt">&amp;lt;/groupId&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;artifactId&amp;gt;&lt;/span>maven-resources-plugin&lt;span class="nt">&amp;lt;/artifactId&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;version&amp;gt;&lt;/span>3.3.0&lt;span class="nt">&amp;lt;/version&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;configuration&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;propertiesEncoding&amp;gt;&lt;/span>ISO-8859-1&lt;span class="nt">&amp;lt;/propertiesEncoding&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;/configuration&amp;gt;&lt;/span>
+&lt;span class="nt">&amp;lt;/plugin&amp;gt;&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_参考资料">参考资料&lt;/h3>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;a href="https://maven.apache.org/plugins/maven-resources-plugin/examples/filtering-properties-files.html" target="_blank" rel="noopener">Apache Maven Resources Plugin – Filtering Properties Files&lt;/a>。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_使用_maven_enforcer_插件检查依赖">使用 Maven Enforcer 插件检查依赖&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>私以为“机器可以干的事情，就应该交给机器干”。对于依赖管理，Maven Enforcer 插件就可以对依赖做必要的检查。所以，推荐使用 Maven Enforcer 插件来检查低版本及有安全漏洞的依赖。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>详细介绍请参考： &lt;a href="https://www.diguage.com/post/use-maven-enforcer-plugin-to-check-dependencies/" target="_blank" rel="noopener">使用 Maven Enforcer 插件检查依赖&lt;/a>&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="compile-with-parameters">字节码文件包含原始参数名称&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>一些对外发布的依赖，建议将原始参数名称编译到构建结果里。可以通过指定构建参数来完成。&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="xml">&lt;span class="c">&amp;lt;!-- D瓜哥 · &lt;a href="https://www.diguage.com" target="_blank">https://www.diguage.com&lt;/a> --&amp;gt;&lt;/span>
+&lt;span class="nt">&amp;lt;plugin&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;groupId&amp;gt;&lt;/span>org.apache.maven.plugins&lt;span class="nt">&amp;lt;/groupId&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;artifactId&amp;gt;&lt;/span>maven-compiler-plugin&lt;span class="nt">&amp;lt;/artifactId&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;version&amp;gt;&lt;/span>3.11.0&lt;span class="nt">&amp;lt;/version&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;configuration&amp;gt;&lt;/span>
+ &lt;span class="c">&amp;lt;!-- &lt;a href="https://docs.oracle.com/javase/8/docs/technotes/tools/windows/javac.html" target="_blank">https://docs.oracle.com/javase/8/docs/technotes/tools/windows/javac.html&lt;/a> --&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;compilerArgs&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;arg&amp;gt;&lt;/span>-parameters&lt;span class="nt">&amp;lt;/arg&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;/compilerArgs&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;parameters&amp;gt;&lt;/span>true&lt;span class="nt">&amp;lt;/parameters&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;/configuration&amp;gt;&lt;/span>
+&lt;span class="nt">&amp;lt;/plugin&amp;gt;&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_参考资料_2">参考资料&lt;/h3>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;a href="https://maven.apache.org/plugins/maven-compiler-plugin/examples/pass-compiler-arguments.html" target="_blank" rel="noopener">Apache Maven Compiler Plugin – Pass Compiler Arguments&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_解决测试依赖问题">解决测试依赖问题&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>部分项目可能已经使用了 JUnit 5，但是执行测试代码时，可能报错。可以使用如下配置来解决这个问题：&lt;/p>
+&lt;/div></description></item><item><title>升级 iBATIS/MyBATIS 对处理 DuplicateKeyException 的影响</title><link>https://www.diguage.com/post/upgrade-ibatis-mybatis-about-duplicate-key-exception/</link><pubDate>Thu, 23 Feb 2023 11:21:23 +0800</pubDate><guid>https://www.diguage.com/post/upgrade-ibatis-mybatis-about-duplicate-key-exception/</guid><description>&lt;div class="paragraph">
+&lt;p>在 &lt;a href="https://www.diguage.com/post/experience-about-upgrading-java-dependencies/" target="_blank" rel="noopener">关于升级 Spring 等依赖的一些经验&lt;/a> 中，分享了一些开源依赖的升级经验。部分小伙伴质疑升级 iBATIS/MyBATIS 会影响对 &lt;code>DuplicateKeyException&lt;/code> 异常的处理。这篇文章就从源码分析/代码更新的就角度来分析一下升级相关依赖是否会对 &lt;code>DuplicateKeyException&lt;/code> 异常的处理带来实质性的影响。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>由于主要的技术栈涉及 MySQL 驱动、iBATIS、MyBATIS、Spring 周边等。所以，本文仅分析涉及的这些依赖。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥使用 &lt;a href="https://dev.mysql.com/doc/employee/en/" target="_blank" rel="noopener">MySQL: Employees Sample Database&lt;/a> 搭建了一个 Spring + MyBATIS + MySQL Connector/J 的测试环境。连续插入两条一样的数据，单步调试，在 &lt;code>com.mysql.jdbc.MysqlIO#sendCommand&lt;/code> 方法中，就可以观察到如下异常：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/upgrade-spring/mysql-error1062.png" alt="MySQL Error 1062" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. MySQL Error 1062&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>从这里可以明显看出，MySQL 驱动返回的异常中， &lt;code>venderCode&lt;/code> 编码是 &lt;code>1062&lt;/code>。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>顺着这个线，往上走，到 &lt;code>org.apache.ibatis.session.defaults.DefaultSqlSession#update(java.lang.String, java.lang.Object)&lt;/code> 方法中，可以看到，&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/upgrade-spring/mybatis-wrap-exception.png" alt="MyBATIS wrap Exception" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 2. MyBATIS wrap Exception&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在这里，会将 &lt;code>SQLException&lt;/code> 包装成 &lt;code>PersistenceException&lt;/code>，这也是 MyBATIS 对外暴露的统一的异常类。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>继续往上走，就到了 &lt;code>org.mybatis.spring.SqlSessionTemplate.SqlSessionInterceptor#invoke&lt;/code> 方法：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/upgrade-spring/mybatis-translateException.png" alt="MyBATIS translateException" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 3. MyBATIS translateException&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在 &lt;code>SqlSessionInterceptor#invoke&lt;/code> 方法的异常处理中，将 &lt;code>PersistenceException&lt;/code> 异常通过 &lt;code>org.springframework.dao.support.PersistenceExceptionTranslator#translateExceptionIfPossible&lt;/code> 方法，将异常转换成 &lt;code>DataAccessException&lt;/code> 对象。 &lt;code>DataAccessException&lt;/code> 类是 Spring 数据访问的异常类基类。&lt;/p>
+&lt;/div></description></item><item><title>制定组织内 Maven BOM 的一些规范</title><link>https://www.diguage.com/post/specification-for-maven-bom/</link><pubDate>Sat, 03 Sep 2022 09:19:59 +0800</pubDate><guid>https://www.diguage.com/post/specification-for-maven-bom/</guid><description>&lt;div class="paragraph">
+&lt;p>在 &lt;a href="https://www.diguage.com/post/experience-about-upgrading-java-dependencies/" target="_blank" rel="noopener">关于升级 Spring 等依赖的一些经验&lt;/a> 中介绍了 D瓜哥在升级项目依赖时，遇到的一些问题以及一些需要注意的地方。但是，这里还存在一个问题：&lt;strong>各个依赖的版本依然散落在各个项目中；升级依赖，需要在所有项目中，把所有相关项目的依赖都巴拉一下，费时费力。&lt;/strong>解决这个问题的一个比较好的办法是&lt;strong>制定一个组织内部的 Maven BOM，集中管理相关依赖的版本。&lt;/strong>这样升级的时候，还需要修改 BOM 的版本号即可。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_maven_bom_介绍">Maven BOM 介绍&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>BOM（Bill of Materials）是由 Maven 提供的功能,它通过定义一整套相互兼容的 jar 包版本集合，使用时只需要依赖该BOM文件，即可放心的使用需要的依赖 jar 包，且无需再指定版本号。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_一些基本原则">一些基本原则&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>Spring &amp;amp; Spring Boot 是 Java 生态中，全世界广泛使用的开发框架，在各种场景中都经受过考验。所以，Spring &amp;amp; Spring Boot 选择的 Jar 在稳定性和兼容性方面都有保证。另外，Spring Boot 本身就集成了非常非常多的依赖，并为此创建了一个网页 &lt;a href="https://docs.spring.io/spring-boot/docs/current/reference/html/dependency-versions.html" target="_blank" rel="noopener">Spring Boot Dependency versions&lt;/a> 来说明它集成的依赖及版本。故而，可以选择以 Spring Boot 为底本，来制作自己的 BOM。&lt;/p>
+&lt;div class="olist loweralpha">
+&lt;ol class="loweralpha" type="a">
+&lt;li>
+&lt;p>如果不需要 Spring 相关依赖，可以将 Spring 相关依赖删除掉，然后在其之上增加组织内部依赖而创建自己的 BOM。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>如果需要 Spring 相关依赖，那么直接继承&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>在稳定性方面，经过更多人检验的版本，则稳定性更有保障。所以，选择最近两年下载次数比较多的版本。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>更新的版本，更容易获得技术升级带来的红利。所以，在可能的情况下，优先选择高版本。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>优先考虑目标 JDK 的支持情况。例如，一些依赖的高版本或低版本不支持 Java 8，但是 Java 8 是生产环境部署的主要版本，那么太高的版本和低版本都不适合。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_外部_jar_包选择标准">外部 Jar 包选择标准&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>尽量将外部中间件统一到同一种依赖的同一个版本上。例如：数据库连接池全部使用 HikariCP；JSON 处理统一使用 Jackson。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>选择最近两年发布的版本中，下载次数最多的版本为准。如果有发布的小版本升级，则在该版本基础上，该版本的最新修订版。例如，1.2.3 是最近两年下载最多的版本，但是 1.2.4 已经发布，则优先选择使用 1.2.4。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>如果有两个大版本，高版本符合条件的情况下，优先选择高版本。低版本大概率是先淘汰的，高版本相对来说维护时间更长，另外高版本的代码优化得更佳。例如，Ehcache 的选择。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>如果传递依赖造成依赖 Jar 包版本冲突，则尽可能选择高版本的 Jar。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>持续演进的项目的依赖优先级更高；相反，临近淘汰的项目优先级降低，甚至不予考虑。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>两年以上未更新的依赖，在 API 兼容的情况下，直接升级到最新版。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>没有显示使用而是间接引入的依赖，不再单独声明，由直接依赖来引入。如果需要解决冲突，则按照上面的原则来处理。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div></description></item><item><title>关于升级 Spring 等依赖的一些经验</title><link>https://www.diguage.com/post/experience-about-upgrading-java-dependencies/</link><pubDate>Sun, 28 Aug 2022 09:19:59 +0800</pubDate><guid>https://www.diguage.com/post/experience-about-upgrading-java-dependencies/</guid><description>&lt;div class="paragraph">
+&lt;p>到公司后，熟悉了一些项目后，发现大部分项目的依赖都比较陈旧，比如某些项目还在使用 Spring 3.x 的版本。所以，在进行需求开发时，也顺手把一些项目的依赖给升级了一下。周五，一个小伙伴问我关于升级 Spring 的经验。正好趁此机会，把一些经验总结一下。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>下面的描述以 Java 8 为准，没有在其他版本 Java 上试验过。参考时，请慎重。描述的原则如下：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>尽量选择还在维护中的版本，而不是已经 End of Life 的过时版。这样有问题可以及时反馈并得到修复。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Java 8 是目标版本，所以，一定要兼容 Java 8。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_spring_framework_升级">Spring Framework 升级&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>Spring Framework 从 3.2.6.RELEASE 开始提供 BOM。可以利用 BOM 简化 Spring 依赖声明：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="xml">&lt;span class="c">&amp;lt;!-- D瓜哥 · &lt;a href="https://www.diguage.com" target="_blank">https://www.diguage.com&lt;/a> --&amp;gt;&lt;/span>
+&lt;span class="nt">&amp;lt;dependencyManagement&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;dependencies&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;dependency&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;groupId&amp;gt;&lt;/span>org.springframework&lt;span class="nt">&amp;lt;/groupId&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;artifactId&amp;gt;&lt;/span>spring-framework-bom&lt;span class="nt">&amp;lt;/artifactId&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;version&amp;gt;&lt;/span>5.3.25&lt;span class="nt">&amp;lt;/version&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;type&amp;gt;&lt;/span>pom&lt;span class="nt">&amp;lt;/type&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;scope&amp;gt;&lt;/span>import&lt;span class="nt">&amp;lt;/scope&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;/dependency&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;/dependencies&amp;gt;&lt;/span>
+&lt;span class="nt">&amp;lt;/dependencyManagement&amp;gt;&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这样，就不需要重复声明 Spring 依赖的版本，直接使用即可。 Spring Framework Bom 保证了 Spring 自身依赖的版本统一。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这里，关于 Spring 的升级，还有几点需要说明：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>从 Spring 3.X 升级到 Spring 4.X+ 后，原来的 &lt;code>MappingJacksonHttpMessageConverter&lt;/code> 已经被删除了；直接使用 &lt;code>MappingJackson2HttpMessageConverter&lt;/code> 即可。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>从 Spring 3.0.0.RELEASE 到 Spring 3.1.4.RELEASE，Spring 有一个 &lt;code>spring-asm&lt;/code>，如果不再使用这个区间的 Spring，请把这个依赖删掉。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>如果使用了 Apache Velocity 1.X 作为前端模板，由于 Spring 5+ 将相关集成代码删除，所以，只能将 Spring 升级到 4.3.30.RELEASE。相关 BOM 如下：&lt;/p>
+&lt;div class="openblock">
+&lt;div class="content">
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="xml">&lt;span class="c">&amp;lt;!-- D瓜哥 · &lt;a href="https://www.diguage.com" target="_blank">https://www.diguage.com&lt;/a> --&amp;gt;&lt;/span>
+&lt;span class="nt">&amp;lt;dependency&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;groupId&amp;gt;&lt;/span>org.springframework&lt;span class="nt">&amp;lt;/groupId&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;artifactId&amp;gt;&lt;/span>spring-framework-bom&lt;span class="nt">&amp;lt;/artifactId&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;version&amp;gt;&lt;/span>4.3.30.RELEASE&lt;span class="nt">&amp;lt;/version&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;type&amp;gt;&lt;/span>pom&lt;span class="nt">&amp;lt;/type&amp;gt;&lt;/span>
+ &lt;span class="nt">&amp;lt;scope&amp;gt;&lt;/span>import&lt;span class="nt">&amp;lt;/scope&amp;gt;&lt;/span>
+&lt;span class="nt">&amp;lt;/dependency&amp;gt;&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>在 Spring Boot 中 Jackson 日期格式化技巧</title><link>https://www.diguage.com/post/jackson-date-format-on-spring-boot/</link><pubDate>Tue, 12 Apr 2022 16:04:23 +0800</pubDate><guid>https://www.diguage.com/post/jackson-date-format-on-spring-boot/</guid><description>&lt;div class="paragraph">
+&lt;p>使用 Spring Boot 时，需要使用 Jackson 处理一些 Java Time API 类型的 JSON 序列化问题，在处理一些类的字段时，可以通过直接在属性上加注解的方式来指定其格式化样式。但是，昨天同事遇到一个格式化 &lt;code>Map&lt;/code> 数据的问题，这样就不能通过加注解来解决格式化样式的问题了。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在网上各种搜索，各种尝试后，终于解决了这个问题，记录一下，以备不时之需。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>闲言少叙，直接上代码：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="java">&lt;span class="kn">package&lt;/span> &lt;span class="nn">com.diguage.demo.config&lt;/span>&lt;span class="o">;&lt;/span>
+
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">com.fasterxml.jackson.databind.ObjectMapper&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">com.fasterxml.jackson.databind.util.StdDateFormat&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">com.fasterxml.jackson.datatype.jsr310.JavaTimeModule&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">org.springframework.context.annotation.Bean&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">org.springframework.context.annotation.Configuration&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">org.springframework.context.annotation.Primary&lt;/span>&lt;span class="o">;&lt;/span>
+
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">java.text.DateFormat&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">java.text.SimpleDateFormat&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">java.time.LocalDate&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">java.time.LocalDateTime&lt;/span>&lt;span class="o">;&lt;/span>
+
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">static&lt;/span> &lt;span class="n">com&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">fasterxml&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">jackson&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">databind&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">SerializationFeature&lt;/span>&lt;span class="o">.*;&lt;/span>
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">static&lt;/span> &lt;span class="n">java&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">time&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">format&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">DateTimeFormatter&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">ofPattern&lt;/span>&lt;span class="o">;&lt;/span>
+
+&lt;span class="cm">/**
+ * 配置类
+ *
+ * @author D瓜哥 · &lt;a href="https://www.diguage.com" target="_blank">https://www.diguage.com&lt;/a>
+ */&lt;/span>
+&lt;span class="nd">@Configuration&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">Config&lt;/span> &lt;span class="o">{&lt;/span>
+
+ &lt;span class="cm">/**
+ * 创建 ObjectMapper 对象，配置日期格式化
+ *
+ * @author D瓜哥 · &lt;a href="https://www.diguage.com" target="_blank">https://www.diguage.com&lt;/a>
+ */&lt;/span>
+ &lt;span class="nd">@Bean&lt;/span>
+ &lt;span class="nd">@Primary&lt;/span>
+ &lt;span class="kd">public&lt;/span> &lt;span class="nc">ObjectMapper&lt;/span> &lt;span class="nf">objectMapper&lt;/span>&lt;span class="o">()&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="nc">ObjectMapper&lt;/span> &lt;span class="n">mapper&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="k">new&lt;/span> &lt;span class="nc">ObjectMapper&lt;/span>&lt;span class="o">();&lt;/span>
+
+ &lt;span class="nc">String&lt;/span> &lt;span class="n">dateTimepattern&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s">&amp;#34;yyyy-MM-dd HH:mm:ss&amp;#34;&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="nc">String&lt;/span> &lt;span class="n">datePattern&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s">&amp;#34;yyyy-MM-dd&amp;#34;&lt;/span>&lt;span class="o">;&lt;/span>
+
+ &lt;span class="nc">DateFormat&lt;/span> &lt;span class="n">dateFormat&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="k">new&lt;/span> &lt;span class="nc">SimpleDateFormat&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">dateTimepattern&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="n">mapper&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">setDateFormat&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">dateFormat&lt;/span>&lt;span class="o">);&lt;/span>
+
+ &lt;span class="n">mapper&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">configure&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="no">WRITE_DATES_AS_TIMESTAMPS&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="kc">false&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="n">mapper&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">setDateFormat&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="k">new&lt;/span> &lt;span class="nc">StdDateFormat&lt;/span>&lt;span class="o">().&lt;/span>&lt;span class="na">withColonInTimeZone&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="kc">true&lt;/span>&lt;span class="o">));&lt;/span>
+
+ &lt;span class="nc">JavaTimeModule&lt;/span> &lt;span class="n">javaTimeModule&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="k">new&lt;/span> &lt;span class="nc">JavaTimeModule&lt;/span>&lt;span class="o">();&lt;/span>
+
+ &lt;span class="n">javaTimeModule&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">addDeserializer&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">LocalDate&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">class&lt;/span>&lt;span class="o">,&lt;/span>
+ &lt;span class="k">new&lt;/span> &lt;span class="nf">LocalDateDeserializer&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">ofPattern&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">datePattern&lt;/span>&lt;span class="o">)));&lt;/span>
+ &lt;span class="n">javaTimeModule&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">addSerializer&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">LocalDate&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">class&lt;/span>&lt;span class="o">,&lt;/span>
+ &lt;span class="k">new&lt;/span> &lt;span class="nf">LocalDateSerializer&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">ofPattern&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">datePattern&lt;/span>&lt;span class="o">)));&lt;/span>
+
+ &lt;span class="n">javaTimeModule&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">addDeserializer&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">LocalDateTime&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">class&lt;/span>&lt;span class="o">,&lt;/span>
+ &lt;span class="k">new&lt;/span> &lt;span class="nf">LocalDateTimeDeserializer&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">ofPattern&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">dateTimepattern&lt;/span>&lt;span class="o">)));&lt;/span>
+ &lt;span class="n">javaTimeModule&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">addSerializer&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">LocalDateTime&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">class&lt;/span>&lt;span class="o">,&lt;/span>
+ &lt;span class="k">new&lt;/span> &lt;span class="nf">LocalDateTimeSerializer&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">ofPattern&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">dateTimepattern&lt;/span>&lt;span class="o">)));&lt;/span>
+
+ &lt;span class="n">mapper&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">registerModule&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">javaTimeModule&lt;/span>&lt;span class="o">);&lt;/span>
+
+ &lt;span class="k">return&lt;/span> &lt;span class="n">mapper&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_后续问题">后续问题&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>不知道通过这种方式指定日期格式化样式后，在处理一些打格式化样式注解的字段时，会有什么样的表现？有机会测试一下。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_参考资料">参考资料&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;a href="https://www.baeldung.com/jackson-serialize-dates" target="_blank" rel="noopener">Jackson Date&lt;/a>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a href="https://stackoverflow.com/a/56777701/951836" target="_blank" rel="noopener">json - Java 8 LocalDate Jackson format&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/div>
+&lt;/div></description></item><item><title>Spring AOP 源码分析：创建代理（二）</title><link>https://www.diguage.com/post/spring-aop-create-proxy-cglib/</link><pubDate>Tue, 11 Aug 2020 15:00:46 +0800</pubDate><guid>https://www.diguage.com/post/spring-aop-create-proxy-cglib/</guid><description>&lt;div class="paragraph">
+&lt;p>&lt;a href="https://www.diguage.com/post/spring-aop-bootstrap/">Spring AOP 源码分析：入门&lt;/a> 中，梳理出来了 Spring AOP 的入口。 &lt;a href="https://www.diguage.com/post/spring-aop-get-advices/">Spring AOP 源码分析：获得通知&lt;/a> 中着重介绍了如何获取通知。上一篇文章 &lt;a href="https://www.diguage.com/post/spring-aop-create-proxy-jdk/">Spring AOP 源码分析：创建代理（一）&lt;/a> 重点介绍了一下切面链的组装和基于 JDK 动态代理的 AOP 的实现，这篇文章介绍一下基于 cglib 的代理类是生成。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_cglib_简介">cglib 简介&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/spring-framework/cglib.png" alt="CGLIB" width="95%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>CGLIB（Code Generator Library）是一个高性能的代码生成库，被广泛应用于 AOP 框架（Spring）中以提供方法拦截功能，主要以继承目标类的方式来进行拦截实现，因此 CGLIB 可以对无接口的类进行代理。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>CGLIB代理主要通过操作字节码的方式为对象引入方法调用时访问操作，底层使用了ASM来操作字节码生成新的类，ASM是一个短小精悍的字节码操作框架。CGLIB的应用栈如下：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/spring-framework/cglib-architecture.jpg" alt="CGLIB" width="95%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="sidebarblock">
+&lt;div class="content">
+&lt;div class="paragraph">
+&lt;p>最新版的 Hibernate 已经把字节码库从 cglib 切换为 Byte Buddy。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>JDK 动态代理是通过实现 &lt;code>InvocationHandler&lt;/code> 接口，在其 &lt;code>invoke&lt;/code> 方法中添加切面逻辑。而 cglib 则是通过实现 &lt;code>MethodInterceptor&lt;/code> 接口，在其 &lt;code>invoke&lt;/code> 方法中添加切面逻辑。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>下面看一下在 Spring 中，是如何实现利用 cglib 来实现 AOP 编程的？&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_cglibaopproxy">&lt;code>CglibAopProxy&lt;/code>&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>先看一下创建代理对象的方法：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="title">&lt;code>CglibAopProxy#getProxy(ClassLoader)&lt;/code>&lt;/div>
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="java">&lt;span class="nd">@Override&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="nc">Object&lt;/span> &lt;span class="nf">getProxy&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nd">@Nullable&lt;/span> &lt;span class="nc">ClassLoader&lt;/span> &lt;span class="n">classLoader&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">logger&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">isTraceEnabled&lt;/span>&lt;span class="o">())&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="n">logger&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">trace&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;Creating CGLIB proxy: &amp;#34;&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">advised&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getTargetSource&lt;/span>&lt;span class="o">());&lt;/span>
+ &lt;span class="o">}&lt;/span>
+
+ &lt;span class="k">try&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="nc">Class&lt;/span>&lt;span class="o">&amp;lt;?&amp;gt;&lt;/span> &lt;span class="n">rootClass&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">advised&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getTargetClass&lt;/span>&lt;span class="o">();&lt;/span>
+ &lt;span class="nc">Assert&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">state&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">rootClass&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="kc">null&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="s">&amp;#34;Target class must be available for creating a CGLIB proxy&amp;#34;&lt;/span>&lt;span class="o">);&lt;/span>
+
+ &lt;span class="nc">Class&lt;/span>&lt;span class="o">&amp;lt;?&amp;gt;&lt;/span> &lt;span class="n">proxySuperClass&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">rootClass&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">rootClass&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getName&lt;/span>&lt;span class="o">().&lt;/span>&lt;span class="na">contains&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">ClassUtils&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">CGLIB_CLASS_SEPARATOR&lt;/span>&lt;span class="o">))&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="n">proxySuperClass&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">rootClass&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getSuperclass&lt;/span>&lt;span class="o">();&lt;/span>
+ &lt;span class="nc">Class&lt;/span>&lt;span class="o">&amp;lt;?&amp;gt;[]&lt;/span> &lt;span class="n">additionalInterfaces&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">rootClass&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getInterfaces&lt;/span>&lt;span class="o">();&lt;/span>
+ &lt;span class="k">for&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="nc">Class&lt;/span>&lt;span class="o">&amp;lt;?&amp;gt;&lt;/span> &lt;span class="n">additionalInterface&lt;/span> &lt;span class="o">:&lt;/span> &lt;span class="n">additionalInterfaces&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">advised&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">addInterface&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">additionalInterface&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="o">}&lt;/span>
+
+ &lt;span class="c1">// Validate the class, writing log messages as necessary.&lt;/span>
+ &lt;span class="c1">// 验证 Class&lt;/span>
+ &lt;span class="n">validateClassIfNecessary&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">proxySuperClass&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">classLoader&lt;/span>&lt;span class="o">);&lt;/span>
+
+ &lt;span class="c1">// Configure CGLIB Enhancer...&lt;/span>
+ &lt;span class="nc">Enhancer&lt;/span> &lt;span class="n">enhancer&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">createEnhancer&lt;/span>&lt;span class="o">();&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">classLoader&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="kc">null&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="n">enhancer&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">setClassLoader&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">classLoader&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">classLoader&lt;/span> &lt;span class="k">instanceof&lt;/span> &lt;span class="nc">SmartClassLoader&lt;/span> &lt;span class="o">&amp;amp;&amp;amp;&lt;/span>
+ &lt;span class="o">((&lt;/span>&lt;span class="nc">SmartClassLoader&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="n">classLoader&lt;/span>&lt;span class="o">).&lt;/span>&lt;span class="na">isClassReloadable&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">proxySuperClass&lt;/span>&lt;span class="o">))&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="n">enhancer&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">setUseCache&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="kc">false&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="n">enhancer&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">setSuperclass&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">proxySuperClass&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="n">enhancer&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">setInterfaces&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">AopProxyUtils&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">completeProxiedInterfaces&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">advised&lt;/span>&lt;span class="o">));&lt;/span>
+ &lt;span class="n">enhancer&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">setNamingPolicy&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">SpringNamingPolicy&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">INSTANCE&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="n">enhancer&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">setStrategy&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="k">new&lt;/span> &lt;span class="nc">ClassLoaderAwareGeneratorStrategy&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">classLoader&lt;/span>&lt;span class="o">));&lt;/span>
+
+ &lt;span class="c1">// 设置拦截器&lt;/span>
+&lt;span class="hll"> &lt;span class="nc">Callback&lt;/span>&lt;span class="o">[]&lt;/span> &lt;span class="n">callbacks&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">getCallbacks&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">rootClass&lt;/span>&lt;span class="o">);&lt;/span>
+&lt;/span> &lt;span class="nc">Class&lt;/span>&lt;span class="o">&amp;lt;?&amp;gt;[]&lt;/span> &lt;span class="n">types&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="k">new&lt;/span> &lt;span class="nc">Class&lt;/span>&lt;span class="o">&amp;lt;?&amp;gt;[&lt;/span>&lt;span class="n">callbacks&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">length&lt;/span>&lt;span class="o">];&lt;/span>
+ &lt;span class="k">for&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="kt">int&lt;/span> &lt;span class="n">x&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="o">;&lt;/span> &lt;span class="n">x&lt;/span> &lt;span class="o">&amp;lt;&lt;/span> &lt;span class="n">types&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">length&lt;/span>&lt;span class="o">;&lt;/span> &lt;span class="n">x&lt;/span>&lt;span class="o">++)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="n">types&lt;/span>&lt;span class="o">[&lt;/span>&lt;span class="n">x&lt;/span>&lt;span class="o">]&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">callbacks&lt;/span>&lt;span class="o">[&lt;/span>&lt;span class="n">x&lt;/span>&lt;span class="o">].&lt;/span>&lt;span class="na">getClass&lt;/span>&lt;span class="o">();&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="c1">// fixedInterceptorMap only populated at this point, after getCallbacks call above&lt;/span>
+ &lt;span class="n">enhancer&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">setCallbackFilter&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="k">new&lt;/span> &lt;span class="nc">ProxyCallbackFilter&lt;/span>&lt;span class="o">(&lt;/span>
+ &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">advised&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getConfigurationOnlyCopy&lt;/span>&lt;span class="o">(),&lt;/span> &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">fixedInterceptorMap&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">fixedInterceptorOffset&lt;/span>&lt;span class="o">));&lt;/span>
+ &lt;span class="n">enhancer&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">setCallbackTypes&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">types&lt;/span>&lt;span class="o">);&lt;/span>
+
+ &lt;span class="c1">// Generate the proxy class and create a proxy instance.&lt;/span>
+ &lt;span class="c1">// 生成代理类以及创建代理&lt;/span>
+ &lt;span class="k">return&lt;/span> &lt;span class="nf">createProxyClassAndInstance&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">enhancer&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">callbacks&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="k">catch&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="nc">CodeGenerationException&lt;/span> &lt;span class="o">|&lt;/span> &lt;span class="nc">IllegalArgumentException&lt;/span> &lt;span class="n">ex&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="k">throw&lt;/span> &lt;span class="k">new&lt;/span> &lt;span class="nf">AopConfigException&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;Could not generate CGLIB subclass of &amp;#34;&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">advised&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getTargetClass&lt;/span>&lt;span class="o">()&lt;/span> &lt;span class="o">+&lt;/span>
+ &lt;span class="s">&amp;#34;: Common causes of this problem include using a final class or a non-visible class&amp;#34;&lt;/span>&lt;span class="o">,&lt;/span>
+ &lt;span class="n">ex&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="k">catch&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="nc">Throwable&lt;/span> &lt;span class="n">ex&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="c1">// TargetSource.getTarget() failed&lt;/span>
+ &lt;span class="k">throw&lt;/span> &lt;span class="k">new&lt;/span> &lt;span class="nf">AopConfigException&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;Unexpected AOP exception&amp;#34;&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">ex&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="o">}&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>Spring AOP 源码分析：创建代理（一）</title><link>https://www.diguage.com/post/spring-aop-create-proxy-jdk/</link><pubDate>Mon, 10 Aug 2020 14:10:00 +0800</pubDate><guid>https://www.diguage.com/post/spring-aop-create-proxy-jdk/</guid><description>&lt;div class="paragraph">
+&lt;p>&lt;a href="https://www.diguage.com/post/spring-aop-bootstrap/">Spring AOP 源码分析：入门&lt;/a> 中，梳理出来了 Spring AOP 的入口。上一篇文章 &lt;a href="https://www.diguage.com/post/spring-aop-get-advices/">Spring AOP 源码分析：获得通知&lt;/a> 中着重介绍了如何获取通知。接着上一篇文章，这篇文章介绍一下如何创建代理。&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="title">&lt;code>AbstractAutoProxyCreator#createProxy&lt;/code>&lt;/div>
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="java">&lt;span class="kd">protected&lt;/span> &lt;span class="nc">Object&lt;/span> &lt;span class="nf">createProxy&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">Class&lt;/span>&lt;span class="o">&amp;lt;?&amp;gt;&lt;/span> &lt;span class="n">beanClass&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="nd">@Nullable&lt;/span> &lt;span class="nc">String&lt;/span> &lt;span class="n">beanName&lt;/span>&lt;span class="o">,&lt;/span>
+ &lt;span class="nd">@Nullable&lt;/span> &lt;span class="nc">Object&lt;/span>&lt;span class="o">[]&lt;/span> &lt;span class="n">specificInterceptors&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="nc">TargetSource&lt;/span> &lt;span class="n">targetSource&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">beanFactory&lt;/span> &lt;span class="k">instanceof&lt;/span> &lt;span class="nc">ConfigurableListableBeanFactory&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="nc">AutoProxyUtils&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">exposeTargetClass&lt;/span>&lt;span class="o">((&lt;/span>&lt;span class="nc">ConfigurableListableBeanFactory&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">beanFactory&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">beanName&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">beanClass&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="o">}&lt;/span>
+
+
+ &lt;span class="c1">// 创建代理工厂对象&lt;/span>
+ &lt;span class="nc">ProxyFactory&lt;/span> &lt;span class="n">proxyFactory&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="k">new&lt;/span> &lt;span class="nc">ProxyFactory&lt;/span>&lt;span class="o">();&lt;/span>
+
+ &lt;span class="c1">// 获取当前类的属性&lt;/span>
+ &lt;span class="n">proxyFactory&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">copyFrom&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="k">this&lt;/span>&lt;span class="o">);&lt;/span>
+
+ &lt;span class="c1">//如果没有使用CGLib代理&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(!&lt;/span>&lt;span class="n">proxyFactory&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">isProxyTargetClass&lt;/span>&lt;span class="o">())&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="c1">// 是否可能使用CGLib代理&lt;/span>
+ &lt;span class="c1">// 决定对于给定的 Bean 是否应该使用 targetClass 而不是他的接口代理&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">shouldProxyTargetClass&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">beanClass&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">beanName&lt;/span>&lt;span class="o">))&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="n">proxyFactory&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">setProxyTargetClass&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="kc">true&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="k">else&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="c1">// 查看beanClass对应的类是否含有InitializingBean.class/DisposableBean.class/Aware.class接口&lt;/span>
+ &lt;span class="c1">// 无则采用JDK动态代理，有则采用CGLib动态代理&lt;/span>
+ &lt;span class="n">evaluateProxyInterfaces&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">beanClass&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">proxyFactory&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="o">}&lt;/span>
+
+ &lt;span class="c1">// 获得所有关联的Advisor集合(该分支待补充)&lt;/span>
+ &lt;span class="nc">Advisor&lt;/span>&lt;span class="o">[]&lt;/span> &lt;span class="n">advisors&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">buildAdvisors&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">beanName&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">specificInterceptors&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="n">proxyFactory&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">addAdvisors&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">advisors&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="c1">// 此处的targetSource一般为SingletonTargetSource&lt;/span>
+ &lt;span class="n">proxyFactory&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">setTargetSource&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">targetSource&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="c1">// 定制代理，扩展点，空实现&lt;/span>
+ &lt;span class="n">customizeProxyFactory&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">proxyFactory&lt;/span>&lt;span class="o">);&lt;/span>
+
+ &lt;span class="c1">// 用来控制代理工厂被配置后，是否还允许修改通知&lt;/span>
+ &lt;span class="c1">// 缺省为 false&lt;/span>
+ &lt;span class="n">proxyFactory&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">setFrozen&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">freezeProxy&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="c1">// 是否设置预过滤模式，此处针对本文为true&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">advisorsPreFiltered&lt;/span>&lt;span class="o">())&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="n">proxyFactory&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">setPreFiltered&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="kc">true&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="o">}&lt;/span>
+
+ &lt;span class="c1">// 获取使用JDK动态代理或者cglib动态代理产生的对象&lt;/span>
+ &lt;span class="k">return&lt;/span> &lt;span class="n">proxyFactory&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getProxy&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">getProxyClassLoader&lt;/span>&lt;span class="o">());&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="title">&lt;code>ProxyFactory#getProxy(ClassLoader)&lt;/code>&lt;/div>
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="java">&lt;span class="kd">public&lt;/span> &lt;span class="nc">Object&lt;/span> &lt;span class="nf">getProxy&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nd">@Nullable&lt;/span> &lt;span class="nc">ClassLoader&lt;/span> &lt;span class="n">classLoader&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="c1">// 1、创建JDK方式的AOP代理或者CGLib方式的AOP代理&lt;/span>
+ &lt;span class="c1">// 2、调用具体的AopProxy来创建Proxy代理对象&lt;/span>
+ &lt;span class="k">return&lt;/span> &lt;span class="nf">createAopProxy&lt;/span>&lt;span class="o">().&lt;/span>&lt;span class="na">getProxy&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">classLoader&lt;/span>&lt;span class="o">);&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在 &lt;code>createAopProxy()&lt;/code> 方法中就不再列出，因为 &lt;code>AopProxyFactory&lt;/code> 接口只有一个实现类 &lt;code>DefaultAopProxyFactory&lt;/code>。所以，直接来看看 &lt;code>getProxy(classLoader)&lt;/code> 方法：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="title">&lt;code>DefaultAopProxyFactory#createAopProxy&lt;/code>&lt;/div>
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="java">&lt;span class="nd">@Override&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="nc">AopProxy&lt;/span> &lt;span class="nf">createAopProxy&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">AdvisedSupport&lt;/span> &lt;span class="n">config&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="kd">throws&lt;/span> &lt;span class="nc">AopConfigException&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="c1">// 如果实现接口，默认采用Java动态代理&lt;/span>
+ &lt;span class="c1">// 如果没有接口，或者有接口却强制使用 cglib&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(!&lt;/span>&lt;span class="no">IN_NATIVE_IMAGE&lt;/span> &lt;span class="o">&amp;amp;&amp;amp;&lt;/span>
+ &lt;span class="c1">// optimize 是否实用激进的优化策略&lt;/span>
+ &lt;span class="c1">// proxyTargetClass 为 true，则代理类本身而不是接口&lt;/span>
+ &lt;span class="c1">// 是否存在代理接口&lt;/span>
+ &lt;span class="o">(&lt;/span>&lt;span class="n">config&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">isOptimize&lt;/span>&lt;span class="o">()&lt;/span> &lt;span class="o">||&lt;/span> &lt;span class="n">config&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">isProxyTargetClass&lt;/span>&lt;span class="o">()&lt;/span> &lt;span class="o">||&lt;/span> &lt;span class="n">hasNoUserSuppliedProxyInterfaces&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">config&lt;/span>&lt;span class="o">)))&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="nc">Class&lt;/span>&lt;span class="o">&amp;lt;?&amp;gt;&lt;/span> &lt;span class="n">targetClass&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">config&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getTargetClass&lt;/span>&lt;span class="o">();&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">targetClass&lt;/span> &lt;span class="o">==&lt;/span> &lt;span class="kc">null&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="k">throw&lt;/span> &lt;span class="k">new&lt;/span> &lt;span class="nf">AopConfigException&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;TargetSource cannot determine target class: &amp;#34;&lt;/span> &lt;span class="o">+&lt;/span>
+ &lt;span class="s">&amp;#34;Either an interface or a target is required for proxy creation.&amp;#34;&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">targetClass&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">isInterface&lt;/span>&lt;span class="o">()&lt;/span> &lt;span class="o">||&lt;/span> &lt;span class="nc">Proxy&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">isProxyClass&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">targetClass&lt;/span>&lt;span class="o">))&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="k">return&lt;/span> &lt;span class="k">new&lt;/span> &lt;span class="nf">JdkDynamicAopProxy&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">config&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="k">return&lt;/span> &lt;span class="k">new&lt;/span> &lt;span class="nf">ObjenesisCglibAopProxy&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">config&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="k">else&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="k">return&lt;/span> &lt;span class="k">new&lt;/span> &lt;span class="nf">JdkDynamicAopProxy&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">config&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="o">}&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>Spring AOP 源码分析：获得通知</title><link>https://www.diguage.com/post/spring-aop-get-advices/</link><pubDate>Sun, 09 Aug 2020 15:46:50 +0800</pubDate><guid>https://www.diguage.com/post/spring-aop-get-advices/</guid><description>&lt;div class="paragraph">
+&lt;p>在文章 &lt;a href="https://www.diguage.com/post/spring-aop-process-overview/" target="_blank" rel="noopener">Spring AOP 处理流程概述&lt;/a> 中，对 Spring AOP 有了一个整体认识。在文章 &lt;a href="https://www.diguage.com/post/spring-aop-bootstrap/">Spring AOP 源码分析：入门&lt;/a> 中，对 Spring AOP 的相关入口做了分析。这篇文章就带大家看一看，Spring AOP 是如何获取通知的？&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="example-code">示例代码&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>在 &lt;a href="https://www.diguage.com/post/how-to-read-spring-sources/#example-code" target="_blank" rel="noopener">如何阅读 Spring 源码？: 示例代码&lt;/a> 中，已经给出了一个完整的 AOP 示例代码。为了节省篇幅，请直接参考那篇文章的示例代码，这里就不在赘述。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_注册_advice通知增强">注册 Advice(通知/增强)&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>请根据 &lt;a href="https://www.diguage.com/post/spring-aop-bootstrap/">Spring AOP 源码分析：入门&lt;/a> 中提到的关键方法入口处，打上断点，开始调试。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>首先，需要明确一点的是：对于切面（使用 &lt;code>@Aspect&lt;/code> 注解标注过的类）在 Spring 容器中，也是被统一f封装为 &lt;code>BeanDefinition&lt;/code> 实例的，也需要通过一个方式，将其注册到 Spring 容器中。比如，就像 &lt;a href="#example-code">示例代码&lt;/a> 那样，通过 &lt;code>ImportSelector&lt;/code> 方式，使用类名，将其注册到容器中。这样，就可以利用 Spring 容器对 Bean 的 API 来统一处理了。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>Advice(通知/增强)几乎是在意想不到的地方完成注册的：在第一次调用 &lt;code>AbstractAutoProxyCreator#postProcessBeforeInstantiation&lt;/code> 方法时，通过 &lt;code>AspectJAwareAdvisorAutoProxyCreator#shouldSkip&lt;/code> 方法，完成了切面的注册。下面，我们对这个过程抽丝剥茧，逐步分析。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>先来看看 &lt;code>findCandidateAdvisors&lt;/code> 方法：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="title">&lt;code>AnnotationAwareAspectJAutoProxyCreator#findCandidateAdvisors&lt;/code>&lt;/div>
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="java">&lt;span class="nd">@Override&lt;/span>
+&lt;span class="kd">protected&lt;/span> &lt;span class="nc">List&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="nc">Advisor&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="nf">findCandidateAdvisors&lt;/span>&lt;span class="o">()&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="c1">// Add all the Spring advisors found according to superclass rules.&lt;/span>
+ &lt;span class="c1">//当使用注解方式配置AOP的时候并不是丢弃了对XML配置的支持&lt;/span>
+ &lt;span class="c1">//在这里调用父类方法加载配置文件中的AOP声明&lt;/span>
+ &lt;span class="nc">List&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="nc">Advisor&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="n">advisors&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="kd">super&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">findCandidateAdvisors&lt;/span>&lt;span class="o">();&lt;/span>
+ &lt;span class="c1">// Build Advisors for all AspectJ aspects in the bean factory.&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">aspectJAdvisorsBuilder&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="kc">null&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="n">advisors&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">addAll&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">aspectJAdvisorsBuilder&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">buildAspectJAdvisors&lt;/span>&lt;span class="o">());&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="k">return&lt;/span> &lt;span class="n">advisors&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>如何阅读 Spring 源码？</title><link>https://www.diguage.com/post/how-to-read-spring-sources/</link><pubDate>Sat, 08 Aug 2020 07:53:32 +0800</pubDate><guid>https://www.diguage.com/post/how-to-read-spring-sources/</guid><description>&lt;div class="paragraph">
+&lt;p>昨晚原计划给几个朋友简单介绍一下阅读 Spring 源码的方法。结果，大家因为各种原因没能及时参加。后来，就取消分享了。干脆写一篇文章出来，感兴趣欢迎自取。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_代码准备">代码准备&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>Spring Framework 是开源的，代码托管在 GitHub 上： &lt;a href="https://github.com/spring-projects/spring-framework" target="_blank" rel="noopener">Spring Framework&lt;/a>。任何人都可以方便地获得它的源代码。所以，如果想阅读 Spring 的源代码，当然是直接把代码克隆到本地，然后直接在 IDE（推荐 IDEA）中进行调试了。另外，还需要存放自己写一些测试和文档。所以，最好把代码 fork 到自己的账户下，从 &lt;code>master&lt;/code> 上切出一个新分支并 push 到自己的 Repo 中，这样自己就可以随意更新了。具体步骤如下：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>克隆代码&lt;/p>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="c"># 直接克隆原始仓库为 origin&lt;/span>
+git clone git@github.com:spring-projects/spring-framework.git&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>fork 代码，D瓜哥直接 fork 到自己账户下了： &lt;a href="https://github.com/diguage/spring-framework" target="_blank" rel="noopener">diguage/spring-framework&lt;/a>。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>添加原创仓库地址：&lt;/p>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="c"># 添加自己仓库为 diguage&lt;/span>
+&lt;span class="c"># 这样就能在所有项目中保持命名的一致性，方便标识&lt;/span>
+git remote add diguage git@github.com:diguage/spring-framework.git&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>创建新分支&lt;/p>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="c"># 创建新分支&lt;/span>
+git switch &lt;span class="nt">-c&lt;/span> analysis
+
+&lt;span class="c"># 将新分支 push 到自己的 Repo 中&lt;/span>
+git push diguage analysis&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这样，在这个新分支上，就可以随意折腾了。&lt;/p>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>下载依赖&lt;/p>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="bash">&lt;span class="c"># Mac or Linux&lt;/span>
+./gradlew clean &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> ./gradlew :spring-oxm:compileTestJava &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> ./gradlew &lt;span class="nb">test&lt;/span>
+
+&lt;span class="c"># Windows&lt;/span>
+gradlew.bat clean &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> gradlew.bat :spring-oxm:compileTestJava &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> gradlew.bat &lt;span class="nb">test&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>Spring AOP 源码分析：入门</title><link>https://www.diguage.com/post/spring-aop-bootstrap/</link><pubDate>Fri, 07 Aug 2020 00:00:00 +0800</pubDate><guid>https://www.diguage.com/post/spring-aop-bootstrap/</guid><description>&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/spring-aop-process-overview/" target="_blank" rel="noopener">Spring AOP 处理流程概述&lt;/a> 中，对 Spring AOP 有了一个整体认识。这篇文章就带大家做一个细致的源码分析。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_登堂入室">登堂入室&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>使用 Spring AOP 也很简单，只需要在配置类上加上 &lt;code>@EnableAspectJAutoProxy&lt;/code> 注解即可。这个注解处理过程与 &lt;a href="https://www.diguage.com/post/spring-extensions-and-mybatis/#mapper-scan" target="_blank" rel="noopener">Spring 扩展点实践：整合 MyBATIS&lt;/a> 中 “&lt;code>@MapperScan&lt;/code> 处理” 类似，不同的是，Spring AOP 注册了 &lt;code>AnnotationAwareAspectJAutoProxyCreator&lt;/code>，它是一个 &lt;code>InstantiationAwareBeanPostProcessor&lt;/code>。具体的类图如下：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/spring-framework/AnnotationAwareAspectJAutoProxyCreator.svg" alt="AnnotationAwareAspectJAutoProxyCreator 的继承体系" width="98%"/>
+&lt;/div>
+&lt;div class="title">图 1. AnnotationAwareAspectJAutoProxyCreator 的继承体系&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在正式开始源码分析之前，有一点必须强调一下：&lt;strong>Spring AOP 只是借用了 AspectJ 的一些注解和个别关键 API，而整体实现是 Spring 自己完成的，并不是基于 AspectJ 实现的。&lt;/strong>这一点跟很多人的认识是不一样的，需要特别指出。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>D瓜哥在 &lt;a href="https://www.diguage.com/post/spring-bean-lifecycle-overview/" target="_blank" rel="noopener">Spring Bean 生命周期概述&lt;/a> 中指出：创建 AOP 代理对象，有两个时机：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>调用 &lt;code>InstantiationAwareBeanPostProcessor#postProcessBeforeInstantiation&lt;/code> 时，通过调用 &lt;code>AnnotationAwareAspectJAutoProxyCreator&lt;/code> 对象的 &lt;code>postProcessBeforeInstantiation&lt;/code> 方法来创建对象；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>调用 &lt;code>BeanPostProcessor#postProcessAfterInitialization&lt;/code> 时，通过调用 &lt;code>AnnotationAwareAspectJAutoProxyCreator&lt;/code> 对象的 &lt;code>postProcessAfterInitialization&lt;/code> 方法来创建对象；&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>下面分别对这两个方法做更详细的介绍。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_annotationawareaspectjautoproxycreatorpostprocessbeforeinstantiation">&lt;code>AnnotationAwareAspectJAutoProxyCreator#postProcessBeforeInstantiation&lt;/code>&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>&lt;code>AnnotationAwareAspectJAutoProxyCreator&lt;/code> 的 &lt;code>postProcessBeforeInstantiation&lt;/code> 方法是从 &lt;code>AbstractAutoProxyCreator&lt;/code> 继承过来的。代码如下：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="java">&lt;span class="nd">@Override&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="nc">Object&lt;/span> &lt;span class="nf">postProcessBeforeInstantiation&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">Class&lt;/span>&lt;span class="o">&amp;lt;?&amp;gt;&lt;/span> &lt;span class="n">beanClass&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="nc">String&lt;/span> &lt;span class="n">beanName&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="c1">// 1、得到一个缓存的唯一key（根据beanClass和beanName生成唯一key）&lt;/span>
+ &lt;span class="nc">Object&lt;/span> &lt;span class="n">cacheKey&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">getCacheKey&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">beanClass&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">beanName&lt;/span>&lt;span class="o">);&lt;/span>
+
+ &lt;span class="c1">// 2、如果当前targetSourcedBeans（通过自定义TargetSourceCreator创建的TargetSource）不包含cacheKey&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(!&lt;/span>&lt;span class="nc">StringUtils&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">hasLength&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">beanName&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">||&lt;/span> &lt;span class="o">!&lt;/span>&lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">targetSourcedBeans&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">contains&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">beanName&lt;/span>&lt;span class="o">))&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="c1">// 2.1、advisedBeans（已经被增强的Bean，即AOP代理对象）中包含当前cacheKey，返回null，即走Spring默认流程&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">advisedBeans&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">containsKey&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">cacheKey&lt;/span>&lt;span class="o">))&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="k">return&lt;/span> &lt;span class="kc">null&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="c1">// 2.2、如果是基础设施类（如Advisor、Advice、AopInfrastructureBean的实现）不进行处理&lt;/span>
+ &lt;span class="c1">// 2.2、shouldSkip 默认false，可以生成子类覆盖，如AspectJAwareAdvisorAutoProxyCreator覆盖（if (((AbstractAspectJAdvice) advisor.getAdvice()).getAspectName().equals(beanName)) return true; 即如果是自己就跳过）&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">isInfrastructureClass&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">beanClass&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">||&lt;/span> &lt;span class="n">shouldSkip&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">beanClass&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">beanName&lt;/span>&lt;span class="o">))&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">advisedBeans&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">put&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">cacheKey&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="nc">Boolean&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">FALSE&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="k">return&lt;/span> &lt;span class="kc">null&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="o">}&lt;/span>
+
+ &lt;span class="c1">// Create proxy here if we have a custom TargetSource.&lt;/span>
+ &lt;span class="c1">// Suppresses unnecessary default instantiation of the target bean:&lt;/span>
+ &lt;span class="c1">// The TargetSource will handle target instances in a custom fashion.&lt;/span>
+ &lt;span class="c1">// 3、开始创建AOP代理对象&lt;/span>
+ &lt;span class="c1">// 3.1、配置自定义的TargetSourceCreator进行TargetSource创建&lt;/span>
+ &lt;span class="nc">TargetSource&lt;/span> &lt;span class="n">targetSource&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">getCustomTargetSource&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">beanClass&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">beanName&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="c1">// 3.2、如果targetSource不为null 添加到targetSourcedBeans缓存，并创建AOP代理对象&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">targetSource&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="kc">null&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="nc">StringUtils&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">hasLength&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">beanName&lt;/span>&lt;span class="o">))&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">targetSourcedBeans&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">add&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">beanName&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="c1">// specificInterceptors即增强（包括前置增强、后置增强等等）&lt;/span>
+&lt;span class="hll"> &lt;span class="nc">Object&lt;/span>&lt;span class="o">[]&lt;/span> &lt;span class="n">specificInterceptors&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">getAdvicesAndAdvisorsForBean&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">beanClass&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">beanName&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">targetSource&lt;/span>&lt;span class="o">);&lt;/span>
+&lt;/span> &lt;span class="c1">//3.3、创建代理对象&lt;/span>
+&lt;span class="hll"> &lt;span class="nc">Object&lt;/span> &lt;span class="n">proxy&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">createProxy&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">beanClass&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">beanName&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">specificInterceptors&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">targetSource&lt;/span>&lt;span class="o">);&lt;/span>
+&lt;/span> &lt;span class="c1">//3.4、将代理类型放入proxyTypes从而允许后续的predictBeanType()调用获取&lt;/span>
+ &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">proxyTypes&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">put&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">cacheKey&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">proxy&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getClass&lt;/span>&lt;span class="o">());&lt;/span>
+ &lt;span class="k">return&lt;/span> &lt;span class="n">proxy&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>
+
+ &lt;span class="k">return&lt;/span> &lt;span class="kc">null&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>源码剖析 Spring 循环依赖</title><link>https://www.diguage.com/post/spring-circular-dependence/</link><pubDate>Fri, 31 Jul 2020 18:33:30 +0800</pubDate><guid>https://www.diguage.com/post/spring-circular-dependence/</guid><description>&lt;div class="paragraph">
+&lt;p>循环依赖在编程中是一个常见问题（当然，这并不是最佳实践）。并且，Spring 如何解决循环依赖这个问题在面试中也经常见。下面，D瓜哥就从源码的层面深入剖析一下这个问题。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_示例程序">示例程序&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>先展示一下示例程序：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="kn">package&lt;/span> &lt;span class="nn">com.diguage.truman.context&lt;/span>&lt;span class="o">;&lt;/span>
+
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">org.apache.commons.logging.Log&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">org.apache.commons.logging.LogFactory&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">org.junit.jupiter.api.Test&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">org.springframework.beans.factory.annotation.Autowired&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">org.springframework.context.annotation.AnnotationConfigApplicationContext&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">org.springframework.context.annotation.Configuration&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">org.springframework.context.annotation.Import&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">org.springframework.context.annotation.ImportSelector&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">org.springframework.core.type.AnnotationMetadata&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">org.springframework.stereotype.Component&lt;/span>&lt;span class="o">;&lt;/span>
+
+&lt;span class="cm">/**
+ * @author D瓜哥, &lt;a href="https://www.diguage.com/" target="_blank">https://www.diguage.com/&lt;/a>
+ * @since 2020-05-24 13:02
+ */&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">CircularDependenceSingletonTest&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="kd">public&lt;/span> &lt;span class="kd">static&lt;/span> &lt;span class="kd">final&lt;/span> &lt;span class="nc">Log&lt;/span> &lt;span class="n">log&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nc">LogFactory&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getLog&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">CircularDependenceSingletonTest&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">class&lt;/span>&lt;span class="o">);&lt;/span>
+
+ &lt;span class="nd">@Test&lt;/span>
+ &lt;span class="kd">public&lt;/span> &lt;span class="kt">void&lt;/span> &lt;span class="nf">test&lt;/span>&lt;span class="o">()&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="nc">AnnotationConfigApplicationContext&lt;/span> &lt;span class="n">applicationContext&lt;/span>
+ &lt;span class="o">=&lt;/span> &lt;span class="k">new&lt;/span> &lt;span class="nc">AnnotationConfigApplicationContext&lt;/span>&lt;span class="o">();&lt;/span>
+ &lt;span class="n">applicationContext&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">register&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">Config&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">class&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="n">applicationContext&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">refresh&lt;/span>&lt;span class="o">();&lt;/span>
+
+ &lt;span class="n">log&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">info&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">applicationContext&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getBean&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="no">A&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">class&lt;/span>&lt;span class="o">));&lt;/span>
+ &lt;span class="n">log&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">info&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">applicationContext&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getBean&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="no">B&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">class&lt;/span>&lt;span class="o">));&lt;/span>
+ &lt;span class="n">log&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">info&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">applicationContext&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getBean&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="no">C&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">class&lt;/span>&lt;span class="o">));&lt;/span>
+
+ &lt;span class="n">log&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">info&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;-A--------&amp;#34;&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="no">A&lt;/span> &lt;span class="n">a&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">applicationContext&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getBean&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="no">A&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">class&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="n">log&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">info&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">a&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="n">log&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">info&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">a&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">b&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="n">log&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">info&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;-B--------&amp;#34;&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="no">B&lt;/span> &lt;span class="n">b&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">applicationContext&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getBean&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="no">B&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">class&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="n">log&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">info&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">b&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="n">log&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">info&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">b&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">c&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="n">log&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">info&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;-C--------&amp;#34;&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="no">C&lt;/span> &lt;span class="n">c&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">applicationContext&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getBean&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="no">C&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">class&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="n">log&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">info&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">c&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="n">log&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">info&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">c&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">a&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="o">}&lt;/span>
+
+ &lt;span class="nd">@Configuration&lt;/span>
+ &lt;span class="nd">@Import&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">AbcImportSelector&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">class&lt;/span>&lt;span class="o">)&lt;/span>
+ &lt;span class="kd">public&lt;/span> &lt;span class="kd">static&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">Config&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="o">}&lt;/span>
+
+ &lt;span class="kd">public&lt;/span> &lt;span class="kd">static&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">AbcImportSelector&lt;/span> &lt;span class="kd">implements&lt;/span> &lt;span class="nc">ImportSelector&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="nd">@Override&lt;/span>
+ &lt;span class="kd">public&lt;/span> &lt;span class="nc">String&lt;/span>&lt;span class="o">[]&lt;/span> &lt;span class="nf">selectImports&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">AnnotationMetadata&lt;/span> &lt;span class="n">importingClassMetadata&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="k">return&lt;/span> &lt;span class="k">new&lt;/span> &lt;span class="nc">String&lt;/span>&lt;span class="o">[]{&lt;/span>
+ &lt;span class="no">A&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">class&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getName&lt;/span>&lt;span class="o">(),&lt;/span>
+ &lt;span class="no">B&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">class&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getName&lt;/span>&lt;span class="o">(),&lt;/span>
+ &lt;span class="no">C&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">class&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getName&lt;/span>&lt;span class="o">()};&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="o">}&lt;/span>
+
+
+ &lt;span class="nd">@Component&lt;/span>
+ &lt;span class="kd">public&lt;/span> &lt;span class="kd">static&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">A&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="nd">@Autowired&lt;/span>
+ &lt;span class="no">B&lt;/span> &lt;span class="n">b&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>
+
+ &lt;span class="nd">@Component&lt;/span>
+ &lt;span class="kd">public&lt;/span> &lt;span class="kd">static&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">B&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="nd">@Autowired&lt;/span>
+ &lt;span class="no">C&lt;/span> &lt;span class="n">c&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>
+
+ &lt;span class="nd">@Component&lt;/span>
+ &lt;span class="kd">public&lt;/span> &lt;span class="kd">static&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">C&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="nd">@Autowired&lt;/span>
+ &lt;span class="no">A&lt;/span> &lt;span class="n">a&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>上述示例代码中的循环依赖情况如下：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/spring-framework/circular-dependence.jpg" alt="循环依赖" width="98%"/>
+&lt;/div>
+&lt;div class="title">图 1. 循环依赖&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_源码剖析">源码剖析&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="sect2">
+&lt;h3 id="_三级缓存">三级缓存&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>D瓜哥在 &lt;a href="https://www.diguage.com/post/dive-into-spring-core-data-structure-bean-factory/#registry">深入剖析 Spring 核心数据结构：BeanFactory&lt;/a> 中，概要性地对 &lt;code>BeanFactory&lt;/code> 的属性做了一一说明。
+而其中的“三级缓存”属性，则是解决循环依赖问题的关键所在：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;code>Map&amp;lt;String, Object&amp;gt; singletonObjects = new ConcurrentHashMap&amp;lt;&amp;gt;(256)&lt;/code>：Bean 名称到单例 Bean 的映射，用于存放完全初始化好的 Bean。可以理解成，这就是所谓的容器。这是一级缓存。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>Map&amp;lt;String, Object&amp;gt; earlySingletonObjects = new HashMap&amp;lt;&amp;gt;(16)&lt;/code>：Bean 到“未成熟”单例 Bean 的映射。该 Bean 对象只是被创建出来，但是还没有注入依赖。在容器解决循环依赖时，用于存储中间状态。这是二级缓存。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>Map&amp;lt;String, ObjectFactory&amp;lt;?&amp;gt;&amp;gt; singletonFactories = new HashMap&amp;lt;&amp;gt;(16)&lt;/code>：Bean 名称到 Bean 的 ObjectFactory 对象的映射，存放 Bean 工厂对象。在容器解决循环依赖时，用于存储中间状态。这是三级缓存。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>Bean 的获取过程就类似计算机缓存的作用过程：先从一级获取，失败再从二级、三级里面获取。在 &lt;code>org.springframework.beans.factory.support.DefaultSingletonBeanRegistry#getSingleton(java.lang.String, boolean)&lt;/code> 方法中，可以明确看到整个过程：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="title">&lt;code>org.springframework.beans.factory.support.DefaultSingletonBeanRegistry#getSingleton(beanName, allowEarlyReference)&lt;/code>&lt;/div>
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="cm">/**
+ * Return the (raw) singleton object registered under the given name.
+ * &amp;lt;p&amp;gt;Checks already instantiated singletons and also allows for an early
+ * reference to a currently created singleton (resolving a circular reference).
+ * @param beanName the name of the bean to look for
+ * @param allowEarlyReference whether early references should be created or not
+ * @return the registered singleton object, or {@code null} if none found
+ */&lt;/span>
+&lt;span class="nd">@Nullable&lt;/span>
+&lt;span class="kd">protected&lt;/span> &lt;span class="nc">Object&lt;/span> &lt;span class="nf">getSingleton&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">String&lt;/span> &lt;span class="n">beanName&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="kt">boolean&lt;/span> &lt;span class="n">allowEarlyReference&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="nc">Object&lt;/span> &lt;span class="n">singletonObject&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">singletonObjects&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">get&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">beanName&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">singletonObject&lt;/span> &lt;span class="o">==&lt;/span> &lt;span class="kc">null&lt;/span> &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> &lt;span class="n">isSingletonCurrentlyInCreation&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">beanName&lt;/span>&lt;span class="o">))&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="kd">synchronized&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">singletonObjects&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="n">singletonObject&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">earlySingletonObjects&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">get&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">beanName&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">singletonObject&lt;/span> &lt;span class="o">==&lt;/span> &lt;span class="kc">null&lt;/span> &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> &lt;span class="n">allowEarlyReference&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="nc">ObjectFactory&lt;/span>&lt;span class="o">&amp;lt;?&amp;gt;&lt;/span> &lt;span class="n">singletonFactory&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">singletonFactories&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">get&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">beanName&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">singletonFactory&lt;/span> &lt;span class="o">!=&lt;/span> &lt;span class="kc">null&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="n">singletonObject&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">singletonFactory&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getObject&lt;/span>&lt;span class="o">();&lt;/span>
+ &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">earlySingletonObjects&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">put&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">beanName&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="n">singletonObject&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="k">this&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">singletonFactories&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">remove&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">beanName&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="k">return&lt;/span> &lt;span class="n">singletonObject&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item><item><title>Spring 扩展点实践：整合 Apache Dubbo（二）</title><link>https://www.diguage.com/post/spring-extensions-and-dubbo-2/</link><pubDate>Sat, 11 Jul 2020 16:20:00 +0800</pubDate><guid>https://www.diguage.com/post/spring-extensions-and-dubbo-2/</guid><description>&lt;div class="paragraph">
+&lt;p>在 &lt;a href="https://www.diguage.com/post/spring-extensions-and-dubbo-1/" target="_blank" rel="noopener">Spring 扩展点实践：整合 Apache Dubbo（一）&lt;/a> 中，D瓜哥介绍了 Dubbo 如何使用 Spring 的插件机制与 Spring 整合。限于篇幅原因，上一篇文章只介绍到了服务提供者的注册。本篇文章继续上一篇文章的主题，继续介绍 Spring 与 Dubbo 的整合过程。先来讲解一下服务消费者的生成过程。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_dubbo_生成服务消费者的过程">Dubbo 生成服务消费者的过程&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>先来看看 XML 配置文件：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="title">&lt;code>dubbo-demo/dubbo-demo-xml/dubbo-demo-xml-consumer/src/main/resources/spring/dubbo-consumer.xml&lt;/code>&lt;/div>
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="xml">&lt;span class="cp">&amp;lt;?xml version=&amp;#34;1.0&amp;#34; encoding=&amp;#34;UTF-8&amp;#34;?&amp;gt;&lt;/span>
+&lt;span class="nt">&amp;lt;beans&lt;/span> &lt;span class="na">xmlns:xsi=&lt;/span>&lt;span class="s">&amp;#34;http://www.w3.org/2001/XMLSchema-instance&amp;#34;&lt;/span>
+ &lt;span class="na">xmlns:dubbo=&lt;/span>&lt;span class="s">&amp;#34;http://dubbo.apache.org/schema/dubbo&amp;#34;&lt;/span>
+ &lt;span class="na">xmlns=&lt;/span>&lt;span class="s">&amp;#34;http://www.springframework.org/schema/beans&amp;#34;&lt;/span>
+ &lt;span class="na">xsi:schemaLocation=&lt;/span>&lt;span class="s">&amp;#34;http://www.springframework.org/schema/beans
+ http://www.springframework.org/schema/beans/spring-beans.xsd
+ http://dubbo.apache.org/schema/dubbo
+ http://dubbo.apache.org/schema/dubbo/dubbo.xsd&amp;#34;&lt;/span>&lt;span class="nt">&amp;gt;&lt;/span>
+
+ &lt;span class="nt">&amp;lt;dubbo:application&lt;/span> &lt;span class="na">name=&lt;/span>&lt;span class="s">&amp;#34;demo-consumer&amp;#34;&lt;/span>&lt;span class="nt">/&amp;gt;&lt;/span>
+
+ &lt;span class="nt">&amp;lt;dubbo:registry&lt;/span> &lt;span class="na">address=&lt;/span>&lt;span class="s">&amp;#34;zookeeper://127.0.0.1:2181&amp;#34;&lt;/span>&lt;span class="nt">/&amp;gt;&lt;/span>
+
+ &lt;span class="nt">&amp;lt;dubbo:reference&lt;/span> &lt;span class="na">id=&lt;/span>&lt;span class="s">&amp;#34;demoService&amp;#34;&lt;/span> &lt;span class="na">check=&lt;/span>&lt;span class="s">&amp;#34;false&amp;#34;&lt;/span> &lt;span class="na">interface=&lt;/span>&lt;span class="s">&amp;#34;org.apache.dubbo.demo.DemoService&amp;#34;&lt;/span>&lt;span class="nt">/&amp;gt;&lt;/span>
+
+&lt;span class="nt">&amp;lt;/beans&amp;gt;&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>我们先看一下 &lt;code>ReferenceBean&lt;/code> 类的声明：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="title">&lt;code>org.apache.dubbo.config.spring.ReferenceBean&lt;/code>&lt;/div>
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="kd">public&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">ReferenceBean&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="kd">extends&lt;/span> &lt;span class="nc">ReferenceConfig&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="no">T&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="kd">implements&lt;/span> &lt;span class="nc">FactoryBean&lt;/span>&lt;span class="o">,&lt;/span>
+ &lt;span class="nc">ApplicationContextAware&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="nc">InitializingBean&lt;/span>&lt;span class="o">,&lt;/span> &lt;span class="nc">DisposableBean&lt;/span> &lt;span class="o">{&lt;/span>
+
+ &lt;span class="c1">// 此处省略 N 行代码&lt;/span>
+
+ &lt;span class="nd">@Override&lt;/span>
+ &lt;span class="kd">public&lt;/span> &lt;span class="nc">Object&lt;/span> &lt;span class="nf">getObject&lt;/span>&lt;span class="o">()&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="k">return&lt;/span> &lt;span class="nf">get&lt;/span>&lt;span class="o">();&lt;/span>
+ &lt;span class="o">}&lt;/span>
+
+ &lt;span class="c1">// 此处省略 N 行代码&lt;/span>
+
+ &lt;span class="nd">@Override&lt;/span>
+ &lt;span class="nd">@SuppressWarnings&lt;/span>&lt;span class="o">({&lt;/span>&lt;span class="s">&amp;#34;unchecked&amp;#34;&lt;/span>&lt;span class="o">})&lt;/span>
+ &lt;span class="kd">public&lt;/span> &lt;span class="kt">void&lt;/span> &lt;span class="nf">afterPropertiesSet&lt;/span>&lt;span class="o">()&lt;/span> &lt;span class="kd">throws&lt;/span> &lt;span class="nc">Exception&lt;/span> &lt;span class="o">{&lt;/span>
+
+ &lt;span class="c1">// Initializes Dubbo&amp;#39;s Config Beans before @Reference bean autowiring&lt;/span>
+ &lt;span class="n">prepareDubboConfigBeans&lt;/span>&lt;span class="o">();&lt;/span>
+
+ &lt;span class="c1">// lazy init by default.&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">init&lt;/span> &lt;span class="o">==&lt;/span> &lt;span class="kc">null&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="n">init&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="kc">false&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>
+
+ &lt;span class="c1">// eager init if necessary.&lt;/span>
+ &lt;span class="k">if&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">shouldInit&lt;/span>&lt;span class="o">())&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="n">getObject&lt;/span>&lt;span class="o">();&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="o">}&lt;/span>
+
+ &lt;span class="c1">// 此处省略 N 行代码&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这个类实现了 &lt;code>FactoryBean&lt;/code> 接口，D瓜哥在 &lt;a href="https://www.diguage.com/post/spring-extensions-overview/#factory-bean">Spring 扩展点概览及实践：FactoryBean&lt;/a> 中对 &lt;code>FactoryBean&lt;/code> 介绍。所以，请在上面的 &lt;code>getObject()&lt;/code> 打个断点。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>另外，这个类还实现了 &lt;code>InitializingBean&lt;/code>，D瓜哥在 &lt;a href="https://www.diguage.com/post/spring-bean-lifecycle-overview/">Spring Bean 生命周期概述&lt;/a> 中介绍了这个接口的用途。不了解的，请移步。&lt;/p>
+&lt;/div></description></item><item><title>Spring 扩展点实践：整合 Apache Dubbo（一）</title><link>https://www.diguage.com/post/spring-extensions-and-dubbo-1/</link><pubDate>Thu, 09 Jul 2020 16:28:35 +0800</pubDate><guid>https://www.diguage.com/post/spring-extensions-and-dubbo-1/</guid><description>&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/spring-extensions-overview/" target="_blank" rel="noopener">Spring 扩展点概览及实践&lt;/a> 中介绍了 Spring 内部存在的扩展点。 &lt;a href="https://www.diguage.com/post/spring-extensions-and-mybatis/" target="_blank" rel="noopener">Spring 扩展点实践：整合 MyBATIS&lt;/a> 中，D瓜哥带大家了解了一下 MyBATIS 如何利用 Spring 的扩展点实现了与 Spring 的完美整合。现在，学以致用，我们继续来分析一下 Spring 与 Apache Dubbo 的整合流程。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_示例程序">示例程序&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>Apache Dubbo 仓库中就有很完整的示例。D瓜哥直接拿来使用就不再搭建示例程序了。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>首先，需要启动一个 ZooKeeper 实例。查看 Dubbo 的依赖可以看出，最新版代码依赖的 ZooKeeper 是 3.4.13 版。所以，为了最好的兼容性，就要选用 3.4.X 版的 ZooKeeper 服务器。D瓜哥直接使用 Docker 启动 ZooKeeper 了。命令如下：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="bash">docker run &lt;span class="nt">--rm&lt;/span> &lt;span class="nt">--name&lt;/span> zookeeper &lt;span class="nt">-d&lt;/span> &lt;span class="nt">-p&lt;/span> 2181:2181 zookeeper:3.4.14&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这次我们使用 &lt;a href="https://github.com/apache/dubbo" target="_blank" rel="noopener">Apache Dubbo&lt;/a> 的 &lt;code>dubbo-demo/dubbo-demo-xml&lt;/code> 示例。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>第二步，启动服务提供者程序，找到 &lt;code>DUBBO/dubbo-demo/dubbo-demo-xml/dubbo-demo-xml-provider/src/main/java/org/apache/dubbo/demo/provider/Application.java&lt;/code>，运行该类。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>第三步，运行服务消费者程序，找到 &lt;code>DUBBO/dubbo-demo/dubbo-demo-xml/dubbo-demo-xml-consumer/src/main/java/org/apache/dubbo/demo/consumer/Application.java&lt;/code>，运行该类。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>如果没有任何错误，则在终端可以看到 &lt;code>result: async result&lt;/code> 输出。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在开始正餐之前，D瓜哥先给大家来个开胃菜。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="spring-plugin">Spring 插件机制简介&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>不知道大家有没有想过一个问题：Spring 框架是如何支持越来越多的功能的？&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在D瓜哥了解到 Spring 的插件机制后，非常叹服 Spring 精巧的设计和灵活的扩展性。闲言少叙，好戏上演。&lt;/p>
+&lt;/div></description></item><item><title>深入剖析 Spring 核心数据结构：BeanFactory</title><link>https://www.diguage.com/post/dive-into-spring-core-data-structure-bean-factory/</link><pubDate>Fri, 26 Jun 2020 15:30:08 +0800</pubDate><guid>https://www.diguage.com/post/dive-into-spring-core-data-structure-bean-factory/</guid><description>&lt;div class="paragraph">
+&lt;p>在 &lt;a href="https://www.diguage.com/post/dive-into-spring-core-data-structure-bean-definition/" target="_blank" rel="noopener">深入剖析 Spring 核心数据结构：BeanDefinition&lt;/a> 中，介绍了 &lt;code>BeanDefinition&lt;/code>。网上很多文章介绍 &lt;code>BeanDefinition&lt;/code> 的 API，D瓜哥却要反其道而行之，从内部属性来分析一下。下面我们开始。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_继承体系">继承体系&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>Spring 非常好地遵循了面向对象的设计原则：面向接口编程。不放过任何可以提取出成接口的机会。虽然感觉似乎增加了类的继承关系，增加了一点的复杂度。但是，却带来了非常好的可扩展性。而 &lt;code>BeanFactory&lt;/code> 的继承体系就是一个非常典型的例子。我们来看一下它的继承体系：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/spring-framework/BeanFactory.svg" alt="BeanFactory 继承体系" width="98%"/>
+&lt;/div>
+&lt;div class="title">图 1. BeanFactory 继承体系&lt;/div>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;code>AliasRegistry&lt;/code>：别名注册器。Spring 中，别名注册相关的功能就是从这里实现的。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>SimpleAliasRegistry&lt;/code>：别名注册器的一个简单实现，从内部属性可以看出，它是把别名映射信息存到一个 &lt;code>Map&lt;/code> 中了。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>DefaultSingletonBeanRegistry&lt;/code>：默认的单例 Bean 注册器，从内部属性来说，也是基于 &lt;code>Map&lt;/code> 实现的。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>FactoryBeanRegistrySupport&lt;/code>： &lt;code>FactoryBean&lt;/code> 注册器。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>SingletonBeanRegistry&lt;/code>：单例 Bean 注册器。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>BeanDefinitionRegistry&lt;/code>： &lt;code>BeanDefinition&lt;/code> 注册器。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>BeanFactory&lt;/code>：容器的基类。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>ListableBeanFactory&lt;/code>：在基本容器基础上，增加了遍历相关功能。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>HierarchicalBeanFactory&lt;/code>：在基本容器基础上，增加了父子上下级容器关联。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>AutowireCapableBeanFactory&lt;/code>：在基本容器基础上，增加了自动注入功能。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>ConfigurableBeanFactory&lt;/code>：对容器增加可配置性，比如父级容器、&lt;code>ClassLoader&lt;/code>、&lt;code>TypeConverter&lt;/code> 等。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>ConfigurableListableBeanFactory&lt;/code>：可配置可遍历容器。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>AbstractBeanFactory&lt;/code>：容器的抽象实现类，实现了容器的基础功能。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>AbstractAutowireCapableBeanFactory&lt;/code>：带自动装配功能的抽象容器类。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>DefaultListableBeanFactory&lt;/code>：这是 Spring 内部使用的默认容器实现。也是 Spring 中最重要的一个类。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_核心属性">核心属性&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="sect2">
+&lt;h3 id="registry">Registry&lt;/h3>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;code>Map&amp;lt;String, String&amp;gt; aliasMap = new ConcurrentHashMap&amp;lt;&amp;gt;(16)&lt;/code>：别名到 Bean 名称的映射。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>&lt;code>Map&amp;lt;String, Object&amp;gt; singletonObjects = new ConcurrentHashMap&amp;lt;&amp;gt;(256)&lt;/code>&lt;/strong>：Bean 名称到单例 Bean 的映射。可以理解成，这就是所谓的容器。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>Map&amp;lt;String, Object&amp;gt; earlySingletonObjects = new HashMap&amp;lt;&amp;gt;(16)&lt;/code>：Bean 到“未成熟”单例 Bean 的映射。该 Bean 对象只是被创建出来，但是还没有注入依赖。在容器解决循环依赖时，用于存储中间状态。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>Map&amp;lt;String, ObjectFactory&amp;lt;?&amp;gt;&amp;gt; singletonFactories = new HashMap&amp;lt;&amp;gt;(16)&lt;/code>：Bean 名称到 Bean 的 &lt;code>ObjectFactory&lt;/code> 对象的映射，在容器解决循环依赖时，用于存储中间状态。&lt;/p>
+&lt;div class="paragraph">
+&lt;p>关于这三个属性的进一步说明，请移步： &lt;a href="https://www.diguage.com//post/spring-circular-dependence/">源码剖析 Spring 循环依赖&lt;/a>。&lt;/p>
+&lt;/div></description></item><item><title>深入剖析 Spring 核心数据结构：BeanDefinition</title><link>https://www.diguage.com/post/dive-into-spring-core-data-structure-bean-definition/</link><pubDate>Sun, 21 Jun 2020 21:18:57 +0800</pubDate><guid>https://www.diguage.com/post/dive-into-spring-core-data-structure-bean-definition/</guid><description>&lt;div class="paragraph">
+&lt;p>林纳斯·托瓦兹（Linus Torvalds）说：“我从心底认为，优秀的程序员与平庸的程序员之间的区别，是在于认为自己的代码重要还是数据结构更加重要。平庸的程序员眼里只有代码，优秀的程序员则关注数据结构及之前的关系。” 也许很多人觉得 Spring 神秘莫测，但是如果了解了它的核心数据结构，很多问题迎刃而解。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>Spring 中两个数据结构最核心：① &lt;code>BeanDefinition&lt;/code>，用于表示 Bean 的定义；② &lt;code>BeanFactory&lt;/code>，用于表示整个 IoC 容器。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在前面文章 &lt;a href="https://www.diguage.com/post/spring-bean-lifecycle-overview/" target="_blank" rel="noopener">Spring Bean 生命周期概述&lt;/a>中，介绍了 Spring Bean 的生命周期。不知道大家有没有思考过 Spring 在内部是如何表示一个 Bean 的？本篇文章，就来聊一聊 &lt;code>BeanDefinition&lt;/code>&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_问题">问题&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>使用 Spring 时，尤其是使用 XML 配置的时候，也许我们会这样的问题：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>Bean 怎么表示？&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Bean 的依赖怎么表示？&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>init-method&lt;/code> 方法怎么存储？&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Bean 的一些属性，比如 &lt;code>lazy-init&lt;/code> 等，怎么表示？&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Bean 构造函数的参数怎么存储？&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>…​&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>Java 也有类似的问题，比如怎么表示一个类？Java 通过反射 API 来解决这个问题：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;code>Class&lt;/code>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>Method&lt;/code>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>Field&lt;/code>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>Constructor&lt;/code>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>Annotation&lt;/code>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>但是，为什么 Spring 还要自己定义一套呢？主要原因是 Java 反射 API 不满足 Spring 的需求，比如，它没办法表示哪些类是 &lt;code>SCOPE_SINGLETON&lt;/code>，哪些类是 &lt;code>SCOPE_PROTOTYPE&lt;/code>。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>另外，Spring 的 Bean 抽象也并不是完全自定义的，它是基于 Java 反射 API 又增加了自定义功能，其核心 API 就是 &lt;code>BeanDefinition&lt;/code>。下面，我们来仔细看一下它的继承体系以及内部核心属性。&lt;/p>
+&lt;/div></description></item><item><title>Spring AOP 处理流程概述</title><link>https://www.diguage.com/post/spring-aop-process-overview/</link><pubDate>Sat, 20 Jun 2020 19:16:35 +0800</pubDate><guid>https://www.diguage.com/post/spring-aop-process-overview/</guid><description>&lt;div class="paragraph">
+&lt;p>AOP 是 Spring 框架的最核心的两个功能之一，在前面的 &lt;a href="https://www.diguage.com/post/spring-startup-process-overview/" target="_blank" rel="noopener">Spring 启动流程概述&lt;/a> 和 &lt;a href="https://www.diguage.com/post/spring-bean-lifecycle-overview/" target="_blank" rel="noopener">Spring Bean 生命周期概述&lt;/a> 两篇文章中，分别介绍了 Spring 启动过程和 Spring Bean 的生命周期，对 IoC 有了一个细致介绍。这里来细致分析一下 Spring AOP 的实现原理和处理流程。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_基本概念">基本概念&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>先来了解几个基本概念，D瓜哥私以为这些概念是 AOP 中最核心的内容，了解了基本概念，可以说基本上掌握了一半的 AOP 内容。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>学习概念最权威的地方，当然就是官方文档。所以，这些概念可以在 &lt;a href="https://docs.spring.io/spring/docs/current/spring-framework-reference/core.html#aop-introduction-defn" target="_blank" rel="noopener">Spring Framework Documentation: AOP Concepts&lt;/a> 中看到最权威的介绍。&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;strong>Join point(连接点)&lt;/strong>: 所谓的连接点是指那些被拦截到的点。在 Spring 中，连接点指的是方法，因为 Spring 只支持方法类型的连接点。在 Spring 中，使用&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>Pointcut(切入点)&lt;/strong>: 所谓的切入点，是指要对哪些 &lt;strong>Join point(连接点)&lt;/strong> 进行拦截的定义。如果 Join point(连接点) 是全集，那么 Pointcut(切入点) 就是被选中的子集。写 AOP 代码的时候，一般是用 Pointcut(切入点) 表达式进行对 Join point(连接点) 进行选择。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>Advice(通知/增强)&lt;/strong>: 所谓的通知就是指拦截到 Join point(连接点) 之后所要做的事情。通知根据作用位置不同，又细分为：&lt;/p>
+&lt;div class="olist loweralpha">
+&lt;ol class="loweralpha" type="a">
+&lt;li>
+&lt;p>&lt;strong>Before advice(前置通知)&lt;/strong>: 在 Join point(连接点) 之前运行的通知。这种通知，不能阻止执行流程继续到 Join point(连接点)。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>After returning advice(后置通知)&lt;/strong>: 在 Join point(连接点) 之后运行的通知。当然，如果在 Join point(连接点) 执行过程中，抛出异常，则可能就不执行了。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>After throwing advice(异常通知)&lt;/strong>: 方法抛出异常后，将会执行的通知。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>After (finally) advice(最终通知)&lt;/strong>: 无论如何都会执行的通知，即使抛出异常。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>Around advice(环绕通知)&lt;/strong>: 围绕在 Join point(连接点) 的通知，方法执行前和执行后，都可以执行自定义行为。同时，也可以决定是返回 Join point(连接点) 的返回值，还是返回自定义的返回值。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div></description></item><item><title>Spring Bean 生命周期概述</title><link>https://www.diguage.com/post/spring-bean-lifecycle-overview/</link><pubDate>Sat, 20 Jun 2020 17:33:07 +0800</pubDate><guid>https://www.diguage.com/post/spring-bean-lifecycle-overview/</guid><description>&lt;div class="paragraph">
+&lt;p>在 &lt;a href="https://www.diguage.com/post/spring-startup-process-overview/" target="_blank" rel="noopener">Spring 启动流程概述&lt;/a> 中，分析了 Spring 的启动流程。本文就来说明一下 Spring Bean 整个生命周期。如果有不清楚的地方，可以参考上文的“附录：启动日志”。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>直接上图：Spring Bean 生命周期流程图。内容较多，图片文字偏小，请放大看（矢量图，可以任意放大）：&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/spring-framework/spring-bean-lifecycle.svg" alt="Spring Bean 生命周期流程图" width="98%"/>
+&lt;/div>
+&lt;div class="title">图 1. Spring Bean 生命周期流程图&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>下面是文字说明。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_bean_生命周期简述">Bean 生命周期简述&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>调用 &lt;code>InstantiationAwareBeanPostProcessor#postProcessBeforeInstantiation&lt;/code>，主要是判断 &lt;code>AnnotationAwareAspectJAutoProxyCreator&lt;/code> 是否可以生成代理。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>调用构造函数&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>调用 &lt;code>MergedBeanDefinitionPostProcessor#postProcessMergedBeanDefinition&lt;/code>，主要是通过 &lt;code>CommonAnnotationBeanPostProcessor&lt;/code>、 &lt;code>AutowiredAnnotationBeanPostProcessor&lt;/code> 收集依赖信息。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;span class="line-through">&lt;code>InstantiationAwareBeanPostProcessor#postProcessAfterInstantiation&lt;/code>，这步什么也没做。&lt;/span>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>调用 &lt;code>InstantiationAwareBeanPostProcessor#postProcessProperties&lt;/code>，主要是完成依赖注入。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>调用 &lt;code>AutowiredAnnotationBeanPostProcessor#setBeanFactory&lt;/code>，注入 &lt;code>BeanFactory&lt;/code> 等相关信息。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>调用 &lt;code>BeanPostProcessor#postProcessBeforeInitialization&lt;/code>，主要是注入 &lt;code>ApplicationContext&lt;/code> 等相关信息。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>调用 &lt;code>InitializingBean#afterPropertiesSet&lt;/code>、 &lt;code>init-method&lt;/code> 方法&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>调用 &lt;code>BeanPostProcessor#postProcessAfterInitialization&lt;/code>，主要是生成 AOP 代理类。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_bean_生命周期详解">Bean 生命周期详解&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>从 &lt;code>getBean()&lt;/code> 方法获取 Bean 时，如果缓存中没有对应的 Bean，则会创建 Bean，整个流程如下：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;code>InstantiationAwareBeanPostProcessor#postProcessBeforeInstantiation&lt;/code> — 目前有如下四个：&lt;/p>
+&lt;div class="olist loweralpha">
+&lt;ol class="loweralpha" type="a">
+&lt;li>
+&lt;p>&lt;code>ImportAwareBeanPostProcessor&lt;/code> — 继承父类实现，无所事事。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>AnnotationAwareAspectJAutoProxyCreator&lt;/code> — 继承父类实现，判断是否属于基础切面类，如果有指定的 Target 则生成代理。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>CommonAnnotationBeanPostProcessor&lt;/code> — 无所事事。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>AutowiredAnnotationBeanPostProcessor&lt;/code> — 继承父类实现，无所事事。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div></description></item><item><title>Spring 启动流程概述</title><link>https://www.diguage.com/post/spring-startup-process-overview/</link><pubDate>Sat, 13 Jun 2020 00:31:25 +0800</pubDate><guid>https://www.diguage.com/post/spring-startup-process-overview/</guid><description>&lt;div class="paragraph">
+&lt;p>对于 Spring 启动流程和 Bean 的生命周期，总有一些小地方搞的不是很清楚，干脆直接通过修改代码增加日志输出，使用断点单步调试，把整个流程捋顺了一点点的。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>除了加载配置文件或者基础配置类外，Spring 的启动过程几乎都被封装在 &lt;code>AbstractApplicationContext#refresh&lt;/code> 方法中，可以说弄清楚了这个方法的执行过程，就摸清楚了 Spring 启动全流程，下面的流程分析也是以这个方法为骨架来展开的。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_流程概要">流程概要&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>下面完整流程有些太复杂，所以，提炼一个简要的过程，方便糊弄面试官，哈哈哈😆&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>创建容器，读取 &lt;code>applicationContext.register(Config.class)&lt;/code> 指定的配置。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>准备 &lt;code>BeanFactory&lt;/code>，注册容器本身和 &lt;code>BeanFactory&lt;/code> 实例，以及注册环境配置信息等。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>执行 &lt;code>BeanDefinitionRegistryPostProcessor#postProcessBeanDefinitionRegistry&lt;/code> 注册 &lt;code>BeanDefinition&lt;/code>。有三点需要注意：&lt;/p>
+&lt;div class="olist loweralpha">
+&lt;ol class="loweralpha" type="a">
+&lt;li>
+&lt;p>目前只有一个 &lt;code>ConfigurationClassPostProcessor&lt;/code> 实现类，Spring 中大量的 Bean 都是在这一步被该类注册到容器中的。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>执行顺序是 ① &lt;code>PriorityOrdered&lt;/code> ② &lt;code>Ordered&lt;/code> ③ 普通的顺序来执行&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>在执行上一步时，如果发现注册了 &lt;code>BeanDefinitionRegistryPostProcessor&lt;/code> 类型的 Bean，就会在循环里继续调用 &lt;code>postProcessBeanDefinitionRegistry&lt;/code> 方法。MyBATIS 和 Spring 整合的 &lt;code>MapperScannerConfigurer&lt;/code> 类就是在这一步执行的。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>执行 &lt;code>BeanFactoryPostProcessor#postProcessBeanFactory&lt;/code> 方法。目前只有一个 &lt;code>ConfigurationClassPostProcessor&lt;/code> 实现类。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>注册 &lt;code>CommonAnnotationBeanPostProcessor&lt;/code> 和 &lt;code>AutowiredAnnotationBeanPostProcessor&lt;/code> 为 &lt;code>BeanPostProcessor&lt;/code>。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>注册 &lt;code>ApplicationEventMulticaster&lt;/code>，用于广播事件的。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>注册 &lt;code>ApplicationListener&lt;/code>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>预加载以及注册所有非懒加载的 Bean&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_启动时序图">启动时序图&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>Spring 启动流程的时序图如下：&lt;/p>
+&lt;/div></description></item><item><title>Spring 扩展点实践：整合 MyBATIS</title><link>https://www.diguage.com/post/spring-extensions-and-mybatis/</link><pubDate>Thu, 28 May 2020 20:06:46 +0800</pubDate><guid>https://www.diguage.com/post/spring-extensions-and-mybatis/</guid><description>&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/spring-extensions-overview/" target="_blank" rel="noopener">Spring 扩展点概览及实践&lt;/a> 中介绍了 Spring 内部存在的扩展点。学以致用，现在来分析一下 Spring 与 MyBATIS 的整合流程。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_示例程序">示例程序&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>为了方便分析源码，先根据官方文档 &lt;a href="https://mybatis.org/spring/getting-started.html" target="_blank" rel="noopener">mybatis-spring – MyBatis-Spring | Getting Started&lt;/a> 搭建起一个简单实例。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>数据库方面，直接使用功能了 MySQL 示例数据库： &lt;a href="https://dev.mysql.com/doc/employee/en/" target="_blank" rel="noopener">MySQL : Employees Sample Database&lt;/a>，需要的话，自行下载。&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="kn">package&lt;/span> &lt;span class="nn">com.diguage.truman.mybatis&lt;/span>&lt;span class="o">;&lt;/span>
+
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">com.mysql.cj.jdbc.Driver&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">com.zaxxer.hikari.HikariDataSource&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">org.apache.ibatis.session.Configuration&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">org.junit.jupiter.api.Test&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">org.mybatis.spring.SqlSessionFactoryBean&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">org.mybatis.spring.annotation.MapperScan&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">org.springframework.beans.factory.annotation.Autowired&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">org.springframework.context.annotation.AnnotationConfigApplicationContext&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">org.springframework.context.annotation.Bean&lt;/span>&lt;span class="o">;&lt;/span>
+
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">javax.sql.DataSource&lt;/span>&lt;span class="o">;&lt;/span>
+
+&lt;span class="cm">/**
+ * @author D瓜哥, &lt;a href="https://www.diguage.com/" target="_blank">https://www.diguage.com/&lt;/a>
+ * @since 2020-05-29 17:11
+ */&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">MybatisTest&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="nd">@Test&lt;/span>
+ &lt;span class="kd">public&lt;/span> &lt;span class="kt">void&lt;/span> &lt;span class="nf">test&lt;/span>&lt;span class="o">()&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="nc">AnnotationConfigApplicationContext&lt;/span> &lt;span class="n">context&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="k">new&lt;/span> &lt;span class="nc">AnnotationConfigApplicationContext&lt;/span>&lt;span class="o">();&lt;/span>
+ &lt;span class="n">context&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">register&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">Config&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">class&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="n">context&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">refresh&lt;/span>&lt;span class="o">();&lt;/span>
+ &lt;span class="nc">EmployeesMapper&lt;/span> &lt;span class="n">employeesMapper&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">context&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getBean&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">EmployeesMapper&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">class&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="nc">Employees&lt;/span> &lt;span class="n">employees&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">employeesMapper&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getById&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="mi">10001&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="nc">System&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">out&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">println&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">employees&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="o">}&lt;/span>
+
+ &lt;span class="nd">@org&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">springframework&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">context&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">annotation&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">Configuration&lt;/span>
+ &lt;span class="nd">@MapperScan&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">basePackages&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="s">&amp;#34;com.diguage.truman.mybatis&amp;#34;&lt;/span>&lt;span class="o">)&lt;/span>
+ &lt;span class="kd">public&lt;/span> &lt;span class="kd">static&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">Config&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="nd">@Bean&lt;/span>
+ &lt;span class="kd">public&lt;/span> &lt;span class="nc">DataSource&lt;/span> &lt;span class="nf">dataSource&lt;/span>&lt;span class="o">()&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="nc">HikariDataSource&lt;/span> &lt;span class="n">dataSource&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="k">new&lt;/span> &lt;span class="nc">HikariDataSource&lt;/span>&lt;span class="o">();&lt;/span>
+ &lt;span class="n">dataSource&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">setUsername&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;root&amp;#34;&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="n">dataSource&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">setPassword&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;123456&amp;#34;&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="n">dataSource&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">setDriverClassName&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">Driver&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">class&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">getName&lt;/span>&lt;span class="o">());&lt;/span>
+ &lt;span class="n">dataSource&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">setJdbcUrl&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;jdbc:mysql://localhost:3306/employees?useUnicode=true&amp;amp;characterEncoding=utf-8&amp;amp;autoReconnectForPools=true&amp;amp;autoReconnect=true&amp;#34;&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="k">return&lt;/span> &lt;span class="n">dataSource&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>
+
+ &lt;span class="nd">@Bean&lt;/span>
+ &lt;span class="kd">public&lt;/span> &lt;span class="nc">SqlSessionFactoryBean&lt;/span> &lt;span class="nf">sqlSessionFactory&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nd">@Autowired&lt;/span> &lt;span class="nc">DataSource&lt;/span> &lt;span class="n">dataSource&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="nc">SqlSessionFactoryBean&lt;/span> &lt;span class="n">factoryBean&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="k">new&lt;/span> &lt;span class="nc">SqlSessionFactoryBean&lt;/span>&lt;span class="o">();&lt;/span>
+ &lt;span class="n">factoryBean&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">setDataSource&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">dataSource&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="nc">Configuration&lt;/span> &lt;span class="n">configuration&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="k">new&lt;/span> &lt;span class="nc">Configuration&lt;/span>&lt;span class="o">();&lt;/span>
+ &lt;span class="n">configuration&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">setMapUnderscoreToCamelCase&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="kc">true&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="n">factoryBean&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">setConfiguration&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="n">configuration&lt;/span>&lt;span class="o">);&lt;/span>
+ &lt;span class="k">return&lt;/span> &lt;span class="n">factoryBean&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>
+ &lt;span class="o">}&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="title">EmployeesMapper&lt;/div>
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="kn">package&lt;/span> &lt;span class="nn">com.diguage.truman.mybatis&lt;/span>&lt;span class="o">;&lt;/span>
+
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">org.apache.ibatis.annotations.Param&lt;/span>&lt;span class="o">;&lt;/span>
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">org.apache.ibatis.annotations.Select&lt;/span>&lt;span class="o">;&lt;/span>
+
+&lt;span class="cm">/**
+ * @author D瓜哥, &lt;a href="https://www.diguage.com/" target="_blank">https://www.diguage.com/&lt;/a>
+ * @since 2020-05-29 17:23
+ */&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="kd">interface&lt;/span> &lt;span class="nc">EmployeesMapper&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="nd">@Select&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;SELECT * FROM employees WHERE emp_no = #{id}&amp;#34;&lt;/span>&lt;span class="o">)&lt;/span>
+ &lt;span class="nc">Employees&lt;/span> &lt;span class="nf">getById&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nd">@Param&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="s">&amp;#34;id&amp;#34;&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="nc">Integer&lt;/span> &lt;span class="n">id&lt;/span>&lt;span class="o">);&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="title">Employees&lt;/div>
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="kn">package&lt;/span> &lt;span class="nn">com.diguage.truman.mybatis&lt;/span>&lt;span class="o">;&lt;/span>
+
+&lt;span class="kn">import&lt;/span> &lt;span class="nn">java.util.Date&lt;/span>&lt;span class="o">;&lt;/span>
+
+&lt;span class="cm">/**
+ * @author D瓜哥, &lt;a href="https://www.diguage.com/" target="_blank">https://www.diguage.com/&lt;/a>
+ * @since 2020-05-29 17:24
+ */&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">Employees&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="nc">Integer&lt;/span> &lt;span class="n">empNo&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="nc">Date&lt;/span> &lt;span class="n">birthDate&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="nc">String&lt;/span> &lt;span class="n">firstName&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="nc">String&lt;/span> &lt;span class="n">lastName&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="nc">String&lt;/span> &lt;span class="n">gender&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="nc">Date&lt;/span> &lt;span class="n">hireDate&lt;/span>&lt;span class="o">;&lt;/span>
+
+ &lt;span class="nd">@Override&lt;/span>
+ &lt;span class="kd">public&lt;/span> &lt;span class="nc">String&lt;/span> &lt;span class="nf">toString&lt;/span>&lt;span class="o">()&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="k">return&lt;/span> &lt;span class="s">&amp;#34;Employees{&amp;#34;&lt;/span> &lt;span class="o">+&lt;/span>
+ &lt;span class="s">&amp;#34;empNo=&amp;#34;&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="n">empNo&lt;/span> &lt;span class="o">+&lt;/span>
+ &lt;span class="s">&amp;#34;, birthDate=&amp;#34;&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="n">birthDate&lt;/span> &lt;span class="o">+&lt;/span>
+ &lt;span class="s">&amp;#34;, firstName=&amp;#39;&amp;#34;&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="n">firstName&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="sc">&amp;#39;\&amp;#39;&amp;#39;&lt;/span> &lt;span class="o">+&lt;/span>
+ &lt;span class="s">&amp;#34;, lastName=&amp;#39;&amp;#34;&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="n">lastName&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="sc">&amp;#39;\&amp;#39;&amp;#39;&lt;/span> &lt;span class="o">+&lt;/span>
+ &lt;span class="s">&amp;#34;, gender=&amp;#39;&amp;#34;&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="n">gender&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="sc">&amp;#39;\&amp;#39;&amp;#39;&lt;/span> &lt;span class="o">+&lt;/span>
+ &lt;span class="s">&amp;#34;, hireDate=&amp;#34;&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="n">hireDate&lt;/span> &lt;span class="o">+&lt;/span>
+ &lt;span class="sc">&amp;#39;}&amp;#39;&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>整个实例代码中，只有 &lt;code>@MapperScan(basePackages = &amp;#34;com.diguage.truman.mybatis&amp;#34;)&lt;/code> 这个注解和 MyBATIS 的配置相关，我们就从这里开始吧。&lt;/p>
+&lt;/div></description></item><item><title>Spring 扩展点概览及实践</title><link>https://www.diguage.com/post/spring-extensions-overview/</link><pubDate>Tue, 26 May 2020 17:14:20 +0800</pubDate><guid>https://www.diguage.com/post/spring-extensions-overview/</guid><description>&lt;div class="paragraph">
+&lt;p>学习 Spring 代码，最重要的是掌握 Spring 有哪些扩展点，可以利用这些扩展点对 Spring 做什么扩展操作。说得更具体一点，如果自己开发一个框架，如何与 Spring 进行整合，如果对 Spring 的扩展点有一个比较清晰的认识，势必会事半功倍。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_import">&lt;code>@Import&lt;/code>&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>先来看一下 &lt;code>@Import&lt;/code> 注解的定义：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="nd">@Target&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">ElementType&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">TYPE&lt;/span>&lt;span class="o">)&lt;/span>
+&lt;span class="nd">@Retention&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">RetentionPolicy&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">RUNTIME&lt;/span>&lt;span class="o">)&lt;/span>
+&lt;span class="nd">@Documented&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="nd">@interface&lt;/span> &lt;span class="nc">Import&lt;/span> &lt;span class="o">{&lt;/span>
+
+ &lt;span class="cm">/**
+ * {@link Configuration @Configuration}, {@link ImportSelector},
+ * {@link ImportBeanDefinitionRegistrar}, or regular component classes to import.
+ */&lt;/span>
+ &lt;span class="nc">Class&lt;/span>&lt;span class="o">&amp;lt;?&amp;gt;[]&lt;/span> &lt;span class="n">value&lt;/span>&lt;span class="o">();&lt;/span>
+
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>从声明可以看出，使用时，只需要指定 &lt;code>Class&lt;/code> 实例即可；从方法的文档中可以看出，&lt;code>Class&lt;/code> 实例可以分为三种：&lt;code>ImportSelector&lt;/code>、&lt;code>ImportBeanDefinitionRegistrar&lt;/code> 和常规组件类。示例如下：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="nd">@Configuration&lt;/span>
+&lt;span class="nd">@Import&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">LogImportSelector&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">class&lt;/span>&lt;span class="o">)&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="kd">static&lt;/span> &lt;span class="kd">class&lt;/span> &lt;span class="nc">Config&lt;/span> &lt;span class="o">{&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在 &lt;code>org.springframework.context.annotation.ConfigurationClassParser#processImports&lt;/code> 方法中，集中了对 &lt;code>@Import&lt;/code> 注解的处理。从代码可以非常清晰地看出，分了三种情况进行处理：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>&lt;code>ImportSelector&lt;/code>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>ImportBeanDefinitionRegistrar&lt;/code>&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>常规组件 &lt;code>Class&lt;/code>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>下面分别对其进行介绍。&lt;/p>
+&lt;/div>
+&lt;div class="sect2">
+&lt;h3 id="_importselector">&lt;code>ImportSelector&lt;/code>&lt;/h3>
+&lt;div class="paragraph">
+&lt;p>先来看一下 &lt;code>ImportSelector&lt;/code> 接口的定义：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code data-lang="java">&lt;span class="cm">/**
+ * Interface to be implemented by types that determine which @{@link Configuration}
+ * class(es) should be imported based on a given selection criteria, usually one or
+ * more annotation attributes.
+ *
+ * &amp;lt;p&amp;gt;{@code ImportSelector} implementations are usually processed in the same way
+ * as regular {@code @Import} annotations, however, it is also possible to defer
+ * selection of imports until all {@code @Configuration} classes have been processed
+ * (see {@link DeferredImportSelector} for details).
+ *
+ * @since 3.1
+ * @see DeferredImportSelector
+ * @see Import
+ * @see ImportBeanDefinitionRegistrar
+ * @see Configuration
+ */&lt;/span>
+&lt;span class="kd">public&lt;/span> &lt;span class="kd">interface&lt;/span> &lt;span class="nc">ImportSelector&lt;/span> &lt;span class="o">{&lt;/span>
+
+ &lt;span class="cm">/**
+ * Select and return the names of which class(es) should be imported based on
+ * the {@link AnnotationMetadata} of the importing @{@link Configuration} class.
+ * @return the class names, or an empty array if none
+ */&lt;/span>
+ &lt;span class="nc">String&lt;/span>&lt;span class="o">[]&lt;/span> &lt;span class="nf">selectImports&lt;/span>&lt;span class="o">(&lt;/span>&lt;span class="nc">AnnotationMetadata&lt;/span> &lt;span class="n">importingClassMetadata&lt;/span>&lt;span class="o">);&lt;/span>
+
+ &lt;span class="cm">/**
+ * Return a predicate for excluding classes from the import candidates, to be
+ * transitively applied to all classes found through this selector&amp;#39;s imports.
+ * &amp;lt;p&amp;gt;If this predicate returns {@code true} for a given fully-qualified
+ * class name, said class will not be considered as an imported configuration
+ * class, bypassing class file loading as well as metadata introspection.
+ * @return the filter predicate for fully-qualified candidate class names
+ * of transitively imported configuration classes, or {@code null} if none
+ * @since 5.2.4
+ */&lt;/span>
+ &lt;span class="nd">@Nullable&lt;/span>
+ &lt;span class="k">default&lt;/span> &lt;span class="nc">Predicate&lt;/span>&lt;span class="o">&amp;lt;&lt;/span>&lt;span class="nc">String&lt;/span>&lt;span class="o">&amp;gt;&lt;/span> &lt;span class="nf">getExclusionFilter&lt;/span>&lt;span class="o">()&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="k">return&lt;/span> &lt;span class="kc">null&lt;/span>&lt;span class="o">;&lt;/span>
+ &lt;span class="o">}&lt;/span>
+
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div></description></item></channel></rss>

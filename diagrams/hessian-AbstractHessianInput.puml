@@ -1,0 +1,38 @@
+@startuml
+header D瓜哥 · ""https://www.diguage.com""
+
+title **Hessian AbstractHessianInput 类图**
+
+
+abstract class AbstractHessianInput {
+  +void setSerializerFactory(SerializerFactory ser)
+  +{abstract} boolean readBoolean()
+  +{abstract} void readNull()
+  +{abstract} int readInt()
+  +{abstract} long readLong()
+  +{abstract} double readDouble()
+  +{abstract} long readUTCDate()
+  +{abstract} String readString()
+  +{abstract} byte []readBytes()
+  +{abstract} Object readObject(Class expectedClass)
+  +{abstract} Object readObject()
+  +{abstract} Object readRef()
+  +{abstract} int addRef(Object obj)
+  +{abstract} void setRef(int i, Object obj)
+  +{abstract} int readListStart()
+  +{abstract} int readLength()
+  +{abstract} int readMapStart()
+  +{abstract} String readType()
+  +{abstract} boolean isEnd()
+  +{abstract} void readEnd()
+  +{abstract} void readMapEnd()
+  +{abstract} void readListEnd()
+  +void close()
+}
+
+class HessianInput extends AbstractHessianInput
+
+class Hessian2Input extends AbstractHessianInput implements Hessian2Constants
+
+footer D瓜哥 · ""https://www.diguage.com"" · 出品
+@enduml

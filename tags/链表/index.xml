@@ -1,0 +1,531 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>链表 on "地瓜哥"博客网</title><link>https://www.diguage.com/tags/%E9%93%BE%E8%A1%A8/</link><description>Recent content in 链表 on "地瓜哥"博客网</description><generator>Hugo</generator><language>zh-cn</language><lastBuildDate>Wed, 09 Apr 2025 17:36:30 +0800</lastBuildDate><atom:link href="https://www.diguage.com/tags/%E9%93%BE%E8%A1%A8/index.xml" rel="self" type="application/rss+xml"/><item><title>算法模式：回溯</title><link>https://www.diguage.com/post/algorithm-pattern-backtracking/</link><pubDate>Wed, 09 Apr 2025 17:30:51 +0800</pubDate><guid>https://www.diguage.com/post/algorithm-pattern-backtracking/</guid><description>&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/algorithm-pattern-transform-and-conquer/" target="_blank" rel="noopener">算法模式：变治法&lt;/a> 介绍一种有魔力的，可以将复杂问题化繁为简，化腐朽为神奇的算法模式：变治法。本篇文章，介绍一种“一步三回头”、“落棋有悔”的算法模式：回溯。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_回溯">回溯&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>“回溯”算法也叫“回溯搜索”算法，主要用于在一个庞大的空间里搜索我们所需要的问题的解。我们每天使用的“搜索引擎”就是帮助我们在庞大的互联网上搜索我们需要的信息。“搜索”引擎的“搜索”和“回溯搜索”算法的“搜索”意思是一样的。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>“回溯”指的是“状态重置”，可以理解为“回到过去”、“恢复现场”，是在编码的过程中，是为了节约空间而使用的一种技巧。而回溯其实是“深度优先遍历”特有的一种现象。之所以是“深度优先遍历”，是因为我们要解决的问题通常是在一棵树上完成的，在这棵树上搜索需要的答案，一般使用深度优先遍历。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>“全排列”就是一个非常经典的“回溯”算法的应用。我们知道，&lt;code>N&lt;/code> 个数字的全排列一共有 \$N!\$ 这么多个。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>使用编程的方法得到全排列，就是在这样的一个树形结构中进行编程，具体来说，就是&lt;strong>执行一次深度优先遍历，从树的根结点到叶子结点形成的路径就是一个全排列。&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/data-structure/0046-01.png" alt="0046 01" width="95%"/>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>说明：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>每一个结点表示了“全排列”问题求解的不同阶段，这些阶段通过变量的“不同的值”体现；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>这些变量的不同的值，也称之为“状态”；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>使用深度优先遍历有“回头”的过程，在“回头”以后，状态变量需要设置成为和先前一样；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>因此在回到上一层结点的过程中，需要撤销上一次选择，这个操作也称之为“状态重置”；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>深度优先遍历，可以直接借助系统栈空间，为我们保存所需要的状态变量，在编码中只需要注意遍历到相应的结点的时候，状态变量的值是正确的，具体的做法是：往下走一层的时候，&lt;code>path&lt;/code> 变量在尾部追加，而往回走的时候，需要撤销上一次的选择，也是在尾部操作，因此 &lt;code>path&lt;/code> 变量是一个栈。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>深度优先遍历通过“回溯”操作，实现了全局使用一份状态变量的效果。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>解决一个回溯问题，实际上就是一个决策树的遍历过程。&lt;/strong>只需要思考 3 个问题：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>路径：也就是已经做出的选择。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>选择列表：也就是你当前可以做的选择。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>结束条件：也就是到达决策树底层，无法再做选择的条件。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>这三个问题也就对应回溯三部曲：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>定义递归函数以及参数&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>确定递归终止条件&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>思考递归单层搜索逻辑&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>代码方面，回溯算法的框架：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight">&lt;code>result = []
+def backtrack(路径, 选择列表):
+ if 满足结束条件:
+ result.add(路径)
+ return
+
+ for 选择 in 选择列表:
+ 做选择
+ backtrack(路径, 选择列表)
+ 撤销选择&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>其核心就是 &lt;code>for&lt;/code> 循环里面的递归，在递归调用之前「做选择」，在递归调用之后「撤销选择」&lt;/strong>，特别简单。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>必须说明的是，不管怎么优化，都符合回溯框架，而且时间复杂度都不可能低于 \$O(N!)\$，因为穷举整棵决策树是无法避免的。&lt;strong>这也是回溯算法的一个特点，不像动态规划存在重叠子问题可以优化，回溯算法就是纯暴力穷举，复杂度一般都很高。&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>玩回溯，一定要画出递归调用树。这样可以帮助我们更深入地理解整个回溯的过程，方便进一步剪枝优化。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>回溯优化，重要的是，要学会剪枝！&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_leetcode_46_全排列">LeetCode 46. 全排列&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>&lt;a href="https://leetcode.cn/problems/permutations/" target="_blank" rel="noopener">LeetCode - 46. 全排列 &lt;/a>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>给定一个不含重复数字的数组 &lt;code>nums&lt;/code> ，返回其 &lt;em>所有可能的全排列&lt;/em> 。你可以 &lt;strong>按任意顺序&lt;/strong> 返回答案。&lt;/p>
+&lt;/div></description></item><item><title>算法模式：变治法</title><link>https://www.diguage.com/post/algorithm-pattern-transform-and-conquer/</link><pubDate>Tue, 08 Apr 2025 16:50:33 +0800</pubDate><guid>https://www.diguage.com/post/algorithm-pattern-transform-and-conquer/</guid><description>&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/algorithm-pattern-divide-and-conquer/" target="_blank" rel="noopener">算法模式：分治法&lt;/a> 介绍一种可用于处理节点前后顺序的算法模式：拓扑排序。本篇文章，介绍一种有魔力的，可以将复杂问题化繁为简，化腐朽为神奇的算法模式：变治法。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_变治法">变治法&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>D瓜哥最早知道变治法也是在 &lt;a href="https://book.douban.com/subject/26337727/" target="_blank" rel="noopener">《算法设计与分析基础》&lt;/a> 中。这里也直接引用该书的介绍。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>变治法，就是基于变换的一种思想方法，首先把问题的实例变得容易求解，然后进行求解。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>变治法的工作可以分成两个阶段：首先把问题变得更容易求解，然后对实例进行求解。根据我们对问题实例的变换方式，变治思想有3种主要的类型：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>实例化简(Instance simplification) — 指将原问题变换为同样问题的一个更简单或者更方便的实例。一个典型的案例是：去重时，先排序，&lt;/p>
+&lt;div class="olist loweralpha">
+&lt;ol class="loweralpha" type="a">
+&lt;li>
+&lt;p>列表预排序&lt;/p>
+&lt;div class="olist lowerroman">
+&lt;ol class="lowerroman" type="i">
+&lt;li>
+&lt;p>检验数组中元素的唯一性&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>模式计算&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>查找问题&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>高斯消元法&lt;/p>
+&lt;div class="olist lowerroman">
+&lt;ol class="lowerroman" type="i">
+&lt;li>
+&lt;p>系数矩阵的LU分解(LU decomposition)&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>计算矩阵的逆&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>计算矩阵的行列式&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>AVL 树&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>改变表现(Representation Change) — 指将原问题变换为同样实例的不同表现。经典的栗子：霍纳法则。&lt;/p>
+&lt;div class="olist loweralpha">
+&lt;ol class="loweralpha" type="a">
+&lt;li>
+&lt;p>多路平衡查找树（最简单的情况：2-3树）&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>求多项式的霍纳法则&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>两种二进制幂算法&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>堆排序&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>问题化简(Problem reduction) — 指把一个给定的问题变换为另一个可以用已知算法求解的问题。（归化思想）转换的难题在于如何找到一个变换的目标算法。典型案例是背包问题，背包问题的本质是线性规划。了解了线性规划的本质后，才能更好地解决高维的背包问题。&lt;/p>
+&lt;div class="olist loweralpha">
+&lt;ol class="loweralpha" type="a">
+&lt;li>
+&lt;p>求最小公倍数&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>计算图中的路径数量&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>最优化问题（最大化问题(maximization problem)、最小化问题(minimization problem)）&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>线性规划（单纯形法、0/1背包问题）&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>简化为图问题&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_leetcode_474_一和零">LeetCode 474. 一和零&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>&lt;a href="https://leetcode.cn/problems/ones-and-zeroes/" target="_blank" rel="noopener">LeetCode - 474. 一和零&lt;/a>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>给你一个二进制字符串数组 &lt;code>strs&lt;/code> 和两个整数 &lt;code>m&lt;/code> 和 &lt;code>n&lt;/code> 。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>请你找出并返回 &lt;code>strs&lt;/code> 的最大子集的长度，该子集中 &lt;strong>最多&lt;/strong> 有 &lt;code>m&lt;/code> 个 &lt;code>0&lt;/code> 和 &lt;code>n&lt;/code> 个 &lt;code>1&lt;/code> 。&lt;/p>
+&lt;/div></description></item><item><title>算法模式：分治法</title><link>https://www.diguage.com/post/algorithm-pattern-divide-and-conquer/</link><pubDate>Mon, 07 Apr 2025 15:59:27 +0800</pubDate><guid>https://www.diguage.com/post/algorithm-pattern-divide-and-conquer/</guid><description>&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/algorithm-pattern-decrease-and-conquer/" target="_blank" rel="noopener">算法模式：减治法&lt;/a> 介绍一种有魔力的，可以将复杂问题化繁为简，化腐朽为神奇的算法模式：减治法。本篇文章，继续介绍一种有魔力的，可以将复杂问题化繁为简，化腐朽为神奇的算法模式：分治法。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_分治法">分治法&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>关于分治法的内容，这里继续参考 &lt;a href="https://book.douban.com/subject/26337727/" target="_blank" rel="noopener">《算法设计与分析基础》&lt;/a> 中的内容。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>分治法是按照以下方案工作的。&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>将一个问题划分为同一类型的若干子问题，子问题最好规模相同。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>对这些子问题求解（一般使用递归方法，但在问题规模足够小时，有时也会利用另一个算法）。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>有必要的话，合并这些子问题的解，以得到原始问题的答案。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/data-structure/divide-and-conquer-1.png" alt="分治法" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. 分治法&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>从字面上分析就可以看到有哪些步骤：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>分-分解-将问题分解为规模更小的子问题，子问题最好相同或相似；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>治-求解-将这些规模更小的子问题逐个击破；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>合-合并-将已解决的子问题合并，最终得出原问题的解；&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>从上述步骤中我们可以看出，分治算法一般适用满足以下条件的场景：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>问题规模缩小到一定的程度就可以很容易解决；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>问题&lt;strong>可以分解&lt;/strong>为若干个规模较小的相同问题；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>问题分解出的若干子问题的解可以合并为该问题的解；&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>每个子问题都是&lt;strong>独立&lt;/strong>的，相互之间没有交集。（这是区别分治法与减）&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在“分”的过程中，我们尽可能让分解出的子问题与原始问题相似，而规模更小。这刚好符合递归的特性。因此，分治法往往与递归联系在一起。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>在分治法最典型的运用中，问题规模为 &lt;code>n&lt;/code> 的实例被划分为两个规模为 &lt;code>n/2&lt;/code> 的实例。更一般的情况下，一个规模为 &lt;code>n&lt;/code> 的实例可以划分为 &lt;code>b&lt;/code> 个规模为 &lt;code>n/b&lt;/code> 的实例，其中 &lt;code>a&lt;/code> 个实例需要求解（这里，&lt;code>a&lt;/code> 和 &lt;code>b&lt;/code> 是常量，&lt;code>a≥1&lt;/code>，&lt;code>b&amp;gt;1&lt;/code>）。&lt;/p>
+&lt;/div>
+&lt;div class="stemblock text-center">
+&lt;div class="content">
+\$T(n) = aT(n/b) + f(n)\$
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>其中，\$f(n)\$ 是一个函数，表示将问题分解为小问题和将结果合并起来所消耗的时间&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>分治法的典型案例如下：&lt;/p>
+&lt;/div>
+&lt;div class="olist arabic">
+&lt;ol class="arabic">
+&lt;li>
+&lt;p>归并排序&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>快速排序&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>二叉树的经典遍历算法和其他类似的算法都需要递归处理左右两棵子树&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Strassen 算法&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>最近对问题&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>凸包问题&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>分治法对&lt;strong>分治出的部分需要分别处理&lt;/strong>，进行分开的单独计算，而减治法则利用了&amp;#34;一个问题给定实例的解和同样问题较小实例的解之间的关系&amp;#34;，只针对部分子问题求解，&lt;strong>减治掉的那部分就不需要了&lt;/strong>。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>减常因子的减治法也可以看做是分治的变种。&lt;/p>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_leetcode_148_排序链表">LeetCode 148. 排序链表&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>&lt;a href="https://leetcode.cn/problems/sort-list/" target="_blank" rel="noopener">LeetCode - 148. 排序链表 &lt;/a>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>给你链表的头结点 &lt;code>head&lt;/code> ，请将其按 &lt;strong>升序&lt;/strong> 排列并返回 &lt;strong>排序后的链表&lt;/strong> 。&lt;/p>
+&lt;/div></description></item><item><title>算法模式：减治法</title><link>https://www.diguage.com/post/algorithm-pattern-decrease-and-conquer/</link><pubDate>Sun, 06 Apr 2025 23:32:03 +0800</pubDate><guid>https://www.diguage.com/post/algorithm-pattern-decrease-and-conquer/</guid><description>&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/algorithm-pattern-topological-sort/" target="_blank" rel="noopener">算法模式：拓扑排序&lt;/a> 介绍一种可用于处理节点前后顺序的算法模式：拓扑排序。本篇文章，介绍一种有魔力的，可以将复杂问题化繁为简，化腐朽为神奇的算法模式：减治法。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_减治法">减治法&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>D瓜哥最早知道减治法是在 &lt;a href="https://book.douban.com/subject/26337727/" target="_blank" rel="noopener">《算法设计与分析基础》&lt;/a> 中。这里也直接引用该书的介绍。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>减治(decrease-and-conquer)技术利用了一个问题给定实例的解和同样问题较小实例的解之间的某种关系。自底向上版本往往是迭代实现的，从求解问题的一个较小实例开始，该方法有时也称为增量法(Incremental Approach)。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>减治法有3种主要的变化形式：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>&lt;strong>减去一个常量。&lt;/strong>在减常量(decrease-by-a-constant)变化形式中，每次算法迭代总是从实例中减去一个相同的常量。&lt;/p>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>插入排序&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>减去一个常量因子。&lt;/strong>减常因子(decrease-by-a-constant-factor)技术意味着在算法的每次迭代中，总是从实例的规模中减去一个相同的常数因子。在大多数应用中，这样的常数因子等于2，其实就是减半。&lt;/p>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>二分查找&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>减去的规模是可变的。&lt;/strong>在减治法的减可变规模(variable-size-decrease)变化形式中，算法在每次迭代时，规模减小的模式都是不同的。&lt;/p>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>计算最大公约数的欧几里得算法是这种情况的一个很好的例子。 \$gcd(m, n)=gcd(n,m mod n)\$&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_leetcode_50_powx_n">LeetCode 50. Pow(x, n)&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>&lt;a href="https://leetcode.cn/problems/powx-n/" target="_blank" rel="noopener">LeetCode - 50. Pow(x, n) &lt;/a>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>实现 &lt;a href="https://www.cplusplus.com/reference/valarray/pow/">pow(x, n)&lt;/a> ，即计算 &lt;code>x&lt;/code> 的整数 &lt;code>n&lt;/code> 次幂函数（即，&lt;code>x&lt;sup>n&lt;/sup>&lt;/code>）。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>示例 1：&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="literalblock">
+&lt;div class="content">
+&lt;pre>输入：x = 2.00000, n = 10
+输出：1024.00000&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>示例 2：&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="literalblock">
+&lt;div class="content">
+&lt;pre>输入：x = 2.10000, n = 3
+输出：9.26100&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>示例 3：&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="literalblock">
+&lt;div class="content">
+&lt;pre>输入：x = 2.00000, n = -2
+输出：0.25000
+解释：2-2 = 1/22 = 1/4 = 0.25&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>提示：&lt;/strong>&lt;/p>
+&lt;/div></description></item><item><title>算法模式：滑动窗口</title><link>https://www.diguage.com/post/algorithm-pattern-sliding-window/</link><pubDate>Fri, 21 Mar 2025 11:49:41 +0800</pubDate><guid>https://www.diguage.com/post/algorithm-pattern-sliding-window/</guid><description>&lt;div class="paragraph">
+&lt;p>在上一篇文章 &lt;a href="https://www.diguage.com/post/algorithm-pattern-two-pointer/" target="_blank" rel="noopener">算法模式：双指针&lt;/a> 介绍了双指针的算法模式。本篇文章，介绍一种类似双指针的算法模式：滑动窗口。&lt;/p>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_滑动窗口">滑动窗口&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>滑动窗口类型的题目经常是用来执行数组或是链表上某个区间（窗口）上的操作。比如找最长的全为1的子数组长度。滑动窗口一般从第一个元素开始，一直往右边一个一个元素挪动。当然了，根据题目要求，我们可能有固定窗口大小的情况，也有窗口的大小变化的情况。&lt;/p>
+&lt;/div>
+&lt;div class="imageblock text-center">
+&lt;div class="content">
+&lt;img src="https://www.diguage.com/images/data-structure/sliding-window.png" alt="滑动窗口" width="95%"/>
+&lt;/div>
+&lt;div class="title">图 1. 滑动窗口&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>滑动窗口大概思路如下：&lt;/p>
+&lt;/div>
+&lt;div class="listingblock">
+&lt;div class="content">
+&lt;pre class="rouge highlight nowrap">&lt;code data-lang="java">&lt;span class="c1">// 向前滑动窗口&lt;/span>
+&lt;span class="k">while&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">right&lt;/span> &lt;span class="o">&amp;lt;&lt;/span> &lt;span class="n">array&lt;/span>&lt;span class="o">.&lt;/span>&lt;span class="na">lenght&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="c1">// 扩大窗口，将元素放入窗口&lt;/span>
+ &lt;span class="n">right&lt;/span>&lt;span class="o">++;&lt;/span>
+ &lt;span class="k">while&lt;/span> &lt;span class="o">(&lt;/span>&lt;span class="n">缩小窗口条件&lt;/span>&lt;span class="o">)&lt;/span> &lt;span class="o">{&lt;/span>
+ &lt;span class="c1">// 处理窗口内的元素&lt;/span>
+ &lt;span class="c1">// 缩小窗口，将元素丢出窗口&lt;/span>
+ &lt;span class="n">left&lt;/span>&lt;span class="o">++;&lt;/span>
+ &lt;span class="o">}&lt;/span>
+&lt;span class="o">}&lt;/span>&lt;/code>&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>下面是一些我们用来判断我们可能需要上滑动窗口策略的方法：&lt;/p>
+&lt;/div>
+&lt;div class="ulist">
+&lt;ul>
+&lt;li>
+&lt;p>问题的输入是一些线性结构：比如链表，数组，字符串之类的&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>让你去求最长/最短子字符串或是某些特定的长度要求&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;/div>
+&lt;/div>
+&lt;/div>
+&lt;div class="sect1">
+&lt;h2 id="_leetcode_3_无重复字符的最长子串">LeetCode 3. 无重复字符的最长子串&lt;/h2>
+&lt;div class="sectionbody">
+&lt;div class="paragraph">
+&lt;p>&lt;a href="https://leetcode.cn/problems/longest-substring-without-repeating-characters/" target="_blank" rel="noopener">LeetCode - 3. 无重复字符的最长子串 &lt;/a>&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>给定一个字符串 &lt;code>s&lt;/code> ，请你找出其中不含有重复字符的 &lt;strong>最长子串&lt;/strong> 的长度。&lt;/p>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>示例 1:&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="literalblock">
+&lt;div class="content">
+&lt;pre>输入: s = &amp;#34;abcabcbb&amp;#34;
+输出: 3
+解释: 因为无重复字符的最长子串是 &amp;#34;abc&amp;#34;，所以其长度为 3。&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>示例 2:&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="literalblock">
+&lt;div class="content">
+&lt;pre>输入: s = &amp;#34;bbbbb&amp;#34;
+输出: 1
+解释: 因为无重复字符的最长子串是 &amp;#34;b&amp;#34;，所以其长度为 1。&lt;/pre>
+&lt;/div>
+&lt;/div>
+&lt;div class="paragraph">
+&lt;p>&lt;strong>示例 3:&lt;/strong>&lt;/p>
+&lt;/div>
+&lt;div class="literalblock">
+&lt;div class="content">
+&lt;pre>输入: s = &amp;#34;pwwkew&amp;#34;
+输出: 3
+解释: 因为无重复字符的最长子串是 &amp;#34;wke&amp;#34;，所以其长度为 3。
+ 请注意，你的答案必须是 子串 的长度，&amp;#34;pwke&amp;#34; 是一个子序列，不是子串。&lt;/pre>
+&lt;/div></description></item></channel></rss>
